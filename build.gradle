@@ -1,0 +1,57 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+plugins {
+    id 'application'
+    id 'java'
+    id "com.github.johnrengelman.shadow" version "6.1.0"
+}
+
+apply plugin: 'application'
+
+group = 'engineer.hoshikurama.github'
+version = '1.0.0'
+mainClassName = "engineer.hoshikurama.github.ticketmanager.TicketManager"
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'papermc-repo'
+        url = 'https://papermc.io/repo/repository/maven-public/'
+    }
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+    maven {
+        url = 'https://jitpack.io'
+    }
+}
+
+dependencies {
+    compileOnly 'com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT'
+    compileOnly "com.github.MilkBowl:VaultAPI:1.7"
+    compile "com.zaxxer:HikariCP:4.0.3"
+    compile 'com.google.code.gson:gson:2.8.6'
+    compile "mysql:mysql-connector-java:8.0.22"
+    compile "com.google.guava:guava:30.1-jre"
+}
+
+shadowJar {
+
+    dependencies {
+        include dependency('com.zaxxer:HikariCP:4.0.3')
+        include dependency('com.google.code.gson:gson:2.8.6')
+        include dependency('mysql:mysql-connector-java:8.0.22')
+        include dependency('com.google.guava:guava:30.1-jre')
+    }
+}
+
+processResources {
+    from(sourceSets.main.resources.srcDirs) {
+        filter ReplaceTokens, tokens: [version: version]
+    }
+}
+

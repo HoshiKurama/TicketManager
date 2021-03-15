@@ -1,0 +1,126 @@
+name: TicketManager
+version: @version@
+main: engineer.hoshikurama.github.ticketmanager.TicketManager
+api-version: 1.16
+authors: [HoshiKurama]
+depend: [Vault]
+commands:
+  ticket:
+    description: Base for all TicketManager commands
+permissions:
+  ticketmanager.teleport:
+    description: Teleport to ticket creation location
+    default: false
+  ticketmanager.closeall:
+    description: Mass close tickets between two ranges inclusive
+    default: false
+  ticketmanager.notify.scheduledOpenTickets:
+    description: Periodically notify players with how many tickets are open
+    default: false
+  ticketmanager.notify.scheduledUpdatedTickets:
+    description: Periodically notify players with their tickets that have been updated
+    default: false
+  ticketmanager.notify.onUpdate.self:
+    description: Receive notification when self-owned tickets are updated
+    default: false
+  ticketmanager.notify.onUpdate.others:
+    description: Receive notifications on all ticket updates
+    default: false
+  ticketmanager.notify.onClose.self:
+    description: Receive notification on own tickets closed
+    default: false
+  ticketmanager.notify.onClose.others:
+    description: Receive notification on all ticket closes
+    default: false
+  ticketmanager.create:
+    description: Create tickets
+    default: false
+  ticketmanager.view.self:
+    description: View tickets made by yourself
+    default: false
+  ticketmanager.comment.self:
+    description: Comment on own tickets
+    default: false
+  ticketmanager.close.self:
+    description: Close own tickets
+    default: false
+  ticketmanager.history.self:
+    description: View all tickets made by yourself
+    default: false
+  ticketmanager.help.basic:
+    description: Get list of commands for players
+    default: false
+  ticketmanager.view.others:
+    description: View tickets made by others
+    default: false
+  ticketmanager.comment.others:
+    description: Comment on tickets made by others
+    default: false
+  ticketmanager.close:
+    description: Close tickets
+    default: false
+  ticketmanager.assign:
+    description: Assign tickets
+    default: false
+  ticketmanager.setpriority:
+    description: Set ticket priority
+    default: false
+  ticketmanager.history.others:
+    description: View all tickets any player has made
+    default: false
+  ticketmanager.list:
+    description: List all currently open tickets
+    default: false
+  ticketmanager.reopen:
+    description: Reopen a ticket
+    default: false
+  ticketmanager.help.all:
+    description: Show all commands
+    default: false
+  ticketmanager.notify.*:
+    description: Wildcard for all notifications
+    default: false
+    children:
+      ticketmanager.notify.onCreate: true
+      ticketmanager.notify.onUpdate.self: true
+      ticketmanager.notify.onUpdate.others: true
+      ticketmanager.notify.onClose.self: true
+      ticketmanager.notify.onClose.others: true
+      ticketmanager.notify.scheduledOpenTickets: true
+      ticketmanager.notify.scheduledUpdatedTickets: true
+  ticketmanager.manage:
+    description: General permissions for mods
+    default: false
+    children:
+      ticketmanager.view.others: true
+      ticketmanager.comment.others: true
+      ticketmanager.close: true
+      ticketmanager.assign: true
+      ticketmanager.setpriority: true
+      ticketmanager.history.others: true
+      ticketmanager.list: true
+      ticketmanager.reopen: true
+      ticketmanager.help.all: true
+      ticketmanager.notify.*: true
+      ticketmanager.notify.scheduledOpenTickets: true
+  ticketmanager.basic:
+    default: false
+    description: Basic permissions for players
+    children:
+      ticketmanager.create: true
+      ticketmanager.view.self: true
+      ticketmanager.comment.self: true
+      ticketmanager.close.self: true
+      ticketmanager.history.self: true
+      ticketmanager.help.basic: true
+      ticketmanager.notify.onClose.self: true
+      ticketmanager.notify.scheduledUpdatedTickets: true
+  ticketmanager.*:
+    description: Wildcard permission
+    default: op
+    children:
+      ticketmanager.notify.*: true
+      ticketmanager.basic: true
+      ticketmanager.manage: true
+      ticketmanager.teleport: true
+      ticketmanager.closeall: true
