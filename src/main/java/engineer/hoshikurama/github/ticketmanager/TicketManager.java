@@ -78,14 +78,15 @@ public final class TicketManager extends JavaPlugin {
                 if (openTicketsOptional.isPresent()) {
                     Set<Ticket> openTickets = openTicketsOptional.get();
                     int length = openTickets.size();
-
                     // Notifies all online players of ticket situation
-                    onlinePlayersFuture.get().parallelStream()
+                    onlinePlayersFuture.get().stream()
                             .filter(p -> getPermissions().has(p, "ticketmanager.notify.scheduledOpenTickets"))
                             .forEach(p -> {
-                                long assignedCount = openTickets.stream().filter(t -> t.getAssignment().equals(p.getName())).count();
+                                long assignedCount = openTickets.stream()
+                                        .filter(t -> t.getAssignment() != null)
+                                        .filter(t -> t.getAssignment().equals(p.getName())).count();
                                 p.sendMessage(ChatColor.translateAlternateColorCodes('&',
-                                        "&3[TicketManager] &7" + length + "&3 tickets open (&7" + assignedCount + " &3 assigned to you)"));
+                                        "&3[TicketManager] &7" + length + "&3 tickets open (&7" + assignedCount + "&3 assigned to you)"));
                             });
                 }
 
@@ -110,9 +111,9 @@ public final class TicketManager extends JavaPlugin {
                                 }
                             });
                 }
-
             } catch (Exception e) {
                 Bukkit.getLogger().log(Level.SEVERE, "[TicketManager] An error has occurred in the scheduled tasks!");
+                e.printStackTrace();
             }
         }, 12000, 12000);
     }

@@ -9,7 +9,6 @@ import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -368,37 +367,33 @@ public class TicketCommands implements CommandExecutor {
     }
 
     void viewHistoryCommand(CommandSender sender, String[] args) throws SQLException {
-        // Checks permissions
-        if (!TicketManager.getPermissions().has(sender, "ticketmanager.history.others")) {
-            sender.sendMessage(withColourCode("&cYou do not have permission to view ticket history!"));
-            return;
-        }
-
         // Filters lengths
-        if (args.length <= 2) {
+        if (args.length < 2) {
             sender.sendMessage(withColourCode("&cPlease use the correct format!"));
             return;
         }
 
-        // Filters non-players
-        UUID playerUUID = Bukkit.getPlayerUniqueId(args[1]);
-        if (playerUUID == null) {
-            sender.sendMessage(withColourCode("&cUser cannot be found"));
-            return;
+        // Checks permissions
+        if (!TicketManager.getPermissions().has(sender,"ticketmanager.history.others")) {
+            if (TicketManager.getPermissions().has(sender, "ticketmanager.history.others")) {
+                UUID senderID = Bukkit.getPlayerUniqueId(sender.getName());
+                UUID targetID = Bukkit.getPlayerUniqueId(args[1]);
+                if (senderID == null || senderID != targetID) {
+                    sender.sendMessage(withColourCode("&cYou do not have permission to view this person's ticket history!"));
+                    return;
+                }
+            }
         }
-        String playerName = Bukkit.getOfflinePlayer(playerUUID).getName();
 
+        // Filters out non-valid player UUID
+        UUID targetID = Bukkit.getPlayerUniqueId(args[1]);
+        if (args[1].equals("Console")) targetID = null;
 
-        // Gets all ticket ID's
-        List<Ticket> playerstickets = DatabaseHandler.getAllTickets().stream()
-                .filter(t -> t.getUUID().isPresent())
-                .filter(t -> t.getUUID().get().equals(playerUUID))
-                .collect(Collectors.toList());
-        int ticketCount = playerstickets.size();
+        Set<Ticket> playertickets = DatabaseHandler.getAllTicketsWithUUID(targetID);
 
         //Builds and creates initial data
-        ComponentBuilder component = new ComponentBuilder(withColourCode("&3[TicketManager] &7" + playerName + " has " + ticketCount + " tickets!"));
-        playerstickets.stream()
+        ComponentBuilder component = new ComponentBuilder(withColourCode("&3[TicketManager] &7This user has " + playertickets.size() + " tickets!"));
+        playertickets.stream()
                 .sorted(Comparator.comparing(Ticket::getId).reversed())
                 .forEach(t -> component.append(formatTicketForHistoryCommand(t)));
 
@@ -477,7 +472,7 @@ public class TicketCommands implements CommandExecutor {
         onlinePlayerMap.values().stream()
                 .filter(p -> TicketManager.getPermissions().has(p, "ticketmanager.notify.onUpdate.others"))
                 .forEach(p -> p.sendMessage(withColourCode("&3[TicketManager] " + sender.getName() + " &7has set ticket &3#" + ticket.getId() +
-                        " &7's priority to " + statusToColorCode(ticket) + priorityToString(ticket))));
+                        " &7's priority to " + priorityToColorCode(ticket) + priorityToString(ticket))));
         if (!TicketManager.getPermissions().has(sender, "ticketmanager.notify.onUpdate.others"))
             sender.sendMessage(withColourCode("&3Ticket priority changed successfully!"));
     }
@@ -550,7 +545,7 @@ public class TicketCommands implements CommandExecutor {
         if (13 + idLength + t.getStatus().length() + comment.length() > 58)
             comment = comment.substring(0, 43 - idLength + t.getStatus().length() + comment.length()) + "...";
 
-        return new ComponentBuilder(withColourCode("&3[" + t.getId() + "] " + statusToColorCode(t) + "[" + t.getStatus() + "] &7" + comment))
+        return new ComponentBuilder(withColourCode("\n&3[" + t.getId() + "] " + statusToColorCode(t) + "[" + t.getStatus() + "] &7" + comment))
                 .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket view " + t.getId()))
                 .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to view ticket #" + t.getId())))
                 .create();
@@ -576,9 +571,9 @@ public class TicketCommands implements CommandExecutor {
         BaseComponent[] locationComponent;
         if (ticket.getLocation().isPresent()) {
             Ticket.Location loc = ticket.getLocation().get();
-            locationComponent = new ComponentBuilder(withColourCode("&7&n" + loc.getWorldName() + "   " + loc.getX() + " " + loc.getY() + " " + loc.getZ() + "\n"))
+            locationComponent = new ComponentBuilder(withColourCode("&7&n" + loc.getWorldName() + "   " + loc.getX() + " " + loc.getY() + " " + loc.getZ()))
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket teleport " + ticket.getId()))
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to view ticket " + ticket.getId())))
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to teleport to ticket #" + ticket.getId())))
                     .create();
         } else locationComponent = new ComponentBuilder("\n").create();
 
@@ -606,7 +601,7 @@ public class TicketCommands implements CommandExecutor {
     private String priorityToColorCode(Ticket ticket) {
         switch (ticket.getPriority()) {
             case 1: return "&1";
-            case 2: return "&b";
+            case 2: return "&9";
             case 4: return "&c";
             case 5: return "&4";
             default: return "&e";

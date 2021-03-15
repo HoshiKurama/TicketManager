@@ -42,11 +42,12 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
 
                 case "close":   //ticket close <ID> [Comment]
                     if (args.length == 2) return Collections.singletonList("<ID>");
-                    else return Stream.concat(Stream.of("[Comment...]"),
+                    else if (args.length == 3) return Stream.concat(Stream.of("[Comment...]"),
                             Bukkit.getOnlinePlayers().stream()
                                 .map(HumanEntity::getName)
                                 .filter(e -> e.startsWith(args[args.length-1])))
                         .collect(Collectors.toList());
+                    else break;
 
                 case "closeall":    //ticket closeall <LowerBounds (Inclusive)> <UpperBounds (Inclusive)>
                     if (args.length == 2) return Collections.singletonList("<LowerBounds (Inclusive)>");
@@ -55,18 +56,20 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
 
                 case "comment":    //ticket comment <ID> <Comment>
                     if (args.length == 2) return Collections.singletonList("<ID>");
-                    else return Stream.concat(Stream.of("<Comment...>"),
+                    else if (args.length == 3) return Stream.concat(Stream.of("<Comment...>"),
                             Bukkit.getOnlinePlayers().stream()
                                     .map(HumanEntity::getName)
                                     .filter(e -> e.startsWith(args[args.length-1])))
                             .collect(Collectors.toList());
+                    else break;
 
                 case "create":     //ticket create <Message>
-                    return Stream.concat(Stream.of("<Message...>"),
+                    if (args.length == 2) return Stream.concat(Stream.of("<Message...>"),
                         Bukkit.getOnlinePlayers().stream()
                                 .map(HumanEntity::getName)
                                 .filter(e -> e.startsWith(args[args.length-1])))
                         .collect(Collectors.toList());
+                    else break;
 
                 case "history":    //ticket history <User>
                     if (args.length == 2) return Stream.concat(Stream.of("<Message...>"),
@@ -74,6 +77,7 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
                                     .map(HumanEntity::getName)
                                     .filter(e -> e.startsWith(args[args.length-1])))
                             .collect(Collectors.toList());
+                    else break;
 
                 case "list":    //ticket list [Page]
                     if (args.length == 2) return Collections.singletonList("[Page]");
