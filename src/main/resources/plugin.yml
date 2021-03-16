@@ -56,7 +56,7 @@ permissions:
   ticketmanager.comment.others:
     description: Comment on tickets made by others
     default: false
-  ticketmanager.close:
+  ticketmanager.close.others:
     description: Close tickets
     default: false
   ticketmanager.assign:
@@ -94,7 +94,7 @@ permissions:
     children:
       ticketmanager.view.others: true
       ticketmanager.comment.others: true
-      ticketmanager.close: true
+      ticketmanager.close.others: true
       ticketmanager.assign: true
       ticketmanager.setpriority: true
       ticketmanager.history.others: true

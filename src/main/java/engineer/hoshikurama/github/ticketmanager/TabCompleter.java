@@ -72,7 +72,7 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
                     else break;
 
                 case "history":    //ticket history <User>
-                    if (args.length == 2) return Stream.concat(Stream.of("<Message...>"),
+                    if (args.length == 2) return Stream.concat(Stream.of("<ID>"),
                             Bukkit.getOnlinePlayers().stream()
                                     .map(HumanEntity::getName)
                                     .filter(e -> e.startsWith(args[args.length-1])))
@@ -92,7 +92,10 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
 
                 default: break;
             }
-            return Bukkit.getOnlinePlayers().stream().map(HumanEntity::getName).collect(Collectors.toList());
+            return Bukkit.getOnlinePlayers().stream()
+                    .map(HumanEntity::getName)
+                    .filter(e -> e.startsWith(args[args.length-1]))
+                    .collect(Collectors.toList());
         }
         return null;
     }

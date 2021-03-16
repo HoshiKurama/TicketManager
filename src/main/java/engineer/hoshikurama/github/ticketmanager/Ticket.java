@@ -31,7 +31,7 @@ public class Ticket {
     }
 
     Optional<UUID> getUUID() {
-        return Optional.of(uuid);
+        return Optional.ofNullable(uuid);
     }
 
     int getId() {

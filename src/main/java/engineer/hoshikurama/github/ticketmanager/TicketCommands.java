@@ -43,7 +43,7 @@ public class TicketCommands implements CommandExecutor {
                         case "assign": assignTicketCommand(sender, args, onlinePlayerMap, String.join(" ", Arrays.copyOfRange(args, 2, args.length))); break;
                         case "claim": assignTicketCommand(sender, args, onlinePlayerMap, sender.getName()); break;
                         case "unassign": assignTicketCommand(sender, args, onlinePlayerMap, null); break;
-                        case "setpriority": setPriorityTicketCommand(sender, command, label, args, onlinePlayerMap); break;
+                        case "setpriority": setPriorityTicketCommand(sender, args, onlinePlayerMap); break;
                         case "closeall": closeAllTicketsCommand(sender, command, label, args, onlinePlayerMap); break;
                         case "teleport": teleportTicketCommand(sender, args); break;
                         case "list": listOpenTicketsCommand(sender, args); break;
@@ -67,9 +67,13 @@ public class TicketCommands implements CommandExecutor {
             sender.sendMessage(withColourCode("&cYou cannot make a blank ticket!"));
             return;
         }
-        if (!TicketManager.getPermissions().has(sender, "ticketmanager.create")) {
-            sender.sendMessage(withColourCode("&cYou do not have permission to create tickets!"));
-            return;
+
+        // Filters out permissions
+        if (sender instanceof Player) {
+            if (!TicketManager.getPermissions().has(sender, "ticketmanager.create")) {
+                sender.sendMessage(withColourCode("&cYou do not have permission to create tickets!"));
+                return;
+            }
         }
 
         // Creates ticket with distinction between player and Console
@@ -110,9 +114,11 @@ public class TicketCommands implements CommandExecutor {
         }
         // Filters people without permission
         Ticket ticket = ticketOptional.get();
-        if (senderCannotPerformSelfOtherAction(sender, ticket, "ticketmanager.view.others","ticketmanager.view.self")) {
-            sender.sendMessage("&cYou do not have permission to view this ticket!");
-            return;
+        if (sender instanceof Player) {
+            if (senderCannotPerformSelfOtherAction(sender, ticket, "ticketmanager.view.others", "ticketmanager.view.self")) {
+                sender.sendMessage("&cYou do not have permission to view this ticket!");
+                return;
+            }
         }
         sender.sendMessage(formatTicketForViewCommand(ticket));
 
@@ -142,9 +148,11 @@ public class TicketCommands implements CommandExecutor {
 
         // Filters out all players who lack permission to comment on ticket
         Ticket ticket = ticketOptional.get();
-        if (senderCannotPerformSelfOtherAction(sender, ticket, "ticketmanager.comment.others", "ticketmanager.comment.self")) {
-            sender.sendMessage(withColourCode("&cYou do not have permission to perform this command!"));
-            return;
+        if (sender instanceof Player) {
+            if (senderCannotPerformSelfOtherAction(sender, ticket, "ticketmanager.comment.others", "ticketmanager.comment.self")) {
+                sender.sendMessage(withColourCode("&cYou do not have permission to perform this command!"));
+                return;
+            }
         }
 
         // Filter out closed tickets
@@ -185,9 +193,11 @@ public class TicketCommands implements CommandExecutor {
 
         // Filters out people without permission
         Ticket ticket = ticketOptional.get();
-        if (senderCannotPerformSelfOtherAction(sender, ticket, "ticketmanager.close.others", "ticketmanager.close.self")) {
-            sender.sendMessage(withColourCode("&cYou do not have permission to perform this command!"));
-            return;
+        if (sender instanceof Player) {
+            if (senderCannotPerformSelfOtherAction(sender, ticket, "ticketmanager.close.others", "ticketmanager.close.self")) {
+                sender.sendMessage(withColourCode("&cYou do not have permission to perform this command!"));
+                return;
+            }
         }
 
         // Filter out closed tickets
@@ -230,9 +240,11 @@ public class TicketCommands implements CommandExecutor {
 
         // Filters people without permission
         Ticket ticket = ticketOptional.get();
-        if (!(TicketManager.getPermissions().has(sender, "ticketmanager.assign"))) {
-            sender.sendMessage(withColourCode("&cYou do not have permission to perform this command!"));
-            return;
+        if (sender instanceof Player) {
+            if (!(TicketManager.getPermissions().has(sender, "ticketmanager.assign"))) {
+                sender.sendMessage(withColourCode("&cYou do not have permission to perform this command!"));
+                return;
+            }
         }
 
         // Perform database stuff
@@ -259,9 +271,11 @@ public class TicketCommands implements CommandExecutor {
         }
         // Filters people without permission
         Ticket ticket = ticketOptional.get();
-        if (!TicketManager.getPermissions().has(sender, "ticketmanager.teleport")) {
-            sender.sendMessage(withColourCode("7cYou do not have permission to perform this command!"));
-            return;
+        if (sender instanceof Player) {
+            if (!TicketManager.getPermissions().has(sender, "ticketmanager.teleport")) {
+                sender.sendMessage(withColourCode("7cYou do not have permission to perform this command!"));
+                return;
+            }
         }
 
         // Teleports to location
@@ -286,9 +300,11 @@ public class TicketCommands implements CommandExecutor {
         }
         // Filters out people without permission
         Ticket ticket = ticketOptional.get();
-        if (!TicketManager.getPermissions().has(sender, "ticketmanager.reopen")) {
-            sender.sendMessage(withColourCode("&cYou do not have permission to perform this command!"));
-            return;
+        if (sender instanceof Player) {
+            if (!TicketManager.getPermissions().has(sender, "ticketmanager.reopen")) {
+                sender.sendMessage(withColourCode("&cYou do not have permission to perform this command!"));
+                return;
+            }
         }
         // Filters out open tickets
         if (ticket.getStatus().equals("OPEN")) {
@@ -310,9 +326,11 @@ public class TicketCommands implements CommandExecutor {
     }
 
     void listOpenTicketsCommand(CommandSender sender, String[] args) throws SQLException, NumberFormatException {
-        if (!TicketManager.getPermissions().has(sender, "ticketmanager.list")) {
-            sender.sendMessage(withColourCode("&cYou do not have permission to perform this command!"));
-            return;
+        if (sender instanceof Player) {
+            if (!TicketManager.getPermissions().has(sender, "ticketmanager.list")) {
+                sender.sendMessage(withColourCode("&cYou do not have permission to perform this command!"));
+                return;
+            }
         }
 
         // Creates beginning of message
@@ -374,20 +392,29 @@ public class TicketCommands implements CommandExecutor {
         }
 
         // Checks permissions
-        if (!TicketManager.getPermissions().has(sender,"ticketmanager.history.others")) {
-            if (TicketManager.getPermissions().has(sender, "ticketmanager.history.others")) {
-                UUID senderID = Bukkit.getPlayerUniqueId(sender.getName());
-                UUID targetID = Bukkit.getPlayerUniqueId(args[1]);
-                if (senderID == null || senderID != targetID) {
-                    sender.sendMessage(withColourCode("&cYou do not have permission to view this person's ticket history!"));
-                    return;
+        if (sender instanceof Player) {
+            if (!TicketManager.getPermissions().has(sender, "ticketmanager.history.others")) {
+                if (TicketManager.getPermissions().has(sender, "ticketmanager.history.self")) {
+                    UUID senderID = Bukkit.getPlayerUniqueId(sender.getName());
+                    UUID targetID = Bukkit.getPlayerUniqueId(args[1]);
+                    if (senderID == null || senderID != targetID) {
+                        sender.sendMessage(withColourCode("&cYou do not have permission to view this person's ticket history!"));
+                        return;
+                    }
                 }
             }
         }
 
         // Filters out non-valid player UUID
-        UUID targetID = Bukkit.getPlayerUniqueId(args[1]);
+        UUID targetID;
         if (args[1].equals("Console")) targetID = null;
+        else {
+            targetID = Bukkit.getPlayerUniqueId(args[1]);
+            if (targetID == null) {
+                sender.sendMessage(withColourCode("&cThis is not a valid user!"));
+                return;
+            }
+        }
 
         Set<Ticket> playertickets = DatabaseHandler.getAllTicketsWithUUID(targetID);
 
@@ -432,11 +459,13 @@ public class TicketCommands implements CommandExecutor {
         sender.sendMessage(partitionedPage.toArray(new BaseComponent[0]));
     }
 
-    void setPriorityTicketCommand(CommandSender sender, Command command, String label, String[] args, Map<UUID, Player> onlinePlayerMap) throws SQLException, NumberFormatException {
+    void setPriorityTicketCommand(CommandSender sender, String[] args, Map<UUID, Player> onlinePlayerMap) throws SQLException, NumberFormatException {
         // Filters out permission-less people
-        if (!TicketManager.getPermissions().has(sender, "ticketmanager.setpriority")) {
-            sender.sendMessage("&cYou do not have permission to set ticket priorities!");
-            return;
+        if (sender instanceof Player) {
+            if (!TicketManager.getPermissions().has(sender, "ticketmanager.setpriority")) {
+                sender.sendMessage("&cYou do not have permission to set ticket priorities!");
+                return;
+            }
         }
 
         // Filters commands of wrong size
@@ -493,9 +522,11 @@ public class TicketCommands implements CommandExecutor {
 
     void closeAllTicketsCommand(CommandSender sender, Command command, String label, String[] args, Map<UUID, Player> onlinePlayerMap) throws SQLException, NumberFormatException {
         // Filter out players without permission
-        if (!TicketManager.getPermissions().has(sender, "ticketmanager.closeall")) {
-            sender.sendMessage(withColourCode("&cYou do not have permission to perform this command!"));
-            return;
+        if (sender instanceof Player) {
+            if (!TicketManager.getPermissions().has(sender, "ticketmanager.closeall")) {
+                sender.sendMessage(withColourCode("&cYou do not have permission to perform this command!"));
+                return;
+            }
         }
 
         // Filters incorrect command
@@ -507,7 +538,8 @@ public class TicketCommands implements CommandExecutor {
         int lower = Integer.parseInt(args[1]);
         int upper = Integer.parseInt(args[2]);
 
-        for (int i = lower; i <= upper; i++ ) closeTicketCommand(sender, args, onlinePlayerMap, false);
+        String[] fixedArgs = Arrays.copyOfRange(args, 0, 3);
+        for (int i = lower; i <= upper; i++ ) closeTicketCommand(sender, fixedArgs, onlinePlayerMap, false);
 
         // Notify others
         onlinePlayerMap.values().stream()
@@ -575,7 +607,7 @@ public class TicketCommands implements CommandExecutor {
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket teleport " + ticket.getId()))
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to teleport to ticket #" + ticket.getId())))
                     .create();
-        } else locationComponent = new ComponentBuilder("\n").create();
+        } else locationComponent = new ComponentBuilder("").create();
 
         String assignment = ticket.getAssignment() == null ? "" : ticket.getAssignment();
 
@@ -584,8 +616,8 @@ public class TicketCommands implements CommandExecutor {
                 .append(withColourCode("\n&8**************************"))
                 .append(withColourCode("\n&3&lCreator: &7" + ticket.getCreator() + "  &f&l &3&lAssigned To: &7" + assignment + ""))
                 .append(withColourCode("\n&3&lPriority: &7" + priorityToColorCode(ticket) + priorityToString(ticket) + "  &f&l  &3&lStatus: &7" + statusToColorCode(ticket) + ticket.getStatus()))
-                .append(withColourCode("\n&3&lLocation: ")).append(locationComponent, ComponentBuilder.FormatRetention.ALL)
-                .append(withColourCode("\n&8*********Comments*********"));
+                .append(withColourCode("\n&3&lLocation: ")).append(locationComponent)
+                .append(withColourCode("\n&8*********Comments*********")).reset();
         ticket.getComments().forEach(c -> message.append("\n[" + c.user + "]: ").color(ChatColor.DARK_AQUA).append(c.comment).color(ChatColor.GRAY));
         return message.create();
     }
