@@ -125,7 +125,7 @@ public class TicketCommands implements CommandExecutor {
         // Removes player from updatedTickets table if player views own updated ticket
         if (sender instanceof Player && ticket.getUUID().isPresent()) {
             Player player = (Player) sender;
-            if (player.getUniqueId() == ticket.getUUID().get()) {
+            if (player.getUniqueId().equals(ticket.getUUID().get())) {
                 Optional<Set<Ticket>> optionalUnreads = DatabaseHandler.getUnreadUpdatedTickets();
                 if (optionalUnreads.isPresent())
                     if (optionalUnreads.get().stream().map(Ticket::getId).anyMatch(t -> t == ticket.getId()))
@@ -165,7 +165,7 @@ public class TicketCommands implements CommandExecutor {
         String ticketMessage = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
         ticket.addComment(sender.getName(), ticketMessage);
         DatabaseHandler.updateTicket(ticket);
-        if (!ticket.getUUID().isPresent() || !(sender instanceof Player) || ticket.getUUID().get() != ((Player) sender).getUniqueId())
+        if (!ticket.getUUID().isPresent() || !(sender instanceof Player) || !ticket.getUUID().get().equals(((Player) sender).getUniqueId()))
             DatabaseHandler.addToUpdatedTickets(ticket.getId());
 
         // Send notifications
@@ -210,7 +210,7 @@ public class TicketCommands implements CommandExecutor {
         ticket.setStatus("CLOSED");
         DatabaseHandler.updateTicket(ticket);
         DatabaseHandler.removeFromOpenTickets(ticket.getId());
-        if (!ticket.getUUID().isPresent() || !(sender instanceof Player) || ticket.getUUID().get() != ((Player) sender).getUniqueId())
+        if (!ticket.getUUID().isPresent() || !(sender instanceof Player) || !ticket.getUUID().get().equals(((Player) sender).getUniqueId()))
             DatabaseHandler.addToUpdatedTickets(ticket.getId());
 
         // Pushes Notifications
@@ -397,7 +397,7 @@ public class TicketCommands implements CommandExecutor {
                 if (TicketManager.getPermissions().has(sender, "ticketmanager.history.self")) {
                     UUID senderID = Bukkit.getPlayerUniqueId(sender.getName());
                     UUID targetID = Bukkit.getPlayerUniqueId(args[1]);
-                    if (senderID == null || senderID != targetID) {
+                    if (senderID == null || !senderID.equals(targetID)) {
                         sender.sendMessage(withColourCode("&cYou do not have permission to view this person's ticket history!"));
                         return;
                     }
@@ -559,10 +559,10 @@ public class TicketCommands implements CommandExecutor {
 
         // Pushes update to relevant notify.self user
         if (selfPermission == null) return;
-        if (!(sender instanceof Player) || !ticket.getUUID().isPresent() || ticket.getUUID().get() != ((Player) sender).getUniqueId()) {// Notify ticket creator if player is online and has notify permission
+        if (!(sender instanceof Player) || !ticket.getUUID().isPresent() || !ticket.getUUID().get().equals(((Player) sender).getUniqueId())) {// Notify ticket creator if player is online and has notify permission
             UUID creatorUUID = ticket.getUUID().get();
             onlinePlayerMap.entrySet().stream()
-                    .filter(e -> e.getKey() == creatorUUID)
+                    .filter(e -> e.getKey().equals(creatorUUID))
                     .map(Map.Entry::getValue)
                     .filter(p -> TicketManager.getPermissions().has(p, selfPermission))
                     .forEach(p -> p.sendMessage(selfPermissionMessage));
@@ -627,7 +627,7 @@ public class TicketCommands implements CommandExecutor {
                 (!TicketManager.getPermissions().has(sender, selfPermission) ||
                         !ticket.getUUID().isPresent() ||
                         !(sender instanceof Player) ||
-                        ((Player) sender).getUniqueId() != ticket.getUUID().get());
+                        !((Player) sender).getUniqueId().equals(ticket.getUUID().get()));
     }
 
     private String priorityToColorCode(Ticket ticket) {

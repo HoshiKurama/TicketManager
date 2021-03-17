@@ -99,7 +99,7 @@ public final class TicketManager extends JavaPlugin {
                             .forEach(p -> {
                                 List<Integer> ticketNumbers = updatedTickets.stream()
                                         .filter(t -> t.getUUID().isPresent())
-                                        .filter(t -> t.getUUID().get() == p.getUniqueId())
+                                        .filter(t -> t.getUUID().get().equals(p.getUniqueId()))
                                         .map(Ticket::getId)
                                         .collect(Collectors.toList());
                                 if (ticketNumbers.size() > 0) {

@@ -114,6 +114,7 @@ permissions:
       ticketmanager.history.self: true
       ticketmanager.help.basic: true
       ticketmanager.notify.onClose.self: true
+      ticketmanager.notify.onUpdate.self: true
       ticketmanager.notify.scheduledUpdatedTickets: true
   ticketmanager.*:
     description: Wildcard permission
