@@ -512,7 +512,7 @@ public class TicketCommands implements CommandExecutor {
     }
 
     private List<List<BaseComponent>> getPartitionedComponents(int headerEndIndex, List<BaseComponent> components) {
-        if (components.size() <= headerEndIndex + 1) return Collections.singletonList(components);
+        if (components.size() <  9) return Collections.singletonList(components);
 
         List<BaseComponent> headerComponents = components.subList(0, headerEndIndex + 1);
         List<BaseComponent> nonHeaderComponents = components.subList(headerEndIndex + 1, components.size());

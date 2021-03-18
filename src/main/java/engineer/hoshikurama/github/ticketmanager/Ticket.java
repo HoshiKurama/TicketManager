@@ -59,7 +59,7 @@ public class Ticket {
     }
 
     Optional<Location> getLocation() {
-        return Optional.of(location);
+        return Optional.ofNullable(location);
     }
 
     String getStatus() {
