@@ -353,7 +353,9 @@ public class TicketCommands implements CommandExecutor {
         int page = 1;
         if (args.length == 2) page = Integer.parseInt(args[1]);
         List<List<BaseComponent>> partitionedBaseComponents = getPartitionedComponents(0, components.getParts());
+
         int maxPages = partitionedBaseComponents.size();
+        if (maxPages == 0) maxPages = 1;
 
         // Fixes invalid numbers
         if (page <= 0) page = 1;
@@ -418,7 +420,7 @@ public class TicketCommands implements CommandExecutor {
 
         Set<Ticket> playertickets = DatabaseHandler.getAllTicketsWithUUID(targetID);
 
-        //Builds and creates initial data
+        // Builds and creates initial data
         ComponentBuilder component = new ComponentBuilder(withColourCode("&3[TicketManager] &7This user has " + playertickets.size() + " tickets!"));
         playertickets.stream()
                 .sorted(Comparator.comparing(Ticket::getId).reversed())
@@ -426,37 +428,40 @@ public class TicketCommands implements CommandExecutor {
 
         // Creates Page info
         int page = 1;
-        if (args.length == 3) page = Integer.parseInt(args[1]);
+        if (args.length == 3) page = Integer.parseInt(args[2]);
         List<List<BaseComponent>> partitionedBaseComponents = getPartitionedComponents(0, component.getParts());
+
         int maxPages = partitionedBaseComponents.size();
+        if (maxPages == 0) maxPages = 1;
 
         // Fixes invalid numbers
         if (page <= 0) page = 1;
         if (page > maxPages) page = maxPages;
 
         // Gets requested page
-        List<BaseComponent> partitionedPage = partitionedBaseComponents.get(page-1);
+        //if (partitionedBaseComponents.size() > 0) {
+            List<BaseComponent> partitionedPage = partitionedBaseComponents.get(page-1);
 
-        // If there is only one page, add navigation row
-        if (maxPages > 1) {
-            ComponentBuilder arrowNode = new ComponentBuilder("\n[Back]");
+            // If there is only one page, add navigation row
+            if (maxPages > 1) {
+                ComponentBuilder arrowNode = new ComponentBuilder("\n[Back]");
 
-            if (page == 1) arrowNode.color(ChatColor.DARK_GRAY);
-            else arrowNode.color(ChatColor.WHITE)
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Move to previous page")))
-                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket list " + (page - 1)));
+                if (page == 1) arrowNode.color(ChatColor.DARK_GRAY);
+                else arrowNode.color(ChatColor.WHITE)
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Move to previous page")))
+                        .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket list " + (page - 1)));
 
-            arrowNode.append(withColourCode("&7.......................&3(" + page + " of " + maxPages + ")&7.......................")).append("[Next]");
+                arrowNode.append(withColourCode("&7.......................&3(" + page + " of " + maxPages + ")&7.......................")).append("[Next]");
 
-            if (page == maxPages) arrowNode.color(ChatColor.DARK_GRAY);
-            else arrowNode.color(ChatColor.WHITE)
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Move to next page")))
-                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket list " + (page + 1)));
+                if (page == maxPages) arrowNode.color(ChatColor.DARK_GRAY);
+                else arrowNode.color(ChatColor.WHITE)
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Move to next page")))
+                        .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket list " + (page + 1)));
 
-            partitionedPage.addAll(arrowNode.getParts());
-        }
-
+                partitionedPage.addAll(arrowNode.getParts());
+            }
         sender.sendMessage(partitionedPage.toArray(new BaseComponent[0]));
+            //test
     }
 
     void setPriorityTicketCommand(CommandSender sender, String[] args, Map<UUID, Player> onlinePlayerMap) throws SQLException, NumberFormatException {
@@ -507,6 +512,8 @@ public class TicketCommands implements CommandExecutor {
     }
 
     private List<List<BaseComponent>> getPartitionedComponents(int headerEndIndex, List<BaseComponent> components) {
+        if (components.size() <= headerEndIndex + 1) return Collections.singletonList(components);
+
         List<BaseComponent> headerComponents = components.subList(0, headerEndIndex + 1);
         List<BaseComponent> nonHeaderComponents = components.subList(headerEndIndex + 1, components.size());
 
