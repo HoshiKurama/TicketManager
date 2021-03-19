@@ -23,7 +23,10 @@ import java.util.stream.Collectors;
 public class TicketCommands implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (args.length <= 0) return true;
+        if (args.length <= 0) {
+            Bukkit.getScheduler().runTaskAsynchronously(TicketManager.getInstance, () -> sendHelpMessage(sender, args));
+            return true;
+        }
 
         // Grabs all sync vars before async
         final Map<UUID, Player> onlinePlayerMap = Bukkit.getOnlinePlayers().stream()
@@ -34,7 +37,7 @@ public class TicketCommands implements CommandExecutor {
             synchronized (this) {
                 try {
                     switch (args[0]) {
-                        case "help": break;
+                        case "help": sendHelpMessage(sender, args);
                         case "create": createTicketCommand(sender, args, onlinePlayerMap); break;
                         case "view": viewTicketCommand(sender, args); break;
                         case "comment": commentTicketCommand(sender, args, onlinePlayerMap, true); break;
@@ -59,6 +62,36 @@ public class TicketCommands implements CommandExecutor {
             }
         });
         return true;
+    }
+
+    void sendHelpMessage(CommandSender sender, String[] args) {
+        // Filters permissions
+        if (sender instanceof Player) {
+            if (!TicketManager.getPermissions().has(sender, "ticketmanager.help.all") && !TicketManager.getPermissions().has(sender, "ticketmanager.help.basic")) {
+                sender.sendMessage(withColourCode("&cYou do not have permission to view ticket commands!"));
+                return;
+            }
+        }
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("&3[TicketManager] Ticket Commands:  &7<Required> | [Optional]")
+                .append("\n&3/ticket &7create <Message...>")
+                .append("\n&3/ticket &7comment <Ticket ID> <Message...>")
+                .append("\n&3/ticket &7view <Ticket ID>")
+                .append("\n&3/ticket &7history [Username]")
+                .append("\n&3/ticket &7close <Ticket ID> [Message...]");
+
+        if (TicketManager.getPermissions().has(sender, "ticketmanager.help.all"))
+            builder.append("\n&3/ticket &7assign <Ticket ID> <User/Assignment>")
+                    .append("\n&3/ticket &7unassign <Ticket ID>")
+                    .append("\n&3/ticket &7claim <Ticket ID>")
+                    .append("\n&3/ticket &7reopen <Ticket ID>")
+                    .append("\n&3/ticket &7setpriority <Ticket ID> <Priority (1-5)>")
+                    .append("\n&3/ticket &7list")
+                    .append("\n&3/ticket &7closeAll <Lower Bound> <Upper Bound>")
+                    .append("\n&3/ticket &7teleport <Ticket ID>");
+
+        sender.sendMessage(withColourCode(builder.toString()));
     }
 
     void createTicketCommand(CommandSender sender, String[] args, Map<UUID, Player> onlinePlayerMap) throws SQLException {
@@ -382,40 +415,38 @@ public class TicketCommands implements CommandExecutor {
 
             partitionedPage.addAll(arrowNode.getParts());
         }
-
         sender.sendMessage(partitionedPage.toArray(new BaseComponent[0]));
     }
 
     void viewHistoryCommand(CommandSender sender, String[] args) throws SQLException {
-        // Filters lengths
-        if (args.length < 2) {
-            sender.sendMessage(withColourCode("&cPlease use the correct format!"));
-            return;
-        }
+        UUID targetID = null;
+        String[] correctedArgs = new String[3];
+        correctedArgs[0] = "history";
 
-        // Checks permissions
+        //Fills in correctedArgs [history,NAME,PAGE]
+        correctedArgs[1] = args.length >= 2 ? args[1] : sender.getName();
+        if (args.length >= 3) correctedArgs[2] = args[2];
+        else correctedArgs[2] = "1";
+
+        // Assigns targetUUID based on command usage (filters for permissions)
         if (sender instanceof Player) {
             if (!TicketManager.getPermissions().has(sender, "ticketmanager.history.others")) {
-                if (TicketManager.getPermissions().has(sender, "ticketmanager.history.self")) {
-                    UUID senderID = Bukkit.getPlayerUniqueId(sender.getName());
-                    UUID targetID = Bukkit.getPlayerUniqueId(args[1]);
-                    if (senderID == null || !senderID.equals(targetID)) {
-                        sender.sendMessage(withColourCode("&cYou do not have permission to view this person's ticket history!"));
-                        return;
-                    }
-                }
-            }
+               if (TicketManager.getPermissions().has(sender, "ticketmanager.history.self")) {
+                   UUID senderID = Bukkit.getPlayerUniqueId(sender.getName());
+                   targetID = Bukkit.getPlayerUniqueId(correctedArgs[1]);
+                   if (senderID == null || !senderID.equals(targetID)) {
+                       sender.sendMessage(withColourCode("&cYou do not have permission to view this person's ticket history!"));
+                       return;
+                   }
+               }
+            } else targetID = Bukkit.getPlayerUniqueId(sender.getName()); //Could be null if Console
         }
 
-        // Filters out non-valid player UUID
-        UUID targetID;
-        if (args[1].equals("Console")) targetID = null;
-        else {
-            targetID = Bukkit.getPlayerUniqueId(args[1]);
-            if (targetID == null) {
-                sender.sendMessage(withColourCode("&cThis is not a valid user!"));
-                return;
-            }
+        //Confirms targetUUID is valid or is Console
+        if (correctedArgs[1].equalsIgnoreCase("console")) targetID = null;
+        else if (targetID == null) {
+            sender.sendMessage(withColourCode("&cThis is not a valid user!"));
+            return;
         }
 
         Set<Ticket> playertickets = DatabaseHandler.getAllTicketsWithUUID(targetID);
@@ -427,8 +458,7 @@ public class TicketCommands implements CommandExecutor {
                 .forEach(t -> component.append(formatTicketForHistoryCommand(t)));
 
         // Creates Page info
-        int page = 1;
-        if (args.length == 3) page = Integer.parseInt(args[2]);
+        int page = Integer.parseInt(correctedArgs[2]);
         List<List<BaseComponent>> partitionedBaseComponents = getPartitionedComponents(0, component.getParts());
 
         int maxPages = partitionedBaseComponents.size();
@@ -439,29 +469,27 @@ public class TicketCommands implements CommandExecutor {
         if (page > maxPages) page = maxPages;
 
         // Gets requested page
-        //if (partitionedBaseComponents.size() > 0) {
-            List<BaseComponent> partitionedPage = partitionedBaseComponents.get(page-1);
+        List<BaseComponent> partitionedPage = partitionedBaseComponents.get(page - 1);
 
-            // If there is only one page, add navigation row
-            if (maxPages > 1) {
-                ComponentBuilder arrowNode = new ComponentBuilder("\n[Back]");
+        // If there is only one page, add navigation row
+        if (maxPages > 1) {
+            ComponentBuilder arrowNode = new ComponentBuilder("\n[Back]");
 
-                if (page == 1) arrowNode.color(ChatColor.DARK_GRAY);
-                else arrowNode.color(ChatColor.WHITE)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Move to previous page")))
-                        .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket list " + (page - 1)));
+            if (page == 1) arrowNode.color(ChatColor.DARK_GRAY);
+            else arrowNode.color(ChatColor.WHITE)
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Move to previous page")))
+                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket list " + (page - 1)));
 
-                arrowNode.append(withColourCode("&7.......................&3(" + page + " of " + maxPages + ")&7.......................")).append("[Next]");
+            arrowNode.append(withColourCode("&7.......................&3(" + page + " of " + maxPages + ")&7.......................")).append("[Next]");
 
-                if (page == maxPages) arrowNode.color(ChatColor.DARK_GRAY);
-                else arrowNode.color(ChatColor.WHITE)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Move to next page")))
-                        .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket list " + (page + 1)));
+            if (page == maxPages) arrowNode.color(ChatColor.DARK_GRAY);
+            else arrowNode.color(ChatColor.WHITE)
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Move to next page")))
+                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket list " + (page + 1)));
 
-                partitionedPage.addAll(arrowNode.getParts());
-            }
+            partitionedPage.addAll(arrowNode.getParts());
+        }
         sender.sendMessage(partitionedPage.toArray(new BaseComponent[0]));
-            //test
     }
 
     void setPriorityTicketCommand(CommandSender sender, String[] args, Map<UUID, Player> onlinePlayerMap) throws SQLException, NumberFormatException {
@@ -578,11 +606,11 @@ public class TicketCommands implements CommandExecutor {
 
     private BaseComponent[] formatTicketForHistoryCommand(Ticket t) {
         String comment = t.getComments().get(0).comment;
-        int idLength = String.valueOf(t.getId()).length();
+        int idLength = Integer.toString(t.getId()).length();
 
         // Shortens comments
-        if (13 + idLength + t.getStatus().length() + comment.length() > 58)
-            comment = comment.substring(0, 43 - idLength + t.getStatus().length() + comment.length()) + "...";
+        if (6 + idLength + t.getStatus().length() + comment.length() > 58)
+            comment = comment.substring(0, 49 - idLength - t.getStatus().length()) + "...";
 
         return new ComponentBuilder(withColourCode("\n&3[" + t.getId() + "] " + statusToColorCode(t) + "[" + t.getStatus() + "] &7" + comment))
                 .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket view " + t.getId()))
