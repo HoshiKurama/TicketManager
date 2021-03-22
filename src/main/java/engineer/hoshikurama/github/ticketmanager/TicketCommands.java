@@ -378,7 +378,7 @@ public class TicketCommands implements CommandExecutor {
 
         // Sorts tickets by ID/Priority and appends to components
         ticketsOptional.get().stream()
-                .sorted(Comparator.comparing(Ticket::getPriority).reversed().thenComparing(Ticket::getId))
+                .sorted(Comparator.comparing(Ticket::getPriority).reversed().thenComparing(Comparator.comparing(Ticket::getId).reversed()))
                 .map(this::formatTicketForListCommand)
                 .forEach(components::append);
 
@@ -478,14 +478,14 @@ public class TicketCommands implements CommandExecutor {
             if (page == 1) arrowNode.color(ChatColor.DARK_GRAY);
             else arrowNode.color(ChatColor.WHITE)
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Move to previous page")))
-                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket list " + (page - 1)));
+                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket history " + correctedArgs[1] + " " + (page - 1)));
 
             arrowNode.append(withColourCode("&7.......................&3(" + page + " of " + maxPages + ")&7.......................")).append("[Next]");
 
             if (page == maxPages) arrowNode.color(ChatColor.DARK_GRAY);
             else arrowNode.color(ChatColor.WHITE)
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Move to next page")))
-                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket list " + (page + 1)));
+                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket history " + correctedArgs[1] + " " + (page + 1)));
 
             partitionedPage.addAll(arrowNode.getParts());
         }
@@ -573,7 +573,7 @@ public class TicketCommands implements CommandExecutor {
         int lower = Integer.parseInt(args[1]);
         int upper = Integer.parseInt(args[2]);
 
-        String[] fixedArgs = Arrays.copyOfRange(args, 0, 3);
+        String[] fixedArgs = Arrays.copyOfRange(args, 0, 2);
         for (int i = lower; i <= upper; i++ ) closeTicketCommand(sender, fixedArgs, onlinePlayerMap, false);
 
         // Notify others
