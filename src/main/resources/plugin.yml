@@ -8,6 +8,9 @@ commands:
   ticket:
     description: Base for all TicketManager commands
 permissions:
+  ticketmanager.reload:
+    description: Access to reload config
+    default: false
   ticketmanager.teleport:
     description: Teleport to ticket creation location
     default: false
@@ -125,3 +128,4 @@ permissions:
       ticketmanager.manage: true
       ticketmanager.teleport: true
       ticketmanager.closeall: true
+      ticketmanager.reload: true

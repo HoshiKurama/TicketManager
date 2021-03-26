@@ -17,7 +17,7 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         if (args.length == 1)
-            return Stream.of("assign", "claim", "close", "closeall", "comment", "create", "help", "history", "list", "reopen", "setpriority", "teleport", "unassign", "view")
+            return Stream.of("assign", "claim", "close", "closeall", "comment", "create", "help", "history", "list", "reopen", "setpriority", "teleport", "unassign", "view", "reload")
                     .filter(e -> e.startsWith(args[0]))
                     .collect(Collectors.toList());
         else if (args.length > 1) {

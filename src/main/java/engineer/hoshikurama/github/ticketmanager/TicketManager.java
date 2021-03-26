@@ -42,8 +42,7 @@ public final class TicketManager extends JavaPlugin {
                 saveConfig();
                 saveDefaultConfig();
 
-                Bukkit.getLogger().log(Level.WARNING, "Plugin is being shut down as first time setup is detected. Please fill out config and restart server!");
-                getServer().getPluginManager().disablePlugin(this);
+                Bukkit.getLogger().log(Level.WARNING, "No config file has been detected! Generating config file! Please type \"/ticket reload\" to reload plugin!");
             }
 
             // Launches database services with config credentials
@@ -56,8 +55,7 @@ public final class TicketManager extends JavaPlugin {
 
         } catch (SQLException e) {
             e.printStackTrace();
-            Bukkit.getLogger().log(Level.SEVERE, "[TicketManager] Error occurred in connecting to database! Plugin shutting down!");
-            getServer().getPluginManager().disablePlugin(this);
+            Bukkit.getLogger().log(Level.SEVERE, "[TicketManager] Error occurred in connecting to database! Please ensure data to the database is correct!");
         } catch (Exception e) {
             Bukkit.getLogger().log(Level.SEVERE, "[TicketManager] An unforeseen error has occurred! Printing stacktrace and shutting plugin down! \n");
             e.printStackTrace();

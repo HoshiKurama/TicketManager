@@ -12,6 +12,7 @@ import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -51,17 +52,31 @@ public class TicketCommands implements CommandExecutor {
                         case "teleport": teleportTicketCommand(sender, args); break;
                         case "list": listOpenTicketsCommand(sender, args); break;
                         case "reopen": reopenTicketCommand(sender, args, onlinePlayerMap);
-
+                        case "reload": reloadConfig(sender);
                     }
                 } catch (SQLException e) {
                     sender.sendMessage(withColourCode("&cAn error occurred in trying to contact the database!"));
-                    e.printStackTrace(); //
                 } catch (NumberFormatException e) {
                     sender.sendMessage(withColourCode("&cPlease use a valid number for a ticket ID!"));
                 }
             }
         });
         return true;
+    }
+    void reloadConfig(CommandSender sender) throws SQLException {
+        // Filters permissions
+        if (sender instanceof Player && !TicketManager.getPermissions().has(sender, "ticketmanager.reload")) {
+            sender.sendMessage(withColourCode("&cYou do not have permission to reload this plugin!"));
+            return;
+        }
+
+        // Re-reads config
+        FileConfiguration config = TicketManager.getInstance.config;
+        Hikari.LaunchDatabase(config.getString("Host"),
+                config.getString("Port"),
+                config.getString("DB_Name"),
+                config.getString("Username"),
+                config.getString("Password"));
     }
 
     void sendHelpMessage(CommandSender sender, String[] args) {
@@ -89,7 +104,8 @@ public class TicketCommands implements CommandExecutor {
                     .append("\n&3/ticket &7setpriority <Ticket ID> <Priority (1-5)>")
                     .append("\n&3/ticket &7list")
                     .append("\n&3/ticket &7closeAll <Lower Bound> <Upper Bound>")
-                    .append("\n&3/ticket &7teleport <Ticket ID>");
+                    .append("\n&3/ticket &7teleport <Ticket ID>")
+                    .append("\n&3/ticket reload");
 
         sender.sendMessage(withColourCode(builder.toString()));
     }
