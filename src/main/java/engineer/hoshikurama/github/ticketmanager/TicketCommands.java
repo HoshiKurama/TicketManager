@@ -589,8 +589,7 @@ public class TicketCommands implements CommandExecutor {
         int lower = Integer.parseInt(args[1]);
         int upper = Integer.parseInt(args[2]);
 
-        String[] fixedArgs = Arrays.copyOfRange(args, 0, 2);
-        for (int i = lower; i <= upper; i++ ) closeTicketCommand(sender, fixedArgs, onlinePlayerMap, false);
+        for (int i = lower; i <= upper; i++ ) closeTicketCommand(sender, new String[]{args[0], String.valueOf(i)}, onlinePlayerMap, false);
 
         // Notify others
         onlinePlayerMap.values().stream()
