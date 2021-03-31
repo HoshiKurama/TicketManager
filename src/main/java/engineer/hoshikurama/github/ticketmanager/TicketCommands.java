@@ -58,6 +58,9 @@ public class TicketCommands implements CommandExecutor {
                     sender.sendMessage(withColourCode("&cAn error occurred in trying to contact the database!"));
                 } catch (NumberFormatException e) {
                     sender.sendMessage(withColourCode("&cPlease use a valid number for a ticket ID!"));
+                } catch (Exception e) {
+                    sender.sendMessage(withColourCode("&cAn unforeseen error has occurred in the program. Stacktrace is being dumped!"));
+                    e.printStackTrace();
                 }
             }
         });
@@ -572,7 +575,7 @@ public class TicketCommands implements CommandExecutor {
     }
 
 
-    void closeAllTicketsCommand(CommandSender sender, Command command, String label, String[] args, Map<UUID, Player> onlinePlayerMap) throws SQLException, NumberFormatException {
+    void closeAllTicketsCommand(CommandSender sender, Command command, String label, String[] args, Map<UUID, Player> onlinePlayerMap) throws SQLException, NumberFormatException, Exception {
         // Filter out players without permission
         if (sender instanceof Player) {
             if (!TicketManager.getPermissions().has(sender, "ticketmanager.closeall")) {
@@ -592,24 +595,24 @@ public class TicketCommands implements CommandExecutor {
 
 
         sender.sendMessage(withColourCode("&3Mass ticket close has begun! This might take a while depending on the number of tickets"));
-        for (int i = lower; i <= upper; i++ ) {
+        for (int i = lower; i <= upper; i++) {
             int finalI = i;
 
             Bukkit.getScheduler().runTaskAsynchronously(TicketManager.getInstance, () -> {
                 try {
                     closeTicketCommand(sender, new String[]{args[0], String.valueOf(finalI)}, onlinePlayerMap, false);
+                    if (finalI == upper)
+                        // Notify others
+                        onlinePlayerMap.values().stream()
+                                .filter(p -> TicketManager.getPermissions().has(p, "ticketmanager.notify.onUpdate.others"))
+                                .forEach(p -> p.sendMessage(withColourCode("&3[TicketManager] " + sender.getName() + " &7has mass closed tickets &3#" + lower + "&7 to &3#" + upper)));
+                    if (!TicketManager.getPermissions().has(sender, "ticketmanager.notify.onClose.others"))
+                        sender.sendMessage(withColourCode("&3Ticket mass close successful!"));
                 } catch (SQLException e) {
                     sender.sendMessage(withColourCode("&cSQL error in attempting to close ticket " + finalI + "!"));
                 }
             });
         }
-
-        // Notify others
-        onlinePlayerMap.values().stream()
-                .filter(p -> TicketManager.getPermissions().has(p, "ticketmanager.notify.onUpdate.others"))
-                .forEach(p -> p.sendMessage(withColourCode("&3[TicketManager] " + sender.getName() + " &7has mass closed tickets &3#" + lower + "&7 to &3#" + upper)));
-        if (!TicketManager.getPermissions().has(sender, "ticketmanager.notify.onClose.others"))
-            sender.sendMessage(withColourCode("&3Ticket mass close successful!"));
     }
 
 
