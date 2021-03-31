@@ -27,8 +27,8 @@ public class Ticket {
     }
 
     private Location createLocation(org.bukkit.Location bukkitLoc) {
-        if (bukkitLoc.getWorld().getName().equals("null")) return null;
-        else return new Location(bukkitLoc);
+        if (bukkitLoc != null && !bukkitLoc.getWorld().getName().equals("null")) return new Location(bukkitLoc);
+        else return null;
     }
 
     public String getAssignment() {

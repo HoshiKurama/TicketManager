@@ -77,6 +77,7 @@ public class TicketCommands implements CommandExecutor {
                 config.getString("DB_Name"),
                 config.getString("Username"),
                 config.getString("Password"));
+        sender.sendMessage(withColourCode("&3[TicketManager] Config reloaded successfully!"));
     }
 
     void sendHelpMessage(CommandSender sender, String[] args) {
