@@ -662,13 +662,13 @@ public class TicketCommands implements CommandExecutor {
         String assignment = ticket.getAssignment() == null ? "" : ticket.getAssignment();
 
         // Builds base message
-        ComponentBuilder message = new ComponentBuilder(withColourCode("&3[TicketManager] Ticket #" + ticket.getId()))
-                .append(withColourCode("\n&8**************************"))
+        ComponentBuilder message = new ComponentBuilder(withColourCode("&3&l[TicketManager] Ticket #" + ticket.getId()))
+                .append(withColourCode("\n&r&8**************************"))
                 .append(withColourCode("\n&3&lCreator: &7" + ticket.getCreator() + "  &f&l &3&lAssigned To: &7" + assignment + ""))
                 .append(withColourCode("\n&3&lPriority: &7" + priorityToColorCode(ticket) + priorityToString(ticket) + "  &f&l  &3&lStatus: &7" + statusToColorCode(ticket) + ticket.getStatus()))
                 .append(withColourCode("\n&3&lLocation: ")).append(locationComponent)
                 .append(withColourCode("\n&8*********Comments*********")).reset();
-        ticket.getComments().forEach(c -> message.append("\n[" + c.user + "]: ").color(ChatColor.DARK_AQUA).append(c.comment).color(ChatColor.GRAY));
+        ticket.getComments().forEach(c -> message.append("\n[" + c.user + "]: ").color(ChatColor.DARK_AQUA).bold(true).append(c.comment).color(ChatColor.GRAY).bold(false));
         return message.create();
     }
 
