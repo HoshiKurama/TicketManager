@@ -17,13 +17,18 @@ public class Ticket {
 
     Ticket(org.bukkit.Location bukkitLoc, String creator, UUID uuid, int id) {
         comments = new ArrayList<>();
-        location = new Location(bukkitLoc);
+        location = createLocation(bukkitLoc);
         this.creator = creator;
         this.assignment = null;
         this.uuid = uuid;
         this.id = id;
         status = "OPEN";
         priority = 3;
+    }
+
+    private Location createLocation(org.bukkit.Location bukkitLoc) {
+        if (bukkitLoc.getWorld().getName().equals("null")) return null;
+        else return new Location(bukkitLoc);
     }
 
     public String getAssignment() {
@@ -88,12 +93,10 @@ public class Ticket {
         private String worldName;
 
         Location(org.bukkit.Location bukkitLoc) {
-            if (bukkitLoc != null) {
-                this.x = bukkitLoc.getBlockX();
-                this.y = bukkitLoc.getBlockY();
-                this.z = bukkitLoc.getBlockZ();
-                this.worldName = bukkitLoc.getWorld().getName();
-            }
+            this.x = bukkitLoc.getBlockX();
+            this.y = bukkitLoc.getBlockY();
+            this.z = bukkitLoc.getBlockZ();
+            this.worldName = bukkitLoc.getWorld().getName();
         }
 
         int getX() {
