@@ -93,22 +93,22 @@ public class TicketCommands implements CommandExecutor {
         }
 
         StringBuilder builder = new StringBuilder();
-        builder.append("&3[TicketManager] Ticket Commands:  &7<Required> | [Optional]")
-                .append("\n&3/ticket &7create <Message...>")
-                .append("\n&3/ticket &7comment <Ticket ID> <Message...>")
-                .append("\n&3/ticket &7view <Ticket ID>")
-                .append("\n&3/ticket &7history [Username]")
-                .append("\n&3/ticket &7close <Ticket ID> [Message...]");
+        builder.append("&3[TicketManager] Ticket Commands:  &f<Required> | [Optional]")
+                .append("\n&3/ticket &fcreate <Message...>")
+                .append("\n&3/ticket &fcomment <Ticket ID> <Message...>")
+                .append("\n&3/ticket &fview <Ticket ID>")
+                .append("\n&3/ticket &fhistory [Username]")
+                .append("\n&3/ticket &fclose <Ticket ID> [Message...]");
 
         if (TicketManager.getPermissions().has(sender, "ticketmanager.help.all"))
-            builder.append("\n&3/ticket &7assign <Ticket ID> <User/Assignment>")
-                    .append("\n&3/ticket &7unassign <Ticket ID>")
-                    .append("\n&3/ticket &7claim <Ticket ID>")
-                    .append("\n&3/ticket &7reopen <Ticket ID>")
-                    .append("\n&3/ticket &7setpriority <Ticket ID> <Priority (1-5)>")
-                    .append("\n&3/ticket &7list")
-                    .append("\n&3/ticket &7closeAll <Lower Bound> <Upper Bound>")
-                    .append("\n&3/ticket &7teleport <Ticket ID>")
+            builder.append("\n&3/ticket &fassign <Ticket ID> <User/Assignment>")
+                    .append("\n&3/ticket &funassign <Ticket ID>")
+                    .append("\n&3/ticket &fclaim <Ticket ID>")
+                    .append("\n&3/ticket &freopen <Ticket ID>")
+                    .append("\n&3/ticket &fsetpriority <Ticket ID> <Priority (1-5)>")
+                    .append("\n&3/ticket &flist")
+                    .append("\n&3/ticket &fcloseAll <Lower Bound> <Upper Bound>")
+                    .append("\n&3/ticket &fteleport <Ticket ID>")
                     .append("\n&3/ticket reload");
 
         sender.sendMessage(withColourCode(builder.toString()));
@@ -371,7 +371,7 @@ public class TicketCommands implements CommandExecutor {
         DatabaseHandler.addToOpenTickets(ticket.getId());
 
         pushNotification("ticket.notify.onUpdate.others", "ticket.notify.onUpdate.self", ticket, sender, onlinePlayerMap,
-                withColourCode("&3[TicketManager] &7" + sender.getName() + " &3 has reopened ticket &7" + ticket.getId() + "&3."),
+                withColourCode("&3[TicketManager] &7" + sender.getName() + "&3 has reopened ticket &7" + ticket.getId() + "&3."),
                 withColourCode("&3Ticket # " + ticket.getId() + " has been reopened!"));
         if (!TicketManager.getPermissions().has(sender, "ticketmanager.notify.onUpdate.others"))
             sender.sendMessage(withColourCode("&3Ticket re-opened successfully!"));
@@ -387,7 +387,7 @@ public class TicketCommands implements CommandExecutor {
         }
 
         // Creates beginning of message
-        ComponentBuilder components = new ComponentBuilder(withColourCode("&3[TicketManager] &7Viewing all open tickets:"));
+        ComponentBuilder components = new ComponentBuilder(withColourCode("&3[TicketManager] &fViewing all open tickets:"));
 
         // Filters out situation with no open tickets
         Optional<Set<Ticket>> ticketsOptional = DatabaseHandler.getOpenTickets();
@@ -472,7 +472,7 @@ public class TicketCommands implements CommandExecutor {
         Set<Ticket> playertickets = DatabaseHandler.getAllTicketsWithUUID(targetID);
 
         // Builds and creates initial data
-        ComponentBuilder component = new ComponentBuilder(withColourCode("&3[TicketManager] &7This user has " + playertickets.size() + " tickets!"));
+        ComponentBuilder component = new ComponentBuilder(withColourCode("&3[TicketManager] &fThis user has " + playertickets.size() + " tickets!"));
         playertickets.stream()
                 .sorted(Comparator.comparing(Ticket::getId).reversed())
                 .forEach(t -> component.append(formatTicketForHistoryCommand(t)));
@@ -500,7 +500,7 @@ public class TicketCommands implements CommandExecutor {
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Move to previous page")))
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket history " + correctedArgs[1] + " " + (page - 1)));
 
-            arrowNode.append(withColourCode("&7.......................&3(" + page + " of " + maxPages + ")&7.......................")).append("[Next]");
+            arrowNode.append(withColourCode("&f.......................&3(" + page + " of " + maxPages + ")&f.......................")).append("[Next]");
 
             if (page == maxPages) arrowNode.color(ChatColor.DARK_GRAY);
             else arrowNode.color(ChatColor.WHITE)
@@ -553,8 +553,8 @@ public class TicketCommands implements CommandExecutor {
         // Notify others
         onlinePlayerMap.values().stream()
                 .filter(p -> TicketManager.getPermissions().has(p, "ticketmanager.notify.onUpdate.others"))
-                .forEach(p -> p.sendMessage(withColourCode("&3[TicketManager] " + sender.getName() + " &7has set ticket &3#" + ticket.getId() +
-                        " &7's priority to " + priorityToColorCode(ticket) + priorityToString(ticket))));
+                .forEach(p -> p.sendMessage(withColourCode("&3[TicketManager] " + sender.getName() + " &fhas set ticket &3#" + ticket.getId() +
+                        " &f's priority to " + priorityToColorCode(ticket) + priorityToString(ticket))));
         if (!TicketManager.getPermissions().has(sender, "ticketmanager.notify.onUpdate.others"))
             sender.sendMessage(withColourCode("&3Ticket priority changed successfully!"));
     }
@@ -605,7 +605,7 @@ public class TicketCommands implements CommandExecutor {
                         // Notify others
                         onlinePlayerMap.values().stream()
                                 .filter(p -> TicketManager.getPermissions().has(p, "ticketmanager.notify.onUpdate.others"))
-                                .forEach(p -> p.sendMessage(withColourCode("&3[TicketManager] " + sender.getName() + " &7has mass closed tickets &3#" + lower + "&7 to &3#" + upper)));
+                                .forEach(p -> p.sendMessage(withColourCode("&3[TicketManager] " + sender.getName() + " &fhas mass closed tickets &3#" + lower + "&f to &3#" + upper)));
                     if (!TicketManager.getPermissions().has(sender, "ticketmanager.notify.onClose.others"))
                         sender.sendMessage(withColourCode("&3Ticket mass close successful!"));
                 } catch (SQLException e) {
@@ -643,7 +643,7 @@ public class TicketCommands implements CommandExecutor {
         if (6 + idLength + t.getStatus().length() + comment.length() > 58)
             comment = comment.substring(0, 49 - idLength - t.getStatus().length()) + "...";
 
-        return new ComponentBuilder(withColourCode("\n&3[" + t.getId() + "] " + statusToColorCode(t) + "[" + t.getStatus() + "] &7" + comment))
+        return new ComponentBuilder(withColourCode("\n&3[" + t.getId() + "] " + statusToColorCode(t) + "[" + t.getStatus() + "] &f" + comment))
                 .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket view " + t.getId()))
                 .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to view ticket #" + t.getId())))
                 .create();
@@ -658,7 +658,7 @@ public class TicketCommands implements CommandExecutor {
         if (13 + idLength + t.getCreator().length() + assignment.length() + comment.length() > 58)
             comment = comment.substring(0, 43 - idLength - assignment.length() - t.getCreator().length()) + "...";
 
-        return new ComponentBuilder(withColourCode("\n" + priorityToColorCode(t) + "[" + t.getId() + "] &8[&3" + t.getCreator() + "&8 —> &3" + assignment + "&8] &7" + comment))
+        return new ComponentBuilder(withColourCode("\n" + priorityToColorCode(t) + "[" + t.getId() + "] &8[&3" + t.getCreator() + "&8 —> &3" + assignment + "&8] &f" + comment))
                 .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket view " + t.getId()))
                 .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to view ticket #" + t.getId())))
                 .create();
@@ -669,7 +669,7 @@ public class TicketCommands implements CommandExecutor {
         BaseComponent[] locationComponent;
         if (ticket.getLocation().isPresent()) {
             Ticket.Location loc = ticket.getLocation().get();
-            locationComponent = new ComponentBuilder(withColourCode("&7&n" + loc.getWorldName() + "   " + loc.getX() + " " + loc.getY() + " " + loc.getZ()))
+            locationComponent = new ComponentBuilder(withColourCode("&f&n" + loc.getWorldName() + "   " + loc.getX() + " " + loc.getY() + " " + loc.getZ()))
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket teleport " + ticket.getId()))
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to teleport to ticket #" + ticket.getId())))
                     .create();
@@ -680,11 +680,11 @@ public class TicketCommands implements CommandExecutor {
         // Builds base message
         ComponentBuilder message = new ComponentBuilder(withColourCode("&3&l[TicketManager] Ticket #" + ticket.getId()))
                 .append(withColourCode("\n&r&8**************************"))
-                .append(withColourCode("\n&3&lCreator: &7" + ticket.getCreator() + "  &f&l &3&lAssigned To: &7" + assignment + ""))
-                .append(withColourCode("\n&3&lPriority: &7" + priorityToColorCode(ticket) + priorityToString(ticket) + "  &f&l  &3&lStatus: &7" + statusToColorCode(ticket) + ticket.getStatus()))
+                .append(withColourCode("\n&3&lCreator: &f" + ticket.getCreator() + "  &f&l &3&lAssigned To: &f" + assignment + ""))
+                .append(withColourCode("\n&3&lPriority: &f" + priorityToColorCode(ticket) + priorityToString(ticket) + "  &f&l  &3&lStatus: &f" + statusToColorCode(ticket) + ticket.getStatus()))
                 .append(withColourCode("\n&3&lLocation: ")).append(locationComponent)
                 .append(withColourCode("\n&8*********Comments*********")).reset();
-        ticket.getComments().forEach(c -> message.append("\n[" + c.user + "]: ").color(ChatColor.DARK_AQUA).bold(true).append(c.comment).color(ChatColor.GRAY).bold(false));
+        ticket.getComments().forEach(c -> message.append("\n[" + c.user + "]: ").color(ChatColor.DARK_AQUA).bold(true).append(c.comment).color(ChatColor.WHITE).bold(false));
         return message.create();
     }
 
