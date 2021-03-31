@@ -590,7 +590,19 @@ public class TicketCommands implements CommandExecutor {
         int lower = Integer.parseInt(args[1]);
         int upper = Integer.parseInt(args[2]);
 
-        for (int i = lower; i <= upper; i++ ) closeTicketCommand(sender, new String[]{args[0], String.valueOf(i)}, onlinePlayerMap, false);
+
+        sender.sendMessage(withColourCode("&3Mass ticket close has begun! This might take a while depending on the number of tickets"));
+        for (int i = lower; i <= upper; i++ ) {
+            int finalI = i;
+
+            Bukkit.getScheduler().runTaskAsynchronously(TicketManager.getInstance, () -> {
+                try {
+                    closeTicketCommand(sender, new String[]{args[0], String.valueOf(finalI)}, onlinePlayerMap, false);
+                } catch (SQLException e) {
+                    sender.sendMessage(withColourCode("&cSQL error in attempting to close ticket " + finalI + "!"));
+                }
+            });
+        }
 
         // Notify others
         onlinePlayerMap.values().stream()
