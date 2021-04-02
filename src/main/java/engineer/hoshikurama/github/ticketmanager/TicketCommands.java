@@ -51,7 +51,7 @@ public class TicketCommands implements CommandExecutor {
                         case "closeall": closeAllTicketsCommand(sender, command, label, args, onlinePlayerMap); break;
                         case "teleport": teleportTicketCommand(sender, args); break;
                         case "list": listOpenTicketsCommand(sender, args); break;
-                        case "reopen": reopenTicketCommand(sender, args, onlinePlayerMap);
+                        case "reopen": reopenTicketCommand(sender, args, onlinePlayerMap); break;
                         case "reload": reloadConfig(sender);
                     }
                 } catch (SQLException e) {
@@ -459,7 +459,7 @@ public class TicketCommands implements CommandExecutor {
                        return;
                    }
                }
-            } else targetID = Bukkit.getPlayerUniqueId(sender.getName()); //Could be null if Console
+            } else targetID = Bukkit.getPlayerUniqueId(correctedArgs[1]); //Could be null if Console
         }
 
         //Confirms targetUUID is valid or is Console
@@ -625,6 +625,7 @@ public class TicketCommands implements CommandExecutor {
 
         // Pushes update to relevant notify.self user
         if (selfPermission == null) return;
+        /*
         if (!(sender instanceof Player) || !ticket.getUUID().isPresent() || !ticket.getUUID().get().equals(((Player) sender).getUniqueId())) {// Notify ticket creator if player is online and has notify permission
             UUID creatorUUID = ticket.getUUID().get();
             onlinePlayerMap.entrySet().stream()
@@ -632,6 +633,19 @@ public class TicketCommands implements CommandExecutor {
                     .map(Map.Entry::getValue)
                     .filter(p -> TicketManager.getPermissions().has(p, selfPermission))
                     .forEach(p -> p.sendMessage(selfPermissionMessage));
+        }
+
+         */
+
+        if (ticket.getUUID().isPresent()) {
+            if (!(sender instanceof Player) || ticket.getUUID().get().equals(((Player) sender).getUniqueId())) {
+                UUID creatorUUID = ticket.getUUID().get();
+                onlinePlayerMap.entrySet().stream()
+                        .filter(e -> e.getKey().equals(creatorUUID))
+                        .map(Map.Entry::getValue)
+                        .filter(p -> TicketManager.getPermissions().has(p, selfPermission))
+                        .forEach(p -> p.sendMessage(selfPermissionMessage));
+            }
         }
     }
 

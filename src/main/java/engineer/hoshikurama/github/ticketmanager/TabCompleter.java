@@ -72,7 +72,7 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
                     else break;
 
                 case "history":    //ticket history <User>
-                    if (args.length == 2) return Stream.concat(Stream.of("<ID>"),
+                    if (args.length == 2) return Stream.concat(Stream.of("<User>"),
                             Bukkit.getOnlinePlayers().stream()
                                     .map(HumanEntity::getName)
                                     .filter(e -> e.startsWith(args[args.length-1])))
