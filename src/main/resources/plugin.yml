@@ -1,6 +1,6 @@
 name: TicketManager
-version: 1.0.0
-main: engineer.hoshikurama.github.ticketmanager.TicketManager
+version: 2.0.0
+main: engineer.hoshikurama.github.ticketmanager.v2.TicketManager
 api-version: 1.16
 authors: [HoshiKurama]
 depend: [Vault]
@@ -8,6 +8,12 @@ commands:
   ticket:
     description: Base for all TicketManager commands
 permissions:
+  ticketmanager.silentcommands:
+    description: Access to all silent version of commands
+    default: false
+  ticketmanager.search:
+    description: access to search command
+    default: false
   ticketmanager.reload:
     description: Access to reload config
     default: false
@@ -23,6 +29,12 @@ permissions:
   ticketmanager.notify.scheduledUpdatedTickets:
     description: Periodically notify players with their tickets that have been updated
     default: false
+  ticketmanager.notify.playerJoinOpenTickets:
+    description: Alert player of open tickets on player join
+    default: false
+  ticketmanager.notify.playerJoinUpdatedTickets:
+    description: Alert player of updated ticket on player join
+    default: false
   ticketmanager.notify.onUpdate.self:
     description: Receive notification when self-owned tickets are updated
     default: false
@@ -35,6 +47,8 @@ permissions:
   ticketmanager.notify.onClose.others:
     description: Receive notification on all ticket closes
     default: false
+  ticketmanager.notify.warning:
+    description: Receive notifications on any potential issues
   ticketmanager.create:
     description: Create tickets
     default: false
@@ -91,6 +105,9 @@ permissions:
       ticketmanager.notify.onClose.others: true
       ticketmanager.notify.scheduledOpenTickets: true
       ticketmanager.notify.scheduledUpdatedTickets: true
+      ticketmanager.notify.playerJoinOpenTickets: true
+      ticketmanager.notify.playerJoinUpdatedTickets: true
+      ticketmanager.notify.warning: true
   ticketmanager.manage:
     description: General permissions for mods
     default: false
@@ -105,7 +122,7 @@ permissions:
       ticketmanager.reopen: true
       ticketmanager.help.all: true
       ticketmanager.notify.*: true
-      ticketmanager.notify.scheduledOpenTickets: true
+      ticketmanager.search: true
   ticketmanager.basic:
     default: false
     description: Basic permissions for players
@@ -119,6 +136,7 @@ permissions:
       ticketmanager.notify.onClose.self: true
       ticketmanager.notify.onUpdate.self: true
       ticketmanager.notify.scheduledUpdatedTickets: true
+      ticketmanager.notify.playerJoinUpdatedTickets: true
   ticketmanager.*:
     description: Wildcard permission
     default: op
@@ -129,3 +147,5 @@ permissions:
       ticketmanager.teleport: true
       ticketmanager.closeall: true
       ticketmanager.reload: true
+      ticketmanager.silentcommands: true
+      ticketmanager.notify.warning: true

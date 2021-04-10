@@ -9,11 +9,11 @@ plugins {
 apply plugin: 'application'
 
 group = 'engineer.hoshikurama.github'
-version = '1.0.0'
+version = '2.0.0'
 mainClassName = "engineer.hoshikurama.github.ticketmanager.TicketManager"
 
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
+sourceCompatibility = '11'
+targetCompatibility = '11'
 
 repositories {
     mavenCentral()
@@ -34,7 +34,6 @@ dependencies {
     compileOnly 'com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT'
     compileOnly "com.github.MilkBowl:VaultAPI:1.7"
     compile "com.zaxxer:HikariCP:4.0.3"
-    compile 'com.google.code.gson:gson:2.8.6'
     compile "mysql:mysql-connector-java:8.0.22"
     compile "com.google.guava:guava:30.1-jre"
 }
@@ -42,7 +41,6 @@ dependencies {
 shadowJar {
     dependencies {
         include dependency('com.zaxxer:HikariCP:4.0.3')
-        include dependency('com.google.code.gson:gson:2.8.6')
         include dependency('mysql:mysql-connector-java:8.0.22')
         include dependency('com.google.guava:guava:30.1-jre')
     }
