@@ -40,7 +40,7 @@ class Ticket {
         }
 
         comments = new ArrayList<>();
-        comments.add(new Comment(creator, comment));
+        comments.add(new Comment(creator, comment.replace("/MySQLSep/"," ").replace("/MySQLNewLine/"," ")));
     }
 
     // Ticket created with MySQL data
@@ -133,7 +133,7 @@ class Ticket {
 
     void addComment(CommandSender sender, String comment) {
         if (sender instanceof Player) comments.add(new Comment(sender.getName(), comment));
-        else comments.add(new Comment("Console", comment));
+        else comments.add(new Comment("Console", comment.replace("/MySQLSep/"," ").replace("/MySQLNewLine/"," ")));
     }
 
     String getStringUUIDForMYSQL() {

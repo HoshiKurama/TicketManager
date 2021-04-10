@@ -49,6 +49,9 @@ permissions:
     default: false
   ticketmanager.notify.warning:
     description: Receive notifications on any potential issues
+    default: false
+  ticketmanager.notify.onCreate:
+    description: Receive notification on created tickets
   ticketmanager.create:
     description: Create tickets
     default: false
