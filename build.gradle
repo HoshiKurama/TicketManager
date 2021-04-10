@@ -42,12 +42,10 @@ shadowJar {
     dependencies {
         include dependency('com.zaxxer:HikariCP:4.0.3')
         include dependency('mysql:mysql-connector-java:8.0.22')
-        include dependency('com.google.guava:guava:30.1-jre')
     }
 
     relocate 'com.zaxxer.hikari','shadow.TicketManager.zaxxerHikari'
     relocate 'com.mysql', 'shadow.TicketManager.jdbcDrivers'
-    relocate 'com.google', 'shadow.TicketManager.google'
 }
 
 processResources {
