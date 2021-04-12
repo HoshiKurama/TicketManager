@@ -9,7 +9,7 @@ plugins {
 apply plugin: 'application'
 
 group = 'engineer.hoshikurama.github'
-version = '2.0.0'
+version = '2.1.0'
 mainClassName = "engineer.hoshikurama.github.ticketmanager.TicketManager"
 
 sourceCompatibility = '11'

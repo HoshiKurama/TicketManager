@@ -1,5 +1,5 @@
 name: TicketManager
-version: 2.0.0
+version: 2.1.0
 main: engineer.hoshikurama.github.ticketmanager.v2.TicketManager
 api-version: 1.16
 authors: [HoshiKurama]
@@ -52,6 +52,10 @@ permissions:
     default: false
   ticketmanager.notify.onCreate:
     description: Receive notification on created tickets
+    default: false
+  ticketmanager.notify.update:
+    description: Receive notifications that an update is available
+    default: false
   ticketmanager.create:
     description: Create tickets
     default: false
@@ -97,6 +101,19 @@ permissions:
   ticketmanager.help.all:
     description: Show all commands
     default: false
+  ticketmanager.notify.staff:
+    description: Staff notifications. Contains all notifications as * except for warning and update notifications
+    default: false
+    children:
+      ticketmanager.notify.onCreate: true
+      ticketmanager.notify.onUpdate.self: true
+      ticketmanager.notify.onUpdate.others: true
+      ticketmanager.notify.onClose.self: true
+      ticketmanager.notify.onClose.others: true
+      ticketmanager.notify.scheduledOpenTickets: true
+      ticketmanager.notify.scheduledUpdatedTickets: true
+      ticketmanager.notify.playerJoinOpenTickets: true
+      ticketmanager.notify.playerJoinUpdatedTickets: true
   ticketmanager.notify.*:
     description: Wildcard for all notifications
     default: false
@@ -111,6 +128,7 @@ permissions:
       ticketmanager.notify.playerJoinOpenTickets: true
       ticketmanager.notify.playerJoinUpdatedTickets: true
       ticketmanager.notify.warning: true
+      ticketmanager.notify.update: true
   ticketmanager.manage:
     description: General permissions for mods
     default: false
@@ -124,7 +142,7 @@ permissions:
       ticketmanager.list: true
       ticketmanager.reopen: true
       ticketmanager.help.all: true
-      ticketmanager.notify.*: true
+      ticketmanager.notify.staff: true
       ticketmanager.search: true
   ticketmanager.basic:
     default: false

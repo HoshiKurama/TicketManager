@@ -1,6 +1,10 @@
 package engineer.hoshikurama.github.ticketmanager.v2;
 
+import engineer.hoshikurama.github.ticketmanager.v2.sideClasses.Metrics;
+import engineer.hoshikurama.github.ticketmanager.v2.sideClasses.UpdateChecker;
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -24,6 +28,7 @@ public final class TicketManager extends JavaPlugin implements Listener {
     private static Permission perms;
     private static TicketManager instance;
     static AtomicBoolean conversionInProgress;
+    private static AtomicBoolean updateAvailable;
 
     @Override
     public void onEnable() {
@@ -35,6 +40,8 @@ public final class TicketManager extends JavaPlugin implements Listener {
             getServer().getPluginManager().registerEvents(this, this);
             perms = Objects.requireNonNull(getServer().getServicesManager().getRegistration(Permission.class)).getProvider();
             conversionInProgress = new AtomicBoolean(false);
+            updateAvailable = new AtomicBoolean(false);
+            new Metrics(this, 11033);
             instance = this;
 
             // Generates new config if not found and sends alert
@@ -72,6 +79,14 @@ public final class TicketManager extends JavaPlugin implements Listener {
                     });
                 }
             }
+
+            // Check for updates
+            new UpdateChecker(this, 91178).getVersion( v -> {
+                if (!this.getDescription().getVersion().equalsIgnoreCase(v)) {
+                    updateAvailable.set(true);
+                    Bukkit.getLogger().log(Level.INFO, "[TicketManager] A new update is available!");
+                }
+            });
 
             // Scheduled broadcast to players
             scheduler.runTaskTimerAsynchronously(this, () -> {
@@ -126,6 +141,7 @@ public final class TicketManager extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         boolean playerCanSeeUpdatedTicket = perms.has(player, "ticketmanager.notify.playerJoinUpdatedTickets");
         boolean playerCanSeeOpenTickets = perms.has(player, "ticketmanager.notify.playerJoinOpenTickets");
+        boolean playerCanSeePluginUpdatesAndOneIsAvailable = updateAvailable.get() && perms.has(player, "ticketmanager.notify.update");
 
         if (playerCanSeeUpdatedTicket || playerCanSeeOpenTickets)
             Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
@@ -155,6 +171,13 @@ public final class TicketManager extends JavaPlugin implements Listener {
                                     "&3[TicketManager] " + nounForm + " &7" + tickets.stream().map(Ticket::getId).map(String::valueOf).collect(Collectors.joining("&3,&7 "))
                                             + "&3 " + verbForm + " pending notifications! " + "Type &7/ticket view <ID> &3to dismiss this notification"));
                         }
+                    }
+
+                    if (playerCanSeePluginUpdatesAndOneIsAvailable) {
+                        ComponentBuilder msg = new ComponentBuilder("[TicketManager] A new update is available! Click on this message to visit the Spigot page!")
+                                .color(ChatColor.DARK_AQUA)
+                                .event(new ClickEvent(ClickEvent.Action.OPEN_URL,"https://www.spigotmc.org/resources/ticketmanager.91178/"));
+                        player.sendMessage(msg.create());
                     }
                 } catch (Exception e) {
                     TMCommands.pushWarningNotification(e);

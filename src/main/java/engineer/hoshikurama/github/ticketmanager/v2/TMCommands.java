@@ -134,7 +134,7 @@ class TMCommands implements CommandExecutor {
                 .append(withColourCode("\n&3&lCreator: &f" + ticket.getCreator() + "  &f&l &3&lAssigned To: &f" + ticket.getAssignment() + ""))
                 .append(withColourCode("\n&3&lPriority: &f" + priorityToColorCode(ticket) + priorityToString(ticket) + "  &f&l  &3&lStatus: &f" + statusToColorCode(ticket) + ticket.getStatus()))
                 .append(withColourCode("\n&3&lLocation: ")).append(locationComponent).append("").reset()
-                .append(withColourCode("  &3&lCreated: &r&f" + getBiggestTime(ticket.getCreationTime()).replace(':',' ')))
+                .append(withColourCode("\n&3&lCreated: &r&f" + getBiggestTime(ticket.getCreationTime()).replace(':',' ')))
                 .append(withColourCode("\n&8*********Comments*********")).reset();
         ticket.getComments().forEach(c -> message.append(withColourCode("\n&3&l[" + c.user + "]: &r" + c.comment)));
         sender.sendMessage(message.create());
@@ -342,7 +342,7 @@ class TMCommands implements CommandExecutor {
             sender.sendMessage(withColourCode("&3Ticket mass close successful!"));
         if (!silent) {
             pushMassNotification("ticketmanager.notify.onUpdate.others",
-                    withColourCode("&3[TicketManager] " + sender.getName() + " &fhas mass closed tickets &3#" + lower + "&f to &3#" + upper));
+                    withColourCode("&3[TicketManager] " + sender.getName() + " &7has mass closed tickets &3#" + lower + "&7 to &3#" + upper));
         }
     }
 
