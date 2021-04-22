@@ -56,8 +56,8 @@ class TMCommands implements CommandExecutor {
                     case "comment": commentTicketCommand(sender, args, performSilently, false); break;
                     case "close": closeTicketCommand(sender, args, performSilently); break;
                     case "assign": assignTicketCommand(sender, args, performSilently); break;
-                    case "claim": assignTicketCommand(sender, new String[]{args[0], args[1], sender.getName()}, performSilently); break;
-                    case "unassign": assignTicketCommand(sender, new String[]{args[0], args[1], " "}, performSilently); break;
+                    case "claim": claimTicketCommand(sender, args,performSilently); break;
+                    case "unassign": unassignTicketCommand(sender, args, performSilently); break;
                     case "setpriority": setPriorityTicketCommand(sender, args, performSilently); break;
                     case "teleport": teleportTicketCommand(sender, args); break;
                     case "reopen": reopenTicketCommand(sender, args, performSilently); break;
@@ -78,6 +78,16 @@ class TMCommands implements CommandExecutor {
     }
 
     // TicketManager command methods
+    void claimTicketCommand(CommandSender sender, String[] args, boolean performSilently) throws SQLException, TMInvalidDataException {
+        if (args.length <= 1) throw new TMInvalidDataException("Please at least have a ticket ID!");
+        assignTicketCommand(sender, new String[] {args[0], args[1], sender.getName()}, performSilently);
+    }
+
+    void unassignTicketCommand(CommandSender sender, String[] args, boolean performSilently) throws SQLException, TMInvalidDataException {
+        if (args.length <= 1) throw new TMInvalidDataException("Please at least have a ticket ID!");
+        assignTicketCommand(sender, new String[]{args[0], args[1], " "}, performSilently);
+    }
+
     void listOpenTicketsCommand(CommandSender sender, String[] args) throws SQLException, TMInvalidDataException  {
         if (!senderHasPermission(sender, "ticketmanager.list"))
             throw new TMInvalidDataException("You do not have permission to perform this command!");

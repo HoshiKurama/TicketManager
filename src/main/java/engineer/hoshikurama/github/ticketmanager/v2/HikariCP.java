@@ -14,14 +14,10 @@ public class HikariCP {
         config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + dbname + "?serverTimezone=America/Chicago");
         config.setUsername(username);
         config.setPassword(password);
-        config.setDriverClassName("com.mysql.cj.jdbc.Driver"); //Might need to change?
+        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
         ds = new HikariDataSource(config);
 
         DatabaseHandler.checkTables();
-    }
-
-    static void attemptConnection() throws SQLException {
-        ds.getConnection();
     }
 
     static Connection getConnection() throws SQLException {

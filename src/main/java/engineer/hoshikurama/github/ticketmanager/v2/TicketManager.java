@@ -68,7 +68,8 @@ public final class TicketManager extends JavaPlugin implements Listener {
                         config.getString("DB_Name"),
                         config.getString("Username"),
                         config.getString("Password"));
-                HikariCP.attemptConnection();
+                Connection connection = HikariCP.getConnection();
+                connection.close();
 
                 // Checks for detected conversion and initiates
                 if (DatabaseHandler.conversionIsRequired()) {
@@ -181,9 +182,9 @@ public final class TicketManager extends JavaPlugin implements Listener {
                     }
                 } catch (Exception e) {
                     TMCommands.pushWarningNotification(e);
+                    e.printStackTrace();
                 }
             });
-
     }
 
     static Permission getPermissions() {
