@@ -22,7 +22,7 @@ public class TabCompletion implements TabCompleter {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         try {
             if (args.length <= 1) {
-                return Stream.of("assign", "s.assign", "claim", "s.claim", "close", "s.close", "closeall", "s.closeall", "comment", "s.comment", "create", "help",
+                return Stream.of("assign", "s.assign", "claim", "s.claim", "close", "s.close", "closeall", "s.closeall", "comment", "s.comment", "convertdatabase", "create", "help",
                         "history", "list", "reopen", "s.reopen", "search", "setpriority", "s.setpriority", "teleport", "unassign", "s.unassign", "view", "reload")
                         .filter(e -> e.startsWith(args[0]))
                         .collect(Collectors.toList());
@@ -94,6 +94,15 @@ public class TabCompletion implements TabCompleter {
                                 .collect(Collectors.toList());
                     else
                         return onlinePlayerStream(sender).filter(s -> s.startsWith(args[args.length - 1])).collect(Collectors.toList());
+
+                case "convertdatabase": //ticket convertDatabase <From> <To>
+                    if (args.length == 2) return Stream.of("<From>", "mysql", "sqlite")
+                            .filter(s -> s.startsWith(args[1]))
+                            .collect(Collectors.toList());
+                    else if (args.length == 3) return Stream.of("<To>", "mysql", "sqlite")
+                            .filter(s -> s.startsWith(args[2]))
+                            .collect(Collectors.toList());
+                    else return Collections.emptyList();
 
                 case "history":     //ticket history <User>
                     if (args.length == 2) return Stream.concat(Stream.of("<User>"), onlinePlayerStream(sender))

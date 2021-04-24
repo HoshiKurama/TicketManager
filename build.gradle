@@ -9,7 +9,7 @@ plugins {
 apply plugin: 'application'
 
 group = 'engineer.hoshikurama.github'
-version = '2.1.1'
+version = '3.0.0'
 mainClassName = "engineer.hoshikurama.github.ticketmanager.TicketManager"
 
 sourceCompatibility = '11'
@@ -36,16 +36,19 @@ dependencies {
     compile "com.zaxxer:HikariCP:4.0.3"
     compile "mysql:mysql-connector-java:8.0.22"
     compile "com.google.guava:guava:30.1-jre"
+    compile 'org.xerial:sqlite-jdbc:3.34.0'
 }
 
 shadowJar {
     dependencies {
         include dependency('com.zaxxer:HikariCP:4.0.3')
         include dependency('mysql:mysql-connector-java:8.0.22')
+        include dependency('org.xerial:sqlite-jdbc:3.34.0')
     }
 
-    relocate 'com.zaxxer.hikari','shadow.TicketManager.zaxxerHikari'
-    relocate 'com.mysql', 'shadow.TicketManager.jdbcDrivers'
+    relocate 'com.zaxxer.hikari','engineer.hoshikurama.github.ticketmanager.shaded.zaxxerHikari'
+    relocate 'com.mysql', 'engineer.hoshikurama.github.ticketmanager.shaded.mysqlDrivers'
+    relocate 'org.xerial', 'engineer.hoshikurama.github.ticketmanager.shaded.sqliteDrivers'
 }
 
 processResources {

@@ -3,11 +3,10 @@ package engineer.hoshikurama.github.ticketmanager.v2;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
 
-class Ticket {
+public class Ticket {
     private final int id;                       // Guaranteed Ticket ID
     private byte priority;                      // 1 - 5
     private String status;                      // OPEN or CLOSED
@@ -20,9 +19,9 @@ class Ticket {
     private boolean updatedByNonCreator;
 
     // Initial Ticket. TAKES CARE OF HANDLING PLAYER VS CONSOLE
-    Ticket(CommandSender sender, String comment) throws SQLException {
+    Ticket(CommandSender sender, String comment) throws DatabaseException {
         creationTime = Instant.now().getEpochSecond();
-        id = DatabaseHandler.getNextTicketID();
+        id = TicketManager.dbHandler().getNextTicketID();
         priority = 3;
         status = "OPEN";
         assignment = " ";
@@ -43,32 +42,22 @@ class Ticket {
         comments.add(new Comment(creator, comment.replace("/MySQLSep/"," ").replace("/MySQLNewLine/"," ")));
     }
 
-    // Ticket created with MySQL data
-    Ticket(int id, String status, byte priority, String creator, String uuidString, String assignment, String rawLocation, long creationTime, String rawComments, boolean wasUpdatedByOtherUser) {
-        this.priority = priority;
+    // Ticket created from database
+    public Ticket(int id, String status, byte priority, String creator, UUID uuid, String assignment, Location location, long creationTime, boolean wasUpdatedByOtherUser) {
+        this.id = id;
         this.status = status;
+        this.priority = priority;
+        this.creator = creator;
         this.assignment = assignment;
         this.creationTime = creationTime;
-        this.updatedByNonCreator = wasUpdatedByOtherUser;
-        this.creator = creator;
-        this.id = id;
-
-        // Process comments
+        this.location = location;
         this.comments = new ArrayList<>();
-        for (String commentLines : rawComments.split("/MySQLNewLine/")) {
-            String[] components = commentLines.split("/MySQLSep/");
-            comments.add(new Comment(components[0], components[1]));
-        }
+        this.updatedByNonCreator = wasUpdatedByOtherUser;
+        this.uuid = uuid;
+    }
 
-        // Processes location
-        if (!rawLocation.equals("NoLocation")) {
-            String[] split = rawLocation.split(" ");
-            location = new Location(split[0], split[1], split[2], split[3]);
-        } else location = null;
-
-        // Processes UUID
-        if (uuidString.equals("CONSOLE")) uuid = null;
-        else uuid = UUID.fromString(uuidString);
+    public void addComment(String commenter, String message) {
+        comments.add(new Comment(commenter, message));
     }
 
     boolean UUIDMatches(UUID uuid) {
@@ -79,11 +68,11 @@ class Ticket {
         else return this.uuid.equals(uuid);
     }
 
-     int getId() {
+     public int getId() {
         return id;
     }
 
-    byte getPriority() {
+    public byte getPriority() {
         return priority;
     }
 
@@ -91,7 +80,7 @@ class Ticket {
         this.priority = value;
     }
 
-    String getStatus() {
+    public String getStatus() {
         return status;
     }
 
@@ -99,7 +88,7 @@ class Ticket {
         this.status = value;
     }
 
-    String getAssignment() {
+    public String getAssignment() {
         return assignment;
     }
 
@@ -107,11 +96,11 @@ class Ticket {
         this.assignment = value;
     }
 
-    Optional<Location> getLocation() {
+    public Optional<Location> getLocation() {
         return Optional.ofNullable(location);
     }
 
-    boolean wasUpdatedByOtherUser() {
+    public boolean wasUpdatedByOtherUser() {
         return updatedByNonCreator;
     }
 
@@ -119,15 +108,15 @@ class Ticket {
         if (uuid != null) this.updatedByNonCreator = value;
     }
 
-    String getCreator() {
+    public String getCreator() {
         return creator;
     }
 
-    long getCreationTime() {
+    public long getCreationTime() {
         return creationTime;
     }
 
-    List<Comment> getComments() {
+    public List<Comment> getComments() {
         return comments;
     }
 
@@ -136,13 +125,13 @@ class Ticket {
         else comments.add(new Comment("Console", comment.replace("/MySQLSep/"," ").replace("/MySQLNewLine/"," ")));
     }
 
-    String getStringUUIDForMYSQL() {
+    public String getStringUUIDForMYSQL() {
         return uuid == null ? "CONSOLE" : uuid.toString();
     }
 
-    class Location {
-        int x, y, z;
-        String worldName;
+    public static class Location {
+        public int x, y, z;
+        public String worldName;
 
         Location(org.bukkit.Location bukkitLoc) {
             this.x = bukkitLoc.getBlockX();
@@ -151,7 +140,7 @@ class Ticket {
             this.worldName = bukkitLoc.getWorld().getName();
         }
 
-        Location(String world, String x, String y, String z) {
+        public Location(String world, String x, String y, String z) {
             this.worldName = world;
             this.x = Integer.parseInt(x);
             this.y = Integer.parseInt(y);
@@ -159,8 +148,8 @@ class Ticket {
         }
     }
 
-    class Comment {
-        String user, comment;
+    public class Comment {
+        public String user, comment;
 
         Comment(String user, String comment) {
             this.user = user;

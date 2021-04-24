@@ -1,6 +1,9 @@
 package engineer.hoshikurama.github.ticketmanager.v2;
 
 import com.google.common.collect.Lists;
+import engineer.hoshikurama.github.ticketmanager.v2.databases.Database;
+import engineer.hoshikurama.github.ticketmanager.v2.databases.mysql.MySQL;
+import engineer.hoshikurama.github.ticketmanager.v2.databases.sqlite.SQLite;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -16,15 +19,13 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-class TMCommands implements CommandExecutor {
+public class TMCommands implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length <= 0) {
@@ -32,14 +33,19 @@ class TMCommands implements CommandExecutor {
             return true;
         }
 
-        if (TicketManager.conversionInProgress.get()) {
+        if (TicketManager.getInstance().conversionInProgress.get()) {
             sender.sendMessage(withColourCode("[TicketManager]&c Unable to process requests due to on-going database conversion!"));
+            return true;
+        }
+
+        if (TicketManager.dbHandler() == null && !args[0].equals("reload")) {
+            sender.sendMessage(withColourCode("&c[TicketManager] Plugin is not connected to any databases at the moment, " +
+                    "and thus no commands other than reload will work!"));
             return true;
         }
 
         Bukkit.getScheduler().runTaskAsynchronously(TicketManager.getInstance(), () -> {
             try {
-
                 // Sets perform silently value
                 boolean performSilently;
                 if (args[0].startsWith("s."))
@@ -64,7 +70,9 @@ class TMCommands implements CommandExecutor {
                     case "closeall": closeAllTicketsCommand(sender, args, performSilently); break;
                     case "reload": reloadConfig(sender); break;
                     case "history": viewHistoryCommand(sender, args);break;
-                    case "search": searchCommand(sender, args);
+                    case "search": searchCommand(sender, args); break;
+                    case "convertdatabase": convertDatabaseCommand(sender, args); break;
+                    default:
                 }
             } catch (TMInvalidDataException e) {
                 sender.sendMessage(withColourCode("&c" + e.getMessage()));
@@ -78,17 +86,17 @@ class TMCommands implements CommandExecutor {
     }
 
     // TicketManager command methods
-    void claimTicketCommand(CommandSender sender, String[] args, boolean performSilently) throws SQLException, TMInvalidDataException {
+    void claimTicketCommand(CommandSender sender, String[] args, boolean performSilently) throws DatabaseException, TMInvalidDataException {
         if (args.length <= 1) throw new TMInvalidDataException("Please at least have a ticket ID!");
         assignTicketCommand(sender, new String[] {args[0], args[1], sender.getName()}, performSilently);
     }
 
-    void unassignTicketCommand(CommandSender sender, String[] args, boolean performSilently) throws SQLException, TMInvalidDataException {
+    void unassignTicketCommand(CommandSender sender, String[] args, boolean performSilently) throws DatabaseException, TMInvalidDataException {
         if (args.length <= 1) throw new TMInvalidDataException("Please at least have a ticket ID!");
         assignTicketCommand(sender, new String[]{args[0], args[1], " "}, performSilently);
     }
 
-    void listOpenTicketsCommand(CommandSender sender, String[] args) throws SQLException, TMInvalidDataException  {
+    void listOpenTicketsCommand(CommandSender sender, String[] args) throws DatabaseException, TMInvalidDataException  {
         if (!senderHasPermission(sender, "ticketmanager.list"))
             throw new TMInvalidDataException("You do not have permission to perform this command!");
 
@@ -97,7 +105,7 @@ class TMCommands implements CommandExecutor {
         else page = 1;
 
         // Converts all open tickets to associated components
-        List<BaseComponent> allComponents =  DatabaseHandler.getOpenTickets().stream()
+        List<BaseComponent> allComponents =  getDB().getOpenTickets().stream()
                 .sorted(Comparator.comparing(Ticket::getPriority).reversed().thenComparing(Comparator.comparing(Ticket::getId).reversed()))
                 .flatMap(t -> {
                     String comment = t.getComments().get(0).comment;
@@ -120,10 +128,10 @@ class TMCommands implements CommandExecutor {
         sender.sendMessage(finalComponents.toArray(new BaseComponent[]{}));
     }
 
-    void viewTicketCommand(CommandSender sender, String[] args) throws SQLException, TMInvalidDataException {
+    void viewTicketCommand(CommandSender sender, String[] args) throws DatabaseException, TMInvalidDataException {
         if (args.length <= 1) throw new TMInvalidDataException("Please enter a ticket number to view!");
 
-        Ticket ticket = DatabaseHandler.getTicket(Integer.parseInt(args[1]));
+        Ticket ticket = getDB().getTicket(Integer.parseInt(args[1]));
 
         if (!senderHasPermission(sender, "ticketmanager.view.others") && playerLacksValidSelfPermission(sender, ticket, "ticketmanager.view.self"))
             throw new TMInvalidDataException("You do not have permission to view this ticket!");
@@ -152,12 +160,12 @@ class TMCommands implements CommandExecutor {
         // Removes player from updatedTickets table if player views own updated ticket
         if (!nonCreatorMadeChange(sender, ticket)) {
             ticket.setUpdatedByOtherUser(false);
-            DatabaseHandler.updateTicket(ticket);
+            getDB().updateTicket(ticket);
         }
 
     }
 
-    void createTicketCommand(CommandSender sender, String[] args) throws SQLException, TMInvalidDataException {
+    void createTicketCommand(CommandSender sender, String[] args) throws DatabaseException, TMInvalidDataException {
         if (args.length <= 1)
             throw new TMInvalidDataException("You cannot make a blank ticket!");
         if (!senderHasPermission(sender, "ticketmanager.create"))
@@ -165,7 +173,7 @@ class TMCommands implements CommandExecutor {
 
         String message = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
         Ticket ticket = new Ticket(sender, message);
-        DatabaseHandler.createTicket(ticket);
+        getDB().createTicket(ticket);
 
         // Notifications
         if (!senderHasPermission(sender, "ticketmanager.notify.onCreate"))
@@ -174,9 +182,9 @@ class TMCommands implements CommandExecutor {
                 withColourCode("&3[TicketManager] &7" + ticket.getCreator() + "&3 has created ticket &7#" + ticket.getId() + "&3:\n&7" + message));
     }
 
-    void commentTicketCommand(CommandSender sender, String[] args, boolean silent, boolean passThrough) throws SQLException, TMInvalidDataException {
+    void commentTicketCommand(CommandSender sender, String[] args, boolean silent, boolean passThrough) throws DatabaseException, TMInvalidDataException {
         if (args.length <= 2) throw new TMInvalidDataException("Please enter a ticket number and/or comment!");
-        Ticket ticket = DatabaseHandler.getTicket(Integer.parseInt(args[1]));
+        Ticket ticket = getDB().getTicket(Integer.parseInt(args[1]));
 
         if (!senderHasPermission(sender, "ticketmanager.comment.others") && playerLacksValidSelfPermission(sender, ticket, "ticketmanager.comment.self"))
             throw new TMInvalidDataException("You do not have permission to perform this command!");
@@ -189,7 +197,7 @@ class TMCommands implements CommandExecutor {
         String message = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
         ticket.addComment(sender, message);
         ticket.setUpdatedByOtherUser(nonCreatorMadeChange);
-        DatabaseHandler.updateTicket(ticket);
+        getDB().updateTicket(ticket);
 
         // Sends notifications
         if ((!senderHasPermission(sender, "ticketmanager.notify.onUpdate.others") && !passThrough) ||
@@ -206,13 +214,13 @@ class TMCommands implements CommandExecutor {
         }
     }
 
-    void closeTicketCommand(CommandSender sender, String[] args, boolean silent) throws SQLException, TMInvalidDataException {
+    void closeTicketCommand(CommandSender sender, String[] args, boolean silent) throws DatabaseException, TMInvalidDataException {
         if (args.length <= 1) throw new TMInvalidDataException("Please enter a ticket number and/or comment!");
 
         // If closing command with comment, run comment creator first
         if (args.length > 2) commentTicketCommand(sender, args,false, true);
 
-        Ticket ticket = DatabaseHandler.getTicket(Integer.parseInt(args[1]));
+        Ticket ticket = getDB().getTicket(Integer.parseInt(args[1]));
 
         // Does filter stuff
         if (!senderHasPermission(sender, "ticketmanager.close.others") && playerLacksValidSelfPermission(sender, ticket, "ticketmanager.close.self"))
@@ -226,7 +234,7 @@ class TMCommands implements CommandExecutor {
         ticket.setStatus("CLOSED");
         boolean nonCreatorChange = nonCreatorMadeChange(sender, ticket);
         ticket.setUpdatedByOtherUser(nonCreatorChange);
-        DatabaseHandler.updateTicket(ticket);
+        getDB().updateTicket(ticket);
 
         // Notifications
         if ((!senderHasPermission(sender, "ticketmanager.notify.onClose.others")) ||
@@ -242,17 +250,17 @@ class TMCommands implements CommandExecutor {
         }
     }
 
-    void assignTicketCommand(CommandSender sender, String[] args, boolean silent) throws SQLException, TMInvalidDataException {
+    void assignTicketCommand(CommandSender sender, String[] args, boolean silent) throws DatabaseException, TMInvalidDataException {
         if (args.length <= 1) throw new TMInvalidDataException("Please at least have a ticket ID!");
 
-        Ticket ticket = DatabaseHandler.getTicket(Integer.parseInt(args[1]));
+        Ticket ticket = getDB().getTicket(Integer.parseInt(args[1]));
         if (!senderHasPermission(sender,"ticketmanager.assign"))
             throw new TMInvalidDataException("You do not have permission to perform this command!");
 
         ticket.setAssignment(String.join(" ", Arrays.copyOfRange(args, 2, args.length)));
         if (nonCreatorMadeChange(sender, ticket))
             ticket.setUpdatedByOtherUser(true);
-        DatabaseHandler.updateTicket(ticket);
+        getDB().updateTicket(ticket);
 
         //Notifications
         if (!senderHasPermission(sender,"ticketmanager.notify.onUpdate.others") || silent)
@@ -261,7 +269,7 @@ class TMCommands implements CommandExecutor {
                 withColourCode("&3[TicketManager] Ticket &7#" + ticket.getId() + "&3 has been assigned to &7" + ticket.getAssignment()));
     }
 
-    void setPriorityTicketCommand(CommandSender sender, String[] args, boolean silent) throws SQLException, TMInvalidDataException {
+    void setPriorityTicketCommand(CommandSender sender, String[] args, boolean silent) throws DatabaseException, TMInvalidDataException {
         if (!senderHasPermission(sender, "ticketmanager.setpriority"))
             throw new TMInvalidDataException("You do not have permission to set ticket priorities!");
         if (args.length != 3) throw new TMInvalidDataException("Please use the correct format!");
@@ -271,7 +279,7 @@ class TMCommands implements CommandExecutor {
         if (priority < 1) priority = 1;
         else if (priority > 5) priority = 5;
 
-        Ticket ticket = DatabaseHandler.getTicket(Integer.parseInt(args[1]));
+        Ticket ticket = getDB().getTicket(Integer.parseInt(args[1]));
 
         if (ticket.getStatus().equals("CLOSED"))
             throw new TMInvalidDataException("Why would you try to change the priority of a closed ticket?");
@@ -279,7 +287,7 @@ class TMCommands implements CommandExecutor {
         ticket.setPriority(priority);
         if (nonCreatorMadeChange(sender, ticket))
             ticket.setUpdatedByOtherUser(true);
-        DatabaseHandler.updateTicket(ticket);
+        getDB().updateTicket(ticket);
 
         // Notifications
         if (!senderHasPermission(sender, "ticketmanager.notify.onUpdate.others") || silent)
@@ -293,12 +301,12 @@ class TMCommands implements CommandExecutor {
         }
     }
 
-    void teleportTicketCommand(CommandSender sender, String[] args) throws SQLException, TMInvalidDataException {
+    void teleportTicketCommand(CommandSender sender, String[] args) throws DatabaseException, TMInvalidDataException {
         if (args.length <= 1) throw new TMInvalidDataException("Please enter a ticket number to view!");
         if (!senderHasPermission(sender, "ticketmanager.teleport"))
             throw new TMInvalidDataException("You do not have permission to perform this command!");
 
-        Ticket ticket = DatabaseHandler.getTicket(Integer.parseInt(args[1]));
+        Ticket ticket = getDB().getTicket(Integer.parseInt(args[1]));
         ticket.getLocation().ifPresent(loc ->
                 Bukkit.getScheduler().runTask(TicketManager.getInstance(), () -> {
                     if (!(sender instanceof Player)) return;
@@ -307,19 +315,19 @@ class TMCommands implements CommandExecutor {
                 }));
     }
 
-    void reopenTicketCommand(CommandSender sender, String[] args, boolean silent) throws SQLException, TMInvalidDataException {
+    void reopenTicketCommand(CommandSender sender, String[] args, boolean silent) throws DatabaseException, TMInvalidDataException {
        if (args.length <= 1) throw new TMInvalidDataException("Please enter a ticket number!");
        if (!senderHasPermission(sender, "ticketmanager.reopen"))
            throw new TMInvalidDataException("You do not have permission to perform this command!");
 
-       Ticket ticket = DatabaseHandler.getTicket(Integer.parseInt(args[1]));
+       Ticket ticket = getDB().getTicket(Integer.parseInt(args[1]));
 
        if (ticket.getStatus().equals("OPEN")) throw new TMInvalidDataException("This ticket is already open!");
 
        ticket.setStatus("OPEN");
        if (nonCreatorMadeChange(sender, ticket))
            ticket.setUpdatedByOtherUser(true);
-       DatabaseHandler.updateTicket(ticket);
+       getDB().updateTicket(ticket);
 
        // Notifications
         if (!senderHasPermission(sender, "ticketmanager.notify.onUpdate.others") || silent)
@@ -332,21 +340,14 @@ class TMCommands implements CommandExecutor {
        }
     }
 
-    void closeAllTicketsCommand(CommandSender sender, String[] args, boolean silent) throws SQLException, TMInvalidDataException {
+    void closeAllTicketsCommand(CommandSender sender, String[] args, boolean silent) throws DatabaseException, TMInvalidDataException {
         if (!senderHasPermission(sender, "ticketmanager.closeall"))
             throw new TMInvalidDataException("You do not have permission to perform this command!");
         if (args.length != 3) throw new TMInvalidDataException("Please use the correct syntax!");
 
         int lower = Integer.parseInt(args[1]);
         int upper = Integer.parseInt(args[2]);
-
-        try (Connection connection = HikariCP.getConnection()) {
-            PreparedStatement stmt = connection.prepareStatement("UPDATE TicketManagerTicketsV2 SET STATUS = ? WHERE ID BETWEEN ? AND ?");
-            stmt.setString(1, "CLOSED");
-            stmt.setInt(2, lower);
-            stmt.setInt(3, upper);
-            stmt.executeUpdate();
-        }
+        getDB().massCloseTickets(lower, upper);
 
         if (!senderHasPermission(sender, "ticketmanager.notify.onUpdate.others") || silent)
             sender.sendMessage(withColourCode("&3Ticket mass close successful!"));
@@ -356,26 +357,70 @@ class TMCommands implements CommandExecutor {
         }
     }
 
-    void reloadConfig(CommandSender sender) throws SQLException, TMInvalidDataException {
+    void reloadConfig(CommandSender sender) throws DatabaseException, TMInvalidDataException {
         if (!senderHasPermission(sender, "ticketmanager.reload"))
             throw new TMInvalidDataException("You do not have permission to reload this plugin!");
+        TicketManager.readConfig(sender);
+    }
 
-        FileConfiguration config = TicketManager.getInstance().config;
-        HikariCP.LaunchDatabase(config.getString("Host"),
-                config.getString("Port"),
-                config.getString("DB_Name"),
-                config.getString("Username"),
-                config.getString("Password"));
-        sender.sendMessage(withColourCode("&3[TicketManager] Config reloaded successfully. Testing database connection..."));
-        Connection connection = HikariCP.getConnection();
-        connection.close();
-        sender.sendMessage(withColourCode("&3[TicketManager] Database connection established!"));
+    void convertDatabaseCommand(CommandSender sender, String[] args) throws DatabaseException, TMInvalidDataException {
+        // /ticket convertdatabase <From> <To>
+        // Filters...
+        if (!senderHasPermission(sender, "ticketmanager.convertdatabase"))
+            throw new TMInvalidDataException("You do not have permission to perform this command!");
+        if (args.length != 3) throw new TMInvalidDataException("Please use the correct format!");
+        Set<String> validTypes = Stream.of("mysql", "sqlite").collect(Collectors.toSet());
+        if (!validTypes.contains(args[1])) throw new TMInvalidDataException("Source database is not a valid type!");
+        if (!validTypes.contains(args[2])) throw new TMInvalidDataException("Destination database is not a valid type!");
+        if (args[1].equals(args[2])) throw new TMInvalidDataException("Source and destination cannot be the same!");
 
-        // Checks for detected conversion and initiates
-        if (DatabaseHandler.conversionIsRequired()) {
-            TicketManager.conversionInProgress.set(true);
-            DatabaseHandler.initiateConversionProcess();
-            TicketManager.conversionInProgress.set(false);
+        try {
+            sender.sendMessage(withColourCode("&3[TicketManager] Converting Database from " + args[1] + " to " + args[2] + "... Ticket commands locked"));
+            pushMassNotification("ticketmanager.notify.warning", "&4[TicketManager] DATABASE CONVERSION HAS BEEN INITIATED! DO NOT STOP SERVER");
+            TicketManager.getInstance().conversionInProgress.set(true);
+
+            if ((args[1].equals("mysql") && args[2].equals("sqlite")) || (args[1].equals("sqlite") && args[2].equals("mysql"))) {
+                SQLite sqLite;
+                MySQL mySQL;
+
+                if (getDB() instanceof MySQL) {
+                    sqLite = new SQLite(TicketManager.getInstance());
+                    mySQL = (MySQL) getDB();
+                }
+                else if (getDB() instanceof SQLite) {
+                    FileConfiguration config = TicketManager.getInstance().getConfig();
+                    mySQL = new MySQL(
+                            config.getString("MySQL_Host"),
+                            config.getString("MySQL_Port"),
+                            config.getString("MySQL_DBName"),
+                            config.getString("MySQL_Username"),
+                            config.getString("MySQL_Password"));
+                    sqLite = (SQLite) getDB();
+                } else {
+                    FileConfiguration config = TicketManager.getInstance().getConfig();
+                    mySQL = new MySQL(
+                            config.getString("MySQL_Host"),
+                            config.getString("MySQL_Port"),
+                            config.getString("MySQL_DBName"),
+                            config.getString("MySQL_Username"),
+                            config.getString("MySQL_Password"));
+                    sqLite = new SQLite(TicketManager.getInstance());
+                }
+
+                if (args[1].equals("mysql")) mySQL.convertToSQLite(sqLite);
+                else sqLite.convertToMySQL(mySQL);
+            }
+
+            TicketManager.getInstance().conversionInProgress.set(false);
+            pushMassNotification("ticketmanager.notify.warning", "&3[TicketManager] Database conversion completed &asuccessfully&c!\n" +
+                    " If the destination database is the desired database type, please change config and type &7/ticket reload&3!");
+            if (!TicketManager.getPermissions().has(sender, "ticketmanager.notify.warning"))
+                sender.sendMessage(withColourCode("&3[TicketManager] Database conversion completed &asuccessfully&3!\n" +
+                        " If destination database is the desired database type, please change config and type &7/ticket reload&3!"));
+        } catch (DatabaseException e) {
+            TicketManager.getInstance().conversionInProgress.set(false);
+            pushMassNotification("ticketmanager.notify.warning", "&3[TicketManager] Database conversion has &4failed&3!");
+            throw e;
         }
     }
 
@@ -412,7 +457,7 @@ class TMCommands implements CommandExecutor {
         sender.sendMessage(withColourCode(builder.toString()));
     }
 
-    void viewHistoryCommand(CommandSender sender, String[] args) throws SQLException, TMInvalidDataException {
+    void viewHistoryCommand(CommandSender sender, String[] args) throws DatabaseException, TMInvalidDataException {
         UUID targetID;
         String[] correctedArgs = new String[3];
         correctedArgs[0] = "history";
@@ -432,7 +477,7 @@ class TMCommands implements CommandExecutor {
         if (correctedArgs[1].equalsIgnoreCase("console")) targetID = null;
         else if (targetID == null) throw new TMInvalidDataException("This is not a valid user!");
 
-        List<Ticket> playerTickets = DatabaseHandler.getTicketsWithUUID(targetID);
+        List<Ticket> playerTickets = getDB().getTicketsWithUUID(targetID);
         String name = targetID == null ? "Console" : Bukkit.getOfflinePlayer(targetID).getName();
 
         if (playerTickets.size() == 0) sender.sendMessage(withColourCode("&3[TicketManager] &f" + correctedArgs[1] + " has 0 tickets."));
@@ -464,137 +509,50 @@ class TMCommands implements CommandExecutor {
         }
     }
 
-    void searchCommand(CommandSender sender, String[] args) throws SQLException, TMInvalidDataException {
+    void searchCommand(CommandSender sender, String[] args) throws DatabaseException, TMInvalidDataException {
         // /ticket search keywords:separated,by,commas status:OPEN/CLOSED time:5w creator:creator priority:value assignedto:player world:world
         if (!senderHasPermission(sender, "ticketmanager.search"))
             throw new TMInvalidDataException("You do not have permission to perform this command!");
         if (args.length < 2) throw new TMInvalidDataException("You must have at least one search term!");
 
-        try (Connection connection = HikariCP.getConnection()) {
-            StringBuilder sqlStatement = new StringBuilder("SELECT * FROM TicketManagerTicketsV2 WHERE ");
-            List<String> searches = new ArrayList<>(Arrays.asList(args));
-            List<String> arguments = new ArrayList<>();
-            searches.remove(0);
-            AtomicInteger atomicPage = new AtomicInteger(1);
+        // Stuff that goes into the function and needs to be passed back out
+        AtomicInteger atomicPage = new AtomicInteger(1);
+        List<String> searches = new ArrayList<>(Arrays.asList(args));
 
-            //Adds page value if not present
-            searches.stream().filter(str -> str.contains("-page:")).findFirst().ifPresentOrElse(String::length, () -> searches.add("-page:1"));
-            sender.sendMessage(withColourCode("&3[TicketManager] Processing query..."));
+        // Gets tickets
+        List<Ticket> tickets = getDB().dbSearchCommand(sender, searches, atomicPage);
 
-            // Fills argtypes, arguments, and creates PreparedStatement String
-            List<String> argTypes = searches.stream()
-                    .map(str -> str.split(":"))
-                    .map(arg -> {
-                        switch (arg[0]) {
-                            case "status":      //status:OPEN/CLOSED
-                                sqlStatement.append("STATUS = ? AND ");
-                                arguments.add(arg[1]);
-                                return arg[0];
-                            case "time":        //time:1y1w1d1h1m1s
-                                sqlStatement.append("CREATIONTIME >= ? AND ");
-                                arguments.add(arg[1]);
-                                return arg[0];
-                            case "creator":     //creator:username
-                                sqlStatement.append("CREATOR = ? AND ");
-                                arguments.add(arg[1]);
-                                return arg[0];
-                            case "priority":    //priority:1-5
-                                sqlStatement.append("PRIORITY = ? AND ");
-                                arguments.add(arg[1]);
-                                return arg[0];
-                            case "assignedto":  //assignedto:name
-                                sqlStatement.append("ASSIGNMENT = ? AND ");
-                                arguments.add(arg[1].equals("null") ? " " : arg[1]);
-                                return arg[0];
-                            case "world":       //world:world
-                                sqlStatement.append("LOCATION LIKE ? AND ");
-                                arguments.add(arg[1]);
-                                return arg[0];
-                            case "keywords":    //keywords:This,is,how,you,do,it
-                                StringBuilder keywordsBuilder = new StringBuilder();
-                                for (String ignored : arg[1].split(","))
-                                    keywordsBuilder.append("COMMENTS LIKE ? AND ");
-                                keywordsBuilder.delete(keywordsBuilder.length() - 5, keywordsBuilder.length());
-                                sqlStatement.append(keywordsBuilder.toString()).append(" AND ");
-                                arguments.add(arg[1] + " ");
-                                return arg[0];
-                            case "-page":
-                                atomicPage.set(Integer.parseInt(arg[1]));
-                                return null;
-                        }
-                        return null;
+        // Parses search result
+        if (tickets.size() == 0) sender.sendMessage(withColourCode("&3[TicketManager]&f Your search query returned 0 results"));
+        else {
+            List<BaseComponent> ticketComponents = tickets.stream()
+                    .sorted(Comparator.comparing(Ticket::getCreationTime).reversed())
+                    .flatMap(t -> {
+                        String world = t.getLocation().isPresent() ? t.getLocation().get().worldName : "null";
+                        String comment = t.getComments().get(0).comment;
+                        String biggestTime = getBiggestTime(t.getCreationTime());
+
+                        // Shortens comment preview to fit on one line
+                        if (12 + comment.length() + biggestTime.length() > 60)
+                            comment = comment.substring(0, 46 - biggestTime.length()) + "...";
+
+                        return Arrays.stream(new ComponentBuilder(withColourCode("\n" + priorityToColorCode(t) + "[" + t.getId() + "] " + statusToColorCode(t) + "[" +
+                                t.getStatus() + "] &8[&3" + t.getCreator() + "&8 -> &3" + t.getAssignment() + "&8]&3 [World " + world + "]"))
+                                .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket view " + t.getId()))
+                                .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to view ticket #" + t.getId())))
+                                .append(withColourCode("\n          &3" + biggestTime + "&f" + comment))
+                                .create());
                     })
-                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
+            ticketComponents.add(0, new ComponentBuilder(withColourCode("&3[TicketManager]&f Search query returned " + tickets.size() + " results:")).getComponent(0));
 
-            // Creates final SQL Statement
-            sqlStatement.delete(sqlStatement.length() - 5, sqlStatement.length()); //Gets rid of trailing AND
-            PreparedStatement stmt = connection.prepareStatement(sqlStatement.toString());
+            // It just does stuff, okay? Internal page count
+            searches.remove(searches.size() - 1); // Removes internal page
+            String params = String.join(" ", searches);
 
-            // Sets correct statement values
-            int curIndex = 1;
-            for (int listIndex = 0; listIndex < argTypes.size(); listIndex++) {
-                switch (argTypes.get(listIndex)) {
-                    case "status":
-                    case "creator":
-                    case "assignedto":
-                        stmt.setString(curIndex, arguments.get(listIndex));
-                        curIndex++;
-                        break;
-                    case "world":
-                        stmt.setString(curIndex, arguments.get(listIndex) + "%");
-                        curIndex++;
-                        break;
-                    case "time":
-                        stmt.setLong(curIndex, convertRelTimeToEpochSecond(arguments.get(listIndex)));
-                        curIndex++;
-                        break;
-                    case "priority":
-                        stmt.setByte(curIndex, Byte.parseByte(arguments.get(listIndex)));
-                        curIndex++;
-                        break;
-                    case "keywords":
-                        for (String term : arguments.get(listIndex).split(",")) {
-                            stmt.setString(curIndex, "%" + term + "%");
-                            curIndex++;
-                        }
-                        break;
-                }
-            }
-
-            // Grabs search results and collects to list
-            List<Ticket> tickets = DatabaseHandler.getTicketsFromRS(stmt.executeQuery());
-            if (tickets.size() == 0) sender.sendMessage(withColourCode("&3[TicketManager]&f Your search query returned 0 results"));
-            else {
-                List<BaseComponent> ticketComponents = tickets.stream()
-                        .sorted(Comparator.comparing(Ticket::getCreationTime).reversed())
-                        .flatMap(t -> {
-                            String world = t.getLocation().isPresent() ? t.getLocation().get().worldName : "null";
-                            String comment = t.getComments().get(0).comment;
-                            String biggestTime = getBiggestTime(t.getCreationTime());
-
-                            // Shortens comment preview to fit on one line
-                            if (12 + comment.length() + biggestTime.length() > 60)
-                                comment = comment.substring(0, 46 - biggestTime.length()) + "...";
-
-                            return Arrays.stream(new ComponentBuilder(withColourCode("\n" + priorityToColorCode(t) + "[" + t.getId() + "] " + statusToColorCode(t) + "[" +
-                                    t.getStatus() + "] &8[&3" + t.getCreator() + "&8 -> &3" + t.getAssignment() + "&8]&3 [World " + world + "]"))
-                                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ticket view " + t.getId()))
-                                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to view ticket #" + t.getId())))
-                                    .append(withColourCode("\n          &3" + biggestTime + "&f" + comment))
-                                    .create());
-                        })
-                        .collect(Collectors.toList());
-                ticketComponents.add(0, new ComponentBuilder(withColourCode("&3[TicketManager]&f Search query returned " + tickets.size() + " results:")).getComponent(0));
-
-                // It just does stuff, okay? Internal page count
-                searches.remove(searches.size() - 1); // Removes internal page
-                String params = String.join(" ", searches);
-
-                List<BaseComponent> sentMSG = implementPageAt(atomicPage.get(), getPartitionedComponents(0, 20, ticketComponents),
-                        "/ticket search " + params + " -page:");
-                sender.sendMessage(sentMSG.toArray(new BaseComponent[0]));
-            }
+            List<BaseComponent> sentMSG = implementPageAt(atomicPage.get(), getPartitionedComponents(0, 20, ticketComponents),
+                    "/ticket search " + params + " -page:");
+            sender.sendMessage(sentMSG.toArray(new BaseComponent[0]));
         }
     }
 
@@ -612,7 +570,7 @@ class TMCommands implements CommandExecutor {
         else return true;
     }
 
-    private List<List<BaseComponent>> getPartitionedComponents(int headerEndIndex,int maxLength, List<BaseComponent> components) {
+    public static List<List<BaseComponent>> getPartitionedComponents(int headerEndIndex,int maxLength, List<BaseComponent> components) {
         if (components.size() <  maxLength - 1) return Collections.singletonList(components);
 
         List<BaseComponent> headerComponents = components.subList(0, headerEndIndex + 1);
@@ -627,7 +585,7 @@ class TMCommands implements CommandExecutor {
                 .collect(Collectors.toList());
     }
 
-    private List<BaseComponent> implementPageAt(int page, List<List<BaseComponent>> partitionedComponents, String buttonCommand) {
+    public static List<BaseComponent> implementPageAt(int page, List<List<BaseComponent>> partitionedComponents, String buttonCommand) {
 
         // Establishes max pages and fixes out-of-bounds page values
         int maxPages = partitionedComponents.size();
@@ -681,7 +639,7 @@ class TMCommands implements CommandExecutor {
                 });
     }
 
-    private String priorityToColorCode(Ticket ticket) {
+    static String priorityToColorCode(Ticket ticket) {
         switch (ticket.getPriority()) {
             case 1: return "&1";
             case 2: return "&9";
@@ -691,7 +649,7 @@ class TMCommands implements CommandExecutor {
         }
     }
 
-    private String priorityToString(Ticket ticket) {
+    static String priorityToString(Ticket ticket) {
         switch (ticket.getPriority()) {
             case 1: return "LOWEST";
             case 2: return "LOW";
@@ -701,15 +659,15 @@ class TMCommands implements CommandExecutor {
         }
     }
 
-    private String statusToColorCode(Ticket ticket) {
+    static String statusToColorCode(Ticket ticket) {
         return ticket.getStatus().equals("CLOSED") ? "&c" : "&a";
     }
 
-    String withColourCode(String message) {
+    public static String withColourCode(String message) {
         return ChatColor.translateAlternateColorCodes('&', message);
     }
 
-    private long convertRelTimeToEpochSecond(String relTime) {
+    public static long convertRelTimeToEpochSecond(String relTime) {
        ArrayList<StringBuilder> values = new ArrayList<>();
         StringBuilder builder = new StringBuilder(relTime);
         values.add(new StringBuilder());
@@ -745,7 +703,7 @@ class TMCommands implements CommandExecutor {
                 .sum();
     }
 
-    private String getBiggestTime(long epochTime) {
+    static String getBiggestTime(long epochTime) {
         long timeAgo = Instant.now().getEpochSecond() - epochTime;
 
         if (timeAgo >= 31556952L) return (timeAgo / 31556952L) + " years ago: ";
@@ -775,5 +733,9 @@ class TMCommands implements CommandExecutor {
                 .filter(p -> TicketManager.getPermissions().has(p, "ticketmanager.notify.warning"))
                 .forEach(p -> p.sendMessage(message));
         e.printStackTrace();
+    }
+
+    private Database getDB() {
+        return TicketManager.dbHandler();
     }
 }

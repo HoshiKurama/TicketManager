@@ -1,5 +1,5 @@
 name: TicketManager
-version: 2.1.1
+version: 3.0.0
 main: engineer.hoshikurama.github.ticketmanager.v2.TicketManager
 api-version: 1.16
 authors: [HoshiKurama]
@@ -22,6 +22,9 @@ permissions:
     default: false
   ticketmanager.closeall:
     description: Mass close tickets between two ranges inclusive
+    default: false
+  ticketmanager.convertdatabase:
+    description: Access to convert databases
     default: false
   ticketmanager.notify.scheduledOpenTickets:
     description: Periodically notify players with how many tickets are open
@@ -170,3 +173,4 @@ permissions:
       ticketmanager.reload: true
       ticketmanager.silentcommands: true
       ticketmanager.notify.warning: true
+      ticketmanager.convertdatabase: true

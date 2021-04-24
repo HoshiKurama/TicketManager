@@ -1,0 +1,19 @@
+# ######################
+# Ticket Manager config
+# ######################
+# Database mode: Current supported modes are:
+# 'MySQL','SQLite'
+database_mode: 'SQLite'
+# New version checker values:
+# 'true','false'
+# DEPRECATED UNTIL FURTHER NOTICE
+new_version_checker: 'true'
+#
+# ######################
+# MySQL Database
+# ######################
+MySQL_Port: ''
+MySQL_Host: ''
+MySQL_DBName: ''
+MySQL_Username: ''
+MySQL_Password: ''
