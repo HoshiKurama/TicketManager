@@ -1,6 +1,6 @@
 name: TicketManager
-version: 3.0.0
-main: engineer.hoshikurama.github.ticketmanager.v2.TicketManager
+version: 4.0.0
+main: com.hoshikurama.github.ticketmanager.TicketManagerPlugin
 api-version: 1.16
 authors: [HoshiKurama]
 depend: [Vault]
@@ -8,169 +8,222 @@ commands:
   ticket:
     description: Base for all TicketManager commands
 permissions:
-  ticketmanager.silentcommands:
-    description: Access to all silent version of commands
+  ticketmanager.command.assign:
+    description: Assign a ticket
     default: false
-  ticketmanager.search:
-    description: access to search command
+  ticketmanager.command.close.all:
+    description: Close any ticket
     default: false
-  ticketmanager.reload:
-    description: Access to reload config
+  ticketmanager.command.close.own:
+    description: Close only own tickets
     default: false
-  ticketmanager.teleport:
-    description: Teleport to ticket creation location
+  ticketmanager.command.closeAll:
+    description: Mass close tickets
     default: false
-  ticketmanager.closeall:
-    description: Mass close tickets between two ranges inclusive
+  ticketmanager.command.comment.all:
+    description: Comment on any ticket
     default: false
-  ticketmanager.convertdatabase:
-    description: Access to convert databases
+  ticketmanager.command.comment.own:
+    description: Comment on only own tickets
     default: false
-  ticketmanager.notify.scheduledOpenTickets:
-    description: Periodically notify players with how many tickets are open
+  ticketmanager.command.convertDatabase:
+    description: Convert database to another supported type
     default: false
-  ticketmanager.notify.scheduledUpdatedTickets:
-    description: Periodically notify players with their tickets that have been updated
+  ticketmanager.command.create:
+    description: Create a ticket
     default: false
-  ticketmanager.notify.playerJoinOpenTickets:
-    description: Alert player of open tickets on player join
+  ticketmanager.command.help:
+    description: See list of ticket commands to which user has permissions for
     default: false
-  ticketmanager.notify.playerJoinUpdatedTickets:
-    description: Alert player of updated ticket on player join
+  ticketmanager.command.history.all:
+    description: View all users' histories of tickets
     default: false
-  ticketmanager.notify.onUpdate.self:
-    description: Receive notification when self-owned tickets are updated
+  ticketmanager.command.history.own:
+    description: View own history of tickets
     default: false
-  ticketmanager.notify.onUpdate.others:
-    description: Receive notifications on all ticket updates
+  ticketmanager.command.list:
+    description: List all open tickets
     default: false
-  ticketmanager.notify.onClose.self:
-    description: Receive notification on own tickets closed
+  ticketmanager.command.reload:
+    description: Restarts plugin
     default: false
-  ticketmanager.notify.onClose.others:
-    description: Receive notification on all ticket closes
+  ticketmanager.command.reopen:
+    description: Reopen any ticket
+    default: false
+  ticketmanager.command.search:
+    description: Search database for certain tickets
+    default: false
+  ticketmanager.command.setPriority:
+    description: Set priority of any ticket
+    default: false
+  ticketmanager.command.teleport:
+    description: Teleport to any ticket
+    default: false
+  ticketmanager.command.view.all:
+    description: View any ticket
+    default: false
+  ticketmanager.command.view.own:
+    description: View own ticket
+    default: false
+  ticketmanager.command.viewdeep.all:
+    description: View any detailed ticket
+    default: false
+  ticketmanager.command.viewdeep.own:
+    description: View own detailed ticket information
+    default: false
+  ticketmanager.commandArg.cooldown.override:
+    description: Overrides cooldown if enabled
+    default: false
+  ticketmanager.commandArg.silence:
+    description: Ability to perform silent variations
+    default: false
+  ticketmanager.commandArg.autotab:
+    description: Allows autotabbing (must have permission for command too)
+    default: false
+  ticketmanager.notify.openTickets.onJoin:
+    description: See open and assigned ticket count on login
+    default: false
+  ticketmanager.notify.openTickets.scheduled:
+    description: See open and assigned ticket count at scheduled intervals
+    default: false
+  ticketmanager.notify.unreadUpdates.onJoin:
+    description: See own tickets with updates on login
+    default: false
+  ticketmanager.notify.unreadUpdates.scheduled:
+    description: See own tickets with updates at scheduled intervals
     default: false
   ticketmanager.notify.warning:
-    description: Receive notifications on any potential issues
+    description: See modified stacktrace on errors
     default: false
-  ticketmanager.notify.onCreate:
-    description: Receive notification on created tickets
+  ticketmanager.notify.info:
+    description: See general TicketManager information
     default: false
-  ticketmanager.notify.update:
-    description: Receive notifications that an update is available
+  ticketmanager.notify.change.comment:
+    description: Creator sees when user comments on their ticket
     default: false
-  ticketmanager.create:
-    description: Create tickets
+  ticketmanager.notify.change.close:
+    description: Creator sees when user closes their ticket
     default: false
-  ticketmanager.view.self:
-    description: View tickets made by yourself
+  ticketmanager.notify.change.reopen:
+    description: Creator sees when user reopens their ticket
     default: false
-  ticketmanager.comment.self:
-    description: Comment on own tickets
+  ticketmanager.notify.massNotify.assign:
+    description: See ticket assignment events
     default: false
-  ticketmanager.close.self:
-    description: Close own tickets
+  ticketmanager.notify.massNotify.close:
+    description: See any ticket close events
     default: false
-  ticketmanager.history.self:
-    description: View all tickets made by yourself
+  ticketmanager.notify.massNotify.comment:
+    description: See any ticket comment events
     default: false
-  ticketmanager.help.basic:
-    description: Get list of commands for players
+  ticketmanager.notify.massNotify.create:
+    description: See ticket creation events
     default: false
-  ticketmanager.view.others:
-    description: View tickets made by others
+  ticketmanager.notify.massNotify.massClose:
+    description: See ticket mass close events
     default: false
-  ticketmanager.comment.others:
-    description: Comment on tickets made by others
+  ticketmanager.notify.massNotify.priority:
+    description: See ticket priority change events
     default: false
-  ticketmanager.close.others:
-    description: Close tickets
+  ticketmanager.notify.massNotify.reopen:
+    description: See ticket reopen events
     default: false
-  ticketmanager.assign:
-    description: Assign tickets
-    default: false
-  ticketmanager.setpriority:
-    description: Set ticket priority
-    default: false
-  ticketmanager.history.others:
-    description: View all tickets any player has made
-    default: false
-  ticketmanager.list:
-    description: List all currently open tickets
-    default: false
-  ticketmanager.reopen:
-    description: Reopen a ticket
-    default: false
-  ticketmanager.help.all:
-    description: Show all commands
-    default: false
-  ticketmanager.notify.staff:
-    description: Staff notifications. Contains all notifications as * except for warning and update notifications
-    default: false
+  ticketmanager.command.*:
+    description: Wildcard for all commands and commandargs
     children:
-      ticketmanager.notify.onCreate: true
-      ticketmanager.notify.onUpdate.self: true
-      ticketmanager.notify.onUpdate.others: true
-      ticketmanager.notify.onClose.self: true
-      ticketmanager.notify.onClose.others: true
-      ticketmanager.notify.scheduledOpenTickets: true
-      ticketmanager.notify.scheduledUpdatedTickets: true
-      ticketmanager.notify.playerJoinOpenTickets: true
-      ticketmanager.notify.playerJoinUpdatedTickets: true
+      ticketmanager.command.assign: true
+      ticketmanager.command.close.all: true
+      ticketmanager.command.close.own: true
+      ticketmanager.command.closeAll: true
+      ticketmanager.command.comment.all: true
+      ticketmanager.command.comment.own: true
+      ticketmanager.command.convertDatabase: true
+      ticketmanager.command.create: true
+      ticketmanager.command.help: true
+      ticketmanager.command.history.all: true
+      ticketmanager.command.history.own: true
+      ticketmanager.command.list: true
+      ticketmanager.command.reload: true
+      ticketmanager.command.reopen: true
+      ticketmanager.command.search: true
+      ticketmanager.command.setPriority: true
+      ticketmanager.command.teleport: true
+      ticketmanager.command.view.all: true
+      ticketmanager.command.view.own: true
+      ticketmanager.command.viewdeep.all: true
+      ticketmanager.command.viewdeep.own: true
+    default: false
+  ticketmanager.notify.change.*:
+    description: Wildcard for all status changes on own ticket
+    children:
+      ticketmanager.notify.change.comment: true
+      ticketmanager.notify.change.close: true
+      ticketmanager.notify.change.reopen: true
+    default: false
+  ticketmanager.massNotify.*:
+    description: Wildcard for all mass notifications (except errors and plugin info)
+    children:
+      ticketmanager.notify.massNotify.assign: true
+      ticketmanager.notify.massNotify.close: true
+      ticketmanager.notify.massNotify.comment: true
+      ticketmanager.notify.massNotify.create: true
+      ticketmanager.notify.massNotify.massClose: true
+      ticketmanager.notify.massNotify.priority: true
+      ticketmanager.notify.massNotify.reopen: true
+    default: false
   ticketmanager.notify.*:
-    description: Wildcard for all notifications
-    default: false
+    description: Wildcard for all notification permissions
     children:
-      ticketmanager.notify.onCreate: true
-      ticketmanager.notify.onUpdate.self: true
-      ticketmanager.notify.onUpdate.others: true
-      ticketmanager.notify.onClose.self: true
-      ticketmanager.notify.onClose.others: true
-      ticketmanager.notify.scheduledOpenTickets: true
-      ticketmanager.notify.scheduledUpdatedTickets: true
-      ticketmanager.notify.playerJoinOpenTickets: true
-      ticketmanager.notify.playerJoinUpdatedTickets: true
+      ticketmanager.notify.openTickets.onJoin: true
+      ticketmanager.notify.openTickets.scheduled: true
+      ticketmanager.notify.unreadUpdates.onJoin: true
+      ticketmanager.notify.unreadUpdates.scheduled: true
       ticketmanager.notify.warning: true
-      ticketmanager.notify.update: true
-  ticketmanager.manage:
-    description: General permissions for mods
+      ticketmanager.notify.info: true
+      ticketmanager.massNotify.*: true
+      ticketmanager.notify.change.*: true
     default: false
-    children:
-      ticketmanager.view.others: true
-      ticketmanager.comment.others: true
-      ticketmanager.close.others: true
-      ticketmanager.assign: true
-      ticketmanager.setpriority: true
-      ticketmanager.history.others: true
-      ticketmanager.list: true
-      ticketmanager.reopen: true
-      ticketmanager.help.all: true
-      ticketmanager.notify.staff: true
-      ticketmanager.search: true
-  ticketmanager.basic:
-    default: false
-    description: Basic permissions for players
-    children:
-      ticketmanager.create: true
-      ticketmanager.view.self: true
-      ticketmanager.comment.self: true
-      ticketmanager.close.self: true
-      ticketmanager.history.self: true
-      ticketmanager.help.basic: true
-      ticketmanager.notify.onClose.self: true
-      ticketmanager.notify.onUpdate.self: true
-      ticketmanager.notify.scheduledUpdatedTickets: true
-      ticketmanager.notify.playerJoinUpdatedTickets: true
   ticketmanager.*:
-    description: Wildcard permission
-    default: op
+    description: Wildcard for all TicketManager permissions
     children:
       ticketmanager.notify.*: true
+      ticketmanager.command.*: true
+      ticketmanager.commandArg.cooldown.override: true
+      ticketmanager.commandArg.silence: true
+      ticketmanager.commandArg.autotab: true
+    default: op
+  ticketmanager.basic:
+    description: Preset for normal users
+    children:
+      ticketmanager.command.close.own: true
+      ticketmanager.command.comment.own: true
+      ticketmanager.command.create: true
+      ticketmanager.command.help: true
+      ticketmanager.command.history.own: true
+      ticketmanager.command.view.own: true
+      ticketmanager.commandArg.autotab: true
+      ticketmanager.notify.unreadUpdates.onJoin: true
+      ticketmanager.notify.unreadUpdates.scheduled: true
+      ticketmanager.notify.change.*: true
+    default: false
+  ticketmanager.manage:
+    description: Preset for staff (includes ticketmanager.basic)
+    children:
       ticketmanager.basic: true
-      ticketmanager.manage: true
-      ticketmanager.teleport: true
-      ticketmanager.closeall: true
-      ticketmanager.reload: true
-      ticketmanager.silentcommands: true
-      ticketmanager.notify.warning: true
-      ticketmanager.convertdatabase: true
+      ticketmanager.command.assign: true
+      ticketmanager.command.close.all: true
+      ticketmanager.command.comment.all: true
+      ticketmanager.command.list: true
+      ticketmanager.command.reopen: true
+      ticketmanager.command.search: true
+      ticketmanager.command.setPriority: true
+      ticketmanager.command.view.all: true
+      ticketmanager.command.viewdeep.all: true
+      ticketmanager.command.viewdeep.own: true
+      ticketmanager.command.history.all: true
+      ticketmanager.commandArg.cooldown.override: true
+      ticketmanager.notify.openTickets.onJoin: true
+      ticketmanager.notify.openTickets.scheduled: true
+      ticketmanager.notify.info: true
+      ticketmanager.massNotify.*: true
+    default: false
