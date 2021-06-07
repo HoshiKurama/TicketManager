@@ -1,0 +1,10 @@
+.gradle
+.idea
+build
+gradle
+API_KEYS.kt
+src/main/Stuff.txt
+gradle.properties
+gradlew
+gradlew.bat
+settings.gradle
