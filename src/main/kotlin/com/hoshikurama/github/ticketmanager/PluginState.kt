@@ -94,7 +94,8 @@ class PluginState {
                 database.updateDatabase()
                 mainPlugin.pluginLocked = false
             }, 20)
-        } else mainPlugin.pluginLocked = false
+        }
+        mainPlugin.pluginLocked = false
     }
 
     class Cooldown(private val enabled: Boolean, private val duration: Long) {

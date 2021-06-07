@@ -30,9 +30,7 @@ class TicketManagerPlugin : JavaPlugin() {
         pluginLocked = true
 
         // Creates Plugin State from config file
-        // Plugin relocked because PluginState() unlocks upon completion
         configState = PluginState()
-        mainPlugin.pluginLocked = true
 
         // Find Vault plugin
         server.servicesManager.getRegistration(Permission::class.java)?.provider
@@ -49,6 +47,7 @@ class TicketManagerPlugin : JavaPlugin() {
             Metrics.SingleLineChart("tickets_made")
             { ticketCountMetrics.getAndSet(0) }
         )
+
 
         Bukkit.getScheduler().runTaskTimerAsynchronously(mainPlugin, Runnable {
             if (anyLocksPresent()) return@Runnable

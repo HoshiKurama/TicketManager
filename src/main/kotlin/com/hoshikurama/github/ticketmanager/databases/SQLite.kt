@@ -330,7 +330,6 @@ internal class SQLite : Database {
     }
 
     override fun updateDatabase() {
-        mainPlugin.pluginLocked = true
         pushMassNotify("ticketmanager.notify.info", { it.informationDBUpdate } )
 
         fun playerNameToUUIDOrNull(name: String) = Bukkit.getOfflinePlayers()
@@ -380,7 +379,6 @@ internal class SQLite : Database {
             session.run(queryOf("DROP TABLE TicketManagerTicketsV2;").asUpdate)
 
             pushMassNotify("ticketmanager.notify.info",  { it.informationDBUpdateComplete } )
-            mainPlugin.pluginLocked = false
         }
     }
 
