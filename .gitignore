@@ -7,4 +7,4 @@ src/main/Stuff.txt
 gradle.properties
 gradlew
 gradlew.bat
-settings.gradle
+settings.gradle.kts
