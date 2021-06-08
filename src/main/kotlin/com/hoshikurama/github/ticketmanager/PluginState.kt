@@ -32,46 +32,42 @@ class PluginState {
         mainPlugin.reloadConfig()
         val config = mainPlugin.config
 
-        enabledLocales = attemptConfigRead(
-            { AllLocales(
-                config.getString("Colour_Code")!!,
-                config.getString("Preferred_Locale")!!,
-                config.getString("Console_Locale")!!,
-                config.getString("Force_Locale").toBoolean())
-            }, AllLocales())
+        config.run {
+            enabledLocales = AllLocales(
+                getString("Colour_Code", "&3")!!,
+                getString("Preferred_Locale", "en_ca")!!,
+                getString("Console_Locale", "en_ca")!!,
+                getBoolean("Force_Locale", false)
+            )
 
-        cooldowns = attemptConfigRead(
-            { Cooldown(
-                config.getString("Use_Cooldowns").toBoolean(),
-                config.getString("Cooldown_Time")!!.toLong())
-            }, Cooldown(false, 0))
+            cooldowns = Cooldown(
+                getBoolean("Use_Cooldowns", false),
+                getLong("Cooldown_Time", 0L)
+            )
 
-        database = attemptConfigRead(
-            { val type = config.getString("Database_Mode")!!
-                .let {
-                    try { Database.Types.valueOf(it) }
-                    catch (e: Exception) { Database.Types.SQLite }
-                }
+            database = tryOrNull {
+                val type = getString("Database_Mode", "SQLite")!!
+                    .let { tryOrNull { Database.Types.valueOf(it) } ?: Database.Types.SQLite }
+
                 when (type) {
                     Database.Types.MySQL -> MySQL(
-                        config.getString("MySQL_Host")!!,
-                        config.getString("MySQL_Port")!!,
-                        config.getString("MySQL_DBName")!!,
-                        config.getString("MySQL_Username")!!,
-                        config.getString("MySQL_Password")!!)
+                        getString("MySQL_Host")!!,
+                        getString("MySQL_Port")!!,
+                        getString("MySQL_DBName")!!,
+                        getString("MySQL_Username")!!,
+                        getString("MySQL_Password")!!)
                     Database.Types.SQLite -> SQLite()
                 }
-            }, SQLite())
+            } ?: SQLite()
 
-        allowUnreadTicketUpdates = attemptConfigRead(
-            { config.getString("Allow_Unread_Ticket_Updates").toBoolean() },
-            true
-        )
+            allowUnreadTicketUpdates = getBoolean("Allow_Unread_Ticket_Updates", true)
+        }
 
-        serverType = attemptConfigRead(
-            { Class.forName("com.destroystokyo.paper.VersionHistoryManager\$VersionData")
-                ?.let { ServerType.Paper } ?: ServerType.Spigot },
-            ServerType.Spigot)
+        serverType = tryOrNull {
+            Class.forName("com.destroystokyo.paper.VersionHistoryManager\$VersionData")
+            ServerType.Paper
+        } ?: ServerType.Spigot
+
 
         if (announceGeneration) {
             Bukkit.getScheduler().scheduleSyncDelayedTask(mainPlugin, {
@@ -94,8 +90,7 @@ class PluginState {
                 database.updateDatabase()
                 mainPlugin.pluginLocked = false
             }, 20)
-        }
-        mainPlugin.pluginLocked = false
+        } else mainPlugin.pluginLocked = false
     }
 
     class Cooldown(private val enabled: Boolean, private val duration: Long) {
@@ -117,11 +112,7 @@ class PluginState {
         Paper, Spigot
     }
 
-    private inline fun <T> attemptConfigRead(expected: () -> T, failed: T): T =
-        try { expected() }
-        catch (e: Exception) {
-            e.printStackTrace()
-            postModifiedStacktrace(e)
-            failed
-        }
+    private inline fun <T> tryOrNull(function: () -> T): T? =
+        try { function() }
+        catch (ignored: Exception) { null }
 }

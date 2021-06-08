@@ -5,10 +5,10 @@ import org.yaml.snakeyaml.Yaml
 
 const val translationNotFound = " TNF "
 
-class AllLocales(val colourCode: String = "&3",
-                 preferredLocale: String = "en_ca",
-                 consoleLocale1: String = "en_ca",
-                 forceLocale: Boolean = false
+class AllLocales(val colourCode: String,
+                 preferredLocale: String,
+                 consoleLocale1: String,
+                 forceLocale: Boolean
 ) {
     private val activeTypes: Map<String, TMLocale>
     private val defaultType: TMLocale
@@ -17,7 +17,8 @@ class AllLocales(val colourCode: String = "&3",
     init {
         val supportedTypes = mapOf(
             "en_ca" to EnglishCanada(colourCode),
-            //"en_us" to EnglishUS(colourCode),
+            "en_us" to EnglishUS(colourCode),
+            "en_uk" to EnglishUK(colourCode)
         )
 
         defaultType = supportedTypes.getOrDefault(preferredLocale.lowercase(), EnglishCanada(colourCode))
@@ -381,5 +382,5 @@ sealed class TMLocale(colourCode: String, locale: String) {
 }
 
 class EnglishCanada(colourCode: String) : TMLocale(colourCode, "en_CA")
-
-//class EnglishUS(colourCode: String) : Locale(colourCode, "en_US")
+class EnglishUS(colourCode: String) : TMLocale(colourCode, "en_CA") // No words differ from en_CA
+class EnglishUK(colourCode: String) : TMLocale(colourCode, "en_CA") // No words differ from en_CA

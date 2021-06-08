@@ -15,7 +15,7 @@
 # #####################
 # Force Locale: Forces specific language to be used for commands and responses.
 # Values: true, false
-Force_Locale: 'false'
+Force_Locale: false
 #
 # Preferred Locale: Locale to use when player locale is not found. Using a non-supported
 # locale will cause TicketManager to internally default to Canadian English.
@@ -38,12 +38,12 @@ Console_Locale: 'en_CA'
 # that create or modify a ticket. Cool-downs apply to ALL users without the
 # override permission.
 # Values: 'true', 'false'
-Use_Cooldowns: 'false'
+Use_Cooldowns: false
 #
 # Ticket Modification Cool-down: Time in seconds before a user is able to create or
 # modify a ticket. This applies to ALL users without the override permission if
 # cool-downs are enabled.
-Cooldown_Time: '0'
+Cooldown_Time: 0
 #
 # #####################
 #  Database Settings:
@@ -63,6 +63,7 @@ MySQL_Host: ''
 MySQL_DBName: ''
 MySQL_Username: ''
 MySQL_Password: ''
+#
 # ######################
 #        Other
 # ######################
@@ -78,4 +79,4 @@ Colour_Code: '&3'
 # status change. Setting value to 'false' prevents TicketManager
 # from flagging a ticket as unread.
 # Values: 'true', 'false'
-Allow_Unread_Ticket_Updates: 'true'
+Allow_Unread_Ticket_Updates: true
