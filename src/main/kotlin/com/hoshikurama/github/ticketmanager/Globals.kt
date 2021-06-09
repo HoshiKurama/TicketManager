@@ -10,7 +10,9 @@ import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import java.time.Instant
+import java.util.*
 import java.util.logging.Level
+import kotlin.Comparator
 
 internal val sortForList: Comparator<Ticket> = Comparator.comparing(Ticket::priority).reversed().thenComparing(Comparator.comparing(Ticket::id).reversed())
 
@@ -20,6 +22,50 @@ internal val mainPlugin: TicketManagerPlugin
 internal val pluginState: PluginState
     get() = mainPlugin.configState
 
+
+fun CommandSender.sendPlatformMessage(
+    component: net.md_5.bungee.api.chat.BaseComponent,
+    serverType: PluginState.ServerType? = pluginState.serverType
+    ) {
+    when (serverType) {
+        PluginState.ServerType.Paper -> sendMessage(component)
+        PluginState.ServerType.Spigot -> spigot().sendMessage(component)
+        else -> try {
+            Class.forName("com.destroystokyo.paper.VersionHistoryManager\$VersionData")
+            sendPlatformMessage(component, PluginState.ServerType.Paper)
+        } catch (e: Exception) {
+            sendPlatformMessage(component, PluginState.ServerType.Spigot)
+        }
+    }
+}
+
+fun Player.sendPlatformMessage(
+    component: net.md_5.bungee.api.chat.BaseComponent,
+    serverType: PluginState.ServerType? = pluginState.serverType
+) {
+    when (serverType) {
+        PluginState.ServerType.Paper -> sendMessage(component)
+        PluginState.ServerType.Spigot -> spigot().sendMessage(component)
+        else -> try {
+            Class.forName("com.destroystokyo.paper.VersionHistoryManager\$VersionData")
+            sendPlatformMessage(component, PluginState.ServerType.Paper)
+        } catch (e: Exception) {
+            sendPlatformMessage(component, PluginState.ServerType.Spigot)
+        }
+    }
+}
+
+fun getUUUIDStringOrNull(playerName: String): String? {
+    return when (pluginState.serverType) {
+        PluginState.ServerType.Paper -> Bukkit.getPlayerUniqueId(playerName)?.toString()
+        PluginState.ServerType.Spigot ->
+            Bukkit.getOfflinePlayers()
+                .asSequence()
+                .filter { it.name?.equals(playerName) ?: false }
+                .map { it.uniqueId.toString() }
+                .firstOrNull()
+    }
+}
 
 fun byteToPriority(byte: Byte) = when (byte.toInt()) {
     1 -> Ticket.Priority.LOWEST
@@ -60,7 +106,7 @@ fun postModifiedStacktrace(e: Exception) {
                 .map(::TextComponent)
                 .forEach { sentComponent.addExtra(it) }
 
-            p.first.sendMessage(sentComponent)
+            p.first.sendPlatformMessage(sentComponent, null)
         }
 }
 

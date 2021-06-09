@@ -30,7 +30,7 @@ class Ticket(
         }
     }
     data class Location(val world: String, val x: Int, val y: Int, val z: Int) {
-        constructor(bukkitLoc: org.bukkit.Location) : this(bukkitLoc.world.name, bukkitLoc.blockX, bukkitLoc.blockY, bukkitLoc.blockZ)
+        constructor(bukkitLoc: org.bukkit.Location) : this(bukkitLoc.world!!.name, bukkitLoc.blockX, bukkitLoc.blockY, bukkitLoc.blockZ)
         constructor(split: List<String>) : this(split[0], split[1].toInt(), split[2].toInt(), split[3].toInt())
 
         override fun toString() = "$world $x $y $z"

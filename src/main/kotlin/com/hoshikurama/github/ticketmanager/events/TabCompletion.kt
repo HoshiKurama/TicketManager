@@ -114,7 +114,7 @@ private fun tabCompleteEventFunction(sender: CommandSender, args: List<String>):
             commandWordSetPriority, commandWordSilentSetPriority -> when { // /ticket setpriority <ID> <Level>
                !perms.hasPriority -> listOf("")
                 args.size == 2 -> listOf("<$parameterID>").filter { it.startsWith(args[1]) }
-                args.size == 3 -> listOf("<$parameterLevel>").filter { it.startsWith(args[2]) }
+                args.size == 3 -> listOf("<$parameterLevel>", "1", "2", "3", "4", "5").filter { it.startsWith(args[2]) }
                 else -> listOf("")
             }
 

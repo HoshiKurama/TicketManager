@@ -532,18 +532,6 @@ class Commands : CommandExecutor {
             massNotifyPerm = "ticketmanager.notify.massNotify.massClose",
             creatorAlertPerm = "ticketmanager.notify.change.massClose"
         )
-        /*
-        return NotifyParams(
-
-            massNotifyLambda = { it.notifyTicketMassCloseEvent
-                .replace("%user%", sender.name)
-                .replace("%low%", args[1])
-                .replace("%high%", args[2]) },
-            creatorLambda = null,
-            massNotifyPerm = "ticketmanager.notify.massNotify.massClose",
-            creatorAlertPerm = "ticketmanager.notify.change.massClose"
-        )
-         */
     }
 
     // /ticket comment <ID> <Comment…>
@@ -679,7 +667,7 @@ class Commands : CommandExecutor {
             .map(::TextComponent)
             .forEach { sentComponent.addExtra(it) }
 
-        sender.sendMessage(sentComponent)
+        sender.sendPlatformMessage(sentComponent)
     }
 
     // /ticket history [User] [Page]
@@ -692,7 +680,7 @@ class Commands : CommandExecutor {
         val requestedPage = if (args.size >= 3) args[2].toInt() else 1
 
         // Leaves console as null. Otherwise attempts UUID grab or UUID_NOT_FOUND
-        val uuidAsString = targetName?.run { Bukkit.getPlayerUniqueId(this)?.toString() ?: "UUID_NOT_FOUND" } ?: "NULL"
+        val uuidAsString = targetName?.run { getUUUIDStringOrNull(this) ?: "UUID_NOT_FOUND" } ?: "NULL"
 
         val resultSize: Int
         val resultsChunked = pluginState.database.searchDB(mapOf("creator" to uuidAsString))
@@ -730,7 +718,7 @@ class Commands : CommandExecutor {
             }
         }
 
-        sender.sendMessage(sentComponent)
+        sender.sendPlatformMessage(sentComponent)
     }
 
     // /ticket list [Page]
@@ -744,7 +732,7 @@ class Commands : CommandExecutor {
             baseCommand = locale.run{ { "/$commandBase $commandWordList " } }
         )
 
-        sender.sendMessage(sentMSG)
+        sender.sendPlatformMessage(sentMSG)
     }
 
     private fun createGeneralList(
@@ -868,7 +856,7 @@ class Commands : CommandExecutor {
             baseCommand = locale.run { { "/$commandBase $commandWordListAssigned " } }
         )
 
-        sender.sendMessage(sentMSG)
+        sender.sendPlatformMessage(sentMSG)
     }
 
     // /ticket reload
@@ -1032,7 +1020,7 @@ class Commands : CommandExecutor {
             }
             sentComponent.addExtra(pageComponent)
         }
-        sender.sendMessage(sentComponent)
+        sender.sendPlatformMessage(sentComponent)
     }
 
     // /ticket setpriority <ID> <Level>
@@ -1112,7 +1100,7 @@ class Commands : CommandExecutor {
 
         components.forEach { sentComponent.addExtra(it) }
 
-        sender.sendMessage(sentComponent)
+        sender.sendPlatformMessage(sentComponent)
     }
 
     // /ticket view <ID>
@@ -1138,7 +1126,7 @@ class Commands : CommandExecutor {
             .map(::TextComponent)
             .forEach { message.addExtra(it) }
 
-        sender.sendMessage(message)
+        sender.sendPlatformMessage(message)
     }
 
     private fun buildTicketInfo(ticket: Ticket, locale: TMLocale): TextComponent {
@@ -1217,7 +1205,7 @@ class Commands : CommandExecutor {
             .map(::TextComponent)
             .forEach { sentMessage.addExtra(it) }
 
-        sender.sendMessage(sentMessage)
+        sender.sendPlatformMessage(sentMessage)
     }
 }
 

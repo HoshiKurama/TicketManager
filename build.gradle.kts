@@ -4,10 +4,11 @@ plugins {
     kotlin("jvm") version "1.5.10"
     id("com.github.johnrengelman.shadow") version "7.0.0"
     application
+    java
 }
 
 group = "com.hoshikurama.github"
-version = "4.0.0-SNAPSHOT"
+version = "4.0.1"
 
 apply {
     plugin("application")
@@ -22,6 +23,7 @@ repositories {
     maven { url = uri("https://papermc.io/repo/repository/maven-public/") }
     maven { url = uri("https://oss.sonatype.org/content/groups/public/") }
     maven { url = uri("https://jitpack.io") }
+    maven { url = uri("https://oss.sonatype.org/content/repositories/central") }
 }
 
 dependencies {
@@ -56,5 +58,5 @@ tasks {
 }
 
 tasks.withType<KotlinCompile>() {
-    kotlinOptions.jvmTarget = "16"
+    kotlinOptions.jvmTarget = "11"
 }

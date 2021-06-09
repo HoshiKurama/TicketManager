@@ -1,5 +1,5 @@
 name: TicketManager
-version: 4.0.0
+version: 4.0.1
 main: com.hoshikurama.github.ticketmanager.TicketManagerPlugin
 api-version: 1.16
 authors: [HoshiKurama]

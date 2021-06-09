@@ -15,19 +15,20 @@ class AllLocales(val colourCode: String,
     val consoleLocale: TMLocale
 
     init {
+        val fallback = EnglishCanada(colourCode)
         val supportedTypes = mapOf(
-            "en_ca" to EnglishCanada(colourCode),
+            "en_ca" to fallback,
             "en_us" to EnglishUS(colourCode),
             "en_uk" to EnglishUK(colourCode)
         )
 
-        defaultType = supportedTypes.getOrDefault(preferredLocale.lowercase(), EnglishCanada(colourCode))
+        defaultType = supportedTypes.getOrDefault(preferredLocale.lowercase(), fallback)
         consoleLocale = supportedTypes.getOrDefault(consoleLocale1.lowercase(), defaultType)
         activeTypes = if (forceLocale) mapOf() else supportedTypes
     }
 
     fun getOrDefault(type: String) = activeTypes.getOrDefault(type.lowercase(), defaultType)
-    fun getCommandBases() = activeTypes.map { it.value.commandBase }.toSet()
+    fun getCommandBases() = if (activeTypes.isEmpty()) setOf(defaultType.commandBase) else activeTypes.map { it.value.commandBase }.toSet()
 }
 
 sealed class TMLocale(colourCode: String, locale: String) {
