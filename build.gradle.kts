@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.hoshikurama.github"
-version = "4.0.1"
+version = "4.1.0"
 
 apply {
     plugin("application")

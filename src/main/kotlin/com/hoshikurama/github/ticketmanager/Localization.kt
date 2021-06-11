@@ -171,6 +171,8 @@ sealed class TMLocale(colourCode: String, locale: String) {
     val searchTime: String
     val searchWorld: String
     val searchPage: String
+    val searchClosedBy: String
+    val searchLastClosedBy: String
 
     // Ticket Notifications
     val notifyUnreadUpdateSingle: String
@@ -379,6 +381,8 @@ sealed class TMLocale(colourCode: String, locale: String) {
         parameterTargetDB = matchOrDefault("Parameters_Target_Database")
         parameterConstraints = matchOrDefault("Parameters_Constraints")
         warningsUnexpectedError = matchOrDefault("Warning_UnexpectedError")
+        searchClosedBy = matchOrDefault("Search_ClosedBy")
+        searchLastClosedBy = matchOrDefault("Search_LastClosedBy")
     }
 }
 

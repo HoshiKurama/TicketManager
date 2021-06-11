@@ -32,7 +32,7 @@ interface Database {
     fun getTicketIDsWithUpdates(uuid: UUID): List<Int>
     fun isValidID(ticketID: Int): Boolean
     fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?)
-    fun searchDB(params: Map<String, String>): List<Ticket>
+    fun searchDatabase(searchFunction: (Ticket) -> Boolean): List<Ticket>
 
     // Database Modifications
     fun closeDatabase()

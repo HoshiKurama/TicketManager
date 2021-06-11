@@ -199,48 +199,16 @@ internal class MySQL(
         }
     }
 
-    override fun searchDB(params: Map<String, String>): List<Ticket> {
-        if (params.isEmpty()) return emptyList()
+    override fun searchDatabase(searchFunction: (Ticket) -> Boolean): List<Ticket> {
+        val matchedTickets = mutableListOf<Ticket>()
 
-        fun toNullable(s: String) = s.takeIf { it != "NULL" }
-
-        // Builds map of functions to apply to ticket
-        val functions = params.toList()
-            .mapNotNull {
-                when (it.first) {
-                    "assignedto" -> { t: Ticket -> t.assignedTo == toNullable(it.second) }
-                    "creator" -> { t: Ticket -> t.creatorUUID?.toString() == toNullable(it.second) }
-                    "priority" -> { t: Ticket -> t.priority.level == it.second.toByte() }
-                    "status" -> { t: Ticket -> t.status.name == it.second }
-                    "time" -> { t: Ticket -> t.actions[0].timestamp >= it.second.toLong() }
-                    "world" -> { t: Ticket -> t.location?.world?.equals(it.second) ?: false }
-                    "keywords" -> { t: Ticket ->
-                        it.second
-                            .split(",")
-                            .map { s ->
-                                t.actions.asSequence()
-                                    .filter { a ->  a.type == Ticket.Action.Type.OPEN || a.type == Ticket.Action.Type.COMMENT }
-                                    .any { a -> a.message?.lowercase()?.contains(s.lowercase()) ?: false }
-                            }
-                            .all { results -> results }
-                    }
-
-                    else -> null
-                }
-            }
-
-        val ticketMatchesSearch =  { ticket: Ticket -> functions.asSequence().map { it.invoke(ticket) }.all { it } }
-
-        val tickets = mutableListOf<Ticket>()
         using(sessionOf(dataSource)) { session ->
             session.forEach(queryOf("SELECT * FROM TicketManager_V4_Tickets")) { row ->
-                row.toTicket(session).apply { if (ticketMatchesSearch(this)) tickets.add(this) }
+                row.toTicket(session).takeIf(searchFunction)?.apply(matchedTickets::add)
             }
         }
-
-        return tickets
+        return matchedTickets
     }
-
 
     override fun closeDatabase() {
         dataSource.close()
@@ -391,19 +359,6 @@ internal class MySQL(
         val rs = stmt.generatedKeys
         rs.next()
         return rs.getLong(1)
-
-
-/*
-        return session.run(queryOf("INSERT INTO TicketManager_V4_Tickets (CREATOR_UUID, PRIORITY, STATUS, ASSIGNED_TO, STATUS_UPDATE_FOR_CREATOR, LOCATION) VALUES (?,?,?,?,?,?);",
-            ticket.creatorUUID,
-            ticket.priority.level,
-            ticket.status.name,
-            ticket.assignedTo,
-            ticket.statusUpdateForCreator,
-            ticket.location?.toString()
-        ).asUpdateAndReturnGeneratedKey)
-
- */
     }
 
     private fun writeAction(action: Ticket.Action, ticketID: Int, session: Session) {

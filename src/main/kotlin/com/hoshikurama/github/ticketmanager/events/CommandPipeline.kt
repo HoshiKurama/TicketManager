@@ -679,11 +679,19 @@ class Commands : CommandExecutor {
         val targetName = if (args.size >= 2) args[1].takeIf { it != locale.consoleName } else sender.name.takeIf { sender is Player }
         val requestedPage = if (args.size >= 3) args[2].toInt() else 1
 
-        // Leaves console as null. Otherwise attempts UUID grab or UUID_NOT_FOUND
-        val uuidAsString = targetName?.run { getUUUIDStringOrNull(this) ?: "UUID_NOT_FOUND" } ?: "NULL"
+        // Leaves console as null. Otherwise attempts UUID grab or [PLAYERNOTFOUND]
+        fun String.attemptToUUIDString(): String? =
+            if (equals(locale.consoleName)) null
+            else Bukkit.getOfflinePlayers().asSequence()
+                .firstOrNull { equals(it.name) }
+                ?.run { uniqueId.toString() }
+                ?: "[PLAYERNOTFOUND]"
+
+
+        val searchedUser = targetName?.attemptToUUIDString()
 
         val resultSize: Int
-        val resultsChunked = pluginState.database.searchDB(mapOf("creator" to uuidAsString))
+        val resultsChunked = pluginState.database.searchDatabase { it.creatorUUID?.toString() == searchedUser }
             .sortedByDescending(Ticket::id)
             .also { resultSize = it.size }
             .chunked(6)
@@ -920,6 +928,15 @@ class Commands : CommandExecutor {
         args: List<String>,
         locale: TMLocale
     ) {
+        fun String.attemptToUUIDString(): String? =
+            if (equals(locale.consoleName)) null
+            else Bukkit.getOfflinePlayers().asSequence()
+                .firstOrNull { equals(it.name) }
+                ?.run { uniqueId.toString() }
+                ?: "[PLAYERNOTFOUND]"
+
+
+        // Beginning of code execution
         sender.sendMessage(locale.searchFormatQuerying)
         val constraintTypes = locale.run {
             listOf(
@@ -930,21 +947,11 @@ class Commands : CommandExecutor {
                 searchStatus,
                 searchTime,
                 searchWorld,
-                searchPage
+                searchPage,
+                searchClosedBy,
+                searchLastClosedBy,
             )
         }
-
-        fun convertStatus(str: String) = when (str) {
-            locale.statusOpen -> Ticket.Status.OPEN.name
-            locale.statusClosed -> Ticket.Status.CLOSED.name
-            else -> str
-        }
-        fun convertPriority(str: String) = str.toByteOrNull()?.toString() ?: "0"
-        fun convertCreator(str: String) = if (str == locale.consoleName) "NULL" else
-            Bukkit.getOfflinePlayers().asSequence()
-                .filter { it.name?.equals(str) ?: false }
-                .map { it.uniqueId.toString() }
-                .firstOrNull() ?: "[PLAYERNOTFOUND]"
 
         val localedConstraintMap = args.subList(1, args.size)
             .asSequence()
@@ -953,31 +960,81 @@ class Commands : CommandExecutor {
             .filter { it.size >= 2 }
             .associate { it[0] to it[1] }
 
-        val sqlConstraintMap = localedConstraintMap
-            .mapNotNull {
-                when (it.key) {
-                    locale.searchPage -> "page" to it.value
-                    locale.searchWorld -> "world" to it.value
-                    locale.searchCreator -> "creator" to convertCreator(it.value)
-                    locale.searchAssigned -> "assignedto" to it.value
-                    locale.searchKeywords -> "keywords" to it.value
-                    locale.searchStatus -> "status" to convertStatus(it.value)
-                    locale.searchPriority -> "priority" to convertPriority(it.value)
-                    locale.searchTime -> "time" to "${relTimeToEpochSecond(it.value, locale)}"
+        val searchFunctions = localedConstraintMap
+            .mapNotNull { entry ->
+                when (entry.key) {
+                    locale.searchWorld -> { t: Ticket -> t.location?.world?.equals(entry.value) ?: false }
+                    locale.searchAssigned ->  { t: Ticket -> t.assignedTo == entry.value }
+
+                    locale.searchCreator -> {
+                        val searchedUser = entry.value.attemptToUUIDString();
+                        { t: Ticket -> t.creatorUUID?.toString() == searchedUser }
+                    }
+
+                    locale.searchPriority -> {
+                        val searchedPriority = entry.value.toByteOrNull() ?: 0;
+                        { t: Ticket -> t.priority.level == searchedPriority }
+                    }
+
+                    locale.searchTime -> {
+                        val creationTime = relTimeToEpochSecond(entry.value, locale);
+                        { t: Ticket -> t.actions[0].timestamp >= creationTime }
+                    }
+
+                    locale.searchStatus -> {
+                        val constraintStatus = when (entry.value) {
+                            locale.statusOpen -> Ticket.Status.OPEN.name
+                            locale.statusClosed -> Ticket.Status.CLOSED.name
+                            else -> entry.value
+                        }
+                        { t: Ticket -> t.status.name == constraintStatus}
+                    }
+
+                    locale.searchKeywords -> {
+                        val words = entry.value.split(",");
+
+                        { t: Ticket ->
+                            val comments = t.actions
+                                .filter { it.type == Ticket.Action.Type.OPEN || it.type == Ticket.Action.Type.COMMENT }
+                                .map { it.message!! }
+                            words.map { w -> comments.any { it.contains(w) } }
+                                .all { it }
+                        }
+                    }
+
+                    locale.searchLastClosedBy -> {
+                        val searchedUser = entry.value.attemptToUUIDString();
+                        { t: Ticket ->
+                            t.actions.lastOrNull { e -> e.type == Ticket.Action.Type.CLOSE }
+                                ?.run { user?.toString() == searchedUser }
+                                ?: false
+                        }
+
+                    }
+
+                    locale.searchClosedBy -> {
+                        val searchedUser = entry.value.attemptToUUIDString();
+                        { t: Ticket -> t.actions.any{ it.type == Ticket.Action.Type.CLOSE && it.user?.toString() == searchedUser } }
+                    }
+
                     else -> null
                 }
             }
-            .toMap()
+            .asSequence()
 
+        val composedSearch = { t: Ticket -> searchFunctions.map { it(t) }.all { it } }
+
+
+        // Results computation
         val resultSize: Int
-        val chunkedTickets = pluginState.database.searchDB(sqlConstraintMap)
+        val chunkedTickets = pluginState.database.searchDatabase(composedSearch)
             .sortedByDescending(Ticket::id)
             .apply { resultSize = size }
             .chunked(8)
 
-
-        val page = sqlConstraintMap["page"]?.toIntOrNull()
+        val page = localedConstraintMap[locale.searchPage]?.toIntOrNull()
             .let { if (it != null && it >= 1 && it < chunkedTickets.size) it else 1 }
+
         // Initial header
         val sentComponent = TextComponent(locale.searchFormatHeader
             .replace("%size%", "$resultSize")

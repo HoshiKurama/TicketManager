@@ -147,50 +147,59 @@ private fun tabCompleteEventFunction(sender: CommandSender, args: List<String>):
                 val splitArgs = curArgument.split(":", limit = 2)
 
                 if (splitArgs.size < 2)
-                    return locale.run { listOf("$searchAssigned:", "$searchCreator:", "$searchKeywords:", "$searchPriority:", "$searchStatus:", "$searchWorld:") }
+                    return locale.run { listOf(
+                        "$searchAssigned:",
+                        "$searchCreator:",
+                        "$searchKeywords:",
+                        "$searchPriority:",
+                        "$searchStatus:",
+                        "$searchWorld:",
+                        "$searchClosedBy:",
+                        "$searchLastClosedBy:",
+                    ) }
                         .filter { it.startsWith(curArgument) }
 
                 // String now has form "constraint:"
                 return when (splitArgs[0]) {
-                    locale.searchAssigned -> {
+                    searchAssigned -> {
                         val groups = mainPlugin.perms.groups.map { "::$it" }
-                        (offlinePlayerNames() + groups + listOf(locale.consoleName))
+                        (offlinePlayerNames() + groups)
                             .filter { it.startsWith(splitArgs[1]) }
-                            .map { "${searchAssigned}:$it" }
+                            .map { "${splitArgs[0]}:$it" }
                     }
 
-                    locale.searchCreator -> {
+                    searchCreator, searchLastClosedBy, searchClosedBy -> {
                         (offlinePlayerNames() + listOf(locale.consoleName))
                             .filter { it.startsWith(splitArgs[1]) }
-                            .map { "${locale.searchCreator}:$it" }
+                            .map { "${splitArgs[0]}:$it" }
                     }
 
-                    locale.searchPriority -> {
+                    searchPriority -> {
                         listOf("1", "2", "3", "4", "5")
                             .filter { it.startsWith(splitArgs[1]) }
-                            .map { "${locale.searchPriority}:$it" }
+                            .map { "${splitArgs[0]}:$it" }
                     }
 
                     locale.searchStatus -> {
                         listOf(locale.statusOpen, locale.statusClosed)
                             .filter { it.startsWith(splitArgs[1]) }
-                            .map { "${locale.searchStatus}:$it" }
+                            .map { "${splitArgs[0]}:$it" }
                     }
 
-                    locale.searchWorld -> {
+                    searchWorld -> {
                         Bukkit.getWorlds()
                             .map(World::getName)
                             .filter { it.startsWith(splitArgs[1]) }
-                            .map { "${locale.searchWorld}:$it" }
+                            .map { "${splitArgs[0]}:$it" }
                     }
 
-                    locale.searchTime -> {
+                    searchTime -> {
                         locale.run { listOf(searchTimeSecond, searchTimeMinute, searchTimeHour, searchTimeDay, searchTimeWeek, searchTimeYear) }
                             .filter { curArgument[curArgument.lastIndex].digitToIntOrNull() != null }
-                            .map { "$curArgument$it" }
+                            .map { "${splitArgs[0]}:$it" }
                     }
 
-                    locale.searchKeywords -> listOf(curArgument)
+                    searchKeywords -> listOf(curArgument)
 
                     else -> listOf("")
                 }
