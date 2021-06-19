@@ -37,7 +37,7 @@ Console_Locale: 'en_CA'
 # Use Cool-down: Determine if cool-downs should be applied to ticket commands
 # that create or modify a ticket. Cool-downs apply to ALL users without the
 # override permission.
-# Values: 'true', 'false'
+# Values: true, false
 Use_Cooldowns: false
 #
 # Ticket Modification Cool-down: Time in seconds before a user is able to create or
@@ -78,5 +78,9 @@ Colour_Code: '&3'
 # This is NOT the same alert one immediately receives on ticket
 # status change. Setting value to 'false' prevents TicketManager
 # from flagging a ticket as unread.
-# Values: 'true', 'false'
+# Values: true, false
 Allow_Unread_Ticket_Updates: true
+#
+# Allow Update Checking: Server can check that the latest version of TicketManager is installed during startup or reloads.
+# Values: true, false
+Allow_UpdateChecking: true

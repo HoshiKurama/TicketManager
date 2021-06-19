@@ -808,3 +808,21 @@ class Metrics(plugin: JavaPlugin, serviceId: Int) {
         )
     }
 }
+
+internal class UpdateChecker(private val resourceID: Int) {
+    internal fun getLatestVersion(): String? {
+        var inputStream: InputStream? = null
+        var scanner: Scanner? = null
+
+        return try {
+            inputStream = URL("https://api.spigotmc.org/legacy/update.php?resource=$resourceID").openStream()
+            scanner = Scanner(inputStream!!)
+            if (scanner.hasNext()) scanner.next() else null
+        }
+        catch (ignored: Exception) { null }
+        finally {
+            inputStream?.close()
+            scanner?.close()
+        }
+    }
+}

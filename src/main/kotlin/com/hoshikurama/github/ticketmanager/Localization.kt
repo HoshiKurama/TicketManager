@@ -195,6 +195,7 @@ sealed class TMLocale(colourCode: String, locale: String) {
     val notifyTicketReopenEvent: String
     val notifyTicketSetPrioritySuccess: String
     val notifyTicketSetPriorityEvent: String
+    val notifyPluginUpdate: String
 
     // Information:
     val informationReloadInitiated: String
@@ -383,6 +384,7 @@ sealed class TMLocale(colourCode: String, locale: String) {
         warningsUnexpectedError = matchOrDefault("Warning_UnexpectedError")
         searchClosedBy = matchOrDefault("Search_ClosedBy")
         searchLastClosedBy = matchOrDefault("Search_LastClosedBy")
+        notifyPluginUpdate = matchOrDefault("Notify_Event_PluginUpdate")
     }
 }
 

@@ -8,9 +8,12 @@ import com.hoshikurama.github.ticketmanager.events.TabCompletePaper
 import com.hoshikurama.github.ticketmanager.events.TabCompleteSpigot
 import org.bukkit.Bukkit
 import java.io.File
+import java.io.InputStream
+import java.net.URL
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 import java.util.logging.Level
 
 class PluginState {
@@ -19,6 +22,7 @@ class PluginState {
     internal val database: Database
     internal val serverType: ServerType
     internal val allowUnreadTicketUpdates: Boolean
+    internal val updateAvailable: AtomicReference<Pair<String, String>?> = AtomicReference(null)
 
     init {
         mainPlugin.pluginLocked = true
@@ -61,6 +65,18 @@ class PluginState {
             } ?: SQLite()
 
             allowUnreadTicketUpdates = getBoolean("Allow_Unread_Ticket_Updates", true)
+
+            // Assigns update available
+            val allowUpdateCheck = getBoolean("Allow_UpdateChecking", false)
+            if (allowUpdateCheck) {
+                Bukkit.getScheduler().runTaskAsynchronously(mainPlugin, Runnable {
+
+                    val curVersion = mainPlugin.description.version
+                    val latestVersion = UpdateChecker(91178).getLatestVersion()
+                        .run { this ?: curVersion }
+                    updateAvailable.set(curVersion to latestVersion)
+                })
+            } else updateAvailable.set(null)
         }
 
         serverType = tryOrNull {

@@ -12,6 +12,17 @@ class PlayerJoin : Listener {
         if (anyLocksPresent()) return
         val player = event.player
 
+        // Plugin Update checking
+        val pluginUpdateStatus = pluginState.updateAvailable.get()
+        if (player.has("ticketmanager.notify.pluginUpdate") && pluginUpdateStatus != null) {
+            if (pluginUpdateStatus.first.replace(".", "").toInt() < pluginUpdateStatus.second.replace(".", "").toInt()) {
+                getLocale(player).notifyPluginUpdate
+                    .replace("%current%", pluginUpdateStatus.first)
+                    .replace("%latest%", pluginUpdateStatus.second)
+                    .run { sendColouredMessageTo(player) }
+            }
+        }
+
         // Unread Updates
         if (player.has("ticketmanager.notify.unreadUpdates.onJoin")) {
             pluginState.database.getTicketIDsWithUpdates(player.uniqueId)
@@ -30,7 +41,8 @@ class PlayerJoin : Listener {
         // View Open-Count and Assigned-Count Tickets
         if (player.has("ticketmanager.notify.openTickets.onJoin")) {
             val open = pluginState.database.getOpen().size.toString()
-            val assigned = pluginState.database.getOpenAssigned(player.name, mainPlugin.perms.getPlayerGroups(player).toList())
+            val assigned =
+                pluginState.database.getOpenAssigned(player.name, mainPlugin.perms.getPlayerGroups(player).toList())
                     .count().toString()
 
             getLocale(player).run { notifyOpenAssigned }

@@ -99,11 +99,14 @@ permissions:
   ticketmanager.notify.unreadUpdates.scheduled:
     description: See own tickets with updates at scheduled intervals
     default: false
-  ticketmanager.notify.warning:
-    description: See modified stacktrace on errors
-    default: false
   ticketmanager.notify.info:
     description: See general TicketManager information
+    default: false
+  ticketmanager.notify.pluginUpdate:
+    description: Get notified of plugin update on login
+    default: false
+  ticketmanager.notify.warning:
+    description: See modified stacktrace on errors
     default: false
   ticketmanager.notify.change.comment:
     description: Creator sees when user comments on their ticket
@@ -189,6 +192,7 @@ permissions:
       ticketmanager.notify.info: true
       ticketmanager.massNotify.*: true
       ticketmanager.notify.change.*: true
+      ticketmanager.notify.pluginUpdate: true
     default: false
   ticketmanager.*:
     description: Wildcard for all TicketManager permissions
