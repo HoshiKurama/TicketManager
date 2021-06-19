@@ -25,7 +25,7 @@ class Ticket(
     }
 
     data class Action(val type: Type, val user: UUID?, val message: String? = null, val timestamp: Long = Instant.now().epochSecond) {
-        enum class Type() {
+        enum class Type {
             ASSIGN, CLOSE, COMMENT, OPEN, REOPEN, SET_PRIORITY, MASS_CLOSE
         }
     }

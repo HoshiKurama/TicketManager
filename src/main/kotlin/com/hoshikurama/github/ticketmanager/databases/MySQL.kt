@@ -120,7 +120,7 @@ internal class MySQL(
     override fun addTicket(ticket: Ticket, action: Ticket.Action): Int {
         return using(sessionOf(dataSource)) {
             val id = writeTicket(ticket, it)
-            writeAction(action, id!!.toInt(), it)
+            writeAction(action, id.toInt(), it)
             return@using id.toInt()
         }
     }
@@ -294,7 +294,7 @@ internal class MySQL(
                         }
                 )
                 val id = writeTicket(ticket, session)
-                ticket.actions.forEach { writeAction(it, id!!.toInt(), session) }
+                ticket.actions.forEach { writeAction(it, id.toInt(), session) }
             }
 
             session.run(queryOf("DROP INDEX STATUS ON TicketManagerTicketsV2;").asExecute)
@@ -344,7 +344,7 @@ internal class MySQL(
         mainPlugin.pluginLocked = false
     }
 
-    private fun writeTicket(ticket: Ticket, session: Session): Long? {
+    private fun writeTicket(ticket: Ticket, session: Session): Long {
         val stmt = session.connection.underlying.prepareStatement(
             "INSERT INTO TicketManager_V4_Tickets (CREATOR_UUID, PRIORITY, STATUS, ASSIGNED_TO, STATUS_UPDATE_FOR_CREATOR, LOCATION) VALUES (?,?,?,?,?,?);",
             Statement.RETURN_GENERATED_KEYS)
