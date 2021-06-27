@@ -104,7 +104,7 @@ Command_DeepView: 'deepview'
 #
 # List Format:
 ListFormat_Header: '%nl%%CC%[TicketManager]&f Viewing All Open Tickets:'
-ListFormat_AssignedHeader: '%CC%[TicketManager]&f Viewing Open Tickets Assigned to You:'
+ListFormat_AssignedHeader: '%nl%%CC%[TicketManager]&f Viewing Open Tickets Assigned to You:'
 ListFormat_Entry: '%priorityCC%[%ID%] &8[%CC%%creator% &8-> %CC%%assign%&8]&f %comment%'
 #
 # Clickable Text:
