@@ -1,4 +1,4 @@
-package com.hoshikurama.github.ticketmanager.common
+package com.github.hoshikurama.ticketmanager.common
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope

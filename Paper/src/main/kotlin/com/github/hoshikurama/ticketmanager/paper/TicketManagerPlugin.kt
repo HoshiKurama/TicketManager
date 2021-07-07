@@ -1,14 +1,15 @@
-package com.hoshikurama.github.ticketmanager.paper
+package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.componentDSL.formattedContent
+import com.github.hoshikurama.ticketmanager.common.*
 import com.github.shynixn.mccoroutine.*
 import com.hoshikurama.github.ticketmanager.common.*
-import com.hoshikurama.github.ticketmanager.common.databases.Database
-import com.hoshikurama.github.ticketmanager.common.databases.MySQL
-import com.hoshikurama.github.ticketmanager.common.databases.SQLite
-import com.hoshikurama.github.ticketmanager.paper.events.Commands
-import com.hoshikurama.github.ticketmanager.paper.events.PlayerJoin
-import com.hoshikurama.github.ticketmanager.paper.events.TabComplete
+import com.github.hoshikurama.ticketmanager.common.databases.Database
+import com.github.hoshikurama.ticketmanager.common.databases.MySQL
+import com.github.hoshikurama.ticketmanager.common.databases.SQLite
+import com.github.hoshikurama.ticketmanager.paper.events.Commands
+import com.github.hoshikurama.ticketmanager.paper.events.PlayerJoin
+import com.github.hoshikurama.ticketmanager.paper.events.TabComplete
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList

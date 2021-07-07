@@ -1,11 +1,11 @@
-package com.hoshikurama.github.ticketmanager.paper.events
+package com.github.hoshikurama.ticketmanager.paper.events
 
 import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.shynixn.mccoroutine.asyncDispatcher
-import com.hoshikurama.github.ticketmanager.paper.has
-import com.hoshikurama.github.ticketmanager.paper.mainPlugin
-import com.hoshikurama.github.ticketmanager.paper.pluginState
-import com.hoshikurama.github.ticketmanager.paper.toTMLocale
+import com.github.hoshikurama.ticketmanager.paper.has
+import com.github.hoshikurama.ticketmanager.paper.mainPlugin
+import com.github.hoshikurama.ticketmanager.paper.pluginState
+import com.github.hoshikurama.ticketmanager.paper.toTMLocale
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

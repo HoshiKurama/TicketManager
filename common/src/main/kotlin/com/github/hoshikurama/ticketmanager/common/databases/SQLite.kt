@@ -1,7 +1,7 @@
-package com.hoshikurama.github.ticketmanager.common.databases
+package com.github.hoshikurama.ticketmanager.common.databases
 
-import com.hoshikurama.github.ticketmanager.common.ticket.BasicTicket
-import com.hoshikurama.github.ticketmanager.common.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
+import com.github.hoshikurama.ticketmanager.common.ticket.Ticket
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
 import java.util.*

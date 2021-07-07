@@ -1,6 +1,6 @@
-package com.hoshikurama.github.ticketmanager.common.ticket
+package com.github.hoshikurama.ticketmanager.common.ticket
 
-import com.hoshikurama.github.ticketmanager.common.PluginState
+import com.github.hoshikurama.ticketmanager.common.PluginState
 import kotlinx.coroutines.Deferred
 import java.util.*
 

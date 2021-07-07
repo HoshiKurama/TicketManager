@@ -1,4 +1,4 @@
-package com.hoshikurama.github.ticketmanager.paper
+package com.github.hoshikurama.ticketmanager.paper
 
 import org.bukkit.Bukkit
 import org.bukkit.configuration.file.YamlConfiguration

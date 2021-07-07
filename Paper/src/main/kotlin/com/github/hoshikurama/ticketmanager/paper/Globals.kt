@@ -1,7 +1,7 @@
-package com.hoshikurama.github.ticketmanager.paper
+package com.github.hoshikurama.ticketmanager.paper
 
-import com.hoshikurama.github.ticketmanager.common.PluginState
-import com.hoshikurama.github.ticketmanager.common.TMLocale
+import com.github.hoshikurama.ticketmanager.common.PluginState
+import com.github.hoshikurama.ticketmanager.common.TMLocale
 import kotlinx.coroutines.Deferred
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit

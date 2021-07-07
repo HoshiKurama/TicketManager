@@ -1,7 +1,7 @@
-package com.hoshikurama.github.ticketmanager.common
+package com.github.hoshikurama.ticketmanager.common
 
-import com.hoshikurama.github.ticketmanager.common.databases.Database
-import com.hoshikurama.github.ticketmanager.common.databases.SQLite
+import com.github.hoshikurama.ticketmanager.common.databases.Database
+import com.github.hoshikurama.ticketmanager.common.databases.SQLite
 import kotlinx.coroutines.*
 import net.kyori.adventure.text.Component
 import java.time.Instant

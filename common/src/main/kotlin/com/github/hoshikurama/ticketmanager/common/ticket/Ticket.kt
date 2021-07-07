@@ -1,6 +1,6 @@
-package com.hoshikurama.github.ticketmanager.common.ticket
+package com.github.hoshikurama.ticketmanager.common.ticket
 
-import com.hoshikurama.github.ticketmanager.common.TMLocale
+import com.github.hoshikurama.ticketmanager.common.TMLocale
 import java.time.Instant
 import java.util.*
 

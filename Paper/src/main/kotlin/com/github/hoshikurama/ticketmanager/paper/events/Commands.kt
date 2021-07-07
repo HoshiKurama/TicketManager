@@ -1,4 +1,4 @@
-package com.hoshikurama.github.ticketmanager.paper.events
+package com.github.hoshikurama.ticketmanager.paper.events
 
 import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
 import org.bukkit.command.Command

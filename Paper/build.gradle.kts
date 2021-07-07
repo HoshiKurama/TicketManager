@@ -6,7 +6,7 @@ plugins {
 }
 
 application {
-    mainClass.set("com.hoshikurama.github.mcwandsframework.MCWandsFramework")
+    mainClass.set("com.github.hoshikurama.ticketmanager.paper.TicketManagerPlugin")
 }
 
 repositories {
@@ -37,6 +37,11 @@ dependencies {
 
 tasks {
     named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
-        archiveBaseName.set("TicketManager-Paper-5.0.0.jar")
+        archiveBaseName.set("TicketManager-Paper")
+
+        dependencies {
+            include(dependency("com.github.HoshiKurama:KyoriComponentDSL:1.0.0"))
+            include(project(":common"))
+        }
     }
 }
