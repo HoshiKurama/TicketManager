@@ -1,0 +1,86 @@
+##############################################
+##############################################
+#       TicketManager Config File
+##############################################
+##############################################
+#
+# Plugin Proudly Made by: HoshiKurama
+#
+# All permissions and commands can
+# be found on the GitHub wiki page.
+# https://github.com/HoshiKurama/TicketManager
+#
+# #####################
+#       Locale:
+# #####################
+# Force Locale: Forces specific language to be used for commands and responses.
+# Values: true, false
+Force_Locale: false
+#
+# Preferred Locale: Locale to use when player locale is not found. Using a non-supported
+# locale will cause TicketManager to internally default to Canadian English.
+# Values:
+#   'en_CA' = Canadian English
+#   'en_US' = United States English
+Preferred_Locale: 'en_CA'
+#
+# Console Locale: Locale Console will use. Using a non-supported locale will cause
+# TicketManager to internally default to Preferred_Locale.
+# Values:
+#   'en_CA' = Canadian English
+#   'en_US' = United States English
+Console_Locale: 'en_CA'
+#
+# #####################
+#      Cooldown:
+# #####################
+# Use Cool-down: Determine if cool-downs should be applied to ticket commands
+# that create or modify a ticket. Cool-downs apply to ALL users without the
+# override permission.
+# Values: true, false
+Use_Cooldowns: false
+#
+# Ticket Modification Cool-down: Time in seconds before a user is able to create or
+# modify a ticket. This applies to ALL users without the override permission if
+# cool-downs are enabled.
+Cooldown_Time: 0
+#
+# #####################
+#  Database Settings:
+# #####################
+# Database mode: Type of database used. SQLite is default and can run locally
+# Do NOT run MySQL unless you have a valid MySQL database! Internally defaults
+# to SQLite if invalid value is used.
+# Values: 'MySQL','SQLite'
+Database_Mode: 'SQLite'
+#
+# ######################
+#    MySQL Database
+# ######################
+# This section only applies when using MySQL.
+MySQL_Port: ''
+MySQL_Host: ''
+MySQL_DBName: ''
+MySQL_Username: ''
+MySQL_Password: ''
+#
+# ######################
+#        Other
+# ######################
+# Colour Code: Colour code used to add simple colour customization.
+# Must be in the form "&<colour code>".   eg: &3, &6, &b, etc
+# DO NOT USE ANY COLOUR CODES OTHER THAN COLOUR!
+Colour_Code: '&3'
+#
+# Allow Unread Ticket Updates: When users other than the creator
+# make ticket changes, the creator can optionally be alerted at
+# regular intervals or on login which tickets have a status change.
+# This is NOT the same alert one immediately receives on ticket
+# status change. Setting value to 'false' prevents TicketManager
+# from flagging a ticket as unread.
+# Values: true, false
+Allow_Unread_Ticket_Updates: true
+#
+# Allow Update Checking: Server can check that the latest version of TicketManager is installed during startup or reloads.
+# Values: true, false
+Allow_UpdateChecking: true
