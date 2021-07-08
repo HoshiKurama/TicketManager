@@ -1,37 +1,66 @@
 package com.github.hoshikurama.ticketmanager.common.ticket
 
 import com.github.hoshikurama.ticketmanager.common.PluginState
+import com.github.hoshikurama.ticketmanager.common.TMLocale
+import com.github.hoshikurama.ticketmanager.common.databases.Database
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.toList
 import java.util.*
 
-class BasicTicket(
-    val id: Int,
-    val creatorUUID: UUID?,
-    val location: Ticket.TicketLocation?,
-    val priority: Ticket.Priority,
-    val status: Ticket.Status,
-    val assignedTo: String?,
-    val statusUpdateForCreator: Boolean,
-
-    val pluginState: PluginState,
+open class BasicTicket(
+    val id: Int = -1,                               // Ticket ID 1+... -1 placeholder during ticket creation
+    val creatorUUID: UUID?,                         // UUID if player, null if Console
+    val location: TicketLocation?,                  // TicketLocation if player, null if Console
+    val priority: Priority = Priority.NORMAL,       // Priority 1-5 or Lowest to Highest
+    val status: Status = Status.OPEN,               // Status OPEN or CLOSED
+    val assignedTo: String? = null,                 // Null if not assigned to anybody
+    val creatorStatusUpdate: Boolean = false,       // Determines whether player should be notified
 ) {
-    companion object {
-        suspend fun buildOrNull(pluginState: PluginState, id: Int) =
-            pluginState.database.buildBasicTicket(id)
+    enum class Priority(val level: Byte, val colourCode: String) {
+        LOWEST(1, "&1"),
+        LOW(2, "&9"),
+        NORMAL(3, "&e"),
+        HIGH(4, "&c"),
+        HIGHEST(5, "&4")
     }
 
-    suspend fun setCreatorStatusUpdate(value: Boolean) =
-        pluginState.database.setCreatorStatusUpdate(id, value)
+    enum class Status(val colourCode: String) {
+        OPEN("&a"), CLOSED("&c")
+    }
 
-    suspend fun setTicketPriority(value: Ticket.Priority) =
-        pluginState.database.setPriority(id, value)
+    data class TicketLocation(val world: String, val x: Int, val y: Int, val z: Int) {
+        override fun toString() = "$world $x $y $z"
+    }
 
-    suspend fun setTicketStatus(value: Ticket.Status) =
-        pluginState.database.setStatus(id, value)
+    suspend fun toFullTicketAsync(database: Database): Deferred<FullTicket> = coroutineScope {
+        async {
+            val sortedActions = database.getActionsAsFlow(id)
+                .toList()
+                .sortedBy { it.first }
+                .map { it.second }
 
-    suspend fun setAssignedTo(value: String?) =
-        pluginState.database.setAssignment(id, value)
-
-    suspend fun uuidMatches(other: UUID?) =
-        creatorUUID?.equals(other) ?: (other == null)
+            FullTicket(this@BasicTicket, sortedActions)
+        }
+    }
 }
+
+fun BasicTicket.Priority.toLocaledWord(locale: TMLocale) = when (this) {
+    BasicTicket.Priority.LOWEST -> locale.priorityLowest
+    BasicTicket.Priority.LOW -> locale.priorityLow
+    BasicTicket.Priority.NORMAL -> locale.priorityNormal
+    BasicTicket.Priority.HIGH -> locale.priorityHigh
+    BasicTicket.Priority.HIGHEST -> locale.priorityHighest
+}
+
+fun BasicTicket.Status.toLocaledWord(locale: TMLocale) = when (this) {
+    BasicTicket.Status.OPEN -> locale.statusOpen
+    BasicTicket.Status.CLOSED -> locale.statusClosed
+}
+
+fun BasicTicket.uuidMatches(other: UUID?) =
+    creatorUUID?.equals(other) ?: (other == null)
+
+fun String.toTicketLocation() = split(" ")
+    .let { BasicTicket.TicketLocation(it[0], it[1].toInt(), it[2].toInt(), it[3].toInt()) }

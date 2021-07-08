@@ -16,16 +16,17 @@ class PluginState(
 ) {
 
     companion object {
-        suspend inline fun createDeferredPluginState(
+        suspend inline fun createPluginState(
             crossinline database: () -> Database?,
             crossinline cooldown: () -> Cooldown?,
             crossinline localeHandler: suspend () -> LocaleHandler?,
             crossinline allowUnreadTicketUpdates: () -> Boolean?,
             crossinline checkForPluginUpdate: () -> Boolean?,
             crossinline pluginVersion: () -> String,
+            absolutePathToPluginFolder: String,
         ) = coroutineScope {
 
-            val deferredDatabase = async { tryOrDefault(database, SQLite()) }
+            val deferredDatabase = async { tryOrDefault(database, SQLite(absolutePathToPluginFolder)) }
             val deferredCooldown = async { tryOrDefault(cooldown, Cooldown(false, 0)) }
             val deferredAllowUnreadUpdates = async { tryOrDefault(allowUnreadTicketUpdates, true) }
 

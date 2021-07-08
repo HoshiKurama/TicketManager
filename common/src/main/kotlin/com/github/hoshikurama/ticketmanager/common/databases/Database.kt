@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.common.databases
 
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
-import com.github.hoshikurama.ticketmanager.common.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
 import java.util.*
@@ -13,35 +13,49 @@ interface Database {
         MySQL, SQLite
     }
 
-    // Individual things
-    suspend fun getAssignmentOrNull(ticketID: Int): Deferred<String?>
-    suspend fun getCreatorUUIDOrNull(ticketID: Int): Deferred<UUID?>
-    suspend fun getTicketLocationOrNull(ticketID: Int): Deferred<Ticket.TicketLocation?>
-    suspend fun getPriorityOrNull(ticketID: Int): Deferred<Ticket.Priority?>
-    suspend fun getStatusOrNull(ticketID: Int): Deferred<Ticket.Status?>
-    suspend fun getCreatorStatusUpdateOrNull(ticketID: Int): Deferred<Boolean?>
-    suspend fun setAssignment(ticketID: Int, assignment: String?)
-    suspend fun setPriority(ticketID: Int, priority: Ticket.Priority)
-    suspend fun setStatus(ticketID: Int, status: Ticket.Status)
-    suspend fun setCreatorStatusUpdate(ticketID: Int, status: Boolean)
-    suspend fun buildBasicTicket(id: Int): BasicTicket?
+    // Individual property getters
+    suspend fun getActionsAsFlow(ticketID: Int): Flow<Pair<Int, FullTicket.Action>>
 
-    // More specific Ticket actions
-    suspend fun addAction(ticketID: Int, action: Ticket.Action)
-    suspend fun addTicket(ticket: Ticket, action: Ticket.Action): Deferred<Int>
-    suspend fun getOpenTickets(): Flow<Ticket>
-    suspend fun getOpenAssigned(assignment: String, groupAssignment: List<String>): Flow<Ticket>
-    suspend fun getTicketOrNull(ID: Int): Deferred<Ticket?>
-    suspend fun getTicketIDsWithUpdates(): Flow<Pair<UUID, Int>>
-    suspend fun getTicketIDsWithUpdates(uuid: UUID): Flow<Int>
-    suspend fun isValidID(ticketID: Int): Deferred<Boolean>
+    // Individual property setters
+    suspend fun setAssignmentAsync(ticketID: Int, assignment: String?)
+    suspend fun setCreatorStatusUpdateAsync(ticketID: Int, status: Boolean)
+    suspend fun setPriorityAsync(ticketID: Int, priority: BasicTicket.Priority)
+    suspend fun setStatusAsync(ticketID: Int, status: BasicTicket.Status)
+
+    // Get Specific Ticket Type
+    suspend fun getBasicTicketAsync(ticketID: Int): Deferred<BasicTicket?>
+
+    // Database additions
+    suspend fun addAction(ticketID: Int, action: FullTicket.Action)
+    suspend fun addFullTicket(fullTicket: FullTicket)
+    suspend fun addNewTicketAsync(basicTicket: BasicTicket, message: String): Deferred<Int>
+
+    // Database removals
     suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?)
-    suspend fun searchDatabase(searchFunction: (Ticket) -> Boolean): Flow<Ticket>
 
-    // Database Modifications
+    // Collections of tickets
+    suspend fun getBasicOpenAsFlow(): Flow<BasicTicket>
+    suspend fun getBasicOpenAssignedAsFlow(assignment: String, groupAssignment: List<String>): Flow<BasicTicket>
+    suspend fun getBasicsWithUpdatesAsFlow(): Flow<BasicTicket>
+    suspend fun getFullOpenAsFlow(): Flow<FullTicket>
+    suspend fun getFullOpenAssignedAsFlow(assignment: String, groupAssignment: List<String>): Flow<FullTicket>
+    suspend fun getIDsWithUpdatesAsFlowFor(uuid: UUID): Flow<Int>
+
+    // Database searching
+    suspend fun searchDatabase(searchFunction: (FullTicket) -> Boolean): Flow<FullTicket>
+
+    // Internal Database Functions
     suspend fun closeDatabase()
-    suspend fun createDatabasesIfNeeded()
-    suspend fun migrateDatabase(to: Type)
-    suspend fun updateNeeded(): Deferred<Boolean>
-    suspend fun updateDatabase()
+    suspend fun initialiseDatabase()
+    suspend fun updateNeededAsync(): Deferred<Boolean>
+    suspend fun migrateDatabase(
+        to: Type,
+        onBegin: suspend () -> Unit,
+        onComplete: suspend () -> Unit,
+    )
+    suspend fun updateDatabase(
+        onBegin: suspend () -> Unit,
+        onComplete: suspend () -> Unit,
+        offlinePlayerNameToUuidOrNull: (String) -> UUID?
+    )
 }

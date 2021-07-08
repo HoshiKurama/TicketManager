@@ -7,3 +7,4 @@
 /gradlew.bat
 /common/build/
 /common/src/main/kotlin/com/github/hoshikurama/ticketmanager/common/API_KEYS.kt
+/src/

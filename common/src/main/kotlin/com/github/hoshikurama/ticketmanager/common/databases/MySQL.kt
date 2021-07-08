@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.common.databases
 
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
-import com.github.hoshikurama.ticketmanager.common.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
 import java.util.*
@@ -16,79 +16,39 @@ class MySQL(
     override val type: Database.Type
         get() = TODO("Not yet implemented")
 
-    override suspend fun getAssignmentOrNull(ticketID: Int): Deferred<String?> {
+    override suspend fun getActionsAsFlow(ticketID: Int): Flow<Pair<Int, FullTicket.Action>> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getCreatorUUIDOrNull(ticketID: Int): Deferred<UUID?> {
+    override suspend fun setAssignmentAsync(ticketID: Int, assignment: String?) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getTicketLocationOrNull(ticketID: Int): Deferred<Ticket.TicketLocation?> {
+    override suspend fun setCreatorStatusUpdateAsync(ticketID: Int, status: Boolean) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getPriorityOrNull(ticketID: Int): Deferred<Ticket.Priority?> {
+    override suspend fun setPriorityAsync(ticketID: Int, priority: BasicTicket.Priority) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getStatusOrNull(ticketID: Int): Deferred<Ticket.Status?> {
+    override suspend fun setStatusAsync(ticketID: Int, status: BasicTicket.Status) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getCreatorStatusUpdateOrNull(ticketID: Int): Deferred<Boolean?> {
+    override suspend fun getBasicTicketAsync(ticketID: Int): Deferred<BasicTicket?> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun setAssignment(ticketID: Int, assignment: String?) {
+    override suspend fun addAction(ticketID: Int, action: FullTicket.Action) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun setPriority(ticketID: Int, priority: Ticket.Priority) {
+    override suspend fun addFullTicket(fullTicket: FullTicket) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun setStatus(ticketID: Int, status: Ticket.Status) {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun setCreatorStatusUpdate(ticketID: Int, status: Boolean) {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun buildBasicTicket(id: Int): BasicTicket? {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun addAction(ticketID: Int, action: Ticket.Action) {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun addTicket(ticket: Ticket, action: Ticket.Action): Deferred<Int> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun getOpenTickets(): Flow<Ticket> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun getOpenAssigned(assignment: String, groupAssignment: List<String>): Flow<Ticket> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun getTicketOrNull(ID: Int): Deferred<Ticket?> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun getTicketIDsWithUpdates(): Flow<Pair<UUID, Int>> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun getTicketIDsWithUpdates(uuid: UUID): Flow<Int> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun isValidID(ticketID: Int): Deferred<Boolean> {
+    override suspend fun addNewTicketAsync(basicTicket: BasicTicket, message: String): Deferred<Int> {
         TODO("Not yet implemented")
     }
 
@@ -96,7 +56,37 @@ class MySQL(
         TODO("Not yet implemented")
     }
 
-    override suspend fun searchDatabase(searchFunction: (Ticket) -> Boolean): Flow<Ticket> {
+    override suspend fun getBasicOpenAsFlow(): Flow<BasicTicket> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getBasicOpenAssignedAsFlow(
+        assignment: String,
+        groupAssignment: List<String>
+    ): Flow<BasicTicket> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getBasicsWithUpdatesAsFlow(): Flow<BasicTicket> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getFullOpenAsFlow(): Flow<FullTicket> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getFullOpenAssignedAsFlow(
+        assignment: String,
+        groupAssignment: List<String>
+    ): Flow<FullTicket> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getIDsWithUpdatesAsFlowFor(uuid: UUID): Flow<Int> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun searchDatabase(searchFunction: (FullTicket) -> Boolean): Flow<FullTicket> {
         TODO("Not yet implemented")
     }
 
@@ -104,20 +94,27 @@ class MySQL(
         TODO("Not yet implemented")
     }
 
-    override suspend fun createDatabasesIfNeeded() {
+    override suspend fun initialiseDatabase() {
         TODO("Not yet implemented")
     }
 
-    override suspend fun migrateDatabase(to: Database.Type) {
+    override suspend fun updateNeededAsync(): Deferred<Boolean> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun updateNeeded(): Deferred<Boolean> {
+    override suspend fun migrateDatabase(
+        to: Database.Type,
+        onBegin: suspend () -> Unit,
+        onComplete: suspend () -> Unit
+    ) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun updateDatabase() {
+    override suspend fun updateDatabase(
+        onBegin: suspend () -> Unit,
+        onComplete: suspend () -> Unit,
+        offlinePlayerNameToUuidOrNull: (String) -> UUID?
+    ) {
         TODO("Not yet implemented")
     }
-
 }

@@ -2,11 +2,12 @@ package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.common.PluginState
 import com.github.hoshikurama.ticketmanager.common.TMLocale
-import kotlinx.coroutines.Deferred
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
+import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
+import java.util.*
 import java.util.logging.Level
 
 fun consoleLog(level: Level, message: String) = Bukkit.getLogger().log(level, ChatColor.stripColor(message))
@@ -14,12 +15,12 @@ fun consoleLog(level: Level, message: String) = Bukkit.getLogger().log(level, Ch
 internal val mainPlugin: TicketManagerPlugin
     get() = TicketManagerPlugin.plugin
 
-internal val pluginState: Deferred<PluginState>
+internal val pluginState: PluginState
     get() = mainPlugin.configState
 
 
-suspend fun pushMassNotify(permission: String, localeMsg: suspend (TMLocale) -> Component) {
-    Bukkit.getConsoleSender().sendMessage(localeMsg(mainPlugin.configState.await().localeHandler.consoleLocale))
+internal fun pushMassNotify(permission: String, localeMsg: (TMLocale) -> Component) {
+    Bukkit.getConsoleSender().sendMessage(localeMsg(mainPlugin.configState.localeHandler.consoleLocale))
 
     Bukkit.getOnlinePlayers().asSequence()
         .filter { it.has(permission) }
@@ -27,5 +28,14 @@ suspend fun pushMassNotify(permission: String, localeMsg: suspend (TMLocale) -> 
 }
 
 internal fun Player.has(permission: String) = mainPlugin.perms.has(this, permission)
+internal fun CommandSender.has(permission: String): Boolean = if (this is Player) has(permission) else true
 
-internal suspend fun Player.toTMLocale() = pluginState.await().localeHandler.getOrDefault(locale().toString())
+internal fun Player.toTMLocale() = pluginState.localeHandler.getOrDefault(locale().toString())
+internal fun CommandSender.toTMLocale() = if (this is Player) toTMLocale() else pluginState.localeHandler.consoleLocale
+
+internal fun CommandSender.toUUIDOrNull() = if (this is Player) this.uniqueId else null
+
+fun UUID?.toName(locale: TMLocale): String {
+    if (this == null) return locale.consoleName
+    return this.run(Bukkit::getOfflinePlayer).name ?: "UUID"
+}

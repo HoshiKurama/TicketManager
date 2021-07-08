@@ -16,13 +16,13 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.17-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.17.1-R0.1-SNAPSHOT")
     implementation(kotlin("stdlib", version = "1.5.20"))
     implementation("mysql:mysql-connector-java:8.0.25")
     implementation("org.xerial:sqlite-jdbc:3.34.0")
     implementation("com.github.jasync-sql:jasync-mysql:1.1.6")
     implementation("com.github.seratch:kotliquery:1.3.1")
-    implementation("com.github.HoshiKurama:KyoriComponentDSL:1.0.0")
+    implementation("com.github.HoshiKurama:KyoriComponentDSL:1.1.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.5.0")
     implementation("net.kyori:adventure-api:4.8.1")
     implementation("net.kyori:adventure-extra-kotlin:4.8.1")
@@ -40,7 +40,7 @@ tasks {
         archiveBaseName.set("TicketManager-Paper")
 
         dependencies {
-            include(dependency("com.github.HoshiKurama:KyoriComponentDSL:1.0.0"))
+            include(dependency("com.github.HoshiKurama:KyoriComponentDSL:1.1.0"))
             include(project(":common"))
         }
     }

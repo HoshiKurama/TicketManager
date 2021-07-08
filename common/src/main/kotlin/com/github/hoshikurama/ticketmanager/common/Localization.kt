@@ -26,8 +26,8 @@ class LocaleHandler(
                 if (forceLocale) mapOf()
                 else mapOf(
                     "en_ca" to fallback,
-                    "en_us" to async { TMLocale(mainColourCode, "en_US") },
-                    "en_uk" to async { TMLocale(mainColourCode, "en_UK") }
+                    "en_us" to async { TMLocale(mainColourCode, "en_CA") },
+                    "en_uk" to async { TMLocale(mainColourCode, "en_CA") }
                 )
                     .mapValues { it.value.await() }
 
@@ -240,7 +240,7 @@ class TMLocale(
     val helpSep: String
 
     init {
-        val inputStream = this::class.java.getResourceAsStream("locales/$locale.yml")
+        val inputStream = this::class.java.classLoader.getResourceAsStream("locales/$locale.yml")
         val contents: Map<String, String> = Yaml().load(inputStream)
         fun matchOrDefault(key: String) = contents[key]
             ?.replace("%CC%", colourCode)

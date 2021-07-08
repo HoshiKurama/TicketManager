@@ -20,14 +20,13 @@ class PlayerJoin : Listener  {
     @EventHandler
     suspend fun onPlayerJoin(event: PlayerJoinEvent) = coroutineScope {
         if (mainPlugin.pluginLocked.check()) return@coroutineScope
-
         val player = event.player
 
         withContext(mainPlugin.asyncDispatcher) {
 
             //Plugin Update Checking
             launch {
-                val pluginUpdateStatus = pluginState.await().pluginUpdateAvailable.await()
+                val pluginUpdateStatus = pluginState.pluginUpdateAvailable.await()
                 if (player.has("ticketmanager.notify.pluginUpdate") && pluginUpdateStatus != null) {
                     val sentMSG = player.toTMLocale().notifyPluginUpdate
                         .replace("%current%", pluginUpdateStatus.first)
@@ -39,7 +38,7 @@ class PlayerJoin : Listener  {
             // Unread Updates
             launch {
                 if (player.has("ticketmanager.notify.unreadUpdates.onJoin")) {
-                    pluginState.await().database.getTicketIDsWithUpdates(player.uniqueId)
+                    pluginState.database.getIDsWithUpdatesAsFlowFor(player.uniqueId)
                         .toList()
                         .run { if (size == 0) null else this }
                         ?.run {
@@ -57,15 +56,14 @@ class PlayerJoin : Listener  {
             // View Open-Count and Assigned-Count Tickets
             launch {
                 if (player.has("ticketmanager.notify.openTickets.onJoin")) {
-                    val open = pluginState.await().database.getOpenTickets()
-                    val assigned = pluginState.await().database.getOpenAssigned(player.name, mainPlugin.perms.getPlayerGroups(player).toList())
+                    val open = pluginState.database.getBasicOpenAsFlow()
+                    val assigned = pluginState.database.getBasicOpenAssignedAsFlow(player.name, mainPlugin.perms.getPlayerGroups(player).toList())
 
                     val sentMSG = player.toTMLocale().notifyOpenAssigned
                         .replace("%open%", "${open.count()}")
                         .replace("%assigned%", "${assigned.count()}")
 
                     player.sendMessage(text { formattedContent(sentMSG) })
-
                 }
             }
         }

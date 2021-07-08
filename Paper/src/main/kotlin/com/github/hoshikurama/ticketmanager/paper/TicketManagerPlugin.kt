@@ -3,7 +3,6 @@ package com.github.hoshikurama.ticketmanager.paper
 import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.common.*
 import com.github.shynixn.mccoroutine.*
-import com.hoshikurama.github.ticketmanager.common.*
 import com.github.hoshikurama.ticketmanager.common.databases.Database
 import com.github.hoshikurama.ticketmanager.common.databases.MySQL
 import com.github.hoshikurama.ticketmanager.common.databases.SQLite
@@ -24,7 +23,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
 
     internal val pluginLocked = NonBlockingSync(singleOffThread, true)
     internal lateinit var perms: Permission private set
-    internal lateinit var configState: Deferred<PluginState>
+    internal lateinit var configState: PluginState
 
     internal val ticketCountMetrics = NonBlockingSync(singleOffThread, 0)
     private lateinit var metrics: Metrics
@@ -67,15 +66,16 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                 if (pluginLocked.check()) return@launchAsync
 
                 try {
-                    val state = pluginState.await()
+                    val state = pluginState
 
                     // Mass Unread Notify
                     if (state.allowUnreadTicketUpdates) {
-                        state.database.getTicketIDsWithUpdates()
+                        state.database.getBasicsWithUpdatesAsFlow()
                             .toList()
-                            .groupBy({ it.first }, { it.second })
+                            .groupBy ({ it.creatorUUID }, { it.id })
                             .asSequence()
-                            .mapNotNull { Bukkit.getPlayer(it.key)?.run { Pair(this, it.value) } }
+                            .filter { it.key != null }
+                            .mapNotNull { Bukkit.getPlayer(it.key!!)?.run { Pair(this, it.value) } }
                             .filter { it.first.has("ticketmanager.notify.unreadUpdates.scheduled") }
                             .forEach {
                                 val template = if (it.second.size > 1) it.first.toTMLocale().notifyUnreadUpdateMulti
@@ -88,7 +88,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                     }
 
                     // Open and Assigned Notify
-                    val tickets = state.database.getOpenTickets()
+                    val tickets = state.database.getBasicOpenAsFlow()
                         .map { it.assignedTo }
                         .toList()
 
@@ -128,11 +128,12 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
     internal suspend fun loadPlugin() = coroutineScope {
         pluginLocked.set(true)
 
-        // Builds instructions for plugin scope
-        configState = async {
-
+        configState = run {
+            // Creates config file if not found
             if (!File(plugin.dataFolder, "config.yml").exists()) {
                 plugin.saveDefaultConfig()
+
+                // Notifies users config was generated after plugin state init
                 launch {
                     while (!(::configState.isInitialized))
                         delay(100L)
@@ -141,9 +142,8 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
             }
 
             plugin.reloadConfig()
-            val config = plugin.config
-
-            config.run {
+            plugin.config.run {
+                val path = plugin.dataFolder.absolutePath
                 val database: () -> Database? = {
                     val type = getString("Database_Mode", "SQLite")!!
                         .let { tryOrNull { Database.Type.valueOf(it) } ?: Database.Type.SQLite }
@@ -156,7 +156,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                             getString("MySQL_Username")!!,
                             getString("MySQL_Password")!!
                         )
-                        Database.Type.SQLite -> SQLite()
+                        Database.Type.SQLite -> SQLite(path)
                     }
                 }
 
@@ -188,41 +188,51 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                     mainPlugin.description.version
                 }
 
-                PluginState.createDeferredPluginState(
+                PluginState.createPluginState(
                     database,
                     cooldown,
                     localeHandler,
                     allowUnreadTicketUpdates,
                     checkForPluginUpdate,
                     pluginVersion,
+                    path
                 )
             }
         }
 
-        val pluginState = configState.await()
-
-        withContext(minecraftDispatcher) {
-            // Register events and commands
-            pluginState.localeHandler.getCommandBases().forEach {
-                plugin.getCommand(it)?.setSuspendingExecutor(Commands())
-                mainPlugin.getCommand(it)?.setSuspendingTabCompleter(TabComplete())
-                // Remember to register any keyword in plugin.yml
-            }
-        }
-
         launch {
-            if (pluginState.database.updateNeeded().await()) {
-                pluginState.database.updateDatabase()
-            }
-            mainPlugin.pluginLocked.set(false)
+            configState.database.initialiseDatabase()
+            val updateNeeded = configState.database.updateNeededAsync().await()
+
+            if (updateNeeded) {
+                configState.database.updateDatabase(
+                    onBegin = {
+                        pushMassNotify("ticketmanager.notify.info") {
+                            text { formattedContent(it.informationDBUpdate) }
+                        }
+                    },
+                    onComplete = {
+                        pushMassNotify("ticketmanager.notify.info") {
+                            text { formattedContent(it.informationDBUpdateComplete) }
+                        }
+                        pluginLocked.set(true)
+                    },
+                    offlinePlayerNameToUuidOrNull = {
+                        Bukkit.getOfflinePlayers()
+                            .filter { it.name == name }
+                            .map { it.uniqueId }
+                            .firstOrNull()
+                    }
+                )
+            } else pluginLocked.set(false)
         }
 
 
         withContext(minecraftDispatcher) {
             // Register events and commands
-            pluginState.localeHandler.getCommandBases().forEach {
-                plugin.getCommand(it)?.setSuspendingExecutor(Commands())
-                mainPlugin.getCommand(it)?.setSuspendingTabCompleter(TabComplete())
+            configState.localeHandler.getCommandBases().forEach {
+                getCommand(it)!!.setSuspendingExecutor(Commands())
+                server.pluginManager.registerEvents(TabComplete(), this@TicketManagerPlugin)
                 // Remember to register any keyword in plugin.yml
             }
         }
