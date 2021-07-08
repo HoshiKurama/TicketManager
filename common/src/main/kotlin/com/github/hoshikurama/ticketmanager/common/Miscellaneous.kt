@@ -89,6 +89,6 @@ fun relTimeToEpochSecond(relTime: String, locale: TMLocale): Long {
     return Instant.now().epochSecond - seconds
 }
 
-internal val sortForList: Comparator<BasicTicket> = Comparator.comparing(BasicTicket::priority).reversed().thenComparing(Comparator.comparing(BasicTicket::id).reversed())
+val sortForList: Comparator<BasicTicket> = Comparator.comparing(BasicTicket::priority).reversed().thenComparing(Comparator.comparing(BasicTicket::id).reversed())
 
 fun <T> T.notEquals(t: T) = this != t

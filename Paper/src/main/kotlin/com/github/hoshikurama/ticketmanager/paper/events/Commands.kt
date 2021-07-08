@@ -626,7 +626,6 @@ class Commands : SuspendingCommandExecutor {
         /*
         val type = args[1].run(Database.Type::valueOf)
         pluginState.database.migrateDatabase(type)
-
          */
     }
 
@@ -801,20 +800,20 @@ class Commands : SuspendingCommandExecutor {
         baseCommand: (TMLocale) -> String,
     ): Component {
 
-        fun Component.addForward() {
-            color(NamedTextColor.WHITE)
-            clickEvent(ClickEvent.runCommand(baseCommand(locale) + "${curPage + 1}"))
-            hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(locale.clickNextPage)))
+        fun Component.addForward(): Component {
+            return color(NamedTextColor.WHITE)
+                .clickEvent(ClickEvent.runCommand(baseCommand(locale) + "${curPage + 1}"))
+                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(locale.clickNextPage)))
         }
 
-        fun Component.addBack() {
-            color(NamedTextColor.WHITE)
-            clickEvent(ClickEvent.runCommand(baseCommand(locale) + "${curPage - 1}"))
-            hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(locale.clickBackPage)))
+        fun Component.addBack(): Component {
+            return color(NamedTextColor.WHITE)
+                .clickEvent(ClickEvent.runCommand(baseCommand(locale) + "${curPage - 1}"))
+                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(locale.clickBackPage)))
         }
 
-        val back = Component.text("[${locale.pageBack}]")
-        val next = Component.text("[${locale.pageNext}]")
+        var back: Component = Component.text("[${locale.pageBack}]")
+        var next: Component = Component.text("[${locale.pageNext}]")
         val separator = text {
             content("...............")
             color(NamedTextColor.DARK_GRAY)
@@ -824,16 +823,16 @@ class Commands : SuspendingCommandExecutor {
 
         when (curPage) {
             1 -> {
-                back.color(NamedTextColor.DARK_GRAY)
-                next.addForward()
+                back = back.color(NamedTextColor.DARK_GRAY)
+                next = next.addForward()
             }
             pageCount -> {
-                back.addBack()
-                next.color(NamedTextColor.DARK_GRAY)
+                back = back.addBack()
+                next = next.color(NamedTextColor.DARK_GRAY)
             }
             else -> {
-                back.addBack()
-                back.addForward()
+                back = back.addBack()
+                next = next.addForward()
             }
         }
 
@@ -886,7 +885,7 @@ class Commands : SuspendingCommandExecutor {
         getTickets: suspend (Database) -> List<FullTicket>,
         baseCommand: (TMLocale) -> String
     ): Component {
-        val chunkedTickets = getTickets(pluginState.database).chunked(8)
+        val chunkedTickets = getTickets(pluginState.database).sortedWith(sortForList).chunked(8)
         val page = if (args.size == 2 && args[1].toInt() in 1..chunkedTickets.size) args[1].toInt() else 1
 
         return buildComponent {

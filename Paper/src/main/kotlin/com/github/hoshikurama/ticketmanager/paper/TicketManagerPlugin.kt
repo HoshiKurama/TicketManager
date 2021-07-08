@@ -32,6 +32,12 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
     companion object { lateinit var plugin: TicketManagerPlugin }
     init { plugin = this }
 
+    override suspend fun onDisableAsync() {
+        pluginLocked.set(true)
+        asyncDispatcher.cancelChildren()
+        pluginState.database.closeDatabase()
+
+    }
 
     override fun onEnable() {
 

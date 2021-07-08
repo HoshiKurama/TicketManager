@@ -32,7 +32,7 @@ class TabComplete: Listener {
     ): List<String> {
         val blankList = listOf("")
 
-        if (!sender.has("ticketmanager.commandArg.autotab")) return blankList
+        if (!sender.has("ticketmanager.commandArg.autotab") && sender is Player) return blankList
         val locale = sender.toTMLocale()
         val perms = LazyPermissions(locale, sender)
 
