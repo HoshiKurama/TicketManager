@@ -103,6 +103,7 @@ class TMLocale(
     val warningsInvalidDBType: String
     val warningsConvertToSameDBType: String
     val warningsUnexpectedError: String
+    val warningsLongTaskDuringReload: String
 
     // Command Types
     val commandBase: String
@@ -222,6 +223,7 @@ class TMLocale(
     val informationDBUpdateComplete: String
     val informationDBConvertInit: String
     val informationDBConvertSuccess: String
+    val informationReloadFailure: String
 
     // Modified Stacktrace
     val stacktraceLine1: String
@@ -401,5 +403,7 @@ class TMLocale(
         searchClosedBy = matchOrDefault("Search_ClosedBy")
         searchLastClosedBy = matchOrDefault("Search_LastClosedBy")
         notifyPluginUpdate = matchOrDefault("Notify_Event_PluginUpdate")
+        warningsLongTaskDuringReload = matchOrDefault("Warning_LongTaskDuringReload")
+        informationReloadFailure = matchOrDefault("Info_ReloadFailure")
     }
 }

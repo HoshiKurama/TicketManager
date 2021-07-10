@@ -20,6 +20,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
     @OptIn(ObsoleteCoroutinesApi::class)
     private val singleOffThread = newSingleThreadContext("SingleOffThread")
 
+    internal val jobCount = NonBlockingSync(singleOffThread, 0)
     internal val pluginLocked = NonBlockingSync(singleOffThread, true)
     internal lateinit var perms: Permission private set
     internal lateinit var configState: PluginState
@@ -35,7 +36,6 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
         pluginLocked.set(true)
         pluginState.database.closeDatabase()
     }
-    //TODO: KEEP TRACK OF CONTEXTS TO WAIT ON RELOADS
 
     override fun onEnable() {
 

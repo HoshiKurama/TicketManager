@@ -10,12 +10,9 @@ import com.github.hoshikurama.ticketmanager.common.ticket.*
 import com.github.hoshikurama.ticketmanager.paper.*
 import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
 import com.github.shynixn.mccoroutine.asyncDispatcher
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import net.kyori.adventure.extra.kotlin.text
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.TextComponent
@@ -68,13 +65,16 @@ class Commands : SuspendingCommandExecutor {
         val executeCommand = suspend { executeCommand(sender, argList, senderLocale, pseudoTicket) }
 
         try {
+            mainPlugin.jobCount.run { set(check() + 1) }
             if (notUnderCooldown.await() && isValidCommand.await() && hasValidPermission.await()) {
                 executeCommand()?.let { pushNotifications(sender, it, senderLocale, pseudoTicket) }
+                mainPlugin.jobCount.run { set(check() - 1) }
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            //postModifiedStacktrace(e)
-            //sender.sendMessage(senderLocale.warningsUnexpectedError)
+            postModifiedStacktrace(e)
+            sender.sendMessage(text { formattedContent(senderLocale.warningsUnexpectedError) })
+            mainPlugin.jobCount.run { set(check() - 1) }
         }
 
         return@withContext true
@@ -948,21 +948,46 @@ class Commands : SuspendingCommandExecutor {
         locale: TMLocale,
     ) {
         withContext(asyncContext) {
-            mainPlugin.pluginLocked.set(true)
-            pushMassNotify("ticketmanager.notify.info") {
-                text { formattedContent(it.informationReloadInitiated.replace("%user%", sender.name)) }
-            }
+            try {
+                mainPlugin.pluginLocked.set(true)
+                pushMassNotify("ticketmanager.notify.info") {
+                    text { formattedContent(it.informationReloadInitiated.replace("%user%", sender.name)) }
+                }
 
-            // Eventually try making it wait for other tasks to finish. Will require keeping track of jobs
-            //pushMassNotify("ticketmanager.notify.info", { it.informationReloadTasksDone } )
-            pluginState.database.closeDatabase()
-            mainPlugin.loadPlugin()
+                val forceQuitJob = launch {
+                    delay(30L * 1000L)
 
-            pushMassNotify("ticketmanager.notify.info") {
-                text { formattedContent(it.informationReloadSuccess) }
-            }
-            if (!sender.has("ticketmanager.notify.info")) {
-                sender.sendMessage(text { formattedContent(locale.informationReloadSuccess) })
+                    // Long standing task has occurred if it reaches this point
+                    launch {
+                        pushMassNotify("ticketmanager.notify.warning") {
+                            text { formattedContent(it.warningsLongTaskDuringReload) }
+                        }
+                        mainPlugin.jobCount.set(1)
+                        mainPlugin.asyncDispatcher.cancelChildren()
+                    }
+                }
+
+                // Waits for other tasks to complete
+                while (mainPlugin.jobCount.check() > 1) delay(1000L)
+
+                if (!forceQuitJob.isCancelled)
+                    forceQuitJob.cancel("Tasks closed on time")
+
+                pushMassNotify("ticketmanager.notify.info") { text { formattedContent(it.informationReloadTasksDone) } }
+                pluginState.database.closeDatabase()
+                mainPlugin.loadPlugin()
+
+                pushMassNotify("ticketmanager.notify.info") {
+                    text { formattedContent(it.informationReloadSuccess) }
+                }
+                if (!sender.has("ticketmanager.notify.info")) {
+                    sender.sendMessage(text { formattedContent(locale.informationReloadSuccess) })
+                }
+            } catch (e: Exception) {
+                pushMassNotify("ticketmanager.notify.info") {
+                    text { formattedContent(it.informationReloadFailure) }
+                }
+                throw e
             }
         }
     }
