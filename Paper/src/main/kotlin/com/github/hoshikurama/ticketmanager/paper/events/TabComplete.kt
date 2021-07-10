@@ -158,6 +158,7 @@ class TabComplete: Listener {
                                 "$searchWorld:",
                                 "$searchClosedBy:",
                                 "$searchLastClosedBy:",
+                                "$searchTime:",
                             )
                         }
                             .filter { it.startsWith(curArgument) }
@@ -207,8 +208,8 @@ class TabComplete: Listener {
                                     searchTimeYear
                                 )
                             }
-                                .filter { curArgument[curArgument.lastIndex].digitToIntOrNull() != null }
-                                .map { "${splitArgs[0]}:$it" }
+                                .filter { curArgument.last().digitToIntOrNull() != null }
+                                .map { "${splitArgs[0]}:${splitArgs[1]}$it" }
                         }
 
                         searchKeywords -> listOf(curArgument)
