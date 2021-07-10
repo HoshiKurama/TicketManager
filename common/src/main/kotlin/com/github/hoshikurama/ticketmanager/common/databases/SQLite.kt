@@ -4,14 +4,14 @@ import com.github.hoshikurama.ticketmanager.common.byteToPriority
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.toTicketLocation
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotliquery.*
 import java.sql.DriverManager
 import java.time.Instant
 import java.util.*
+import kotlin.coroutines.CoroutineContext
 
 
 class SQLite(absoluteDataFolderPath: String) : Database {
@@ -21,40 +21,37 @@ class SQLite(absoluteDataFolderPath: String) : Database {
 
     private fun getSession() = Session(Connection(DriverManager.getConnection(url)))
 
-    override suspend fun getActionsAsFlow(ticketID: Int): Flow<Pair<Int, FullTicket.Action>> {
+    override suspend fun getActionsAsFlow(ticketID: Int): Flow<FullTicket.Action> {
         return using(getSession()) { getActions(ticketID, it) }
-            .map { ticketID to it }
             .asFlow()
     }
 
-    override suspend fun setAssignmentAsync(ticketID: Int, assignment: String?) {
+    override suspend fun setAssignment(ticketID: Int, assignment: String?) {
         using(getSession()) {
             it.run(queryOf("UPDATE TicketManager_V4_Tickets SET ASSIGNED_TO = ? WHERE ID = $ticketID;", assignment).asUpdate)
         }
     }
 
-    override suspend fun setCreatorStatusUpdateAsync(ticketID: Int, status: Boolean) {
+    override suspend fun setCreatorStatusUpdate(ticketID: Int, status: Boolean) {
         using(getSession()) {
             it.run(queryOf("UPDATE TicketManager_V4_Tickets SET STATUS_UPDATE_FOR_CREATOR = ? WHERE ID = $ticketID;", status).asUpdate)
         }
     }
 
-    override suspend fun setPriorityAsync(ticketID: Int, priority: BasicTicket.Priority) {
+    override suspend fun setPriority(ticketID: Int, priority: BasicTicket.Priority) {
         using(getSession()) {
             it.run(queryOf("UPDATE TicketManager_V4_Tickets SET PRIORITY = ? WHERE ID = $ticketID;", priority.level).asUpdate)
         }
     }
 
-    override suspend fun setStatusAsync(ticketID: Int, status: BasicTicket.Status) {
+    override suspend fun setStatus(ticketID: Int, status: BasicTicket.Status) {
         using(getSession()) {
             it.run(queryOf("UPDATE TicketManager_V4_Tickets SET STATUS = ? WHERE ID = $ticketID;", status.name).asUpdate)
         }
     }
 
-    override suspend fun getBasicTicketAsync(ticketID: Int): Deferred<BasicTicket?> = coroutineScope {
-        async {
-            using(getSession()) { getBasicTicket(ticketID, it) }
-        }
+    override suspend fun getBasicTicket(ticketID: Int): BasicTicket? {
+        return using(getSession()) { getBasicTicket(ticketID, it) }
     }
 
     override suspend fun addAction(ticketID: Int, action: FullTicket.Action) {
@@ -73,17 +70,15 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         }
     }
 
-    override suspend fun addNewTicketAsync(basicTicket: BasicTicket, message: String): Deferred<Int> = coroutineScope {
-        async {
-            using(getSession()) { session ->
-                val id = writeTicket(basicTicket, session)!!.toInt()
-                writeAction(FullTicket.Action(FullTicket.Action.Type.OPEN, basicTicket.creatorUUID, message), id, session)
-                id
-            }
+    override suspend fun addNewTicket(basicTicket: BasicTicket, context: CoroutineContext, message: String): Int {
+        return using(getSession()) { session ->
+            val id = writeTicket(basicTicket, session)!!.toInt()
+            writeAction(FullTicket.Action(FullTicket.Action.Type.OPEN, basicTicket.creatorUUID, message), id, session)
+            id
         }
     }
 
-    override suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?) {
+    override suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?, context: CoroutineContext) {
         using(getSession()) { session ->
 
             val idStatusPairs = session.run(queryOf("SELECT ID, STATUS FROM TicketManager_V4_Tickets WHERE ID BETWEEN $lowerBound AND $upperBound;")
@@ -111,46 +106,46 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         }
     }
 
-    override suspend fun getBasicOpenAsFlow(): Flow<BasicTicket> {
+    override suspend fun getOpenIDPriorityPairs(): Flow<Pair<Int, Byte>> {
         return using(getSession()) { session ->
             session.run(
-                queryOf("SELECT * FROM TicketManager_V4_Tickets WHERE STATUS = ?;", BasicTicket.Status.OPEN.toString())
-                    .map { it.toBasicTicket() }
+                queryOf("SELECT ID, PRIORITY FROM TicketManager_V4_Tickets WHERE STATUS = ?;", BasicTicket.Status.OPEN.name)
+                    .map { it.int(1) to it.byte(2) }
                     .asList
             )
         }.asFlow()
     }
 
-    override suspend fun getBasicOpenAssignedAsFlow(
+    override suspend fun getAssignedOpenIDPriorityPairs(
         assignment: String,
-        groupAssignment: List<String>
-    ): Flow<BasicTicket> {
-        return getBasicOpenAsFlow().filter { it.assignedTo == assignment || it.assignedTo in groupAssignment }
-    }
+        unfixedGroupAssignment: List<String>
+    ): Flow<Pair<Int, Byte>> {
+        val groupsSQLStatement = unfixedGroupAssignment.joinToString(" OR ") { "ASSIGNED_TO = ?" }
+        val groupsFixed = unfixedGroupAssignment.map { "::$it" }
 
-    override suspend fun getBasicsWithUpdatesAsFlow(): Flow<BasicTicket> {
         return using(getSession()) { session ->
             session.run(
-                queryOf("SELECT * FROM TicketManager_V4_Tickets WHERE STATUS_UPDATE_FOR_CREATOR = ?;", true)
-                    .map { it.toBasicTicket() }
+                queryOf(
+                    statement = "SELECT ID, PRIORITY FROM TicketManager_V4_Tickets WHERE STATUS = ? AND ($groupsSQLStatement);",
+                    params = (listOf(BasicTicket.Status.OPEN.name) + groupsFixed).toTypedArray()
+                )
+                    .map { it.int(1) to it.byte(2) }
                     .asList
             )
         }.asFlow()
     }
 
-    override suspend fun getFullOpenAsFlow(): Flow<FullTicket> {
-        val basicTickets = getBasicOpenAsFlow().toList()
-
+    override suspend fun getIDsWithUpdates(): Flow<Int> {
         return using(getSession()) { session ->
-            basicTickets.map { it.toFullTicket(session) }.asFlow()
-        }
+            session.run(
+                queryOf("SELECT ID FROM TicketManager_V4_Tickets WHERE STATUS_UPDATE_FOR_CREATOR = ?;", true)
+                    .map { it.int(1) }
+                    .asList
+            )
+        }.asFlow()
     }
 
-    override suspend fun getFullOpenAssignedAsFlow(assignment: String, groupAssignment: List<String>): Flow<FullTicket> {
-        return getFullOpenAsFlow().filter { it.assignedTo == assignment || it.assignedTo in groupAssignment }
-    }
-
-    override suspend fun getIDsWithUpdatesAsFlowFor(uuid: UUID): Flow<Int> {
+    override suspend fun getIDsWithUpdatesFor(uuid: UUID): Flow<Int> {
         return using(getSession()) { session ->
             session.run(
                 queryOf("SELECT ID FROM TicketManager_V4_Tickets WHERE STATUS_UPDATE_FOR_CREATOR = ? AND CREATOR_UUID = ?;", true, uuid)
@@ -160,7 +155,38 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         }.asFlow()
     }
 
-    override suspend fun searchDatabase(searchFunction: (FullTicket) -> Boolean): Flow<FullTicket> {
+    override suspend fun getBasicTickets(ids: List<Int>): Flow<BasicTicket> {
+        val idsSQL = ids.joinToString(", ") { "$it" }
+
+        return using(getSession()) { session ->
+            session.run(
+                queryOf("SELECT * FROM TicketManager_V4_Tickets WHERE ID IN ($idsSQL);")
+                    .map { it.toBasicTicket() }
+                    .asList
+            )
+        }.asFlow()
+    }
+
+    override suspend fun getFullTicketsFromBasics(
+        basicTickets: List<BasicTicket>,
+        context: CoroutineContext
+    ): Flow<FullTicket> {
+        return using(getSession()) { session ->
+            basicTickets
+                .map { it.toFullTicket(session) }
+                .asFlow()
+        }
+    }
+
+    override suspend fun getFullTickets(ids: List<Int>, context: CoroutineContext): Flow<FullTicket> {
+        return using(getSession()) { session ->
+            ids.asSequence()
+                .mapNotNull { getBasicTicket(it, session) }
+                .map { it.toFullTicket(session) }
+        }.asFlow()
+    }
+
+    override suspend fun searchDatabase(context: CoroutineContext, searchFunction: (FullTicket) -> Boolean): Flow<FullTicket> {
         val matchedTickets = mutableListOf<FullTicket>()
 
         using(getSession()) { session ->
@@ -214,17 +240,14 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         }
     }
 
-    override suspend fun updateNeededAsync(): Deferred<Boolean> {
-        return coroutineScope {
-            async {
-                using(getSession()) {
-                    tableExists("TicketManagerTicketsV2", it)
-                }
-            }
+    override suspend fun updateNeeded(): Boolean {
+        return using(getSession()) {
+            tableExists("TicketManagerTicketsV2", it)
         }
     }
 
     override suspend fun migrateDatabase(
+        context: CoroutineContext,
         to: Database.Type,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit
@@ -278,6 +301,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
     }
 
     override suspend fun updateDatabase(
+        context: CoroutineContext,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit,
         offlinePlayerNameToUuidOrNull: (String) -> UUID?
@@ -396,8 +420,6 @@ class SQLite(absoluteDataFolderPath: String) : Database {
             .asList
         )
     }
-
-    private fun Row.toTicketIDActionPair() = int(1) to toAction()
 
     private fun tableExists(table: String, session: Session): Boolean {
         return using(session.connection.underlying.metaData.getTables(null, null, table, null)) {

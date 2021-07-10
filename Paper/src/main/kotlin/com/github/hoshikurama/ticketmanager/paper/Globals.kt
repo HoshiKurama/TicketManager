@@ -2,6 +2,7 @@ package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.common.PluginState
 import com.github.hoshikurama.ticketmanager.common.TMLocale
+import com.github.shynixn.mccoroutine.asyncDispatcher
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
@@ -9,6 +10,7 @@ import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import java.util.*
 import java.util.logging.Level
+import kotlin.coroutines.CoroutineContext
 
 fun consoleLog(level: Level, message: String) = Bukkit.getLogger().log(level, ChatColor.stripColor(message))
 
@@ -17,6 +19,9 @@ internal val mainPlugin: TicketManagerPlugin
 
 internal val pluginState: PluginState
     get() = mainPlugin.configState
+
+internal val asyncContext: CoroutineContext
+    get() = mainPlugin.asyncDispatcher
 
 
 internal fun pushMassNotify(permission: String, localeMsg: (TMLocale) -> Component) {

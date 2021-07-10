@@ -1,18 +1,21 @@
 package com.github.hoshikurama.ticketmanager.paper.events
 
-import com.github.hoshikurama.componentDSL.*
+import com.github.hoshikurama.componentDSL.buildComponent
+import com.github.hoshikurama.componentDSL.formattedContent
+import com.github.hoshikurama.componentDSL.onClick
+import com.github.hoshikurama.componentDSL.onHover
 import com.github.hoshikurama.ticketmanager.common.*
 import com.github.hoshikurama.ticketmanager.common.databases.Database
 import com.github.hoshikurama.ticketmanager.common.ticket.*
 import com.github.hoshikurama.ticketmanager.paper.*
-import com.github.hoshikurama.ticketmanager.paper.has
-import com.github.hoshikurama.ticketmanager.paper.mainPlugin
-import com.github.hoshikurama.ticketmanager.paper.pluginState
-import com.github.hoshikurama.ticketmanager.paper.toTMLocale
 import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
 import com.github.shynixn.mccoroutine.asyncDispatcher
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import net.kyori.adventure.extra.kotlin.text
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.TextComponent
@@ -26,7 +29,6 @@ import org.bukkit.Location
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
-import java.lang.Exception
 import java.util.*
 
 class Commands : SuspendingCommandExecutor {
@@ -80,12 +82,12 @@ class Commands : SuspendingCommandExecutor {
 
     private suspend fun getBasicTicketHandlerAsync(
         args: List<String>,
-        senderLocale: TMLocale
+        senderLocale: TMLocale,
     ): Deferred<BasicTicketHandler?> {
 
-        suspend fun buildFromIDAsync(id: Int) = BasicTicketHandler.buildHandlerAsync(pluginState.database, id)
+        suspend fun buildFromIDAsync(id: Int) = BasicTicketHandler.buildHandlerAsync(pluginState.database, id, asyncContext)
 
-        return coroutineScope {
+        return withContext(asyncContext) {
             when (args[0]) {
                 senderLocale.commandWordAssign,
                 senderLocale.commandWordSilentAssign,
@@ -375,7 +377,7 @@ class Commands : SuspendingCommandExecutor {
         assignmentID: String,
         dbAssignment: String?,
         ticketHandler: BasicTicketHandler,
-    ): NotifyParams = coroutineScope {
+    ): NotifyParams = withContext(asyncContext) {
         val shownAssignment = dbAssignment ?: senderLocale.miscNobody
 
         launch { ticketHandler.setAssignedTo(dbAssignment) }
@@ -436,13 +438,13 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         silent: Boolean,
         ticketHandler: BasicTicketHandler
-    ): NotifyParams = coroutineScope {
+    ): NotifyParams = withContext(asyncContext) {
         val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && pluginState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
             launch { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
         }
 
-        return@coroutineScope if (args.size >= 3)
+        return@withContext if (args.size >= 3)
             closeWithComment(sender, args, silent, ticketHandler)
         else closeWithoutComment(sender, args, silent, ticketHandler)
     }
@@ -452,7 +454,7 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         silent: Boolean,
         ticketHandler: BasicTicketHandler,
-    ): NotifyParams = coroutineScope {
+    ): NotifyParams = withContext(asyncContext) {
         val message = args.subList(2, args.size)
             .joinToString(" ")
             .run(ChatColor::stripColor)!!
@@ -502,7 +504,7 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         silent: Boolean,
         ticketHandler: BasicTicketHandler
-    ): NotifyParams = coroutineScope {
+    ): NotifyParams = withContext(asyncContext) {
         launch {
             pluginState.database.addAction(
                 ticketID = ticketHandler.id,
@@ -542,11 +544,11 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         silent: Boolean,
         basicTicket: BasicTicket
-    ): NotifyParams = coroutineScope {
+    ): NotifyParams = withContext(asyncContext) {
         val lowerBound = args[1].toInt()
         val upperBound = args[2].toInt()
 
-        launch { pluginState.database.massCloseTickets(lowerBound, upperBound, sender.toUUIDOrNull()) }
+        launch { pluginState.database.massCloseTickets(lowerBound, upperBound, sender.toUUIDOrNull(), asyncContext) }
 
         NotifyParams(
             silent = silent,
@@ -577,7 +579,7 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         silent: Boolean,
         ticketHandler: BasicTicketHandler,
-    ): NotifyParams = coroutineScope {
+    ): NotifyParams = withContext(asyncContext) {
         val message = args.subList(2, args.size)
             .joinToString(" ")
             .run(ChatColor::stripColor)!!
@@ -633,14 +635,14 @@ class Commands : SuspendingCommandExecutor {
     private suspend fun create(
         sender: CommandSender,
         args: List<String>,
-    ): NotifyParams = coroutineScope {
+    ): NotifyParams = withContext(asyncContext) {
         val message = args.subList(1, args.size)
             .joinToString(" ")
             .run(ChatColor::stripColor)!!
 
         val ticket = BasicTicket(creatorUUID = sender.toUUIDOrNull(), location = sender.toTicketLocationOrNull())
 
-        val deferredID = pluginState.database.addNewTicketAsync(ticket, message)
+        val deferredID = async { pluginState.database.addNewTicket(ticket, asyncContext, message) }
         mainPlugin.ticketCountMetrics.run { set(check() + 1) }
         val id = deferredID.await().toString()
 
@@ -728,7 +730,7 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         locale: TMLocale,
     ) {
-        coroutineScope {
+        withContext(asyncContext) {
             val targetName =
                 if (args.size >= 2) args[1].takeIf { it != locale.consoleName } else sender.name.takeIf { sender is Player }
             val requestedPage = if (args.size >= 3) args[2].toInt() else 1
@@ -744,7 +746,7 @@ class Commands : SuspendingCommandExecutor {
             val searchedUser = targetName?.attemptToUUIDString()
 
             val resultSize: Int
-            val resultsChunked = pluginState.database.searchDatabase { it.creatorUUID.toString() == searchedUser }
+            val resultsChunked = pluginState.database.searchDatabase(asyncContext) { it.creatorUUID.toString() == searchedUser }
                 .toList()
                 .sortedByDescending(BasicTicket::id)
                 .also { resultSize = it.size }
@@ -882,20 +884,29 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         locale: TMLocale,
         headerFormat: String,
-        getTickets: suspend (Database) -> List<FullTicket>,
+        getIDPriorityPair: suspend (Database) -> Flow<Pair<Int, Byte>>,
         baseCommand: (TMLocale) -> String
     ): Component {
-        val chunkedTickets = getTickets(pluginState.database).sortedWith(sortForList).chunked(8)
-        val page = if (args.size == 2 && args[1].toInt() in 1..chunkedTickets.size) args[1].toInt() else 1
+        val chunkedIDs = getIDPriorityPair(pluginState.database)
+            .toList()
+            .sortedWith(compareByDescending<Pair<Int, Byte>> { it.second }.thenByDescending { it.first } )
+            .map { it.first }
+            .chunked(8)
+        val page = if (args.size == 2 && args[1].toInt() in 1..chunkedIDs.size) args[1].toInt() else 1
+
+        val fullTickets = chunkedIDs.getOrNull(page - 1)
+            ?.run { pluginState.database.getFullTickets(this, asyncContext) }
+            ?.toList()
+            ?: emptyList()
 
         return buildComponent {
             text { formattedContent(headerFormat) }
 
-            if (chunkedTickets.isNotEmpty()) {
-                chunkedTickets[page - 1].forEach { append(createListEntry(it, locale)) }
+            if (fullTickets.isNotEmpty()) {
+                fullTickets.forEach { append(createListEntry(it, locale)) }
 
-                if (chunkedTickets.size > 1) {
-                    append(buildPageComponent(page, chunkedTickets.size, locale, baseCommand))
+                if (chunkedIDs.size > 1) {
+                    append(buildPageComponent(page, chunkedIDs.size, locale, baseCommand))
                 }
             }
         }
@@ -909,7 +920,7 @@ class Commands : SuspendingCommandExecutor {
     ) {
         sender.sendMessage(
             createGeneralList(args, locale, locale.listFormatHeader,
-                getTickets = { db -> db.getFullOpenAsFlow().toList() },
+                getIDPriorityPair = { it.getOpenIDPriorityPairs() },
                 baseCommand = locale.run{ { "/$commandBase $commandWordList " } }
             )
         )
@@ -921,13 +932,11 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         locale: TMLocale,
     ) {
-        val groups = if (sender is Player)
-            mainPlugin.perms.getPlayerGroups(sender).map { "::$it" }
-        else listOf()
+        val groups: List<String> = if (sender is Player) mainPlugin.perms.getPlayerGroups(sender).toList() else listOf()
 
         sender.sendMessage(
             createGeneralList(args, locale, locale.listFormatAssignedHeader,
-                getTickets = { db -> db.getFullOpenAssignedAsFlow(sender.name, groups).toList() },
+                getIDPriorityPair = { it.getAssignedOpenIDPriorityPairs(sender.name, groups) },
                 baseCommand = locale.run { { "/$commandBase $commandWordListAssigned " } }
             )
         )
@@ -938,7 +947,7 @@ class Commands : SuspendingCommandExecutor {
         sender: CommandSender,
         locale: TMLocale,
     ) {
-        coroutineScope {
+        withContext(asyncContext) {
             mainPlugin.pluginLocked.set(true)
             pushMassNotify("ticketmanager.notify.info") {
                 text { formattedContent(it.informationReloadInitiated.replace("%user%", sender.name)) }
@@ -964,7 +973,7 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         silent: Boolean,
         ticketHandler: BasicTicketHandler,
-    ): NotifyParams = coroutineScope {
+    ): NotifyParams = withContext(asyncContext) {
         val action = FullTicket.Action(FullTicket.Action.Type.REOPEN, sender.toUUIDOrNull())
 
         // Updates user status if needed
@@ -1009,7 +1018,7 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         locale: TMLocale,
     ) {
-        coroutineScope {
+        withContext(asyncContext) {
             fun String.attemptToUUIDString(): String? =
                 if (equals(locale.consoleName)) null
                 else Bukkit.getOfflinePlayers().asSequence()
@@ -1107,7 +1116,7 @@ class Commands : SuspendingCommandExecutor {
 
             // Results Computation
             val resultSize: Int
-            val chunkedTickets = pluginState.database.searchDatabase(composedSearch)
+            val chunkedTickets = pluginState.database.searchDatabase(asyncContext, composedSearch)
                 .toList()
                 .sortedByDescending(BasicTicket::id)
                 .apply { resultSize = size }
@@ -1177,7 +1186,7 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         silent: Boolean,
         ticketHandler: BasicTicketHandler,
-    ): NotifyParams = coroutineScope {
+    ): NotifyParams = withContext(asyncContext) {
         launch {
             pluginState.database.addAction(
                 ticketID = ticketHandler.id,
@@ -1277,8 +1286,8 @@ class Commands : SuspendingCommandExecutor {
         locale: TMLocale,
         ticketHandler: BasicTicketHandler,
     ) {
-        coroutineScope {
-            val fullTicket = ticketHandler.toFullTicketAsync().await()
+        withContext(asyncContext) {
+            val fullTicket = ticketHandler.toFullTicketAsync(asyncContext).await()
             val baseComponent = buildTicketInfoComponent(fullTicket, locale)
 
             if (!sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && ticketHandler.creatorStatusUpdate)
@@ -1304,8 +1313,8 @@ class Commands : SuspendingCommandExecutor {
         locale: TMLocale,
         ticketHandler: BasicTicketHandler,
     ) {
-        coroutineScope {
-            val fullTicket = ticketHandler.toFullTicketAsync().await()
+        withContext(asyncContext) {
+            val fullTicket = ticketHandler.toFullTicketAsync(asyncContext).await()
             val baseComponent = buildTicketInfoComponent(fullTicket, locale)
 
             if (!sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && ticketHandler.creatorStatusUpdate)

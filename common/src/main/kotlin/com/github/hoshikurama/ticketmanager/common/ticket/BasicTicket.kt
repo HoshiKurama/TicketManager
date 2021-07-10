@@ -1,13 +1,14 @@
 package com.github.hoshikurama.ticketmanager.common.ticket
 
-import com.github.hoshikurama.ticketmanager.common.PluginState
 import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.databases.Database
+import com.github.hoshikurama.ticketmanager.common.sortActions
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withContext
 import java.util.*
+import kotlin.coroutines.CoroutineContext
 
 open class BasicTicket(
     val id: Int = -1,                               // Ticket ID 1+... -1 placeholder during ticket creation
@@ -34,12 +35,11 @@ open class BasicTicket(
         override fun toString() = "$world $x $y $z"
     }
 
-    suspend fun toFullTicketAsync(database: Database): Deferred<FullTicket> = coroutineScope {
+    suspend fun toFullTicketAsync(database: Database, context: CoroutineContext): Deferred<FullTicket> = withContext(context) {
         async {
             val sortedActions = database.getActionsAsFlow(id)
                 .toList()
-                .sortedBy { it.first }
-                .map { it.second }
+                .sortedWith(sortActions)
 
             FullTicket(this@BasicTicket, sortedActions)
         }

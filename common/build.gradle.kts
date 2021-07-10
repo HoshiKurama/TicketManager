@@ -12,7 +12,7 @@ dependencies {
     implementation(kotlin("stdlib", version = "1.5.20"))
     implementation("mysql:mysql-connector-java:8.0.25")
     implementation("org.xerial:sqlite-jdbc:3.34.0")
-    implementation("com.github.jasync-sql:jasync-mysql:1.1.6")
+    implementation("com.github.jasync-sql:jasync-mysql:1.2.2")
     implementation("com.github.seratch:kotliquery:1.3.1")
     implementation("com.github.HoshiKurama:KyoriComponentDSL:1.1.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.5.0")

@@ -3,9 +3,9 @@ package com.github.hoshikurama.ticketmanager.common
 import com.github.hoshikurama.ticketmanager.common.databases.Database
 import com.github.hoshikurama.ticketmanager.common.databases.SQLite
 import kotlinx.coroutines.*
-import net.kyori.adventure.text.Component
 import java.time.Instant
 import java.util.*
+import kotlin.coroutines.CoroutineContext
 
 class PluginState(
     val cooldowns: Cooldown,
@@ -24,11 +24,18 @@ class PluginState(
             crossinline checkForPluginUpdate: () -> Boolean?,
             crossinline pluginVersion: () -> String,
             absolutePathToPluginFolder: String,
-        ) = coroutineScope {
+            context: CoroutineContext
+        ) = withContext(context) {
 
-            val deferredDatabase = async { tryOrDefault(database, SQLite(absolutePathToPluginFolder)) }
             val deferredCooldown = async { tryOrDefault(cooldown, Cooldown(false, 0)) }
-            val deferredAllowUnreadUpdates = async { tryOrDefault(allowUnreadTicketUpdates, true) }
+            val deferredAllowUnreadUpdates = async { tryOrDefault(allowUnreadTicketUpdates, true)
+            }
+            val deferredDatabase = async {
+                tryOrDefault(
+                    attempted = { database()?.apply { initialiseDatabase() } },
+                    default = SQLite(absolutePathToPluginFolder)
+                )
+            }
 
             val deferredPluginUpdate = async {
                 val shouldCheck = checkForPluginUpdate()
@@ -55,6 +62,7 @@ class PluginState(
                         preferredLocale = "en_ca",
                         console_Locale = "en_ca",
                         forceLocale = false,
+                        context = context
                     )
                 )
             }
@@ -110,8 +118,7 @@ inline fun <T> tryOrNull(function: () -> T): T? =
 suspend inline fun <T> tryOrDefaultSuspend(crossinline attempted: suspend () -> T?, default: T): T =
     tryOrNullSuspend(attempted).run { this ?: default }
 
-suspend inline fun <T> tryOrNullSuspend(crossinline function: suspend () -> T): T? = coroutineScope {
+suspend inline fun <T> tryOrNullSuspend(crossinline function: suspend () -> T): T? =
     try { function() }
     catch (ignored: Exception) { null }
-}
 

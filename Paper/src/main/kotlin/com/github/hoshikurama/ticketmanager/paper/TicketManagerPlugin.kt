@@ -2,16 +2,15 @@ package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.common.*
-import com.github.shynixn.mccoroutine.*
 import com.github.hoshikurama.ticketmanager.common.databases.Database
 import com.github.hoshikurama.ticketmanager.common.databases.MySQL
 import com.github.hoshikurama.ticketmanager.common.databases.SQLite
 import com.github.hoshikurama.ticketmanager.paper.events.Commands
 import com.github.hoshikurama.ticketmanager.paper.events.PlayerJoin
 import com.github.hoshikurama.ticketmanager.paper.events.TabComplete
+import com.github.shynixn.mccoroutine.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.*
 import net.kyori.adventure.extra.kotlin.text
 import net.milkbowl.vault.permission.Permission
 import org.bukkit.Bukkit
@@ -34,10 +33,9 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
 
     override suspend fun onDisableAsync() {
         pluginLocked.set(true)
-        asyncDispatcher.cancelChildren()
         pluginState.database.closeDatabase()
-
     }
+    //TODO: KEEP TRACK OF CONTEXTS TO WAIT ON RELOADS
 
     override fun onEnable() {
 
@@ -68,70 +66,61 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
 
         // Creates task timers
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, Runnable {
+            launchAsync { configState.cooldowns.filterMapAsync() }
+
             launchAsync {
                 if (pluginLocked.check()) return@launchAsync
 
                 try {
-                    val state = pluginState
-
                     // Mass Unread Notify
-                    if (state.allowUnreadTicketUpdates) {
-                        state.database.getBasicsWithUpdatesAsFlow()
-                            .toList()
-                            .groupBy ({ it.creatorUUID }, { it.id })
-                            .asSequence()
-                            .filter { it.key != null }
-                            .mapNotNull { Bukkit.getPlayer(it.key!!)?.run { Pair(this, it.value) } }
-                            .filter { it.first.has("ticketmanager.notify.unreadUpdates.scheduled") }
-                            .forEach {
-                                val template = if (it.second.size > 1) it.first.toTMLocale().notifyUnreadUpdateMulti
-                                else it.first.toTMLocale().notifyUnreadUpdateSingle
-                                val tickets = it.second.joinToString(", ")
+                    if (configState.allowUnreadTicketUpdates) {
+                        Bukkit.getOnlinePlayers().asFlow()
+                            .filter { it.has("ticketmanager.notify.unreadUpdates.scheduled") }
+                            .onEach {
+                               launch {
+                                   val ticketIDs = configState.database.getIDsWithUpdatesFor(it.uniqueId).toList()
+                                   val tickets = ticketIDs.joinToString(", ")
 
-                                val sentMessage = template.replace("%num%", tickets)
-                                it.first.sendMessage(text { formattedContent(sentMessage) })
+                                   if (ticketIDs.isEmpty()) return@launch
+
+                                   val template = if (ticketIDs.size > 1) it.toTMLocale().notifyUnreadUpdateMulti
+                                   else it.toTMLocale().notifyUnreadUpdateSingle
+
+                                   val sentMessage = template.replace("%num%", tickets)
+                                   it.sendMessage(text { formattedContent(sentMessage) })
+                               }
                             }
                     }
 
+                    val openPriority = configState.database.getOpenIDPriorityPairs().map { it.first }.toList()
+                    val openCount = openPriority.count()
+                    val assignments = configState.database.getBasicTickets(openPriority).mapNotNull { it.assignedTo }.toList()
+
                     // Open and Assigned Notify
-                    val tickets = state.database.getBasicOpenAsFlow()
-                        .map { it.assignedTo }
-                        .toList()
-
-                    Bukkit.getOnlinePlayers().asSequence()
+                    Bukkit.getOnlinePlayers().asFlow()
                         .filter { it.has("ticketmanager.notify.openTickets.scheduled") }
-                        .forEach { p ->
-                            val open = tickets.size.toString()
-                            val assigned = tickets.asSequence()
-                                .filterNotNull()
-                                .filter { s ->
-                                    if (s.startsWith("::"))
-                                        perms.getPlayerGroups(p)
-                                            .asSequence()
-                                            .map { "::$it" }
-                                            .filter { it == s }
-                                            .any()
-                                    else s == p.name
-                                }.count().toString()
+                        .onEach { p ->
+                            launch {
+                                val groups = perms.getPlayerGroups(p).map { "::$it" }
+                                val assignedCount = assignments
+                                    .filter { it == p.name || it in groups }
+                                    .count()
 
-                            val sentMessage = p.toTMLocale().notifyOpenAssigned
-                                .replace("%open%", open)
-                                .replace("%assigned%", assigned)
-                            p.sendMessage(text { formattedContent(sentMessage) })
-
+                                val sentMessage = p.toTMLocale().notifyOpenAssigned
+                                    .replace("%open%", "$openCount")
+                                    .replace("%assigned%", "$assignedCount")
+                                p.sendMessage(text { formattedContent(sentMessage) })
+                            }
                         }
-
-                   launch { state.cooldowns.filterMapAsync() }
-
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    //postModifiedStacktrace(e)
+                    //postModifiedStacktrace(e) TODO
                 }
             }
         }, 100, 12000)
     }
 
-    internal suspend fun loadPlugin() = coroutineScope {
+    internal suspend fun loadPlugin() = withContext(plugin.asyncDispatcher) {
         pluginLocked.set(true)
 
         configState = run {
@@ -160,7 +149,8 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                             getString("MySQL_Port")!!,
                             getString("MySQL_DBName")!!,
                             getString("MySQL_Username")!!,
-                            getString("MySQL_Password")!!
+                            getString("MySQL_Password")!!,
+                            asyncDispatcher = (plugin.asyncDispatcher as CoroutineDispatcher),
                         )
                         Database.Type.SQLite -> SQLite(path)
                     }
@@ -178,7 +168,8 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                         getString("Colour_Code", "&3")!!,
                         getString("Preferred_Locale", "en_ca")!!,
                         getString("Console_Locale", "en_ca")!!,
-                        getBoolean("Force_Locale", false)
+                        getBoolean("Force_Locale", false),
+                        asyncContext
                     )
                 }
 
@@ -201,14 +192,14 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                     allowUnreadTicketUpdates,
                     checkForPluginUpdate,
                     pluginVersion,
-                    path
+                    path,
+                    asyncContext
                 )
             }
         }
 
         launch {
-            configState.database.initialiseDatabase()
-            val updateNeeded = configState.database.updateNeededAsync().await()
+            val updateNeeded = configState.database.updateNeeded()
 
             if (updateNeeded) {
                 configState.database.updateDatabase(
@@ -222,13 +213,14 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                             text { formattedContent(it.informationDBUpdateComplete) }
                         }
                         pluginLocked.set(true)
-                    },
+                    },//TODO ADD ONERROR
                     offlinePlayerNameToUuidOrNull = {
                         Bukkit.getOfflinePlayers()
                             .filter { it.name == name }
                             .map { it.uniqueId }
                             .firstOrNull()
-                    }
+                    },
+                    context = asyncContext
                 )
             } else pluginLocked.set(false)
         }

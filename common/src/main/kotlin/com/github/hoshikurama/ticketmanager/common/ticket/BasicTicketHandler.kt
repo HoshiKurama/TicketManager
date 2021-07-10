@@ -1,11 +1,10 @@
 package com.github.hoshikurama.ticketmanager.common.ticket
 
-import com.github.hoshikurama.ticketmanager.common.PluginState
 import com.github.hoshikurama.ticketmanager.common.databases.Database
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import java.util.*
+import kotlin.coroutines.CoroutineContext
 
 class BasicTicketHandler(
     id: Int,
@@ -31,25 +30,25 @@ class BasicTicketHandler(
     )
 
     companion object {
-        suspend fun buildHandlerAsync(database: Database, id: Int) = coroutineScope {
+        suspend fun buildHandlerAsync(database: Database, id: Int, context: CoroutineContext) = withContext(context) {
             async {
-                val basicTicket = database.getBasicTicketAsync(id)
-                basicTicket.await()?.run { BasicTicketHandler(database, this) }
+                val basicTicket = database.getBasicTicket(id)
+                basicTicket?.run { BasicTicketHandler(database, this) }
             }
         }
     }
 
     suspend fun setCreatorStatusUpdate(value: Boolean) =
-        database.setCreatorStatusUpdateAsync(id, value)
+        database.setCreatorStatusUpdate(id, value)
 
     suspend fun setTicketPriority(value: Priority) =
-        database.setPriorityAsync(id, value)
+        database.setPriority(id, value)
 
     suspend fun setTicketStatus(value: Status) =
-        database.setStatusAsync(id, value)
+        database.setStatus(id, value)
 
     suspend fun setAssignedTo(value: String?) =
-        database.setAssignmentAsync(id, value)
+        database.setAssignment(id, value)
 
-    suspend fun toFullTicketAsync() = super.toFullTicketAsync(database)
+    suspend fun toFullTicketAsync(context: CoroutineContext) = super.toFullTicketAsync(database, context)
 }

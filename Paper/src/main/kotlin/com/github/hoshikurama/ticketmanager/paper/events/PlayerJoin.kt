@@ -1,13 +1,14 @@
 package com.github.hoshikurama.ticketmanager.paper.events
 
 import com.github.hoshikurama.componentDSL.formattedContent
-import com.github.shynixn.mccoroutine.asyncDispatcher
 import com.github.hoshikurama.ticketmanager.paper.has
 import com.github.hoshikurama.ticketmanager.paper.mainPlugin
 import com.github.hoshikurama.ticketmanager.paper.pluginState
 import com.github.hoshikurama.ticketmanager.paper.toTMLocale
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.*
+import com.github.shynixn.mccoroutine.asyncDispatcher
+import com.github.shynixn.mccoroutine.minecraftDispatcher
+import kotlinx.coroutines.flow.count
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.kyori.adventure.extra.kotlin.text
@@ -18,8 +19,8 @@ import org.bukkit.event.player.PlayerJoinEvent
 class PlayerJoin : Listener  {
 
     @EventHandler
-    suspend fun onPlayerJoin(event: PlayerJoinEvent) = coroutineScope {
-        if (mainPlugin.pluginLocked.check()) return@coroutineScope
+    suspend fun onPlayerJoin(event: PlayerJoinEvent) = withContext(mainPlugin.minecraftDispatcher) {
+        if (mainPlugin.pluginLocked.check()) return@withContext
         val player = event.player
 
         withContext(mainPlugin.asyncDispatcher) {
@@ -38,7 +39,7 @@ class PlayerJoin : Listener  {
             // Unread Updates
             launch {
                 if (player.has("ticketmanager.notify.unreadUpdates.onJoin")) {
-                    pluginState.database.getIDsWithUpdatesAsFlowFor(player.uniqueId)
+                    pluginState.database.getIDsWithUpdatesFor(player.uniqueId)
                         .toList()
                         .run { if (size == 0) null else this }
                         ?.run {
@@ -56,8 +57,8 @@ class PlayerJoin : Listener  {
             // View Open-Count and Assigned-Count Tickets
             launch {
                 if (player.has("ticketmanager.notify.openTickets.onJoin")) {
-                    val open = pluginState.database.getBasicOpenAsFlow()
-                    val assigned = pluginState.database.getBasicOpenAssignedAsFlow(player.name, mainPlugin.perms.getPlayerGroups(player).toList())
+                    val open = pluginState.database.getOpenIDPriorityPairs()
+                    val assigned = pluginState.database.getAssignedOpenIDPriorityPairs(player.name, mainPlugin.perms.getPlayerGroups(player).toList())
 
                     val sentMSG = player.toTMLocale().notifyOpenAssigned
                         .replace("%open%", "${open.count()}")

@@ -1,6 +1,7 @@
 package com.github.hoshikurama.ticketmanager.common
 
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
+import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 import java.net.URL
@@ -90,5 +91,7 @@ fun relTimeToEpochSecond(relTime: String, locale: TMLocale): Long {
 }
 
 val sortForList: Comparator<BasicTicket> = Comparator.comparing(BasicTicket::priority).reversed().thenComparing(Comparator.comparing(BasicTicket::id).reversed())
+
+val sortActions: Comparator<FullTicket.Action> = Comparator.comparing(FullTicket.Action::timestamp)
 
 fun <T> T.notEquals(t: T) = this != t
