@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common.databases
 
+import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.byteToPriority
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
@@ -196,6 +197,45 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         }
 
         return matchedTickets.asFlow()
+    }
+
+    override suspend fun searchDatabaseNew(
+        locale: TMLocale,
+        mainTableConstraints: List<Pair<String, String?>>,
+        searchFunction: (FullTicket) -> Boolean
+    ): Flow<FullTicket> {
+
+        val mainTableSQL = mainTableConstraints
+            .mapNotNull {
+                when (it.first) {
+                    locale.searchAssigned -> "ASSIGNED_TO = ?"
+                    locale.searchCreator -> "CREATOR_UUID = ?"
+                    locale.searchPriority -> "PRIORITY = ?"
+                    locale.searchStatus -> "STATUS = ?"
+                    else -> null //Not relevant
+                }
+            }
+            .joinToString(" AND ")
+
+        val inputtedArgs = mainTableConstraints
+            .map { it.second }
+            .toTypedArray()
+
+        var statementSQL = "SELECT * FROM TicketManager_V4_Tickets"
+        if (mainTableConstraints.isNotEmpty())
+            statementSQL += " WHERE $mainTableSQL"
+
+        return using(getSession()) { session ->
+            val basicTickets = session.run(
+                queryOf("$statementSQL;", *inputtedArgs)
+                    .map { it.toBasicTicket() }
+                    .asList
+            )
+
+            basicTickets
+                .map { it.toFullTicket(session) }
+                .filter(searchFunction)
+        }.asFlow()
     }
 
     override suspend fun closeDatabase() {

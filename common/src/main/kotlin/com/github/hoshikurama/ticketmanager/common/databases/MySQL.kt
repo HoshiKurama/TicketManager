@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common.databases
 
+import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.byteToPriority
 import com.github.hoshikurama.ticketmanager.common.sortActions
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
@@ -222,6 +223,41 @@ class MySQL(
             .filter(searchFunction)
             .forEach{ emit(it) }
     }
+
+    override suspend fun searchDatabaseNew(
+        locale: TMLocale,
+        mainTableConstraints: List<Pair<String, String?>>,
+        searchFunction: (FullTicket) -> Boolean
+    ): Flow<FullTicket> = flow {
+        val mainTableSQL = mainTableConstraints
+            .mapNotNull {
+                when (it.first) {
+                    locale.searchAssigned -> "ASSIGNED_TO = ?"
+                    locale.searchCreator -> "CREATOR_UUID = ?"
+                    locale.searchPriority -> "PRIORITY = ?"
+                    locale.searchStatus -> "STATUS = ?"
+                    else -> null //Not relevant
+                }
+            }
+            .joinToString(" AND ")
+
+        var statementSQL = "SELECT * FROM TicketManager_V4_Tickets"
+        if (mainTableConstraints.isNotEmpty())
+            statementSQL += " WHERE $mainTableSQL"
+
+        suspendingCon.sendPreparedStatement("$statementSQL;", mainTableConstraints.map { it.second })
+            .rows
+            .map { it.toBasicTicket() }
+            .map {
+                coroutineScope {
+                    async { it.toFullTicket() }
+                }
+            }
+            .map { it.await() }
+            .filter(searchFunction)
+            .forEach{ emit(it) }
+    }
+
 
     override suspend fun closeDatabase() {
         connectionPool.disconnect()

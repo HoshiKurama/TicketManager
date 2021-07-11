@@ -308,7 +308,7 @@ class Commands : SuspendingCommandExecutor {
                 commandWordReload -> reload(sender, senderLocale).let { null }
                 commandWordReopen -> reopen(sender,args, false, ticketHandler)
                 commandWordSilentReopen -> reopen(sender,args, true, ticketHandler)
-                commandWordSearch -> search(sender, args, senderLocale).let { null }
+                commandWordSearch -> searchNew(sender, args, senderLocale).let { null }
                 commandWordSetPriority -> setPriority(sender, args, false, ticketHandler)
                 commandWordSilentSetPriority -> setPriority(sender, args, true, ticketHandler)
                 commandWordTeleport -> teleport(sender, ticketHandler).let { null }
@@ -725,7 +725,7 @@ class Commands : SuspendingCommandExecutor {
     }
 
     // /ticket history [User] [Page]
-    private suspend fun history(
+    private suspend fun history( //TODO UPDATE
         sender: CommandSender,
         args: List<String>,
         locale: TMLocale,
@@ -792,123 +792,6 @@ class Commands : SuspendingCommandExecutor {
             }
 
             sender.sendMessage(sentComponent)
-        }
-    }
-
-    private fun buildPageComponent(
-        curPage: Int,
-        pageCount: Int,
-        locale: TMLocale,
-        baseCommand: (TMLocale) -> String,
-    ): Component {
-
-        fun Component.addForward(): Component {
-            return color(NamedTextColor.WHITE)
-                .clickEvent(ClickEvent.runCommand(baseCommand(locale) + "${curPage + 1}"))
-                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(locale.clickNextPage)))
-        }
-
-        fun Component.addBack(): Component {
-            return color(NamedTextColor.WHITE)
-                .clickEvent(ClickEvent.runCommand(baseCommand(locale) + "${curPage - 1}"))
-                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(locale.clickBackPage)))
-        }
-
-        var back: Component = Component.text("[${locale.pageBack}]")
-        var next: Component = Component.text("[${locale.pageNext}]")
-        val separator = text {
-            content("...............")
-            color(NamedTextColor.DARK_GRAY)
-        }
-        val cc = pluginState.localeHandler.mainColourCode
-        val ofSection = text { formattedContent("$cc($curPage${locale.pageOf}$pageCount)") }
-
-        when (curPage) {
-            1 -> {
-                back = back.color(NamedTextColor.DARK_GRAY)
-                next = next.addForward()
-            }
-            pageCount -> {
-                back = back.addBack()
-                next = next.color(NamedTextColor.DARK_GRAY)
-            }
-            else -> {
-                back = back.addBack()
-                next = next.addForward()
-            }
-        }
-
-        return Component.text("\n")
-            .append(back)
-            .append(separator)
-            .append(ofSection)
-            .append(separator)
-            .append(next)
-    }
-
-    private fun createListEntry(
-        ticket: FullTicket,
-        locale: TMLocale
-    ): Component {
-        val creator = ticket.creatorUUID.toName(locale)
-        val fixedAssign = ticket.assignedTo ?: ""
-
-        // Shortens comment preview to fit on one line
-        val fixedComment = ticket.run {
-            if (12 + id.toString().length + creator.length + fixedAssign.length + actions[0].message!!.length > 58)
-                actions[0].message!!.substring(
-                    0,
-                    43 - id.toString().length - fixedAssign.length - creator.length
-                ) + "..."
-            else actions[0].message!!
-        }
-
-        return text {
-            formattedContent(
-                "\n${locale.listFormatEntry}"
-                    .replace("%priorityCC%", ticket.priority.colourCode)
-                    .replace("%ID%", "${ticket.id}")
-                    .replace("%creator%", creator)
-                    .replace("%assign%", fixedAssign)
-                    .replace("%comment%", fixedComment)
-            )
-            onHover { showText(Component.text(locale.clickViewTicket)) }
-            onClick {
-                action = ClickEvent.Action.RUN_COMMAND
-                value = locale.run { "/$commandBase $commandWordView ${ticket.id}" }
-            }
-        }
-    }
-
-    private suspend fun createGeneralList(
-        args: List<String>,
-        locale: TMLocale,
-        headerFormat: String,
-        getIDPriorityPair: suspend (Database) -> Flow<Pair<Int, Byte>>,
-        baseCommand: (TMLocale) -> String
-    ): Component {
-        val chunkedIDs = getIDPriorityPair(pluginState.database)
-            .toList()
-            .sortedWith(compareByDescending<Pair<Int, Byte>> { it.second }.thenByDescending { it.first } )
-            .map { it.first }
-            .chunked(8)
-        val page = if (args.size == 2 && args[1].toInt() in 1..chunkedIDs.size) args[1].toInt() else 1
-
-        val fullTickets = chunkedIDs.getOrNull(page - 1)
-            ?.run { pluginState.database.getFullTickets(this, asyncContext) }
-            ?.toList()
-            ?: emptyList()
-
-        return buildComponent {
-            text { formattedContent(headerFormat) }
-
-            if (fullTickets.isNotEmpty()) {
-                fullTickets.forEach { append(createListEntry(it, locale)) }
-
-                if (chunkedIDs.size > 1) {
-                    append(buildPageComponent(page, chunkedIDs.size, locale, baseCommand))
-                }
-            }
         }
     }
 
@@ -1037,13 +920,12 @@ class Commands : SuspendingCommandExecutor {
         )
     }
 
-    // /ticket search <Constraints…>
-    private suspend fun search(
+    private suspend fun searchNew(
         sender: CommandSender,
         args: List<String>,
         locale: TMLocale,
     ) {
-        withContext(asyncContext) {
+        coroutineScope {
             fun String.attemptToUUIDString(): String? =
                 if (equals(locale.consoleName)) null
                 else Bukkit.getOfflinePlayers().asSequence()
@@ -1051,103 +933,88 @@ class Commands : SuspendingCommandExecutor {
                     ?.run { uniqueId.toString() }
                     ?: "[PLAYERNOTFOUND]"
 
-            // Beginning of code execution
+            // Beginning of execution
             sender.sendMessage(text { formattedContent(locale.searchFormatQuerying) })
-            val constraintTypes = locale.run {
-                listOf(
-                    searchAssigned,
-                    searchCreator,
-                    searchKeywords,
-                    searchPriority,
-                    searchStatus,
-                    searchTime,
-                    searchWorld,
-                    searchPage,
-                    searchClosedBy,
-                    searchLastClosedBy,
-                )
-            }
 
-            val localedConstraintMap = args.subList(1, args.size)
+
+            //todo searchPage,
+
+            // Input args mapped to valid search types
+            val arguments = args.subList(1, args.size)
                 .asSequence()
                 .map { it.split(":", limit = 2) }
-                .filter { it[0] in constraintTypes }
                 .filter { it.size >= 2 }
                 .associate { it[0] to it[1] }
 
-            val searchFunctions = localedConstraintMap
-                    .mapNotNull { entry ->
-                when (entry.key) {
-                    locale.searchWorld -> { t: FullTicket -> t.location?.world?.equals(entry.value) ?: false }
-                    locale.searchAssigned ->  { t: FullTicket -> t.assignedTo == entry.value }
-
-                    locale.searchCreator -> {
-                        val searchedUser = entry.value.attemptToUUIDString();
-                        { t: FullTicket -> t.creatorUUID?.toString() == searchedUser }
-                    }
-
-                    locale.searchPriority -> {
-                        val searchedPriority = entry.value.toByteOrNull() ?: 0;
-                        { t: FullTicket -> t.priority.level == searchedPriority }
-                    }
-
-                    locale.searchTime -> {
-                        val creationTime = relTimeToEpochSecond(entry.value, locale);
-                        { t: FullTicket -> t.actions[0].timestamp >= creationTime }
-                    }
-
-                    locale.searchStatus -> {
-                        val constraintStatus = when (entry.value) {
-                            locale.statusOpen -> BasicTicket.Status.OPEN.name
-                            locale.statusClosed -> BasicTicket.Status.CLOSED.name
-                            else -> entry.value
+            val mainTableConstrains = arguments
+                .mapNotNull { (key, value) ->
+                    when (key) {
+                        locale.searchAssigned -> key to value
+                        locale.searchCreator -> key to value.attemptToUUIDString()
+                        locale.searchPriority -> value.toByteOrNull()?.run { key to this.toString() }
+                        locale.searchStatus -> {
+                            val constraintStatus = when (value) {
+                                locale.statusOpen -> BasicTicket.Status.OPEN.name
+                                locale.statusClosed -> BasicTicket.Status.CLOSED.name
+                                else -> null
+                            }
+                            constraintStatus?.run { key to this }
                         }
-                        { t: FullTicket -> t.status.name == constraintStatus}
+                        else -> null
                     }
-
-                    locale.searchKeywords -> {
-                        val words = entry.value.split(",");
-
-                        { t: FullTicket ->
-                            val comments = t.actions
-                                .filter { it.type == FullTicket.Action.Type.OPEN || it.type == FullTicket.Action.Type.COMMENT }
-                                .map { it.message!! }
-                            words.map { w -> comments.any { it.contains(w) } }
-                                .all { it }
-                        }
-                    }
-
-                    locale.searchLastClosedBy -> {
-                        val searchedUser = entry.value.attemptToUUIDString();
-                        { t: FullTicket ->
-                            t.actions.lastOrNull { e -> e.type == FullTicket.Action.Type.CLOSE }
-                                ?.run { user?.toString() == searchedUser }
-                                ?: false
-                        }
-
-                    }
-
-                    locale.searchClosedBy -> {
-                        val searchedUser = entry.value.attemptToUUIDString();
-                        { t: FullTicket -> t.actions.any{ it.type == FullTicket.Action.Type.CLOSE && it.user?.toString() == searchedUser } }
-                    }
-
-                    else -> null
                 }
-            }
-                .asSequence()
 
-            val composedSearch = { t: FullTicket -> searchFunctions.map { it(t) }.all { it } }
+            val functionConstraints = arguments
+                .mapNotNull { (key, value) ->
+                    when (key) {
+
+                        locale.searchClosedBy -> {
+                            val searchedUser = value.attemptToUUIDString();
+                            { t: FullTicket -> t.actions.any{ it.type == FullTicket.Action.Type.CLOSE && it.user?.toString() == searchedUser } }
+                        }
+
+                        locale.searchLastClosedBy -> {
+                            val searchedUser = value.attemptToUUIDString();
+                            { t: FullTicket ->
+                                t.actions.lastOrNull { e -> e.type == FullTicket.Action.Type.CLOSE }
+                                    ?.run { user?.toString() == searchedUser }
+                                    ?: false
+                            }
+                        }
+
+                        locale.searchWorld -> { t: FullTicket -> t.location?.world?.equals(value) ?: false }
+
+                        locale.searchTime -> {
+                            val creationTime = relTimeToEpochSecond(value, locale);
+                            { t: FullTicket -> t.actions[0].timestamp >= creationTime }
+                        }
+
+                        locale.searchKeywords -> {
+                            val words = value.split(",");
+
+                            { t: FullTicket ->
+                                val comments = t.actions
+                                    .filter { it.type == FullTicket.Action.Type.OPEN || it.type == FullTicket.Action.Type.COMMENT }
+                                    .map { it.message!! }
+                                words.map { w -> comments.any { it.lowercase().contains(w.lowercase()) } }
+                                    .all { it }
+                            }
+                        }
+
+                        else -> null
+                    }
+                }
+            val composedSearch = { t: FullTicket -> functionConstraints.map { it(t) }.all { it } }
 
             // Results Computation
             val resultSize: Int
-            val chunkedTickets = pluginState.database.searchDatabase(asyncContext, composedSearch)
+            val chunkedTickets = pluginState.database.searchDatabaseNew(locale, mainTableConstrains, composedSearch)
                 .toList()
                 .sortedByDescending(BasicTicket::id)
                 .apply { resultSize = size }
                 .chunked(8)
 
-            val page = localedConstraintMap[locale.searchPage]?.toIntOrNull()
+            val page = arguments[locale.searchPage]?.toIntOrNull()
                 .let { if (it != null && it >= 1 && it < chunkedTickets.size) it else 1 }
             val fixMSGLength = { t: FullTicket -> t.actions[0].message!!.run { if (length > 25) "${substring(0,21)}..." else this } }
 
@@ -1192,7 +1059,7 @@ class Commands : SuspendingCommandExecutor {
                 if (chunkedTickets.size > 1) {
                     val pageComponent = buildPageComponent(page, chunkedTickets.size, locale) {
                         // Removes page constraint and converts rest to key:arg
-                        val constraints = localedConstraintMap
+                        val constraints = arguments
                             .filter { it.key != locale.searchPage }
                             .map { (k, v) -> "$k:$v" }
                         "/${locale.commandBase} ${locale.commandWordSearch} $constraints ${locale.searchPage}:"
@@ -1379,7 +1246,122 @@ class Commands : SuspendingCommandExecutor {
         }
     }
 
+    private fun buildPageComponent(
+        curPage: Int,
+        pageCount: Int,
+        locale: TMLocale,
+        baseCommand: (TMLocale) -> String,
+    ): Component {
 
+        fun Component.addForward(): Component {
+            return color(NamedTextColor.WHITE)
+                .clickEvent(ClickEvent.runCommand(baseCommand(locale) + "${curPage + 1}"))
+                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(locale.clickNextPage)))
+        }
+
+        fun Component.addBack(): Component {
+            return color(NamedTextColor.WHITE)
+                .clickEvent(ClickEvent.runCommand(baseCommand(locale) + "${curPage - 1}"))
+                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(locale.clickBackPage)))
+        }
+
+        var back: Component = Component.text("[${locale.pageBack}]")
+        var next: Component = Component.text("[${locale.pageNext}]")
+        val separator = text {
+            content("...............")
+            color(NamedTextColor.DARK_GRAY)
+        }
+        val cc = pluginState.localeHandler.mainColourCode
+        val ofSection = text { formattedContent("$cc($curPage${locale.pageOf}$pageCount)") }
+
+        when (curPage) {
+            1 -> {
+                back = back.color(NamedTextColor.DARK_GRAY)
+                next = next.addForward()
+            }
+            pageCount -> {
+                back = back.addBack()
+                next = next.color(NamedTextColor.DARK_GRAY)
+            }
+            else -> {
+                back = back.addBack()
+                next = next.addForward()
+            }
+        }
+
+        return Component.text("\n")
+            .append(back)
+            .append(separator)
+            .append(ofSection)
+            .append(separator)
+            .append(next)
+    }
+
+    private fun createListEntry(
+        ticket: FullTicket,
+        locale: TMLocale
+    ): Component {
+        val creator = ticket.creatorUUID.toName(locale)
+        val fixedAssign = ticket.assignedTo ?: ""
+
+        // Shortens comment preview to fit on one line
+        val fixedComment = ticket.run {
+            if (12 + id.toString().length + creator.length + fixedAssign.length + actions[0].message!!.length > 58)
+                actions[0].message!!.substring(
+                    0,
+                    43 - id.toString().length - fixedAssign.length - creator.length
+                ) + "..."
+            else actions[0].message!!
+        }
+
+        return text {
+            formattedContent(
+                "\n${locale.listFormatEntry}"
+                    .replace("%priorityCC%", ticket.priority.colourCode)
+                    .replace("%ID%", "${ticket.id}")
+                    .replace("%creator%", creator)
+                    .replace("%assign%", fixedAssign)
+                    .replace("%comment%", fixedComment)
+            )
+            onHover { showText(Component.text(locale.clickViewTicket)) }
+            onClick {
+                action = ClickEvent.Action.RUN_COMMAND
+                value = locale.run { "/$commandBase $commandWordView ${ticket.id}" }
+            }
+        }
+    }
+
+    private suspend fun createGeneralList(
+        args: List<String>,
+        locale: TMLocale,
+        headerFormat: String,
+        getIDPriorityPair: suspend (Database) -> Flow<Pair<Int, Byte>>,
+        baseCommand: (TMLocale) -> String
+    ): Component {
+        val chunkedIDs = getIDPriorityPair(pluginState.database)
+            .toList()
+            .sortedWith(compareByDescending<Pair<Int, Byte>> { it.second }.thenByDescending { it.first } )
+            .map { it.first }
+            .chunked(8)
+        val page = if (args.size == 2 && args[1].toInt() in 1..chunkedIDs.size) args[1].toInt() else 1
+
+        val fullTickets = chunkedIDs.getOrNull(page - 1)
+            ?.run { pluginState.database.getFullTickets(this, asyncContext) }
+            ?.toList()
+            ?: emptyList()
+
+        return buildComponent {
+            text { formattedContent(headerFormat) }
+
+            if (fullTickets.isNotEmpty()) {
+                fullTickets.forEach { append(createListEntry(it, locale)) }
+
+                if (chunkedIDs.size > 1) {
+                    append(buildPageComponent(page, chunkedIDs.size, locale, baseCommand))
+                }
+            }
+        }
+    }
 
     private fun buildTicketInfoComponent(
         ticket: FullTicket,

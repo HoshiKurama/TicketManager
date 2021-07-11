@@ -114,7 +114,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                         }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    //postModifiedStacktrace(e) TODO
+                    postModifiedStacktrace(e)
                 }
             }
         }, 100, 12000)

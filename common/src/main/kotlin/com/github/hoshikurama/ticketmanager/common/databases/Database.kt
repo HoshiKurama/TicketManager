@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common.databases
 
+import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import kotlinx.coroutines.flow.Flow
@@ -44,6 +45,11 @@ interface Database {
 
     // Database searching
     suspend fun searchDatabase(context: CoroutineContext, searchFunction: (FullTicket) -> Boolean): Flow<FullTicket>
+    suspend fun searchDatabaseNew(
+        locale: TMLocale,
+        mainTableConstraints: List<Pair<String, String?>>,
+        searchFunction: (FullTicket) -> Boolean
+    ): Flow<FullTicket>
 
     // Internal Database Functions
     suspend fun closeDatabase()
