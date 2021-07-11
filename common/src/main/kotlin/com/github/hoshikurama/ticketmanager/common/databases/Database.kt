@@ -44,8 +44,8 @@ interface Database {
     suspend fun getFullTickets(ids: List<Int>, context: CoroutineContext): Flow<FullTicket>
 
     // Database searching
-    suspend fun searchDatabase(context: CoroutineContext, searchFunction: (FullTicket) -> Boolean): Flow<FullTicket>
-    suspend fun searchDatabaseNew(
+    suspend fun searchDatabase(
+        context: CoroutineContext,
         locale: TMLocale,
         mainTableConstraints: List<Pair<String, String?>>,
         searchFunction: (FullTicket) -> Boolean

@@ -187,38 +187,26 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         }.asFlow()
     }
 
-    override suspend fun searchDatabase(context: CoroutineContext, searchFunction: (FullTicket) -> Boolean): Flow<FullTicket> {
-        val matchedTickets = mutableListOf<FullTicket>()
-
-        using(getSession()) { session ->
-            session.forEach(queryOf("SELECT * FROM TicketManager_V4_Tickets")) { row ->
-                row.toBasicTicket().toFullTicket(session).takeIf(searchFunction)?.apply(matchedTickets::add)
-            }
-        }
-
-        return matchedTickets.asFlow()
-    }
-
-    override suspend fun searchDatabaseNew(
+    override suspend fun searchDatabase(
+        context: CoroutineContext,
         locale: TMLocale,
         mainTableConstraints: List<Pair<String, String?>>,
         searchFunction: (FullTicket) -> Boolean
     ): Flow<FullTicket> {
+        fun equalsOrIs(string: String?) = if (string == null) "IS NULL" else "= ?"
 
-        val mainTableSQL = mainTableConstraints
-            .mapNotNull {
-                when (it.first) {
-                    locale.searchAssigned -> "ASSIGNED_TO = ?"
-                    locale.searchCreator -> "CREATOR_UUID = ?"
-                    locale.searchPriority -> "PRIORITY = ?"
-                    locale.searchStatus -> "STATUS = ?"
-                    else -> null //Not relevant
-                }
+        val mainTableSQL = mainTableConstraints.joinToString(" AND ") {
+            when (it.first) {
+                locale.searchCreator -> "CREATOR_UUID ${equalsOrIs(it.second)}"
+                locale.searchAssigned -> "ASSIGNED_TO ${equalsOrIs(it.second)}"
+                locale.searchPriority -> "PRIORITY = ?"
+                locale.searchStatus -> "STATUS = ?"
+                else -> ""
             }
-            .joinToString(" AND ")
+        }
 
         val inputtedArgs = mainTableConstraints
-            .map { it.second }
+            .mapNotNull { it.second }
             .toTypedArray()
 
         var statementSQL = "SELECT * FROM TicketManager_V4_Tickets"

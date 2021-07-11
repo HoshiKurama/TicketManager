@@ -308,7 +308,7 @@ class Commands : SuspendingCommandExecutor {
                 commandWordReload -> reload(sender, senderLocale).let { null }
                 commandWordReopen -> reopen(sender,args, false, ticketHandler)
                 commandWordSilentReopen -> reopen(sender,args, true, ticketHandler)
-                commandWordSearch -> searchNew(sender, args, senderLocale).let { null }
+                commandWordSearch -> search(sender, args, senderLocale).let { null }
                 commandWordSetPriority -> setPriority(sender, args, false, ticketHandler)
                 commandWordSilentSetPriority -> setPriority(sender, args, true, ticketHandler)
                 commandWordTeleport -> teleport(sender, ticketHandler).let { null }
@@ -725,7 +725,7 @@ class Commands : SuspendingCommandExecutor {
     }
 
     // /ticket history [User] [Page]
-    private suspend fun history( //TODO UPDATE
+    private suspend fun history(
         sender: CommandSender,
         args: List<String>,
         locale: TMLocale,
@@ -736,9 +736,8 @@ class Commands : SuspendingCommandExecutor {
             val requestedPage = if (args.size >= 3) args[2].toInt() else 1
 
             // Leaves console as null. Otherwise attempts UUID grab or [PLAYERNOTFOUND]
-            fun String.attemptToUUIDString(): String? =
-                if (equals(locale.consoleName)) null
-                else Bukkit.getOfflinePlayers().asSequence()
+            fun String.attemptToUUIDString(): String =
+                Bukkit.getOfflinePlayers().asSequence()
                     .firstOrNull { equals(it.name) }
                     ?.run { uniqueId.toString() }
                     ?: "[PLAYERNOTFOUND]"
@@ -746,7 +745,7 @@ class Commands : SuspendingCommandExecutor {
             val searchedUser = targetName?.attemptToUUIDString()
 
             val resultSize: Int
-            val resultsChunked = pluginState.database.searchDatabase(asyncContext) { it.creatorUUID.toString() == searchedUser }
+            val resultsChunked = pluginState.database.searchDatabase(asyncContext, locale, listOf(locale.searchCreator to searchedUser)) { true }
                 .toList()
                 .sortedByDescending(BasicTicket::id)
                 .also { resultSize = it.size }
@@ -920,12 +919,12 @@ class Commands : SuspendingCommandExecutor {
         )
     }
 
-    private suspend fun searchNew(
+    private suspend fun search(
         sender: CommandSender,
         args: List<String>,
         locale: TMLocale,
     ) {
-        coroutineScope {
+        withContext(asyncContext) {
             fun String.attemptToUUIDString(): String? =
                 if (equals(locale.consoleName)) null
                 else Bukkit.getOfflinePlayers().asSequence()
@@ -935,9 +934,6 @@ class Commands : SuspendingCommandExecutor {
 
             // Beginning of execution
             sender.sendMessage(text { formattedContent(locale.searchFormatQuerying) })
-
-
-            //todo searchPage,
 
             // Input args mapped to valid search types
             val arguments = args.subList(1, args.size)
@@ -1004,11 +1000,14 @@ class Commands : SuspendingCommandExecutor {
                         else -> null
                     }
                 }
-            val composedSearch = { t: FullTicket -> functionConstraints.map { it(t) }.all { it } }
+            val composedSearch =
+                if (functionConstraints.isNotEmpty())
+                    { t: FullTicket -> functionConstraints.map { it(t) }.all { it } }
+                else { _: FullTicket -> true }
 
             // Results Computation
             val resultSize: Int
-            val chunkedTickets = pluginState.database.searchDatabaseNew(locale, mainTableConstrains, composedSearch)
+            val chunkedTickets = pluginState.database.searchDatabase(asyncContext, locale, mainTableConstrains, composedSearch)
                 .toList()
                 .sortedByDescending(BasicTicket::id)
                 .apply { resultSize = size }

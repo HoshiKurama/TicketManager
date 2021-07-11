@@ -210,46 +210,32 @@ class MySQL(
             .forEach { emit(it) }
     }
 
-    override suspend fun searchDatabase(context: CoroutineContext, searchFunction: (FullTicket) -> Boolean): Flow<FullTicket> = flow {
-        suspendingCon.sendPreparedStatement("SELECT * FROM TicketManager_V4_Tickets;")
-            .rows
-            .map { it.toBasicTicket() }
-            .map {
-                withContext(context) {
-                    async { it.toFullTicket() }
-                }
-            }
-            .map { it.await() }
-            .filter(searchFunction)
-            .forEach{ emit(it) }
-    }
-
-    override suspend fun searchDatabaseNew(
+    override suspend fun searchDatabase(
+        context: CoroutineContext,
         locale: TMLocale,
         mainTableConstraints: List<Pair<String, String?>>,
         searchFunction: (FullTicket) -> Boolean
     ): Flow<FullTicket> = flow {
-        val mainTableSQL = mainTableConstraints
-            .mapNotNull {
-                when (it.first) {
-                    locale.searchAssigned -> "ASSIGNED_TO = ?"
-                    locale.searchCreator -> "CREATOR_UUID = ?"
-                    locale.searchPriority -> "PRIORITY = ?"
-                    locale.searchStatus -> "STATUS = ?"
-                    else -> null //Not relevant
-                }
-            }
-            .joinToString(" AND ")
+        fun equalsOrIs(string: String?) = if (string == null) "IS NULL" else "= ?"
 
+        val mainTableSQL = mainTableConstraints.joinToString(" AND ") {
+            when (it.first) {
+                locale.searchAssigned -> "ASSIGNED_TO ${equalsOrIs(it.second)}"
+                locale.searchCreator -> "CREATOR_UUID ${equalsOrIs(it.second)}"
+                locale.searchPriority -> "PRIORITY = ?"
+                locale.searchStatus -> "STATUS = ?"
+                else -> ""
+            }
+        }
         var statementSQL = "SELECT * FROM TicketManager_V4_Tickets"
         if (mainTableConstraints.isNotEmpty())
             statementSQL += " WHERE $mainTableSQL"
 
-        suspendingCon.sendPreparedStatement("$statementSQL;", mainTableConstraints.map { it.second })
+        suspendingCon.sendPreparedStatement("$statementSQL;", mainTableConstraints.mapNotNull { it.second })
             .rows
             .map { it.toBasicTicket() }
             .map {
-                coroutineScope {
+                withContext(context) {
                     async { it.toFullTicket() }
                 }
             }
