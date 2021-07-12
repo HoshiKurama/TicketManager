@@ -114,7 +114,7 @@ inline fun <T> tryOrDefault(attempted: () -> T?, default: T): T =
 
 inline fun <T> tryOrNull(function: () -> T): T? =
     try { function() }
-    catch (ignored: Exception) { null }
+    catch (e: Exception) { e.printStackTrace(); null }
 
 suspend inline fun <T> tryOrDefaultSuspend(crossinline attempted: suspend () -> T?, default: T): T =
     tryOrNullSuspend(attempted).run { this ?: default }

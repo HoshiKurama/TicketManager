@@ -68,17 +68,7 @@ Cooldown_Time: 0
 # Cons: - Must have MySQL database.
 #       - Search and history commands slower.
 #
-#                 Redis:
-# Stores data in memory during operation, making it incredibly fast. However,
-# any server crash or power outage will result in all data being lost outside
-# of the last database backup. Please DO NOT use this unless you are willing
-# to accept the risks!
-# Pros: + Incredibly fast.
-#       + Minimal setup.
-# Cons: - Vulnerable to data-loss
-#       - Takes up RAM (Not much)
-#
-# Values: 'MySQL','SQLite', 'Redis'
+# Values: 'MySQL','SQLite'
 Database_Mode: 'SQLite'
 #
 # ######################
@@ -89,14 +79,6 @@ MySQL_Host: ''
 MySQL_DBName: ''
 MySQL_Username: ''
 MySQL_Password: ''
-#
-# ######################
-#    Redis Database
-# ######################
-# Backup frequency in seconds
-Redis_Backup_Frequency: 300
-# Password for database. Default password is 'default'
-Redis_Password: 'default'
 #
 # ###########################################
 #                   Other

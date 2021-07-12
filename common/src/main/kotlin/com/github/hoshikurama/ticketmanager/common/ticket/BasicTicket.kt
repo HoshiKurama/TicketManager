@@ -7,7 +7,6 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
 import java.util.*
 import kotlin.coroutines.CoroutineContext
 
@@ -32,7 +31,6 @@ open class BasicTicket(
         OPEN("&a"), CLOSED("&c")
     }
 
-    @Serializable
     data class TicketLocation(val world: String, val x: Int, val y: Int, val z: Int) {
         override fun toString() = "$world $x $y $z"
     }

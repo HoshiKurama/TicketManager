@@ -11,7 +11,7 @@ interface Database {
     val type: Type
 
     enum class Type {
-        MySQL, SQLite, Redis
+        MySQL, SQLite
     }
 
     // Individual property getters

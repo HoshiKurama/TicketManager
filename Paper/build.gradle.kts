@@ -19,7 +19,7 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:1.17.1-R0.1-SNAPSHOT")
     implementation(kotlin("stdlib", version = "1.5.20"))
     implementation("com.github.HoshiKurama:KyoriComponentDSL:1.1.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.5.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.5.1")
     implementation("net.kyori:adventure-extra-kotlin:4.8.1")
     implementation("joda-time:joda-time:2.10.10")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")

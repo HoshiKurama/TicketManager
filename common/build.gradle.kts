@@ -1,5 +1,4 @@
 plugins {
-    kotlin("plugin.serialization") version "1.5.20"
     kotlin("jvm")
     java
 }
@@ -16,7 +15,7 @@ dependencies {
     implementation("com.github.jasync-sql:jasync-mysql:1.2.2")
     implementation("com.github.seratch:kotliquery:1.3.1")
     implementation("com.github.HoshiKurama:KyoriComponentDSL:1.1.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.5.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.5.1")
     implementation("net.kyori:adventure-api:4.8.1")
     implementation("net.kyori:adventure-extra-kotlin:4.8.1")
     implementation("net.kyori:adventure-text-serializer-legacy:4.8.1")
