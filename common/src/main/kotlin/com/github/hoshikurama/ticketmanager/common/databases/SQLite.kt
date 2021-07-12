@@ -6,8 +6,7 @@ import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.toTicketLocation
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.*
 import kotliquery.*
 import java.sql.DriverManager
 import java.time.Instant
@@ -23,7 +22,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
     private fun getSession() = Session(Connection(DriverManager.getConnection(url)))
 
     override suspend fun getActionsAsFlow(ticketID: Int): Flow<FullTicket.Action> {
-        return using(getSession()) { getActions(ticketID, it) }
+        return using(getSession()) { getActions(ticketID) }
             .asFlow()
     }
 
@@ -52,7 +51,13 @@ class SQLite(absoluteDataFolderPath: String) : Database {
     }
 
     override suspend fun getBasicTicket(ticketID: Int): BasicTicket? {
-        return using(getSession()) { getBasicTicket(ticketID, it) }
+        return using(getSession()) { session1 ->
+            session1.run(
+                queryOf("SELECT * FROM TicketManager_V4_Tickets WHERE ID = $ticketID;")
+                    .map { it.toBasicTicket() }
+                    .asSingle
+            )
+        }
     }
 
     override suspend fun addAction(ticketID: Int, action: FullTicket.Action) {
@@ -172,19 +177,17 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         basicTickets: List<BasicTicket>,
         context: CoroutineContext
     ): Flow<FullTicket> {
-        return using(getSession()) { session ->
-            basicTickets
-                .map { it.toFullTicket(session) }
+            return basicTickets
+                .map { it.toFullTicket() }
                 .asFlow()
-        }
     }
 
     override suspend fun getFullTickets(ids: List<Int>, context: CoroutineContext): Flow<FullTicket> {
-        return using(getSession()) { session ->
-            ids.asSequence()
-                .mapNotNull { getBasicTicket(it, session) }
-                .map { it.toFullTicket(session) }
-        }.asFlow()
+        return ids.asFlow()
+            .mapNotNull { getBasicTicket(it) }
+            .map { it.toFullTicket() }
+            .toList()
+            .asFlow()
     }
 
     override suspend fun searchDatabase(
@@ -221,7 +224,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
             )
 
             basicTickets
-                .map { it.toFullTicket(session) }
+                .map { it.toFullTicket() }
                 .filter(searchFunction)
         }.asFlow()
     }
@@ -384,15 +387,6 @@ class SQLite(absoluteDataFolderPath: String) : Database {
 
     }
 
-
-    private fun getBasicTicket(ticketID: Int, session: Session): BasicTicket? {
-        return session.run(
-            queryOf("SELECT * FROM TicketManager_V4_Tickets WHERE ID = $ticketID;")
-                .map { it.toBasicTicket() }
-                .asSingle
-        )
-    }
-
     private fun writeTicket(ticket: BasicTicket, session: Session): Long? {
         return session.run(queryOf("INSERT INTO TicketManager_V4_Tickets (CREATOR_UUID, PRIORITY, STATUS, ASSIGNED_TO, STATUS_UPDATE_FOR_CREATOR, LOCATION) VALUES (?,?,?,?,?,?);",
             ticket.creatorUUID,
@@ -442,11 +436,13 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         )
     }
 
-    private fun getActions(ticketID: Int, session: Session): List<FullTicket.Action> {
-        return session.run(queryOf("SELECT ACTION_ID, ACTION_TYPE, CREATOR_UUID, MESSAGE, TIMESTAMP FROM TicketManager_V4_Actions WHERE TICKET_ID = $ticketID;")
-            .map { row -> row.toAction() }
-            .asList
-        )
+    private fun getActions(ticketID: Int): List<FullTicket.Action> {
+        return using(getSession()) { session ->
+            session.run(queryOf("SELECT ACTION_ID, ACTION_TYPE, CREATOR_UUID, MESSAGE, TIMESTAMP FROM TicketManager_V4_Actions WHERE TICKET_ID = $ticketID;")
+                .map { row -> row.toAction() }
+                .asList
+            )
+        }
     }
 
     private fun tableExists(table: String, session: Session): Boolean {
@@ -457,5 +453,5 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         }
     }
 
-    private fun BasicTicket.toFullTicket(session: Session) = FullTicket(this, getActions(id, session))
+    private fun BasicTicket.toFullTicket() = FullTicket(this, getActions(id))
 }
