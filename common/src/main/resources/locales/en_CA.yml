@@ -67,8 +67,8 @@ Warning_LongTaskDuringReload: '&c[TicketManager] Long-standing task detected dur
 #
 # Modified Stacktrace
 Stacktrace_Line1: '%nl%%nl%%nl%&4[TicketManager] WARNING! An unexpected error has occurred!'
-Stacktrace_Line2: '&c%nl%     Exception:  &7%exception%'
-Stacktrace_Line3: '&c%nl%     Information:  %message%'
+Stacktrace_Line2: '&c%nl%     Exception:    &7%exception%'
+Stacktrace_Line3: '&c%nl%     Information:  &7%message%'
 Stacktrace_Line4: '&4%nl%=-=-=-=-=-=-=Modified Stacktrace:=-=-=-=-=-=-='
 Stacktrace_Entry: '&c%nl%          %method% (%file%:%line%)'
 #
