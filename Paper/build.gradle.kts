@@ -34,6 +34,9 @@ dependencies {
     //implementation("net.kyori:adventure-text-serializer-legacy:4.8.1")
     //implementation("org.yaml:snakeyaml:1.29")
     //implementation("net.kyori:adventure-api:4.8.1")
+    //implementation("io.lettuce:lettuce-core:6.1.3.RELEASE")
+    //implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.5.1")
+    //implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
 }
 
 tasks {

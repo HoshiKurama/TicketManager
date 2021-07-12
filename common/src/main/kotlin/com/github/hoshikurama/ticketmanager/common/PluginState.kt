@@ -48,9 +48,10 @@ class PluginState(
                     val latestVersSplit = latestVersion.split(".").map(String::toInt)
 
                     for (i in 0..latestVersSplit.lastIndex) {
-                        if (curVersSplit[i] < latestVersSplit[i])
-                            return@async Pair(curVersion, latestVersion)
+                        if (curVersSplit[i] > latestVersSplit[i])
+                            return@async null
                     }
+                    return@async Pair(curVersion, latestVersion)
                 }
                 return@async null
             }

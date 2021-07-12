@@ -10,9 +10,9 @@
 # be found on the GitHub wiki page.
 # https://github.com/HoshiKurama/TicketManager
 #
-# #####################
+# ##########################################
 #       Locale:
-# #####################
+# ##########################################
 # Force Locale: Forces specific language to be used for commands and responses.
 # Values: true, false
 Force_Locale: false
@@ -31,9 +31,9 @@ Preferred_Locale: 'en_CA'
 #   'en_US' = United States English
 Console_Locale: 'en_CA'
 #
-# #####################
-#      Cooldown:
-# #####################
+# ##########################################
+#                 Cooldown:
+# ##########################################
 # Use Cool-down: Determine if cool-downs should be applied to ticket commands
 # that create or modify a ticket. Cool-downs apply to ALL users without the
 # override permission.
@@ -45,19 +45,45 @@ Use_Cooldowns: false
 # cool-downs are enabled.
 Cooldown_Time: 0
 #
-# #####################
-#  Database Settings:
-# #####################
-# Database mode: Type of database used. SQLite is default and can run locally
-# Do NOT run MySQL unless you have a valid MySQL database! Internally defaults
-# to SQLite if invalid value is used.
-# Values: 'MySQL','SQLite'
+# ##########################################
+#           Database Settings:
+# ##########################################
+#
+# Database mode: Type of database used. Internally defaults
+# to SQLite if invalid value is used. Information only needs
+# to be filled out for the desired database type.
+#
+#                 SQLite:
+# Stores information in the SQLite file in the TicketManager folder.
+# Pros: + No setup.
+#       + No external database needed.
+#       + Faster than MySQL for search and history command.
+# Cons: - Stores data in TicketManager folder.
+#       - Easier to overwhelm than Redis or MySQL.
+#
+#                 MySQL:
+# Stores information in a database that may or may not be on the server.
+# Pros: + Can handle more traffic than SQLite.
+#       + Can be separate from server storage.
+# Cons: - Must have MySQL database.
+#       - Search and history commands slower.
+#
+#                 Redis:
+# Stores data in memory during operation, making it incredibly fast. However,
+# any server crash or power outage will result in all data being lost outside
+# of the last database backup. Please DO NOT use this unless you are willing
+# to accept the risks!
+# Pros: + Incredibly fast.
+#       + Minimal setup.
+# Cons: - Vulnerable to data-loss
+#       - Takes up RAM (Not much)
+#
+# Values: 'MySQL','SQLite', 'Redis'
 Database_Mode: 'SQLite'
 #
 # ######################
 #    MySQL Database
 # ######################
-# This section only applies when using MySQL.
 MySQL_Port: ''
 MySQL_Host: ''
 MySQL_DBName: ''
@@ -65,8 +91,16 @@ MySQL_Username: ''
 MySQL_Password: ''
 #
 # ######################
-#        Other
+#    Redis Database
 # ######################
+# Backup frequency in seconds
+Redis_Backup_Frequency: 300
+# Password for database. Default password is 'default'
+Redis_Password: 'default'
+#
+# ###########################################
+#                   Other
+# ###########################################
 # Colour Code: Colour code used to add simple colour customization.
 # Must be in the form "&<colour code>".   eg: &3, &6, &b, etc
 # DO NOT USE ANY COLOUR CODES OTHER THAN COLOUR!

@@ -4,6 +4,7 @@ import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.common.*
 import com.github.hoshikurama.ticketmanager.common.databases.Database
 import com.github.hoshikurama.ticketmanager.common.databases.MySQL
+import com.github.hoshikurama.ticketmanager.common.databases.Redis
 import com.github.hoshikurama.ticketmanager.common.databases.SQLite
 import com.github.hoshikurama.ticketmanager.paper.events.Commands
 import com.github.hoshikurama.ticketmanager.paper.events.PlayerJoin
@@ -152,6 +153,11 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                             getString("MySQL_Password")!!,
                             asyncDispatcher = (plugin.asyncDispatcher as CoroutineDispatcher),
                         )
+                        Database.Type.Redis -> Redis(
+                            absoluteDataFolderPath = path,
+                            password = getString("Redis_Password", "default")!!,
+                            getInt("Redis_Backup_Frequency", 300)
+                        )
                         Database.Type.SQLite -> SQLite(path)
                     }
                 }
@@ -213,7 +219,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                             text { formattedContent(it.informationDBUpdateComplete) }
                         }
                         pluginLocked.set(true)
-                    },//TODO ADD ONERROR
+                    },
                     offlinePlayerNameToUuidOrNull = {
                         Bukkit.getOfflinePlayers()
                             .filter { it.name == name }
