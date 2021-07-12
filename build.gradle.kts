@@ -23,5 +23,6 @@ subprojects {
 
    tasks.withType<KotlinCompile>().configureEach {
       kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+      kotlinOptions.freeCompilerArgs += "-Xuse-experimental=kotlin.Experimental"
    }
 }

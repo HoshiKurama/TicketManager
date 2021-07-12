@@ -1,4 +1,5 @@
 plugins {
+    kotlin("plugin.serialization") version "1.5.20"
     kotlin("jvm")
     java
 }
@@ -21,4 +22,7 @@ dependencies {
     implementation("net.kyori:adventure-text-serializer-legacy:4.8.1")
     implementation("org.yaml:snakeyaml:1.29")
     implementation("joda-time:joda-time:2.10.10")
+    implementation("io.lettuce:lettuce-core:6.1.3.RELEASE")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.5.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
 }
