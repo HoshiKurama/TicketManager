@@ -51,7 +51,7 @@ class Commands : SuspendingCommandExecutor {
         }
 
         // Grabs BasicTicket. Only null if ID required but doesn't exist. Filters non-valid tickets
-        val pseudoTicket = getBasicTicketHandlerAsync(argList, senderLocale).await()
+        val pseudoTicket = getBasicTicketHandler(argList, senderLocale)
         if (pseudoTicket == null) {
             sender.sendMessage(text { formattedContent(senderLocale.warningsInvalidID) })
             return@withContext false
@@ -80,37 +80,35 @@ class Commands : SuspendingCommandExecutor {
         return@withContext true
     }
 
-    private suspend fun getBasicTicketHandlerAsync(
+    private suspend fun getBasicTicketHandler(
         args: List<String>,
         senderLocale: TMLocale,
-    ): Deferred<BasicTicketHandler?> {
+    ): BasicTicketHandler? {
 
-        suspend fun buildFromIDAsync(id: Int) = BasicTicketHandler.buildHandlerAsync(configState.database, id, asyncContext)
+        suspend fun buildFromID(id: Int) = BasicTicketHandler.buildHandler(configState.database, id)
 
-        return withContext(asyncContext) {
-            when (args[0]) {
-                senderLocale.commandWordAssign,
-                senderLocale.commandWordSilentAssign,
-                senderLocale.commandWordClaim,
-                senderLocale.commandWordSilentClaim,
-                senderLocale.commandWordClose,
-                senderLocale.commandWordSilentClose,
-                senderLocale.commandWordComment,
-                senderLocale.commandWordSilentComment,
-                senderLocale.commandWordReopen,
-                senderLocale.commandWordSilentReopen,
-                senderLocale.commandWordSetPriority,
-                senderLocale.commandWordSilentSetPriority,
-                senderLocale.commandWordTeleport,
-                senderLocale.commandWordUnassign,
-                senderLocale.commandWordSilentUnassign,
-                senderLocale.commandWordView,
-                senderLocale.commandWordDeepView ->
-                    args.getOrNull(1)
-                        ?.toIntOrNull()
-                        ?.let { buildFromIDAsync(it) } ?: async { null }
-                else -> async { BasicTicket(creatorUUID = null, location = null).run { BasicTicketHandler(configState.database, this) } } // Occurs when command does not need valid handler
-            }
+        return when (args[0]) {
+            senderLocale.commandWordAssign,
+            senderLocale.commandWordSilentAssign,
+            senderLocale.commandWordClaim,
+            senderLocale.commandWordSilentClaim,
+            senderLocale.commandWordClose,
+            senderLocale.commandWordSilentClose,
+            senderLocale.commandWordComment,
+            senderLocale.commandWordSilentComment,
+            senderLocale.commandWordReopen,
+            senderLocale.commandWordSilentReopen,
+            senderLocale.commandWordSetPriority,
+            senderLocale.commandWordSilentSetPriority,
+            senderLocale.commandWordTeleport,
+            senderLocale.commandWordUnassign,
+            senderLocale.commandWordSilentUnassign,
+            senderLocale.commandWordView,
+            senderLocale.commandWordDeepView ->
+                args.getOrNull(1)
+                    ?.toIntOrNull()
+                    ?.let { buildFromID(it) }
+            else -> ConcreteBasicTicket(creatorUUID = null, location = null).run { BasicTicketHandler(this, configState.database) } // Occurs when command does not need valid handler
         }
     }
 
@@ -640,7 +638,7 @@ class Commands : SuspendingCommandExecutor {
             .joinToString(" ")
             .run(ChatColor::stripColor)!!
 
-        val ticket = BasicTicket(creatorUUID = sender.toUUIDOrNull(), location = sender.toTicketLocationOrNull())
+        val ticket = ConcreteBasicTicket(creatorUUID = sender.toUUIDOrNull(), location = sender.toTicketLocationOrNull())
 
         val deferredID = async { configState.database.addNewTicket(ticket, asyncContext, message) }
         mainPlugin.pluginState.ticketCountMetrics.run { set(get() + 1) }
@@ -1178,7 +1176,7 @@ class Commands : SuspendingCommandExecutor {
         ticketHandler: BasicTicketHandler,
     ) {
         withContext(asyncContext) {
-            val fullTicket = ticketHandler.toFullTicketAsync(asyncContext).await()
+            val fullTicket = ticketHandler.toFullTicket()
             val baseComponent = buildTicketInfoComponent(fullTicket, locale)
 
             if (!sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && ticketHandler.creatorStatusUpdate)
@@ -1205,7 +1203,7 @@ class Commands : SuspendingCommandExecutor {
         ticketHandler: BasicTicketHandler,
     ) {
         withContext(asyncContext) {
-            val fullTicket = ticketHandler.toFullTicketAsync(asyncContext).await()
+            val fullTicket = ticketHandler.toFullTicket()
             val baseComponent = buildTicketInfoComponent(fullTicket, locale)
 
             if (!sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && ticketHandler.creatorStatusUpdate)

@@ -2,23 +2,24 @@ package com.github.hoshikurama.ticketmanager.common.ticket
 
 import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.databases.Database
-import com.github.hoshikurama.ticketmanager.common.sortActions
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import java.util.*
-import kotlin.coroutines.CoroutineContext
 
-open class BasicTicket(
-    val id: Int = -1,                               // Ticket ID 1+... -1 placeholder during ticket creation
-    val creatorUUID: UUID?,                         // UUID if player, null if Console
-    val location: TicketLocation?,                  // TicketLocation if player, null if Console
-    val priority: Priority = Priority.NORMAL,       // Priority 1-5 or Lowest to Highest
-    val status: Status = Status.OPEN,               // Status OPEN or CLOSED
-    val assignedTo: String? = null,                 // Null if not assigned to anybody
-    val creatorStatusUpdate: Boolean = false,       // Determines whether player should be notified
-) {
+interface BasicTicket {
+    val id: Int                             // Ticket ID 1+... -1 placeholder during ticket creation
+    val creatorUUID: UUID?                  // UUID if player, null if Console
+    val location: TicketLocation?           // TicketLocation if player, null if Console
+    val priority: Priority                  // Priority 1-5 or Lowest to Highest
+    val status: Status                      // Status OPEN or CLOSED
+    val assignedTo: String?                 // Null if not assigned to anybody
+    val creatorStatusUpdate: Boolean        // Determines whether player should be notified
+
+    @Serializable
+    data class TicketLocation(val world: String, val x: Int, val y: Int, val z: Int) {
+        override fun toString() = "$world $x $y $z"
+    }
+
+    @Serializable
     enum class Priority(val level: Byte, val colourCode: String) {
         LOWEST(1, "&1"),
         LOW(2, "&9"),
@@ -27,24 +28,14 @@ open class BasicTicket(
         HIGHEST(5, "&4")
     }
 
+    @Serializable
     enum class Status(val colourCode: String) {
         OPEN("&a"), CLOSED("&c")
     }
 
-    data class TicketLocation(val world: String, val x: Int, val y: Int, val z: Int) {
-        override fun toString() = "$world $x $y $z"
-    }
-
-    suspend fun toFullTicketAsync(database: Database, context: CoroutineContext): Deferred<FullTicket> = withContext(context) {
-        async {
-            val sortedActions = database.getActionsAsFlow(id)
-                .toList()
-                .sortedWith(sortActions)
-
-            FullTicket(this@BasicTicket, sortedActions)
-        }
-    }
+    suspend fun toFullTicket(database: Database): FullTicket
 }
+
 
 fun BasicTicket.Priority.toLocaledWord(locale: TMLocale) = when (this) {
     BasicTicket.Priority.LOWEST -> locale.priorityLowest

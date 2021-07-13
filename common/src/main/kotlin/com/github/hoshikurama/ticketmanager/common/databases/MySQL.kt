@@ -4,6 +4,7 @@ import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.byteToPriority
 import com.github.hoshikurama.ticketmanager.common.sortActions
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
+import com.github.hoshikurama.ticketmanager.common.ticket.ConcreteBasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.toTicketLocation
 import com.github.jasync.sql.db.ConnectionPoolConfiguration
@@ -15,8 +16,8 @@ import com.github.jasync.sql.db.mysql.MySQLQueryResult
 import com.github.jasync.sql.db.util.ExecutorServiceUtils
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.toList
 import java.time.Instant
 import java.util.*
@@ -111,7 +112,7 @@ class MySQL(
                 )
             }
 
-            statusPairs.onEach {
+            statusPairs.collect {
                 launch {
                     writeAction(
                         action = FullTicket.Action(
@@ -395,7 +396,7 @@ class MySQL(
     }
 
     private fun RowData.toBasicTicket(): BasicTicket {
-        return BasicTicket(
+        return ConcreteBasicTicket(
             id = getInt(0)!!,
             assignedTo = getString(4),
             creatorStatusUpdate = getBoolean(5)!!,
