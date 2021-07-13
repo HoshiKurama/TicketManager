@@ -45,7 +45,7 @@ class Commands : SuspendingCommandExecutor {
             return@withContext false
         }
 
-        if (mainPlugin.pluginLocked.check()) {
+        if (mainPlugin.pluginState.pluginLocked.get()) {
             sender.sendMessage(text { formattedContent(senderLocale.warningsLocked)})
             return@withContext false
         }
@@ -65,16 +65,16 @@ class Commands : SuspendingCommandExecutor {
         val executeCommand = suspend { executeCommand(sender, argList, senderLocale, pseudoTicket) }
 
         try {
-            mainPlugin.jobCount.run { set(check() + 1) }
+            mainPlugin.pluginState.jobCount.run { set(get() + 1) }
             if (notUnderCooldown.await() && isValidCommand.await() && hasValidPermission.await()) {
                 executeCommand()?.let { pushNotifications(sender, it, senderLocale, pseudoTicket) }
-                mainPlugin.jobCount.run { set(check() - 1) }
             }
         } catch (e: Exception) {
             e.printStackTrace()
             postModifiedStacktrace(e)
             sender.sendMessage(text { formattedContent(senderLocale.warningsUnexpectedError) })
-            mainPlugin.jobCount.run { set(check() - 1) }
+        } finally {
+            mainPlugin.pluginState.jobCount.run { set(get() - 1) }
         }
 
         return@withContext true
@@ -85,7 +85,7 @@ class Commands : SuspendingCommandExecutor {
         senderLocale: TMLocale,
     ): Deferred<BasicTicketHandler?> {
 
-        suspend fun buildFromIDAsync(id: Int) = BasicTicketHandler.buildHandlerAsync(pluginState.database, id, asyncContext)
+        suspend fun buildFromIDAsync(id: Int) = BasicTicketHandler.buildHandlerAsync(configState.database, id, asyncContext)
 
         return withContext(asyncContext) {
             when (args[0]) {
@@ -109,7 +109,7 @@ class Commands : SuspendingCommandExecutor {
                     args.getOrNull(1)
                         ?.toIntOrNull()
                         ?.let { buildFromIDAsync(it) } ?: async { null }
-                else -> async { BasicTicket(creatorUUID = null, location = null).run { BasicTicketHandler(pluginState.database, this) } } // Occurs when command does not need valid handler
+                else -> async { BasicTicket(creatorUUID = null, location = null).run { BasicTicketHandler(configState.database, this) } } // Occurs when command does not need valid handler
             }
         }
     }
@@ -255,7 +255,7 @@ class Commands : SuspendingCommandExecutor {
                             }
                         )
                         .thenCheck( { sendMessage(senderLocale.warningsConvertToSameDBType) } )
-                        { pluginState.database.type != Database.Type.valueOf(args[1]) }
+                        { configState.database.type != Database.Type.valueOf(args[1]) }
 
                 else -> false.also { invalidCommand() }
             }
@@ -271,7 +271,7 @@ class Commands : SuspendingCommandExecutor {
             senderLocale.commandWordCreate,
             senderLocale.commandWordComment,
             senderLocale.commandWordSilentComment ->
-                pluginState.cooldowns.checkAndSetAsync(sender.toUUIDOrNull())
+                configState.cooldowns.checkAndSetAsync(sender.toUUIDOrNull())
             else -> false
         }
 
@@ -381,7 +381,7 @@ class Commands : SuspendingCommandExecutor {
         val shownAssignment = dbAssignment ?: senderLocale.miscNobody
 
         launch { ticketHandler.setAssignedTo(dbAssignment) }
-        launch { pluginState.database.addAction(
+        launch { configState.database.addAction(
             ticketID = ticketHandler.id,
             action = FullTicket.Action(FullTicket.Action.Type.ASSIGN, sender.toUUIDOrNull(), dbAssignment)
         )}
@@ -439,7 +439,7 @@ class Commands : SuspendingCommandExecutor {
         silent: Boolean,
         ticketHandler: BasicTicketHandler
     ): NotifyParams = withContext(asyncContext) {
-        val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && pluginState.allowUnreadTicketUpdates
+        val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && configState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
             launch { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
         }
@@ -460,7 +460,7 @@ class Commands : SuspendingCommandExecutor {
             .run(ChatColor::stripColor)!!
 
         launch {
-            pluginState.database.run {
+            configState.database.run {
                 addAction(
                     ticketID = ticketHandler.id,
                     action = FullTicket.Action(FullTicket.Action.Type.COMMENT, sender.toUUIDOrNull(), message)
@@ -506,7 +506,7 @@ class Commands : SuspendingCommandExecutor {
         ticketHandler: BasicTicketHandler
     ): NotifyParams = withContext(asyncContext) {
         launch {
-            pluginState.database.addAction(
+            configState.database.addAction(
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.CLOSE, sender.toUUIDOrNull())
             )
@@ -548,7 +548,7 @@ class Commands : SuspendingCommandExecutor {
         val lowerBound = args[1].toInt()
         val upperBound = args[2].toInt()
 
-        launch { pluginState.database.massCloseTickets(lowerBound, upperBound, sender.toUUIDOrNull(), asyncContext) }
+        launch { configState.database.massCloseTickets(lowerBound, upperBound, sender.toUUIDOrNull(), asyncContext) }
 
         NotifyParams(
             silent = silent,
@@ -584,13 +584,13 @@ class Commands : SuspendingCommandExecutor {
             .joinToString(" ")
             .run(ChatColor::stripColor)!!
 
-        val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && pluginState.allowUnreadTicketUpdates
+        val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && configState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
             launch { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
         }
 
         launch {
-            pluginState.database.addAction(
+            configState.database.addAction(
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.COMMENT, sender.toUUIDOrNull(), message)
             )
@@ -642,8 +642,8 @@ class Commands : SuspendingCommandExecutor {
 
         val ticket = BasicTicket(creatorUUID = sender.toUUIDOrNull(), location = sender.toTicketLocationOrNull())
 
-        val deferredID = async { pluginState.database.addNewTicket(ticket, asyncContext, message) }
-        mainPlugin.ticketCountMetrics.run { set(check() + 1) }
+        val deferredID = async { configState.database.addNewTicket(ticket, asyncContext, message) }
+        mainPlugin.pluginState.ticketCountMetrics.run { set(get() + 1) }
         val id = deferredID.await().toString()
 
         NotifyParams(
@@ -674,7 +674,7 @@ class Commands : SuspendingCommandExecutor {
         locale: TMLocale,
     ) {
         val hasSilentPerm = sender.has("ticketmanager.commandArg.silence")
-        val cc = pluginState.localeHandler.mainColourCode
+        val cc = configState.localeHandler.mainColourCode
 
         val component = buildComponent {
             text { formattedContent(locale.helpHeader) }
@@ -745,7 +745,7 @@ class Commands : SuspendingCommandExecutor {
             val searchedUser = targetName?.attemptToUUIDString()
 
             val resultSize: Int
-            val resultsChunked = pluginState.database.searchDatabase(asyncContext, locale, listOf(locale.searchCreator to searchedUser)) { true }
+            val resultsChunked = configState.database.searchDatabase(asyncContext, locale, listOf(locale.searchCreator to searchedUser)) { true }
                 .toList()
                 .sortedByDescending(BasicTicket::id)
                 .also { resultSize = it.size }
@@ -831,7 +831,7 @@ class Commands : SuspendingCommandExecutor {
     ) {
         withContext(asyncContext) {
             try {
-                mainPlugin.pluginLocked.set(true)
+                mainPlugin.pluginState.pluginLocked.set(true)
                 pushMassNotify("ticketmanager.notify.info") {
                     text { formattedContent(it.informationReloadInitiated.replace("%user%", sender.name)) }
                 }
@@ -844,19 +844,19 @@ class Commands : SuspendingCommandExecutor {
                         pushMassNotify("ticketmanager.notify.warning") {
                             text { formattedContent(it.warningsLongTaskDuringReload) }
                         }
-                        mainPlugin.jobCount.set(1)
+                        mainPlugin.pluginState.jobCount.set(1)
                         mainPlugin.asyncDispatcher.cancelChildren()
                     }
                 }
 
                 // Waits for other tasks to complete
-                while (mainPlugin.jobCount.check() > 1) delay(1000L)
+                while (mainPlugin.pluginState.jobCount.get() > 1) delay(1000L)
 
                 if (!forceQuitJob.isCancelled)
                     forceQuitJob.cancel("Tasks closed on time")
 
                 pushMassNotify("ticketmanager.notify.info") { text { formattedContent(it.informationReloadTasksDone) } }
-                pluginState.database.closeDatabase()
+                configState.database.closeDatabase()
                 mainPlugin.loadPlugin()
 
                 pushMassNotify("ticketmanager.notify.info") {
@@ -884,13 +884,13 @@ class Commands : SuspendingCommandExecutor {
         val action = FullTicket.Action(FullTicket.Action.Type.REOPEN, sender.toUUIDOrNull())
 
         // Updates user status if needed
-        val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && pluginState.allowUnreadTicketUpdates
+        val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && configState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
             launch { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
         }
 
         launch {
-            pluginState.database.addAction(ticketHandler.id, action)
+            configState.database.addAction(ticketHandler.id, action)
             ticketHandler.setTicketStatus(BasicTicket.Status.OPEN)
         }
 
@@ -1007,7 +1007,7 @@ class Commands : SuspendingCommandExecutor {
 
             // Results Computation
             val resultSize: Int
-            val chunkedTickets = pluginState.database.searchDatabase(asyncContext, locale, mainTableConstrains, composedSearch)
+            val chunkedTickets = configState.database.searchDatabase(asyncContext, locale, mainTableConstrains, composedSearch)
                 .toList()
                 .sortedByDescending(BasicTicket::id)
                 .apply { resultSize = size }
@@ -1079,7 +1079,7 @@ class Commands : SuspendingCommandExecutor {
         ticketHandler: BasicTicketHandler,
     ): NotifyParams = withContext(asyncContext) {
         launch {
-            pluginState.database.addAction(
+            configState.database.addAction(
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.SET_PRIORITY, sender.toUUIDOrNull(), args[2])
             )
@@ -1270,7 +1270,7 @@ class Commands : SuspendingCommandExecutor {
             content("...............")
             color(NamedTextColor.DARK_GRAY)
         }
-        val cc = pluginState.localeHandler.mainColourCode
+        val cc = configState.localeHandler.mainColourCode
         val ofSection = text { formattedContent("$cc($curPage${locale.pageOf}$pageCount)") }
 
         when (curPage) {
@@ -1337,7 +1337,7 @@ class Commands : SuspendingCommandExecutor {
         getIDPriorityPair: suspend (Database) -> Flow<Pair<Int, Byte>>,
         baseCommand: (TMLocale) -> String
     ): Component {
-        val chunkedIDs = getIDPriorityPair(pluginState.database)
+        val chunkedIDs = getIDPriorityPair(configState.database)
             .toList()
             .sortedWith(compareByDescending<Pair<Int, Byte>> { it.second }.thenByDescending { it.first } )
             .map { it.first }
@@ -1345,7 +1345,7 @@ class Commands : SuspendingCommandExecutor {
         val page = if (args.size == 2 && args[1].toInt() in 1..chunkedIDs.size) args[1].toInt() else 1
 
         val fullTickets = chunkedIDs.getOrNull(page - 1)
-            ?.run { pluginState.database.getFullTickets(this, asyncContext) }
+            ?.run { configState.database.getFullTickets(this, asyncContext) }
             ?.toList()
             ?: emptyList()
 

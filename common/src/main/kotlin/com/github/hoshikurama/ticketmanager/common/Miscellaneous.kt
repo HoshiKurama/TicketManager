@@ -2,12 +2,10 @@ package com.github.hoshikurama.ticketmanager.common
 
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
-import kotlinx.coroutines.withContext
 import java.io.InputStream
 import java.net.URL
 import java.time.Instant
 import java.util.*
-import kotlin.coroutines.CoroutineContext
 
 class UpdateChecker(private val resourceID: Int) {
     fun getLatestVersion(): String? {
@@ -25,14 +23,6 @@ class UpdateChecker(private val resourceID: Int) {
             scanner?.close()
         }
     }
-}
-
-class NonBlockingSync<T>(
-    private val context: CoroutineContext,
-    private var t: T
-) {
-    suspend fun check() = withContext(context) { t }
-    suspend fun set(v: T) = withContext(context) { t = v }
 }
 
 

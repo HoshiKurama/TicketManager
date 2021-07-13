@@ -1,9 +1,9 @@
 package com.github.hoshikurama.ticketmanager.paper.events
 
 import com.github.hoshikurama.componentDSL.formattedContent
+import com.github.hoshikurama.ticketmanager.paper.configState
 import com.github.hoshikurama.ticketmanager.paper.has
 import com.github.hoshikurama.ticketmanager.paper.mainPlugin
-import com.github.hoshikurama.ticketmanager.paper.pluginState
 import com.github.hoshikurama.ticketmanager.paper.toTMLocale
 import com.github.shynixn.mccoroutine.asyncDispatcher
 import com.github.shynixn.mccoroutine.minecraftDispatcher
@@ -20,14 +20,14 @@ class PlayerJoin : Listener  {
 
     @EventHandler
     suspend fun onPlayerJoin(event: PlayerJoinEvent) = withContext(mainPlugin.minecraftDispatcher) {
-        if (mainPlugin.pluginLocked.check()) return@withContext
+        if (mainPlugin.pluginState.pluginLocked.get()) return@withContext
         val player = event.player
 
         withContext(mainPlugin.asyncDispatcher) {
 
             //Plugin Update Checking
             launch {
-                val pluginUpdateStatus = pluginState.pluginUpdateAvailable.await()
+                val pluginUpdateStatus = configState.pluginUpdateAvailable.await()
                 if (player.has("ticketmanager.notify.pluginUpdate") && pluginUpdateStatus != null) {
                     val sentMSG = player.toTMLocale().notifyPluginUpdate
                         .replace("%current%", pluginUpdateStatus.first)
@@ -39,7 +39,7 @@ class PlayerJoin : Listener  {
             // Unread Updates
             launch {
                 if (player.has("ticketmanager.notify.unreadUpdates.onJoin")) {
-                    pluginState.database.getIDsWithUpdatesFor(player.uniqueId)
+                    configState.database.getIDsWithUpdatesFor(player.uniqueId)
                         .toList()
                         .run { if (size == 0) null else this }
                         ?.run {
@@ -57,8 +57,8 @@ class PlayerJoin : Listener  {
             // View Open-Count and Assigned-Count Tickets
             launch {
                 if (player.has("ticketmanager.notify.openTickets.onJoin")) {
-                    val open = pluginState.database.getOpenIDPriorityPairs()
-                    val assigned = pluginState.database.getAssignedOpenIDPriorityPairs(player.name, mainPlugin.perms.getPlayerGroups(player).toList())
+                    val open = configState.database.getOpenIDPriorityPairs()
+                    val assigned = configState.database.getAssignedOpenIDPriorityPairs(player.name, mainPlugin.perms.getPlayerGroups(player).toList())
 
                     val sentMSG = player.toTMLocale().notifyOpenAssigned
                         .replace("%open%", "${open.count()}")

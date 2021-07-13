@@ -17,15 +17,10 @@ import org.bukkit.Bukkit
 import java.io.File
 
 class TicketManagerPlugin : SuspendingJavaPlugin() {
-    @OptIn(ObsoleteCoroutinesApi::class)
-    private val singleOffThread = newSingleThreadContext("SingleOffThread")
-
-    internal val jobCount = NonBlockingSync(singleOffThread, 0)
-    internal val pluginLocked = NonBlockingSync(singleOffThread, true)
+    internal val pluginState = PluginState()
     internal lateinit var perms: Permission private set
-    internal lateinit var configState: PluginState
+    internal lateinit var configStateInternal: ConfigState
 
-    internal val ticketCountMetrics = NonBlockingSync(singleOffThread, 0)
     private lateinit var metrics: Metrics
 
 
@@ -33,8 +28,8 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
     init { plugin = this }
 
     override suspend fun onDisableAsync() {
-        pluginLocked.set(true)
-        pluginState.database.closeDatabase()
+        pluginState.pluginLocked.set(true)
+        configStateInternal.database.closeDatabase()
     }
 
     override fun onEnable() {
@@ -50,8 +45,8 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
             metrics.addCustomChart(
                 Metrics.SingleLineChart("tickets_made") {
                     runBlocking {
-                        val ticketCount = ticketCountMetrics.check()
-                        ticketCountMetrics.set(0)
+                        val ticketCount = pluginState.ticketCountMetrics.get()
+                        pluginState.ticketCountMetrics.set(0)
                         ticketCount
                     }
                 }
@@ -66,19 +61,19 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
 
         // Creates task timers
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, Runnable {
-            launchAsync { configState.cooldowns.filterMapAsync() }
+            launchAsync { configStateInternal.cooldowns.filterMapAsync() }
 
             launchAsync {
-                if (pluginLocked.check()) return@launchAsync
+                if (pluginState.pluginLocked.get()) return@launchAsync
 
                 try {
                     // Mass Unread Notify
-                    if (configState.allowUnreadTicketUpdates) {
+                    if (configStateInternal.allowUnreadTicketUpdates) {
                         Bukkit.getOnlinePlayers().asFlow()
                             .filter { it.has("ticketmanager.notify.unreadUpdates.scheduled") }
                             .onEach {
                                launch {
-                                   val ticketIDs = configState.database.getIDsWithUpdatesFor(it.uniqueId).toList()
+                                   val ticketIDs = configStateInternal.database.getIDsWithUpdatesFor(it.uniqueId).toList()
                                    val tickets = ticketIDs.joinToString(", ")
 
                                    if (ticketIDs.isEmpty()) return@launch
@@ -92,9 +87,9 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                             }
                     }
 
-                    val openPriority = configState.database.getOpenIDPriorityPairs().map { it.first }.toList()
+                    val openPriority = configStateInternal.database.getOpenIDPriorityPairs().map { it.first }.toList()
                     val openCount = openPriority.count()
-                    val assignments = configState.database.getBasicTickets(openPriority).mapNotNull { it.assignedTo }.toList()
+                    val assignments = configStateInternal.database.getBasicTickets(openPriority).mapNotNull { it.assignedTo }.toList()
 
                     // Open and Assigned Notify
                     Bukkit.getOnlinePlayers().asFlow()
@@ -121,16 +116,16 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
     }
 
     internal suspend fun loadPlugin() = withContext(plugin.asyncDispatcher) {
-        pluginLocked.set(true)
+        pluginState.pluginLocked.set(true)
 
-        configState = run {
+        configStateInternal = run {
             // Creates config file if not found
             if (!File(plugin.dataFolder, "config.yml").exists()) {
                 plugin.saveDefaultConfig()
 
                 // Notifies users config was generated after plugin state init
                 launch {
-                    while (!(::configState.isInitialized))
+                    while (!(::configStateInternal.isInitialized))
                         delay(100L)
                     pushMassNotify("ticketmanager.notify.warning") { text { formattedContent(it.warningsNoConfig) } }
                 }
@@ -156,8 +151,8 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                     }
                 }
 
-                val cooldown: () -> PluginState.Cooldown? = {
-                    PluginState.Cooldown(
+                val cooldown: () -> ConfigState.Cooldown? = {
+                    ConfigState.Cooldown(
                         getBoolean("Use_Cooldowns", false),
                         getLong("Cooldown_Time", 0L)
                     )
@@ -185,7 +180,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                     mainPlugin.description.version
                 }
 
-                PluginState.createPluginState(
+                ConfigState.createPluginState(
                     database,
                     cooldown,
                     localeHandler,
@@ -199,10 +194,10 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
         }
 
         launch {
-            val updateNeeded = configState.database.updateNeeded()
+            val updateNeeded = configStateInternal.database.updateNeeded()
 
             if (updateNeeded) {
-                configState.database.updateDatabase(
+                configStateInternal.database.updateDatabase(
                     onBegin = {
                         pushMassNotify("ticketmanager.notify.info") {
                             text { formattedContent(it.informationDBUpdate) }
@@ -212,7 +207,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                         pushMassNotify("ticketmanager.notify.info") {
                             text { formattedContent(it.informationDBUpdateComplete) }
                         }
-                        pluginLocked.set(true)
+                        pluginState.pluginLocked.set(true)
                     },
                     offlinePlayerNameToUuidOrNull = {
                         Bukkit.getOfflinePlayers()
@@ -222,13 +217,13 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                     },
                     context = asyncContext
                 )
-            } else pluginLocked.set(false)
+            } else pluginState.pluginLocked.set(false)
         }
 
 
         withContext(minecraftDispatcher) {
             // Register events and commands
-            configState.localeHandler.getCommandBases().forEach {
+            configStateInternal.localeHandler.getCommandBases().forEach {
                 getCommand(it)!!.setSuspendingExecutor(Commands())
                 server.pluginManager.registerEvents(TabComplete(), this@TicketManagerPlugin)
                 // Remember to register any keyword in plugin.yml
