@@ -89,6 +89,18 @@ val sortActions: Comparator<FullTicket.Action> = Comparator.comparing(FullTicket
 
 fun <T> T.notEquals(t: T) = this != t
 
+class MutexControlled<T>(private var t: T) {
+    private val mutex = Mutex()
+
+    suspend fun get(): T = mutex.withLock { t }
+    suspend fun set(t: T) = mutex.withLock { this.t = t }
+}
+
+class IncrementalMutexController(private var n: Int) {
+    private val mutex = Mutex()
+    suspend fun getAndIncrement() = mutex.withLock { n.also { n++ } }
+}
+
 
 // Code from https://github.com/CruGlobal/android-gto-support/blob/47b44477e94e7d913de15066e3dd3eb8b54c4828/gto-support-kotlin-coroutines/src/main/java/org/ccci/gto/android/common/kotlin/coroutines/ReadWriteMutex.kt
 interface ReadWriteMutex {

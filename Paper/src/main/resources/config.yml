@@ -68,7 +68,18 @@ Cooldown_Time: 0
 # Cons: - Must have MySQL database.
 #       - Search and history commands slower.
 #
-# Values: 'MySQL','SQLite'
+#                 Memory:
+# Memory refers to TicketManager's custom solution for running the entire
+# database in RAM. Data is backed up throughout normal server operations or
+# on server shutdowns. It is then loaded up on startup if selected. DO NOT
+# USE THIS DATABASE TYPE UNLESS YOU UNDERSTAND THE RISKS OF RUNNING A
+# DATABASE IN RAM!!!
+# Pros: + Incredibly responsive
+#       + Incredibly fast queries
+# Cons: - Any power loss or server crash will result in all data beyond
+#         the last backup being lost.
+#
+# Values: 'MySQL','SQLite','Memory'
 Database_Mode: 'SQLite'
 #
 # ######################
@@ -79,6 +90,12 @@ MySQL_Host: ''
 MySQL_DBName: ''
 MySQL_Username: ''
 MySQL_Password: ''
+#
+# ######################
+#   Memory as Database
+# ######################
+# Time in seconds between database backups being made
+Memory_Backup_Frequency: 600
 #
 # ###########################################
 #                   Other

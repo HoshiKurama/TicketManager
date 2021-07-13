@@ -3,6 +3,7 @@ package com.github.hoshikurama.ticketmanager.paper
 import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.common.*
 import com.github.hoshikurama.ticketmanager.common.databases.Database
+import com.github.hoshikurama.ticketmanager.common.databases.Memory
 import com.github.hoshikurama.ticketmanager.common.databases.MySQL
 import com.github.hoshikurama.ticketmanager.common.databases.SQLite
 import com.github.hoshikurama.ticketmanager.paper.events.Commands
@@ -51,9 +52,9 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                     }
                 }
             )
-        }
+        } //todo add pie chart for database type being used
 
-        // Launches PluginState initialisation
+        // Launches ConfigState initialisation
         launchAsync { loadPlugin() }
 
         // Register Event
@@ -148,6 +149,10 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                             asyncDispatcher = (plugin.asyncDispatcher as CoroutineDispatcher),
                         )
                         Database.Type.SQLite -> SQLite(path)
+                        Database.Type.Memory -> Memory(
+                            filePath = path,
+                            backupFrequency = getLong("Memory_Backup_Frequency", 600)
+                        )
                     }
                 }
 
