@@ -279,10 +279,33 @@ class Memory(
     override suspend fun migrateDatabase(
         context: CoroutineContext,
         to: Database.Type,
+        mySQLBuilder: suspend () -> MySQL,
+        sqLiteBuilder: suspend () -> SQLite,
+        memoryBuilder: suspend () -> Memory,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit
     ) {
-        TODO("Not yet implemented")
+        onBegin()
+
+        when (to) {
+            Database.Type.Memory -> return
+
+            Database.Type.MySQL,
+            Database.Type.SQLite -> {
+                val otherDB = if (to == Database.Type.MySQL) mySQLBuilder() else sqLiteBuilder()
+
+                mapMutex.read.withLock {
+                    ticketMap.map { it.value }
+                }
+                    .forEach {
+                        withContext(context) {
+                            launch { otherDB.addFullTicket(it) }
+                        }
+                    }
+            }
+        }
+
+        onComplete()
     }
 
     override suspend fun updateDatabase(

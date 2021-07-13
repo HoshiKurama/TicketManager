@@ -59,7 +59,7 @@ Cooldown_Time: 0
 #       + No external database needed.
 #       + Faster than MySQL for search and history command.
 # Cons: - Stores data in TicketManager folder.
-#       - Easier to overwhelm than Redis or MySQL.
+#       - Easier to overwhelm than Memory or MySQL.
 #
 #                 MySQL:
 # Stores information in a database that may or may not be on the server.

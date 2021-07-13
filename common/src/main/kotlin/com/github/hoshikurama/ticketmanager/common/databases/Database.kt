@@ -58,6 +58,9 @@ interface Database {
     suspend fun migrateDatabase(
         context: CoroutineContext,
         to: Type,
+        mySQLBuilder: suspend () -> MySQL,
+        sqLiteBuilder: suspend () -> SQLite,
+        memoryBuilder: suspend () -> Memory,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit,
     )

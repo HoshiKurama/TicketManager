@@ -6,6 +6,9 @@ import com.github.hoshikurama.componentDSL.onClick
 import com.github.hoshikurama.componentDSL.onHover
 import com.github.hoshikurama.ticketmanager.common.*
 import com.github.hoshikurama.ticketmanager.common.databases.Database
+import com.github.hoshikurama.ticketmanager.common.databases.Memory
+import com.github.hoshikurama.ticketmanager.common.databases.MySQL
+import com.github.hoshikurama.ticketmanager.common.databases.SQLite
 import com.github.hoshikurama.ticketmanager.common.ticket.*
 import com.github.hoshikurama.ticketmanager.paper.*
 import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
@@ -622,11 +625,48 @@ class Commands : SuspendingCommandExecutor {
 
     // /ticket convertdatabase <Target Database>
     private suspend fun convertDatabase(args: List<String>) {
-        //TODO
-        /*
         val type = args[1].run(Database.Type::valueOf)
-        pluginState.database.migrateDatabase(type)
-         */
+        val config = mainPlugin.config
+
+        configState.database.migrateDatabase(
+            context = asyncContext,
+            to = configState.database.type,
+            sqLiteBuilder = { SQLite(mainPlugin.dataFolder.absolutePath) },
+            mySQLBuilder = {
+                MySQL(
+                    config.getString("MySQL_Host")!!,
+                    config.getString("MySQL_Port")!!,
+                    config.getString("MySQL_DBName")!!,
+                    config.getString("MySQL_Username")!!,
+                    config.getString("MySQL_Password")!!,
+                    asyncDispatcher = (mainPlugin.asyncDispatcher as CoroutineDispatcher)
+                )
+           },
+            memoryBuilder = {
+                Memory(
+                    filePath = mainPlugin.dataFolder.absolutePath,
+                    backupFrequency = config.getLong("Memory_Backup_Frequency", 600),
+                )
+            },
+            onBegin = {
+                mainPlugin.pluginState.pluginLocked.set(true)
+                pushMassNotify("ticketmanager.notify.info") {
+                    text {
+                        formattedContent(
+                            it.informationDBConvertInit
+                                .replace("%fromDB%", configState.database.type.name)
+                                .replace("%toDB%", type.name)
+                        )
+                    }
+                }
+            },
+            onComplete = {
+                mainPlugin.pluginState.pluginLocked.set(false)
+                pushMassNotify("ticketmanager.notify.info") {
+                    text { formattedContent(it.informationDBConvertSuccess) }
+                }
+            }
+        )
     }
 
     // /ticket create <Message…>

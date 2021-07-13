@@ -8,6 +8,8 @@ import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.toTicketLocation
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotliquery.*
 import java.sql.DriverManager
 import java.time.Instant
@@ -281,55 +283,41 @@ class SQLite(absoluteDataFolderPath: String) : Database {
     override suspend fun migrateDatabase(
         context: CoroutineContext,
         to: Database.Type,
+        mySQLBuilder: suspend () -> MySQL,
+        sqLiteBuilder: suspend () -> SQLite,
+        memoryBuilder: suspend () -> Memory,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit
     ) {
-        //TODO use more functions like () -> Database
-        /*
-        @Suppress("BlockingMethodInNonBlockingContext")
-        runBlocking {
-            when (to) {
-                Database.Type.SQLite -> {} // SQLite -> SQLite is not permitted
+        onBegin()
 
-                Database.Type.MySQL -> {
-                    pushMassNotify("ticketmanager.notify.info", {
-                        it.informationDBConvertInit
-                            .replace("%fromDB%", Database.Types.SQLite.name)
-                            .replace("%toDB%", Database.Types.MySQL.name)
-                    } )
+        when (to) {
+            Database.Type.SQLite -> return
 
-                    try {
-                        val config = mainPlugin.config
-                        val mySQL = MySQL(
-                            config.getString("MySQL_Host")!!,
-                            config.getString("MySQL_Port")!!,
-                            config.getString("MySQL_DBName")!!,
-                            config.getString("MySQL_Username")!!,
-                            config.getString("MySQL_Password")!!
-                        )
+            Database.Type.MySQL,
+            Database.Type.Memory -> {
+                val otherDB = if (to == Database.Type.MySQL) mySQLBuilder() else memoryBuilder()
+                otherDB.initialiseDatabase()
 
-                        // Writes to MySQL
-                        using(getSession()) { session ->
-                            session.forEach(queryOf("SELECT * FROM TicketManager_V4_Tickets")) { row ->  //NOTE: During conversion, ticket ID is not guaranteed to be preserved
-                                row.toTicket(session).apply {
-                                    val newID = mySQL.addTicket(this, actions[0])
-                                    if (actions.size > 1) actions.subList(1, actions.size)
-                                        .forEach { mySQL.addAction(newID, it) }
-                                }
+                using(getSession()) { session ->
+                    session.run(
+                        queryOf("SELECT * FROM TicketManager_V4_Tickets")
+                            .map { it.toBasicTicket() }
+                            .asList
+                    )
+                }
+                    .forEach {
+                        withContext(context) {
+                            launch {
+                                val fullTicket = it.toFullTicket(this@SQLite)
+                                otherDB.addFullTicket(fullTicket)
                             }
                         }
-
-                        pushMassNotify("ticketmanager.notify.info", { it.informationDBConvertSuccess } )
-
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        postModifiedStacktrace(e)
                     }
-                }
             }
         }
 
-         */
+        onComplete()
     }
 
     override suspend fun updateDatabase(

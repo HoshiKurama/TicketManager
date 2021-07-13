@@ -295,10 +295,49 @@ class MySQL(
     override suspend fun migrateDatabase(
         context: CoroutineContext,
         to: Database.Type,
+        mySQLBuilder: suspend () -> MySQL,
+        sqLiteBuilder: suspend () -> SQLite,
+        memoryBuilder: suspend () -> Memory,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit
     ) {
-        TODO("Not yet implemented")
+        onBegin()
+
+        when (to) {
+            Database.Type.MySQL -> return
+
+            Database.Type.SQLite -> {
+                val sqlite = sqLiteBuilder()
+                sqlite.initialiseDatabase()
+
+                // Gets all tables from MySQL
+                suspendingCon.sendPreparedStatement("SELECT * FROM TicketManager_V4_Tickets")
+                    .rows
+                    .map { it.toBasicTicket().toFullTicket(this) }
+                    .forEach {
+                        withContext(context) {
+                            launch { sqlite.addFullTicket(it) }
+                        }
+                    }
+
+                sqlite.closeDatabase()
+            }
+
+            Database.Type.Memory -> {
+                val memory = sqLiteBuilder()
+                memory.initialiseDatabase()
+
+                // Gets all tables from MySQL
+                suspendingCon.sendPreparedStatement("SELECT * FROM TicketManager_V4_Tickets")
+                    .rows
+                    .map { it.toBasicTicket().toFullTicket(this) }
+                    .forEach { memory.addFullTicket(it) }
+
+                memory.closeDatabase()
+            }
+        }
+
+        onComplete()
     }
 
     override suspend fun updateDatabase(
