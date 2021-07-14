@@ -2,5 +2,6 @@ rootProject.name = "TicketManager"
 
 include(
     "common",
-    "Paper"
+    "Paper",
+    "Spigot"
 )
