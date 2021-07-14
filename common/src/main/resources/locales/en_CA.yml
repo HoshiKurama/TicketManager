@@ -184,6 +184,6 @@ Notify_Event_MassClose: '%CC%[TicketManager]&7 %user%%CC% is mass-closing ticket
 Notify_Event_TicketComment: '%CC%[TicketManager]&7 %user%%CC% commented on ticket &7#%id%%CC%:&7%nl%%message%'
 Notify_Event_TicketCreation: '%CC%[TicketManager] &7%user%%CC% created ticket &7#%id%%CC%:&7%nl%%message%'
 Notify_Event_TicketModification: '%CC%[TicketManager] Ticket &7#%id%%CC% has been updated! Type &7/ticket view %id%%CC% to view this ticket.'
-Notify_Event_TicketReopen: '%CC%[TicketManager]&7 %user%%CC% re-opened ticket &7#%id%%CC%.'
+Notify_Event_TicketReopen: '%CC%[TicketManager]&7 %user%%CC% reopened ticket &7#%id%%CC%.'
 Notify_Event_SetPriority: '%CC%[TicketManager] &7%user%%CC% set ticket &7#%id%%CC% to priority %priority%'
 Notify_Event_PluginUpdate: '%CC%[TicketManager] TicketManager has an update!%nl%  %CC%Current Version: &7%current%%nl%  %CC%Latest Version: &7%latest%'

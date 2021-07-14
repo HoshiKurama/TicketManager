@@ -1121,12 +1121,13 @@ class Commands : SuspendingCommandExecutor {
         silent: Boolean,
         ticketHandler: BasicTicketHandler,
     ): NotifyParams = withContext(asyncContext) {
+        val newPriority = byteToPriority(args[2].toByte())
         launch {
             configState.database.addAction(
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.SET_PRIORITY, sender.toUUIDOrNull(), args[2])
             )
-            ticketHandler.setTicketPriority(byteToPriority(args[2].toByte()))
+            ticketHandler.setTicketPriority(newPriority)
         }
 
         NotifyParams(
@@ -1137,14 +1138,14 @@ class Commands : SuspendingCommandExecutor {
             senderLambda = {
                 val content = it.notifyTicketSetPrioritySuccess
                     .replace("%id%", args[1])
-                    .replace("%priority%", ticketHandler.run { priority.colourCode + priority.toLocaledWord(it) })
+                    .replace("%priority%", ticketHandler.run { newPriority.colourCode + newPriority.toLocaledWord(it) })
                 text { formattedContent(content) }
             },
             massNotifyLambda = {
                 val content = it.notifyTicketSetPriorityEvent
                     .replace("%user%", sender.name)
                     .replace("%id%", args[1])
-                    .replace("%priority%", ticketHandler.run { priority.colourCode + priority.toLocaledWord(it) })
+                    .replace("%priority%", ticketHandler.run { newPriority.colourCode + newPriority.toLocaledWord(it) })
                 text { formattedContent(content) }
             },
             creatorAlertPerm = "ticketmanager.notify.change.priority",

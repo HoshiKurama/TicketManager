@@ -120,7 +120,7 @@ class Memory(
     override suspend fun addNewTicket(basicTicket: BasicTicket, context: CoroutineContext, message: String): Int {
         val id = nextTicketID.getAndIncrement()
         val action = FullTicket.Action(FullTicket.Action.Type.OPEN, basicTicket.creatorUUID, message)
-        val fullTicket = FullTicket(basicTicket.id, basicTicket.creatorUUID, basicTicket.location, basicTicket.priority, basicTicket.status, basicTicket.assignedTo, basicTicket.creatorStatusUpdate, listOf(action))
+        val fullTicket = FullTicket(id, basicTicket.creatorUUID, basicTicket.location, basicTicket.priority, basicTicket.status, basicTicket.assignedTo, basicTicket.creatorStatusUpdate, listOf(action))
 
         mapMutex.write.withLock {
             ticketMap[id] = fullTicket
@@ -299,11 +299,13 @@ class Memory(
                 mapMutex.read.withLock {
                     ticketMap.map { it.value }
                 }
-                    .forEach {
+                    .map {
                         withContext(context) {
                             launch { otherDB.addFullTicket(it) }
                         }
                     }
+
+                otherDB.closeDatabase()
             }
         }
 

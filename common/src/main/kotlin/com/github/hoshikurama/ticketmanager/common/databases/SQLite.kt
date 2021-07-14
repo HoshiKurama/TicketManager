@@ -314,6 +314,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
                             }
                         }
                     }
+                otherDB.closeDatabase()
             }
         }
 
