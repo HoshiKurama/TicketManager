@@ -26,15 +26,6 @@ dependencies {
     implementation("com.github.shynixn.mccoroutine:mccoroutine-bukkit-api:1.5.0")
     implementation("com.github.shynixn.mccoroutine:mccoroutine-bukkit-core:1.5.0")
     implementation(project(":common"))
-
-    // Used by :common but still needed in plugin.yml
-    //implementation("mysql:mysql-connector-java:8.0.25")
-    //implementation("org.xerial:sqlite-jdbc:3.34.0")
-    //implementation("com.github.jasync-sql:jasync-mysql:1.2.2")
-    //implementation("com.github.seratch:kotliquery:1.3.1")
-    //implementation("net.kyori:adventure-text-serializer-legacy:4.8.1")
-    //implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
-    //implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.2.2")
 }
 
 tasks {
@@ -44,12 +35,10 @@ tasks {
         dependencies {
             include(dependency("com.github.HoshiKurama:KyoriComponentDSL:1.1.0"))
             include(dependency("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.2.2"))
-            include(dependency("org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.2.2")) //todo test without shading
             include(project(":common"))
 
             relocate("com.github.hoshikurama.componentDSL", "com.github.hoshikurama.ticketmanager.componentDSL")
-            relocate("kotlinx.serialization", "com.github.hoshikurama.ticketmanager.shaded.kotlinx.serialization")
+            relocate("kotlinx.serialization.json", "com.github.hoshikurama.ticketmanager.shaded.kotlinx.serialization.json")
         }
-
     }
 }
