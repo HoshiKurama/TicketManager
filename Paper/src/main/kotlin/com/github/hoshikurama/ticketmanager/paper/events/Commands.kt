@@ -628,45 +628,50 @@ class Commands : SuspendingCommandExecutor {
         val type = args[1].run(Database.Type::valueOf)
         val config = mainPlugin.config
 
-        configState.database.migrateDatabase(
-            context = asyncContext,
-            to = configState.database.type,
-            sqLiteBuilder = { SQLite(mainPlugin.dataFolder.absolutePath) },
-            mySQLBuilder = {
-                MySQL(
-                    config.getString("MySQL_Host")!!,
-                    config.getString("MySQL_Port")!!,
-                    config.getString("MySQL_DBName")!!,
-                    config.getString("MySQL_Username")!!,
-                    config.getString("MySQL_Password")!!,
-                    asyncDispatcher = (mainPlugin.asyncDispatcher as CoroutineDispatcher)
-                )
-           },
-            memoryBuilder = {
-                Memory(
-                    filePath = mainPlugin.dataFolder.absolutePath,
-                    backupFrequency = config.getLong("Memory_Backup_Frequency", 600),
-                )
-            },
-            onBegin = {
-                mainPlugin.pluginState.pluginLocked.set(true)
-                pushMassNotify("ticketmanager.notify.info") {
-                    text {
-                        formattedContent(
-                            it.informationDBConvertInit
-                                .replace("%fromDB%", configState.database.type.name)
-                                .replace("%toDB%", type.name)
-                        )
+        try {
+            configState.database.migrateDatabase(
+                context = asyncContext,
+                to = type,
+                sqLiteBuilder = { SQLite(mainPlugin.dataFolder.absolutePath) },
+                mySQLBuilder = {
+                    MySQL(
+                        config.getString("MySQL_Host")!!,
+                        config.getString("MySQL_Port")!!,
+                        config.getString("MySQL_DBName")!!,
+                        config.getString("MySQL_Username")!!,
+                        config.getString("MySQL_Password")!!,
+                        asyncDispatcher = (mainPlugin.asyncDispatcher as CoroutineDispatcher)
+                    )
+                },
+                memoryBuilder = {
+                    Memory(
+                        filePath = mainPlugin.dataFolder.absolutePath,
+                        backupFrequency = config.getLong("Memory_Backup_Frequency", 600),
+                    )
+                },
+                onBegin = {
+                    mainPlugin.pluginState.pluginLocked.set(true)
+                    pushMassNotify("ticketmanager.notify.info") {
+                        text {
+                            formattedContent(
+                                it.informationDBConvertInit
+                                    .replace("%fromDB%", configState.database.type.name)
+                                    .replace("%toDB%", type.name)
+                            )
+                        }
+                    }
+                },
+                onComplete = {
+                    mainPlugin.pluginState.pluginLocked.set(false)
+                    pushMassNotify("ticketmanager.notify.info") {
+                        text { formattedContent(it.informationDBConvertSuccess) }
                     }
                 }
-            },
-            onComplete = {
-                mainPlugin.pluginState.pluginLocked.set(false)
-                pushMassNotify("ticketmanager.notify.info") {
-                    text { formattedContent(it.informationDBConvertSuccess) }
-                }
-            }
-        )
+            )
+        } catch (e: Exception) {
+            mainPlugin.pluginState.pluginLocked.set(false)
+            throw e
+        }
     }
 
     // /ticket create <Message…>

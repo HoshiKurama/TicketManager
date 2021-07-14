@@ -285,14 +285,16 @@ class Memory(
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit
     ) {
-        onBegin()
-
+        withContext(context) {
+            launch { onBegin() }
+        }
         when (to) {
             Database.Type.Memory -> return
 
             Database.Type.MySQL,
             Database.Type.SQLite -> {
                 val otherDB = if (to == Database.Type.MySQL) mySQLBuilder() else sqLiteBuilder()
+                otherDB.initialiseDatabase()
 
                 mapMutex.read.withLock {
                     ticketMap.map { it.value }
@@ -305,7 +307,9 @@ class Memory(
             }
         }
 
-        onComplete()
+        withContext(context) {
+            launch { onComplete() }
+        }
     }
 
     override suspend fun updateDatabase(

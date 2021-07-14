@@ -8,7 +8,6 @@
 #    %CC% - Colour Code Theme
 #    %nl% - New Line
 # ############################
-
 # View and Deep View Format:
 ViewFormat_Header: '%num%'
 ViewFormat_Sep1: ''
@@ -74,6 +73,7 @@ Warning_TicketAlreadyOpen: ''
 Warning_InvalidDBType: ''
 Warning_ConvertToSameDBType: ''
 Warning_UnexpectedError: ''
+Warning_LongTaskDuringReload: ''
 #
 # Modified Stacktrace
 Stacktrace_Line1: ''
@@ -139,6 +139,7 @@ Page_Next: ''
 Info_ReloadInitiated: '%user%'
 Info_Reload_TasksDone: ''
 Info_ReloadSuccess: ''
+Info_ReloadFailure: ''
 Info_DBUpdate: ''
 Info_DBUpdateComplete: ''
 Info_DBConversionInit: ''
@@ -196,3 +197,4 @@ Notify_Event_TicketModification: '%id%'
 Notify_Event_TicketReopen: '%user%  %id%'
 Notify_Event_SetPriority: '%user%  %id%  %priority%'
 Notify_Event_PluginUpdate: '%current%  %latest%'
+
