@@ -332,13 +332,14 @@ class Commands : SuspendingCommandExecutor {
     ) {
         params.run {
             if (sendSenderMSG)
-                sender.sendMessage(senderLambda!!.invoke(locale))
+                senderLambda!!(locale)
+                    .run(sender::sendMessage)
 
             if (sendCreatorMSG)
                 basicTicket.creatorUUID
                     ?.run(Bukkit::getPlayer)
                     ?.let { creatorLambda!!(it.toTMLocale()) }
-                    ?.run { creator!!.sendMessage(this) }
+                    ?.run(creator!!::sendMessage)
 
             if (sendMassNotifyMSG)
                 pushMassNotify(massNotifyPerm, massNotifyLambda!!)
