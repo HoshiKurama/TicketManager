@@ -122,8 +122,8 @@ class Memory(
         val action = FullTicket.Action(FullTicket.Action.Type.OPEN, basicTicket.creatorUUID, message)
         val fullTicket = FullTicket(basicTicket.id, basicTicket.creatorUUID, basicTicket.location, basicTicket.priority, basicTicket.status, basicTicket.assignedTo, basicTicket.creatorStatusUpdate, listOf(action))
 
-        withContext(context) {
-            launch { addFullTicket(fullTicket) }
+        mapMutex.write.withLock {
+            ticketMap[id] = fullTicket
         }
 
         return id
