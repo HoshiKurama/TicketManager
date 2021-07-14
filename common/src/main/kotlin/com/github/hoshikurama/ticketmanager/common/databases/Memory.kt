@@ -323,6 +323,7 @@ class Memory(
         // Not Applicable yet
     }
 
+    @Suppress("BlockingMethodInNonBlockingContext")
     private suspend fun writeDatabaseToFileBlocking() {
         val path = Path.of("$filePath/TicketManager-Database4-Memory.ticketmanager")
         if (path.notExists()) path.createFile()
