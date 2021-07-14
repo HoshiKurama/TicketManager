@@ -1,1 +1,7 @@
-rootProject.name = "TicketManagerKotlin"
+rootProject.name = "TicketManager"
+
+include(
+    "common",
+    "Paper",
+    "Spigot"
+)
