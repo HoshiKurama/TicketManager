@@ -20,7 +20,7 @@ import java.io.File
 class TicketManagerPlugin : SuspendingJavaPlugin() {
     internal val pluginState = PluginState()
     internal lateinit var perms: Permission private set
-    internal lateinit var configStateInternal: ConfigState
+    internal lateinit var configStateI: ConfigState
 
     private lateinit var metrics: Metrics
 
@@ -30,7 +30,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
 
     override suspend fun onDisableAsync() {
         pluginState.pluginLocked.set(true)
-        configStateInternal.database.closeDatabase()
+        configStateI.database.closeDatabase()
     }
 
     override fun onEnable() {
@@ -52,6 +52,11 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                     }
                 }
             )
+            metrics.addCustomChart(
+                Metrics.SimplePie("database_type") {
+                    configStateI.database.type.name
+                }
+            )
         } //todo add pie chart for database type being used
 
         // Launches ConfigState initialisation
@@ -62,19 +67,19 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
 
         // Creates task timers
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, Runnable {
-            launchAsync { configStateInternal.cooldowns.filterMapAsync() }
+            launchAsync { configStateI.cooldowns.filterMapAsync() }
 
             launchAsync {
                 if (pluginState.pluginLocked.get()) return@launchAsync
 
                 try {
                     // Mass Unread Notify
-                    if (configStateInternal.allowUnreadTicketUpdates) {
+                    if (configStateI.allowUnreadTicketUpdates) {
                         Bukkit.getOnlinePlayers().asFlow()
                             .filter { it.has("ticketmanager.notify.unreadUpdates.scheduled") }
                             .onEach {
                                launch {
-                                   val ticketIDs = configStateInternal.database.getIDsWithUpdatesFor(it.uniqueId).toList()
+                                   val ticketIDs = configStateI.database.getIDsWithUpdatesFor(it.uniqueId).toList()
                                    val tickets = ticketIDs.joinToString(", ")
 
                                    if (ticketIDs.isEmpty()) return@launch
@@ -88,9 +93,9 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                             }
                     }
 
-                    val openPriority = configStateInternal.database.getOpenIDPriorityPairs().map { it.first }.toList()
+                    val openPriority = configStateI.database.getOpenIDPriorityPairs().map { it.first }.toList()
                     val openCount = openPriority.count()
-                    val assignments = configStateInternal.database.getBasicTickets(openPriority).mapNotNull { it.assignedTo }.toList()
+                    val assignments = configStateI.database.getBasicTickets(openPriority).mapNotNull { it.assignedTo }.toList()
 
                     // Open and Assigned Notify
                     Bukkit.getOnlinePlayers().asFlow()
@@ -119,14 +124,14 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
     internal suspend fun loadPlugin() = withContext(plugin.asyncDispatcher) {
         pluginState.pluginLocked.set(true)
 
-        configStateInternal = run {
+        configStateI = run {
             // Creates config file if not found
             if (!File(plugin.dataFolder, "config.yml").exists()) {
                 plugin.saveDefaultConfig()
 
                 // Notifies users config was generated after plugin state init
                 launch {
-                    while (!(::configStateInternal.isInitialized))
+                    while (!(::configStateI.isInitialized))
                         delay(100L)
                     pushMassNotify("ticketmanager.notify.warning") { text { formattedContent(it.warningsNoConfig) } }
                 }
@@ -199,10 +204,10 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
         }
 
         launch {
-            val updateNeeded = configStateInternal.database.updateNeeded()
+            val updateNeeded = configStateI.database.updateNeeded()
 
             if (updateNeeded) {
-                configStateInternal.database.updateDatabase(
+                configStateI.database.updateDatabase(
                     onBegin = {
                         pushMassNotify("ticketmanager.notify.info") {
                             text { formattedContent(it.informationDBUpdate) }
@@ -228,7 +233,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
 
         withContext(minecraftDispatcher) {
             // Register events and commands
-            configStateInternal.localeHandler.getCommandBases().forEach {
+            configStateI.localeHandler.getCommandBases().forEach {
                 getCommand(it)!!.setSuspendingExecutor(Commands())
                 server.pluginManager.registerEvents(TabComplete(), this@TicketManagerPlugin)
                 // Remember to register any keyword in plugin.yml
