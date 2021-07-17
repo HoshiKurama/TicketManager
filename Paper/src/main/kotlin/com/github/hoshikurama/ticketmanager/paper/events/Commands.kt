@@ -44,19 +44,19 @@ class Commands : SuspendingCommandExecutor {
         val argList = args.toList()
 
         if (argList.isEmpty()) {
-            sender.sendMessage(text { formattedContent(senderLocale.warningsInvalidCommand) })
+            sender.sendColouredMessage(senderLocale.warningsInvalidCommand)
             return@withContext false
         }
 
         if (mainPlugin.pluginState.pluginLocked.get()) {
-            sender.sendMessage(text { formattedContent(senderLocale.warningsLocked)})
+            sender.sendColouredMessage(senderLocale.warningsLocked)
             return@withContext false
         }
 
         // Grabs BasicTicket. Only null if ID required but doesn't exist. Filters non-valid tickets
         val pseudoTicket = getBasicTicketHandler(argList, senderLocale)
         if (pseudoTicket == null) {
-            sender.sendMessage(text { formattedContent(senderLocale.warningsInvalidID) })
+            sender.sendColouredMessage(senderLocale.warningsInvalidID)
             return@withContext false
         }
 
@@ -75,7 +75,7 @@ class Commands : SuspendingCommandExecutor {
         } catch (e: Exception) {
             e.printStackTrace()
             postModifiedStacktrace(e)
-            sender.sendMessage(text { formattedContent(senderLocale.warningsUnexpectedError) })
+            sender.sendColouredMessage(senderLocale.warningsUnexpectedError)
         } finally {
             mainPlugin.pluginState.jobCount.run { set(get() - 1) }
         }
@@ -167,9 +167,9 @@ class Commands : SuspendingCommandExecutor {
                    else -> true
                }
            }
-               .also { if (!it) sender.sendMessage(text { formattedContent(senderLocale.warningsNoPermission) }) }
+               .also { if (!it) sender.sendColouredMessage(senderLocale.warningsNoPermission) }
        } catch (e: Exception) {
-            sender.sendMessage(text { formattedContent(senderLocale.warningsNoPermission) })
+           sender.sendColouredMessage(senderLocale.warningsNoPermission)
             return false
        }
     }
@@ -180,7 +180,7 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         senderLocale: TMLocale
     ): Boolean {
-        fun sendMessage(formattedString: String) = sender.sendMessage(text { formattedContent(formattedString) })
+        fun sendMessage(msg: String) = msg.run(sender::sendColouredMessage)
         fun invalidCommand() = sendMessage(senderLocale.warningsInvalidCommand)
         fun notANumber() = sendMessage(senderLocale.warningsInvalidNumber)
         fun outOfBounds() = sendMessage(senderLocale.warningsPriorityOutOfBounds)
@@ -277,8 +277,7 @@ class Commands : SuspendingCommandExecutor {
         }
 
         if (underCooldown)
-            sender.sendMessage(text { formattedContent(senderLocale.warningsUnderCooldown) })
-
+            sender.sendColouredMessage(senderLocale.warningsUnderCooldown)
         return !underCooldown
     }
 
@@ -480,21 +479,21 @@ class Commands : SuspendingCommandExecutor {
             sender = sender,
             basicTicket = ticketHandler,
             senderLambda = {
-                val content = it.notifyTicketCloseWCommentSuccess
+                it.notifyTicketCloseWCommentSuccess
                     .replace("%id%", args[1])
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             massNotifyLambda = {
-                val content = it.notifyTicketCloseWCommentEvent
+                it.notifyTicketCloseWCommentEvent
                     .replace("%user%", sender.name)
                     .replace("%id%", args[1])
                     .replace("%message%", message)
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             creatorLambda = {
-                val content = it.notifyTicketModificationEvent
+                it.notifyTicketModificationEvent
                     .replace("%id%", args[1])
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             massNotifyPerm = "ticketmanager.notify.massNotify.close",
             creatorAlertPerm = "ticketmanager.notify.change.close"
@@ -520,20 +519,20 @@ class Commands : SuspendingCommandExecutor {
             sender = sender,
             basicTicket = ticketHandler,
             creatorLambda = {
-                val content = it.notifyTicketModificationEvent
+                it.notifyTicketModificationEvent
                     .replace("%id%", args[1])
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             massNotifyLambda = {
-                val content = it.notifyTicketCloseEvent
+                it.notifyTicketCloseEvent
                     .replace("%user%", sender.name)
                     .replace("%id%", args[1])
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             senderLambda = {
-                val content = it.notifyTicketCloseSuccess
+                it.notifyTicketCloseSuccess
                     .replace("%id%", args[1])
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             massNotifyPerm = "ticketmanager.notify.massNotify.close",
             creatorAlertPerm = "ticketmanager.notify.change.close"
@@ -558,17 +557,17 @@ class Commands : SuspendingCommandExecutor {
             basicTicket = basicTicket,
             creatorLambda = null,
             senderLambda = {
-                val content =it.notifyTicketMassCloseSuccess
+                it.notifyTicketMassCloseSuccess
                     .replace("%low%", args[1])
                     .replace("%high%", args[2])
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             massNotifyLambda = {
-                val content = it.notifyTicketMassCloseEvent
+                it.notifyTicketMassCloseEvent
                     .replace("%user%", sender.name)
                     .replace("%low%", args[1])
                     .replace("%high%", args[2])
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             massNotifyPerm = "ticketmanager.notify.massNotify.massClose",
             creatorAlertPerm = "ticketmanager.notify.change.massClose"
@@ -603,21 +602,21 @@ class Commands : SuspendingCommandExecutor {
             sender = sender,
             basicTicket = ticketHandler,
             creatorLambda = {
-                val content = it.notifyTicketModificationEvent
+                it.notifyTicketModificationEvent
                     .replace("%id%", args[1])
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             senderLambda = {
-                val content = it.notifyTicketCommentSuccess
+                it.notifyTicketCommentSuccess
                     .replace("%id%", args[1])
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             massNotifyLambda = {
-                val content = it.notifyTicketCommentEvent
+                it.notifyTicketCommentEvent
                     .replace("%user%", sender.name)
                     .replace("%id%", args[1])
                     .replace("%message%", message)
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             massNotifyPerm = "ticketmanager.notify.massNotify.comment",
             creatorAlertPerm = "ticketmanager.notify.change.comment"
@@ -653,19 +652,16 @@ class Commands : SuspendingCommandExecutor {
                 onBegin = {
                     mainPlugin.pluginState.pluginLocked.set(true)
                     pushMassNotify("ticketmanager.notify.info") {
-                        text {
-                            formattedContent(
-                                it.informationDBConvertInit
-                                    .replace("%fromDB%", configState.database.type.name)
-                                    .replace("%toDB%", type.name)
-                            )
-                        }
+                        it.informationDBConvertInit
+                            .replace("%fromDB%", configState.database.type.name)
+                            .replace("%toDB%", type.name)
+                            .run(::toColouredAdventure)
                     }
                 },
                 onComplete = {
                     mainPlugin.pluginState.pluginLocked.set(false)
                     pushMassNotify("ticketmanager.notify.info") {
-                        text { formattedContent(it.informationDBConvertSuccess) }
+                        it.informationDBConvertSuccess.run(::toColouredAdventure)
                     }
                 }
             )
@@ -696,16 +692,16 @@ class Commands : SuspendingCommandExecutor {
             basicTicket = ticket,
             creatorLambda = null,
             senderLambda = {
-                val content = it.notifyTicketCreationSuccess
+                it.notifyTicketCreationSuccess
                     .replace("%id%", id)
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             massNotifyLambda = {
-                val content = it.notifyTicketCreationEvent
+                it.notifyTicketCreationEvent
                     .replace("%user%", sender.name)
                     .replace("%id%", id)
                     .replace("%message%", message)
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             creatorAlertPerm = "ticketmanager.NO NODE",
             massNotifyPerm = "ticketmanager.notify.massNotify.create",
@@ -877,7 +873,9 @@ class Commands : SuspendingCommandExecutor {
             try {
                 mainPlugin.pluginState.pluginLocked.set(true)
                 pushMassNotify("ticketmanager.notify.info") {
-                    text { formattedContent(it.informationReloadInitiated.replace("%user%", sender.name)) }
+                    it.informationReloadInitiated
+                        .replace("%user%", sender.name)
+                        .run(::toColouredAdventure)
                 }
 
                 val forceQuitJob = launch {
@@ -886,7 +884,7 @@ class Commands : SuspendingCommandExecutor {
                     // Long standing task has occurred if it reaches this point
                     launch {
                         pushMassNotify("ticketmanager.notify.warning") {
-                            text { formattedContent(it.warningsLongTaskDuringReload) }
+                            it.warningsLongTaskDuringReload.run(::toColouredAdventure)
                         }
                         mainPlugin.pluginState.jobCount.set(1)
                         mainPlugin.asyncDispatcher.cancelChildren()
@@ -899,19 +897,21 @@ class Commands : SuspendingCommandExecutor {
                 if (!forceQuitJob.isCancelled)
                     forceQuitJob.cancel("Tasks closed on time")
 
-                pushMassNotify("ticketmanager.notify.info") { text { formattedContent(it.informationReloadTasksDone) } }
+                pushMassNotify("ticketmanager.notify.info") {
+                    it.informationReloadTasksDone.run(::toColouredAdventure)
+                }
                 configState.database.closeDatabase()
                 mainPlugin.loadPlugin()
 
                 pushMassNotify("ticketmanager.notify.info") {
-                    text { formattedContent(it.informationReloadSuccess) }
+                    it.informationReloadSuccess.run(::toColouredAdventure)
                 }
                 if (!sender.has("ticketmanager.notify.info")) {
-                    sender.sendMessage(text { formattedContent(locale.informationReloadSuccess) })
+                    sender.sendColouredMessage(locale.informationReloadSuccess)
                 }
             } catch (e: Exception) {
                 pushMassNotify("ticketmanager.notify.info") {
-                    text { formattedContent(it.informationReloadFailure) }
+                    it.informationReloadFailure.run(::toColouredAdventure)
                 }
                 throw e
             }
@@ -943,20 +943,20 @@ class Commands : SuspendingCommandExecutor {
             sender = sender,
             basicTicket = ticketHandler,
             creatorLambda = {
-                val content = it.notifyTicketModificationEvent
+                it.notifyTicketModificationEvent
                     .replace("%id%", args[1])
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             senderLambda = {
-                val content = it.notifyTicketReopenSuccess
+                it.notifyTicketReopenSuccess
                     .replace("%id%", args[1])
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             massNotifyLambda = {
-                val content = it.notifyTicketReopenEvent
+                it.notifyTicketReopenEvent
                     .replace("%user%", sender.name)
                     .replace("%id%", args[1])
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             creatorAlertPerm = "ticketmanager.notify.change.reopen",
             massNotifyPerm = "ticketmanager.notify.massNotify.reopen",
@@ -1137,17 +1137,17 @@ class Commands : SuspendingCommandExecutor {
             basicTicket = ticketHandler,
             creatorLambda = null,
             senderLambda = {
-                val content = it.notifyTicketSetPrioritySuccess
+                it.notifyTicketSetPrioritySuccess
                     .replace("%id%", args[1])
                     .replace("%priority%", ticketHandler.run { newPriority.colourCode + newPriority.toLocaledWord(it) })
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             massNotifyLambda = {
-                val content = it.notifyTicketSetPriorityEvent
+                it.notifyTicketSetPriorityEvent
                     .replace("%user%", sender.name)
                     .replace("%id%", args[1])
                     .replace("%priority%", ticketHandler.run { newPriority.colourCode + newPriority.toLocaledWord(it) })
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             creatorAlertPerm = "ticketmanager.notify.change.priority",
             massNotifyPerm =  "ticketmanager.notify.massNotify.priority"
@@ -1281,12 +1281,13 @@ class Commands : SuspendingCommandExecutor {
                     .replace("%time%", action.timestamp.toLargestRelativeTime(locale))
             }
 
-            val entries = fullTicket.actions.asSequence()
+            val finalMSG = fullTicket.actions.asSequence()
                 .map(::formatDeepAction)
-                .map { text { formattedContent(it) } }
+                .map(::toColouredAdventure)
                 .reduce(TextComponent::append)
+                .run(baseComponent::append)
 
-            sender.sendMessage(baseComponent.append(entries))
+            sender.sendMessage(finalMSG)
         }
     }
 

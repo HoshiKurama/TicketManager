@@ -1,10 +1,12 @@
 package com.github.hoshikurama.ticketmanager.common
 
+import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import net.kyori.adventure.extra.kotlin.text
 import java.io.InputStream
 import java.net.URL
 import java.time.Instant
@@ -50,6 +52,8 @@ fun Long.toLargestRelativeTime(locale: TMLocale): String {
         else -> timeAgo.toString() + locale.timeSeconds
     }
 }
+
+fun toColouredAdventure(s: String) = text { formattedContent(s) }
 
 fun relTimeToEpochSecond(relTime: String, locale: TMLocale): Long {
     var seconds = 0L
