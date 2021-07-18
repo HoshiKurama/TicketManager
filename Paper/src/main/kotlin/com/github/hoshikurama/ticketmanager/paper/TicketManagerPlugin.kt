@@ -57,7 +57,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                     configStateI.database.type.name
                 }
             )
-        } //todo add pie chart for database type being used
+        }
 
         // Launches ConfigState initialisation
         launchAsync { loadPlugin() }
@@ -183,7 +183,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                 }
 
                 val checkForPluginUpdate: () -> Boolean? = {
-                    getBoolean("Allow_UpdateChecking", false)
+                    getBoolean("Allow_UpdateChecking", true)
                 }
 
                 val pluginVersion: () -> String = {

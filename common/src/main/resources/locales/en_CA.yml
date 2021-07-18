@@ -90,6 +90,7 @@ Command_Help: 'help'
 Command_History: 'history'
 Command_List: 'list'
 Command_ListAssigned: 'listassigned'
+Command_ListUnassigned: 'listunassigned'
 Command_Reload: 'reload'
 Command_Reopen: 'reopen'
 Command_SilentReopen: 's.reopen'
@@ -106,6 +107,7 @@ Command_DeepView: 'deepview'
 # List Format:
 ListFormat_Header: '%nl%%CC%[TicketManager]&f Viewing All Open Tickets:'
 ListFormat_AssignedHeader: '%nl%%CC%[TicketManager]&f Viewing Open Tickets Assigned to You:'
+ListFormat_UnassignedHeader: '%nl%%CC%[TicketManager]&f Viewing Unassigned Open Tickets:'
 ListFormat_Entry: '%priorityCC%[%ID%] &8[%CC%%creator% &8-> %CC%%assign%&8]&f %comment%'
 #
 # Clickable Text:

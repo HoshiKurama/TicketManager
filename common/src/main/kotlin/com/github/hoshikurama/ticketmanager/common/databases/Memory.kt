@@ -184,6 +184,17 @@ class Memory(
         return openTickets.map { it.id to it.priority.level }.asFlow()
     }
 
+    override suspend fun getUnassignedOpenIDPriorityPairs(): Flow<Pair<Int, Byte>> {
+        val tickets = mapMutex.read.withLock {
+            ticketMap.asSequence()
+                .map { it.value }
+                .filter { it.status == BasicTicket.Status.OPEN }
+                .filter { it.assignedTo == null }
+        }
+
+        return tickets.map { it.id to it.priority.level }.asFlow()
+    }
+
     override suspend fun getIDsWithUpdates(): Flow<Int> {
         return mapMutex.read.withLock {
             ticketMap.asSequence()

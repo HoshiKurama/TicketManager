@@ -154,6 +154,16 @@ class MySQL(
             .forEach { emit(it) }
     }
 
+    override suspend fun getUnassignedOpenIDPriorityPairs(): Flow<Pair<Int, Byte>> = flow {
+        suspendingCon.sendPreparedStatement(
+            query = "SELECT ID, PRIORITY FROM TicketManager_V4_Tickets WHERE STATUS = ? AND ASSIGNED_TO IS NULL",
+            values = listOf(BasicTicket.Status.OPEN.name)
+        )
+            .rows
+            .map { it.getInt(0)!! to it.getByte(1)!! }
+            .forEach { emit(it) }
+    }
+
     override suspend fun getIDsWithUpdates(): Flow<Int> = flow {
         suspendingCon.sendPreparedStatement(
             query = "SELECT ID FROM TicketManager_V4_Tickets WHERE STATUS_UPDATE_FOR_CREATOR = ?;",

@@ -144,6 +144,19 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         }.asFlow()
     }
 
+    override suspend fun getUnassignedOpenIDPriorityPairs(): Flow<Pair<Int, Byte>> {
+        return using(getSession()) { session ->
+            session.run(
+                queryOf(
+                    "SELECT ID, PRIORITY FROM TicketManager_V4_Tickets WHERE STATUS = ? AND ASSIGNED_TO IS NULL",
+                    BasicTicket.Status.OPEN.name
+                )
+                    .map { it.int(1) to it.byte(2) }
+                    .asList
+            )
+        }.asFlow()
+    }
+
     override suspend fun getIDsWithUpdates(): Flow<Int> {
         return using(getSession()) { session ->
             session.run(

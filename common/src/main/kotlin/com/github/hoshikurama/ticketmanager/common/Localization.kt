@@ -64,9 +64,6 @@ class TMLocale(
     val viewFormatDeepClose: String
     val viewFormatDeepMassClose: String
 
-    // List Format:
-    val listFormatAssignedHeader: String
-
     // Search Format:
     val searchFormatHeader: String
     val searchFormatEntry: String
@@ -122,6 +119,7 @@ class TMLocale(
     val commandWordHistory: String
     val commandWordList: String
     val commandWordListAssigned: String
+    val commandWordListUnassigned: String
     val commandWordReopen: String
     val commandWordSilentReopen: String
     val commandWordSearch: String
@@ -161,6 +159,8 @@ class TMLocale(
 
     // List Format
     val listFormatHeader: String
+    val listFormatAssignedHeader: String
+    val listFormatUnassignedHeader: String
     val listFormatEntry: String
 
     // Click Events
@@ -405,5 +405,7 @@ class TMLocale(
         notifyPluginUpdate = matchOrDefault("Notify_Event_PluginUpdate")
         warningsLongTaskDuringReload = matchOrDefault("Warning_LongTaskDuringReload")
         informationReloadFailure = matchOrDefault("Info_ReloadFailure")
+        listFormatUnassignedHeader = matchOrDefault("ListFormat_UnassignedHeader")
+        commandWordListUnassigned = matchOrDefault("Command_ListUnassigned")
     }
 }

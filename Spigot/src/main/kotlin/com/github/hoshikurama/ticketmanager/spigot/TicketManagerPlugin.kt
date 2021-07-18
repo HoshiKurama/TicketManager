@@ -35,7 +35,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
     override fun onEnable() {
 
         // Find Vault plugin
-        server.servicesManager.getRegistration(Permission::class.java)?.provider
+        Bukkit.getServer().servicesManager.getRegistration(Permission::class.java)?.provider
             ?.let { perms = it }
             ?: this.pluginLoader.disablePlugin(this)
 
@@ -62,7 +62,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
         launchAsync { loadPlugin() }
 
         // Register Event
-        server.pluginManager.registerSuspendingEvents(PlayerJoin(), plugin)
+        Bukkit.getServer().pluginManager.registerSuspendingEvents(PlayerJoin(), plugin)
 
         // Creates task timers
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, Runnable {
@@ -184,7 +184,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                 }
 
                 val checkForPluginUpdate: () -> Boolean? = {
-                    getBoolean("Allow_UpdateChecking", false)
+                    getBoolean("Allow_UpdateChecking", true)
                 }
 
                 val pluginVersion: () -> String = {

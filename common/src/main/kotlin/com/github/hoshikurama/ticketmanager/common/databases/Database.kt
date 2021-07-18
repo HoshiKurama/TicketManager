@@ -37,6 +37,7 @@ interface Database {
     // Collections of tickets
     suspend fun getOpenIDPriorityPairs(): Flow<Pair<Int, Byte>>
     suspend fun getAssignedOpenIDPriorityPairs(assignment: String, unfixedGroupAssignment: List<String>): Flow<Pair<Int, Byte>>
+    suspend fun getUnassignedOpenIDPriorityPairs(): Flow<Pair<Int, Byte>>
     suspend fun getIDsWithUpdates(): Flow<Int>
     suspend fun getIDsWithUpdatesFor(uuid: UUID): Flow<Int>
     suspend fun getBasicTickets(ids: List<Int>): Flow<BasicTicket>

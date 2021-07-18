@@ -27,9 +27,8 @@ class TabComplete: TabCompleter {
         sender: CommandSender,
         args: List<String>
     ): List<String> {
-        val blankList = listOf("")
 
-        if (!sender.has("ticketmanager.commandArg.autotab") && sender is Player) return blankList
+        if (!sender.has("ticketmanager.commandArg.autotab") && sender is Player) return listOf("")
         val locale = sender.toTMLocale()
         val perms = LazyPermissions(locale, sender)
 
@@ -93,7 +92,7 @@ class TabComplete: TabCompleter {
                     else -> listOf("")
                 }
 
-                commandWordList, commandWordListAssigned -> when { // /ticket list(assigned) [Page]
+                commandWordList, commandWordListAssigned, commandWordListUnassigned -> when { // /ticket ListVariation [Page]
                     !perms.hasListVariation -> listOf("")
                     args.size == 2 -> listOf("[$parameterPage]").filter { it.startsWith(args[1]) }
                     else -> listOf("")
@@ -294,6 +293,7 @@ class TabComplete: TabCompleter {
                 locale.commandWordHistory to hasHistory,
                 locale.commandWordList to hasListVariation,
                 locale.commandWordListAssigned to hasListVariation,
+                locale.commandWordListUnassigned to hasListVariation,
                 locale.commandWordReload to hasReload,
                 locale.commandWordReopen to hasReopen,
                 locale.commandWordSilentReopen to (hasReopen && hasSilent),

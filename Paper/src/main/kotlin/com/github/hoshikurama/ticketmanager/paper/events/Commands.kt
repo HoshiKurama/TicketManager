@@ -147,8 +147,7 @@ class Commands : SuspendingCommandExecutor {
                    commandWordCreate -> has("ticketmanager.command.create")
                    commandWordHelp -> has("ticketmanager.command.help")
                    commandWordReload -> has("ticketmanager.command.reload")
-                   commandWordList -> has("ticketmanager.command.list")
-                   commandWordListAssigned -> has("ticketmanager.command.list")
+                   commandWordList, commandWordListAssigned, commandWordListUnassigned -> has("ticketmanager.command.list")
                    commandWordReopen -> has("ticketmanager.command.reopen")
                    commandWordSilentReopen -> has("ticketmanager.command.reopen") && hasSilent()
                    commandWordSearch -> has("ticketmanager.command.search")
@@ -235,10 +234,7 @@ class Commands : SuspendingCommandExecutor {
                     check(::invalidCommand) { args.isNotEmpty() }
                         .thenCheck(::notANumber) { if (args.size >= 3) args[2].toIntOrNull() != null else true}
 
-                commandWordList ->
-                    check(::notANumber) { if (args.size == 2) args[1].toIntOrNull() != null else true }
-
-                commandWordListAssigned ->
+                commandWordList, commandWordListAssigned, commandWordListUnassigned ->
                     check(::notANumber) { if (args.size == 2) args[1].toIntOrNull() != null else true }
 
                 commandWordSearch -> check(::invalidCommand) { args.size >= 2}
@@ -305,6 +301,7 @@ class Commands : SuspendingCommandExecutor {
                 commandWordHistory -> history(sender, args, senderLocale).let { null }
                 commandWordList -> list(sender, args, senderLocale).let { null }
                 commandWordListAssigned -> listAssigned(sender, args, senderLocale).let { null }
+                commandWordListUnassigned -> listUnassigned(sender, args, senderLocale).let { null }
                 commandWordReload -> reload(sender, senderLocale).let { null }
                 commandWordReopen -> reopen(sender,args, false, ticketHandler)
                 commandWordSilentReopen -> reopen(sender,args, true, ticketHandler)
@@ -739,6 +736,7 @@ class Commands : SuspendingCommandExecutor {
                     Triple(false, "$commandWordHistory &7[$parameterUser] [$parameterPage]", listOf("ticketmanager.command.history.all", "ticketmanager.command.history.own")),
                     Triple(false, "$commandWordList &7[$parameterPage]", listOf("ticketmanager.command.list")),
                     Triple(false, "$commandWordListAssigned &7[$parameterPage]", listOf("ticketmanager.command.list")),
+                    Triple(false, "$commandWordListUnassigned &7[$parameterPage]", listOf("ticketmanager.command.list")),
                     Triple(false, commandWordReload, listOf("ticketmanager.command.reload")),
                     Triple(true, "$commandWordReopen &f<$parameterID>", listOf("ticketmanager.command.reopen")),
                     Triple(false, "$commandWordSearch &f<$parameterConstraints...>", listOf("ticketmanager.command.search")),
@@ -840,12 +838,11 @@ class Commands : SuspendingCommandExecutor {
         args: List<String>,
         locale: TMLocale,
     ) {
-        sender.sendMessage(
-            createGeneralList(args, locale, locale.listFormatHeader,
-                getIDPriorityPair = { it.getOpenIDPriorityPairs() },
-                baseCommand = locale.run{ { "/$commandBase $commandWordList " } }
-            )
+        createGeneralList(args, locale, locale.listFormatHeader,
+            getIDPriorityPair = Database::getOpenIDPriorityPairs,
+            baseCommand = locale.run{ { "/$commandBase $commandWordList " } }
         )
+            .run(sender::sendMessage)
     }
 
     // /ticket listassigned [Page]
@@ -856,12 +853,23 @@ class Commands : SuspendingCommandExecutor {
     ) {
         val groups: List<String> = if (sender is Player) mainPlugin.perms.getPlayerGroups(sender).toList() else listOf()
 
-        sender.sendMessage(
-            createGeneralList(args, locale, locale.listFormatAssignedHeader,
-                getIDPriorityPair = { it.getAssignedOpenIDPriorityPairs(sender.name, groups) },
-                baseCommand = locale.run { { "/$commandBase $commandWordListAssigned " } }
-            )
+        createGeneralList(args, locale, locale.listFormatAssignedHeader,
+            getIDPriorityPair = { it.getAssignedOpenIDPriorityPairs(sender.name, groups) },
+            baseCommand = locale.run { { "/$commandBase $commandWordListAssigned " } }
         )
+            .run(sender::sendMessage)
+    }
+
+    private suspend fun listUnassigned(
+        sender: CommandSender,
+        args: List<String>,
+        locale: TMLocale,
+    ) {
+        createGeneralList(args, locale, locale.listFormatUnassignedHeader,
+            getIDPriorityPair = Database::getUnassignedOpenIDPriorityPairs,
+            baseCommand = locale.run { { "/$commandBase $commandWordListUnassigned " } }
+        )
+            .run(sender::sendMessage)
     }
 
     // /ticket reload
