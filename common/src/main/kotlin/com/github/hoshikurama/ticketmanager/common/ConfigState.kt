@@ -44,6 +44,8 @@ class ConfigState(
                     val latestVersion = UpdateChecker(91178).getLatestVersion()
                         .run { this ?: curVersion }
 
+                    if (curVersion == latestVersion) return@async null
+
                     val curVersSplit = curVersion.split(".").map(String::toInt)
                     val latestVersSplit = latestVersion.split(".").map(String::toInt)
 
