@@ -199,4 +199,13 @@ Notify_Event_TicketModification: '%id%'
 Notify_Event_TicketReopen: '%user%  %id%'
 Notify_Event_SetPriority: '%user%  %id%  %priority%'
 Notify_Event_PluginUpdate: '%current%  %latest%'
+#
+# Discord Notifications
+Discord_OnAssign: '%user%  %num%'
+Discord_OnClose: '%user%  %num%'
+Discord_OnCloseAll: '%user%'
+Discord_OnComment: '%user%  %num%'
+Discord_OnCreate: '%user%  %num%'
+Discord_OnReopen: '%user%  %num%'
+Discord_OnPriorityChange: '%user%  %num%'
 

@@ -5,6 +5,7 @@ import com.github.hoshikurama.ticketmanager.common.databases.Database
 import com.github.hoshikurama.ticketmanager.common.databases.Memory
 import com.github.hoshikurama.ticketmanager.common.databases.MySQL
 import com.github.hoshikurama.ticketmanager.common.databases.SQLite
+import com.github.hoshikurama.ticketmanager.common.discord.Discord
 import com.github.hoshikurama.ticketmanager.spigot.events.Commands
 import com.github.hoshikurama.ticketmanager.spigot.events.PlayerJoin
 import com.github.hoshikurama.ticketmanager.spigot.events.TabComplete
@@ -140,7 +141,9 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
 
             plugin.reloadConfig()
             plugin.config.run {
+                val asyncDispatcher = plugin.asyncDispatcher as CoroutineDispatcher
                 val path = plugin.dataFolder.absolutePath
+
                 val database: () -> Database? = {
                     val type = getString("Database_Mode", "SQLite")!!
                         .let { tryOrNull { Database.Type.valueOf(it) } ?: Database.Type.SQLite }
@@ -152,7 +155,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                             getString("MySQL_DBName")!!,
                             getString("MySQL_Username")!!,
                             getString("MySQL_Password")!!,
-                            asyncDispatcher = (plugin.asyncDispatcher as CoroutineDispatcher),
+                            asyncDispatcher = asyncDispatcher,
                         )
                         Database.Type.SQLite -> SQLite(path)
                         Database.Type.Memory -> Memory(
@@ -191,16 +194,46 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                     mainPlugin.description.version
                 }
 
-                ConfigState.createPluginState(
+                val discord: suspend (TMLocale) -> Discord? = result@{
+                    val enableDiscord = getBoolean("Use_Discord_Bot", false)
+
+                    if (!enableDiscord) return@result null
+
+                    // Discord is enabled...
+                    Discord.create(
+                        getBoolean("Discord_Notify_On_Assign"),
+                        getBoolean("Discord_Notify_On_Close"),
+                        getBoolean("Discord_Notify_On_Close_All"),
+                        getBoolean("Discord_Notify_On_Comment"),
+                        getBoolean("Discord_Notify_On_Create"),
+                        getBoolean("Discord_Notify_On_Reopen"),
+                        getBoolean("Discord_Notify_On_Priority_Change"),
+                        getString("Discord_Bot_Token", "")!!,
+                        getLong("Discord_Channel_ID", -1),
+                        locale = it,
+                        asyncDispatcher = asyncDispatcher,
+                    )
+                }
+
+                val configState = ConfigState.createPluginState(
                     database,
                     cooldown,
                     localeHandler,
                     allowUnreadTicketUpdates,
                     checkForPluginUpdate,
                     pluginVersion,
+                    discord,
                     path,
                     asyncContext
                 )
+
+                // Safely launches Discord coroutine login
+                CoroutineScope(asyncDispatcher).launch {
+                    try { configState.discord?.login() }
+                    catch (e: Exception) { e.printStackTrace() } //Independent from outer coroutine. Must handle exception itself
+                }
+
+                configState
             }
         }
 

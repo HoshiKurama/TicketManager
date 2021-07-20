@@ -2,6 +2,7 @@ package com.github.hoshikurama.ticketmanager.common
 
 import com.github.hoshikurama.ticketmanager.common.databases.Database
 import com.github.hoshikurama.ticketmanager.common.databases.SQLite
+import com.github.hoshikurama.ticketmanager.common.discord.Discord
 import kotlinx.coroutines.*
 import java.time.Instant
 import java.util.*
@@ -12,7 +13,8 @@ class ConfigState(
     val database: Database,
     val localeHandler: LocaleHandler,
     val allowUnreadTicketUpdates: Boolean,
-    val pluginUpdateAvailable: Deferred<Pair<String, String>?>
+    val pluginUpdateAvailable: Deferred<Pair<String, String>?>,
+    val discord: Discord?
 ) {
 
     companion object {
@@ -23,17 +25,31 @@ class ConfigState(
             crossinline allowUnreadTicketUpdates: () -> Boolean?,
             crossinline checkForPluginUpdate: () -> Boolean?,
             crossinline pluginVersion: () -> String,
+            crossinline discord: suspend (TMLocale) -> Discord?,
             absolutePathToPluginFolder: String,
-            context: CoroutineContext
+            context: CoroutineContext,
         ) = withContext(context) {
 
             val deferredCooldown = async { tryOrDefault(cooldown, Cooldown(false, 0)) }
             val deferredAllowUnreadUpdates = async { tryOrDefault(allowUnreadTicketUpdates, true)
             }
+
             val deferredDatabase = async {
                 tryOrDefault(
                     attempted = { database()?.apply { initialiseDatabase() } },
                     default = SQLite(absolutePathToPluginFolder)
+                )
+            }
+
+            val deferredLocaleHandler = async {
+                tryOrDefaultSuspend(localeHandler,
+                    LocaleHandler.buildLocalesAsync(
+                        mainColourCode = "&3",
+                        preferredLocale = "en_ca",
+                        console_Locale = "en_ca",
+                        forceLocale = false,
+                        context = context
+                    )
                 )
             }
 
@@ -58,16 +74,9 @@ class ConfigState(
                 return@async null
             }
 
-            val deferredLocaleHandler = async {
-                tryOrDefaultSuspend(localeHandler,
-                    LocaleHandler.buildLocalesAsync(
-                        mainColourCode = "&3",
-                        preferredLocale = "en_ca",
-                        console_Locale = "en_ca",
-                        forceLocale = false,
-                        context = context
-                    )
-                )
+            val deferredDiscord = async {
+                try { discord.invoke(deferredLocaleHandler.await().consoleLocale) }
+                catch (e: Exception) { null }
             }
 
             ConfigState(
@@ -75,7 +84,8 @@ class ConfigState(
                 database = deferredDatabase.await(),
                 localeHandler = deferredLocaleHandler.await(),
                 allowUnreadTicketUpdates = deferredAllowUnreadUpdates.await(),
-                pluginUpdateAvailable = deferredPluginUpdate
+                pluginUpdateAvailable = deferredPluginUpdate,
+                discord = deferredDiscord.await()
             )
         }
     }

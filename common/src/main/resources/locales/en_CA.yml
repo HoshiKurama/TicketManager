@@ -189,3 +189,12 @@ Notify_Event_TicketModification: '%CC%[TicketManager] Ticket &7#%id%%CC% has bee
 Notify_Event_TicketReopen: '%CC%[TicketManager]&7 %user%%CC% reopened ticket &7#%id%%CC%.'
 Notify_Event_SetPriority: '%CC%[TicketManager] &7%user%%CC% set ticket &7#%id%%CC% to priority %priority%'
 Notify_Event_PluginUpdate: '%CC%[TicketManager] TicketManager has an update!%nl%  %CC%Current Version: &7%current%%nl%  %CC%Latest Version: &7%latest%'
+#
+# Discord Notifications
+Discord_OnAssign: '%user% assigned ticket #%num%'
+Discord_OnClose: '%user% closed ticket #%num%'
+Discord_OnCloseAll: '%user% mass-closed tickets'
+Discord_OnComment: '%user% commented on ticket #%num%'
+Discord_OnCreate: '%user% created ticket #%num%'
+Discord_OnReopen: '%user% reopened ticket #%num%'
+Discord_OnPriorityChange: '%user% changed priority of ticket #%num%'

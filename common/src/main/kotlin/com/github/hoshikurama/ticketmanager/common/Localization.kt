@@ -243,6 +243,15 @@ class TMLocale(
     val helpLine3: String
     val helpSep: String
 
+    // Discord Notifications
+    val discordOnAssign: String
+    val discordOnClose: String
+    val discordOnCloseAll: String
+    val discordOnComment: String
+    val discordOnCreate: String
+    val discordOnReopen: String
+    val discordOnPriorityChange: String
+
     init {
         val inputStream = this::class.java.classLoader.getResourceAsStream("locales/$locale.yml")
         val contents: Map<String, String> = Yaml().load(inputStream)
@@ -407,5 +416,12 @@ class TMLocale(
         informationReloadFailure = matchOrDefault("Info_ReloadFailure")
         listFormatUnassignedHeader = matchOrDefault("ListFormat_UnassignedHeader")
         commandWordListUnassigned = matchOrDefault("Command_ListUnassigned")
+        discordOnAssign = matchOrDefault("Discord_OnAssign")
+        discordOnClose = matchOrDefault("Discord_OnClose")
+        discordOnCloseAll = matchOrDefault("Discord_OnCloseAll")
+        discordOnComment = matchOrDefault("Discord_OnComment")
+        discordOnCreate = matchOrDefault("Discord_OnCreate")
+        discordOnReopen = matchOrDefault("Discord_OnReopen")
+        discordOnPriorityChange = matchOrDefault("Discord_OnPriorityChange")
     }
 }

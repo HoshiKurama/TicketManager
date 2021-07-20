@@ -23,4 +23,5 @@ dependencies {
     implementation("org.yaml:snakeyaml:1.29")
     implementation("joda-time:joda-time:2.10.10")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
+    implementation("dev.kord:kord-core:0.7.3")
 }

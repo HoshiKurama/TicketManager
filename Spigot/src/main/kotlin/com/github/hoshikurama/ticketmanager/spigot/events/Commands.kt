@@ -392,11 +392,19 @@ class Commands : SuspendingCommandExecutor {
     ): NotifyParams = withContext(asyncContext) {
         val shownAssignment = dbAssignment ?: senderLocale.miscNobody
 
-        launch { ticketHandler.setAssignedTo(dbAssignment) }
-        launch { configState.database.addAction(
+        launchIndependent { ticketHandler.setAssignedTo(dbAssignment) }
+        launchIndependent { configState.database.addAction(
             ticketID = ticketHandler.id,
             action = FullTicket.Action(FullTicket.Action.Type.ASSIGN, sender.toUUIDOrNull(), dbAssignment)
         )}
+
+        if (!silent && configState.discord?.state?.notifyOnAssign == true) {
+            launchIndependent {
+                tryNoCatch {
+                    configState.discord?.assignUpdate(sender.name, assignmentID, shownAssignment)
+                }
+            }
+        }
 
         NotifyParams(
             silent = silent,
@@ -451,7 +459,7 @@ class Commands : SuspendingCommandExecutor {
     ): NotifyParams = withContext(asyncContext) {
         val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && configState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
-            launch { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
+            launchIndependent { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
         }
 
         return@withContext if (args.size >= 3)
@@ -469,7 +477,15 @@ class Commands : SuspendingCommandExecutor {
             .joinToString(" ")
             .run(ChatColor::stripColor)!!
 
-        launch {
+        if (!silent && configState.discord?.state?.notifyOnClose == true) {
+            launchIndependent {
+                tryNoCatch {
+                    configState.discord?.closeUpdate(sender.name, ticketHandler.id.toString(), message)
+                }
+            }
+        }
+
+        launchIndependent {
             configState.database.run {
                 addAction(
                     ticketID = ticketHandler.id,
@@ -512,12 +528,21 @@ class Commands : SuspendingCommandExecutor {
         silent: Boolean,
         ticketHandler: BasicTicketHandler
     ): NotifyParams = withContext(asyncContext) {
-        launch {
+
+        launchIndependent {
             configState.database.addAction(
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.CLOSE, sender.toUUIDOrNull())
             )
             ticketHandler.setTicketStatus(BasicTicket.Status.CLOSED)
+        }
+
+        if (!silent && configState.discord?.state?.notifyOnClose == true) {
+            launchIndependent {
+                tryNoCatch {
+                    configState.discord?.closeUpdate(sender.name, ticketHandler.id.toString())
+                }
+            }
         }
 
         NotifyParams(
@@ -552,7 +577,15 @@ class Commands : SuspendingCommandExecutor {
         val lowerBound = args[1].toInt()
         val upperBound = args[2].toInt()
 
-        launch { configState.database.massCloseTickets(lowerBound, upperBound, sender.toUUIDOrNull(), asyncContext) }
+        launchIndependent { configState.database.massCloseTickets(lowerBound, upperBound, sender.toUUIDOrNull(), asyncContext) }
+
+        if (!silent && configState.discord?.state?.notifyOnCloseAll == true) {
+            launchIndependent {
+                tryNoCatch {
+                    configState.discord?.closeAllUpdate(sender.name, "$lowerBound", "$upperBound")
+                }
+            }
+        }
 
         NotifyParams(
             silent = silent,
@@ -588,14 +621,22 @@ class Commands : SuspendingCommandExecutor {
 
         val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && configState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
-            launch { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
+            launchIndependent { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
         }
 
-        launch {
+        launchIndependent {
             configState.database.addAction(
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.COMMENT, sender.toUUIDOrNull(), message)
             )
+        }
+
+        if (!silent && configState.discord?.state?.notifyOnComment == true) {
+            launchIndependent {
+                tryNoCatch {
+                    configState.discord?.commentUpdate(sender.name, ticketHandler.id.toString(), message)
+                }
+            }
         }
 
         NotifyParams(
@@ -680,6 +721,14 @@ class Commands : SuspendingCommandExecutor {
         val deferredID = async { configState.database.addNewTicket(ticket, asyncContext, message) }
         mainPlugin.pluginState.ticketCountMetrics.run { set(get() + 1) }
         val id = deferredID.await().toString()
+
+        if (configState.discord?.state?.notifyOnCreate == true) {
+            launchIndependent {
+                tryNoCatch {
+                    configState.discord?.createUpdate(sender.name, id, message)
+                }
+            }
+        }
 
         NotifyParams(
             silent = false,
@@ -900,6 +949,7 @@ class Commands : SuspendingCommandExecutor {
 
                 pushMassNotify("ticketmanager.notify.info") { it.informationReloadTasksDone }
                 configState.database.closeDatabase()
+                configState.discord?.shutdown()
                 mainPlugin.loadPlugin()
 
                 pushMassNotify("ticketmanager.notify.info") { it.informationReloadSuccess }
@@ -927,12 +977,20 @@ class Commands : SuspendingCommandExecutor {
         // Updates user status if needed
         val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && configState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
-            launch { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
+            launchIndependent { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
         }
 
-        launch {
+        launchIndependent {
             configState.database.addAction(ticketHandler.id, action)
             ticketHandler.setTicketStatus(BasicTicket.Status.OPEN)
+        }
+
+        if (!silent && configState.discord?.state?.notifyOnReopen == true) {
+            launchIndependent {
+                tryNoCatch {
+                    configState.discord?.reopenUpdate(sender.name, ticketHandler.id.toString())
+                }
+            }
         }
 
         NotifyParams(
@@ -1110,12 +1168,21 @@ class Commands : SuspendingCommandExecutor {
         ticketHandler: BasicTicketHandler,
     ): NotifyParams = withContext(asyncContext) {
         val newPriority = byteToPriority(args[2].toByte())
-        launch {
+
+        launchIndependent {
             configState.database.addAction(
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.SET_PRIORITY, sender.toUUIDOrNull(), args[2])
             )
             ticketHandler.setTicketPriority(newPriority)
+        }
+
+        if (!silent && configState.discord?.state?.notifyOnPriorityChange == true) {
+            launchIndependent {
+                tryNoCatch {
+                    configState.discord?.priorityChangeUpdate(sender.name, ticketHandler.id.toString(), newPriority)
+                }
+            }
         }
 
         NotifyParams(
@@ -1201,7 +1268,7 @@ class Commands : SuspendingCommandExecutor {
             val baseComponent = buildTicketInfoComponent(fullTicket, locale)
 
             if (!sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && ticketHandler.creatorStatusUpdate)
-                launch { ticketHandler.setCreatorStatusUpdate(false) }
+                launchIndependent { ticketHandler.setCreatorStatusUpdate(false) }
 
             // Entries
             fullTicket.actions.asSequence()
@@ -1230,7 +1297,7 @@ class Commands : SuspendingCommandExecutor {
             val baseComponent = buildTicketInfoComponent(fullTicket, locale)
 
             if (!sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && ticketHandler.creatorStatusUpdate)
-                launch { ticketHandler.setCreatorStatusUpdate(false) }
+                launchIndependent { ticketHandler.setCreatorStatusUpdate(false) }
 
             fun formatDeepAction(action: FullTicket.Action): String {
                 val result = when (action.type) {
@@ -1456,3 +1523,9 @@ private fun TextComponent.convertToClickToView(id: Int, locale: TMLocale): TextC
     this.addExtra(contentStop)
     return this
 }
+
+private inline fun tryNoCatch(f: () -> Unit) =
+    try { f() }
+    catch(e: Exception) {}
+
+private suspend inline fun launchIndependent(crossinline f: suspend CoroutineScope.() -> Unit) = CoroutineScope(asyncDispatcher).launch { f(this) }
