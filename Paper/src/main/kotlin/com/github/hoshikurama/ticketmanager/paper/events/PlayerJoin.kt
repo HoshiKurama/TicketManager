@@ -1,12 +1,9 @@
 package com.github.hoshikurama.ticketmanager.paper.events
 
 import com.github.hoshikurama.componentDSL.formattedContent
-import com.github.hoshikurama.ticketmanager.paper.configState
-import com.github.hoshikurama.ticketmanager.paper.has
-import com.github.hoshikurama.ticketmanager.paper.mainPlugin
-import com.github.hoshikurama.ticketmanager.paper.toTMLocale
+import com.github.hoshikurama.ticketmanager.paper.*
 import com.github.shynixn.mccoroutine.asyncDispatcher
-import com.github.shynixn.mccoroutine.minecraftDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -19,8 +16,8 @@ import org.bukkit.event.player.PlayerJoinEvent
 class PlayerJoin : Listener  {
 
     @EventHandler
-    suspend fun onPlayerJoin(event: PlayerJoinEvent) = withContext(mainPlugin.minecraftDispatcher) {
-        if (mainPlugin.pluginState.pluginLocked.get()) return@withContext
+    suspend fun onPlayerJoin(event: PlayerJoinEvent) = CoroutineScope(asyncDispatcher).launch {
+        if (mainPlugin.pluginState.pluginLocked.get()) return@launch
         val player = event.player
 
         withContext(mainPlugin.asyncDispatcher) {
