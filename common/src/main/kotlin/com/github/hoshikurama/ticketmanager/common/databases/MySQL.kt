@@ -409,7 +409,7 @@ class MySQL(
     private suspend fun tableExists(table: String): Boolean {
         suspendingCon.sendQuery("SHOW TABLES;").rows
             .forEach {
-                if (it.getString(0) == table.lowercase())
+                if (it.getString(0)!!.lowercase() == table.lowercase())
                     return true
             }
         return false

@@ -451,7 +451,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
     private fun tableExists(table: String, session: Session): Boolean {
         return using(session.connection.underlying.metaData.getTables(null, null, table, null)) {
             while (it.next())
-                if (it.getString("TABLE_NAME")?.equals(table) == true) return@using true
+                if (it.getString("TABLE_NAME")?.lowercase()?.equals(table.lowercase()) == true) return@using true
             return@using false
         }
     }
