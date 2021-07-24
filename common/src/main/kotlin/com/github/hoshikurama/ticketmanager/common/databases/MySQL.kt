@@ -211,9 +211,12 @@ class MySQL(
             .rows
             .map { it.toBasicTicket() }
             .asFlow()
-            .buffer(10)
-            .onEach { delay(100) }
-            .map { it.toFullTicket() }
+            .map {
+                withContext(context) {
+                    async { it.toFullTicket() }
+                }
+            }
+            .map { it.await() }
             .collect { emit(it) }
     }
 
