@@ -330,7 +330,7 @@ class MySQL(
             }
 
             Database.Type.Memory -> {
-                val memory = sqLiteBuilder()
+                val memory = memoryBuilder()
                 memory.initialiseDatabase()
 
                 // Gets all tables from MySQL
