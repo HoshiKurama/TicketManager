@@ -13,6 +13,7 @@ import com.github.hoshikurama.ticketmanager.common.ticket.*
 import com.github.hoshikurama.ticketmanager.paper.*
 import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
 import com.github.shynixn.mccoroutine.asyncDispatcher
+import com.github.shynixn.mccoroutine.minecraftDispatcher
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
@@ -1232,13 +1233,15 @@ class Commands : SuspendingCommandExecutor {
     }
 
     // /ticket teleport <ID>
-    private fun teleport(
+    private suspend fun teleport(
         sender: CommandSender,
         basicTicket: BasicTicket,
     ) {
         if (sender is Player && basicTicket.location != null) {
             val loc = basicTicket.location!!.run { Location(Bukkit.getWorld(world), x.toDouble(), y.toDouble(), z.toDouble()) }
-            sender.teleportAsync(loc)
+            withContext(mainPlugin.minecraftDispatcher) {
+                sender.teleport(loc)
+            }
         }
     }
 
