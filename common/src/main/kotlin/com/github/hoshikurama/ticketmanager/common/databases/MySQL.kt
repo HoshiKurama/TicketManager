@@ -15,10 +15,7 @@ import com.github.jasync.sql.db.mysql.MySQLConnectionBuilder
 import com.github.jasync.sql.db.mysql.MySQLQueryResult
 import com.github.jasync.sql.db.util.ExecutorServiceUtils
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.*
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.Executor
@@ -209,16 +206,15 @@ class MySQL(
 
     override suspend fun getFullTickets(ids: List<Int>, context: CoroutineContext): Flow<FullTicket> = flow {
         val idsSQL = ids.joinToString(", ") { "$it" }
-        suspendingCon.sendQuery("SELECT * FROM TicketManager_V4_Tickets WHERE ID IN ($idsSQL);")
+
+        suspendingCon.sendQuery("SELECT * FROM TicketManager_V4_Tickets WHERE ID IN ($idsSQL) ORDER BY PRIORITY DESC, ID DESC;")
             .rows
             .map { it.toBasicTicket() }
-            .map {
-                withContext(context) {
-                    async { it.toFullTicket() }
-                }
-            }
-            .map { it.await() }
-            .forEach { emit(it) }
+            .asFlow()
+            .buffer(10)
+            .onEach { delay(100) }
+            .map { it.toFullTicket() }
+            .collect { emit(it) }
     }
 
     override suspend fun searchDatabase(
