@@ -95,7 +95,11 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
 
                     val openPriority = configStateI.database.getOpenIDPriorityPairs().map { it.first }.toList()
                     val openCount = openPriority.count()
-                    val assignments = configStateI.database.getBasicTickets(openPriority).mapNotNull { it.assignedTo }.toList()
+
+                    // Gets associated tickets
+                    val assignments =
+                        if (openCount == 0) listOf()
+                        else configStateI.database.getBasicTickets(openPriority).mapNotNull { it.assignedTo }.toList()
 
                     // Open and Assigned Notify
                     Bukkit.getOnlinePlayers().asFlow()
@@ -103,9 +107,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                         .onEach { p ->
                             launch {
                                 val groups = perms.getPlayerGroups(p).map { "::$it" }
-                                val assignedCount = assignments
-                                    .filter { it == p.name || it in groups }
-                                    .count()
+                                val assignedCount = assignments.count { it == p.name || it in groups }
 
                                 val sentMessage = p.toTMLocale().notifyOpenAssigned
                                     .replace("%open%", "$openCount")

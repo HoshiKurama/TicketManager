@@ -78,7 +78,7 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                     if (configStateI.allowUnreadTicketUpdates) {
                         Bukkit.getOnlinePlayers().asFlow()
                             .filter { it.has("ticketmanager.notify.unreadUpdates.scheduled") }
-                            .onEach {
+                            .collect {
                                launch {
                                    val ticketIDs = configStateI.database.getIDsWithUpdatesFor(it.uniqueId).toList()
                                    val tickets = ticketIDs.joinToString(", ")
@@ -89,29 +89,31 @@ class TicketManagerPlugin : SuspendingJavaPlugin() {
                                    else it.toTMLocale().notifyUnreadUpdateSingle
 
                                    val sentMessage = template.replace("%num%", tickets)
-                                   it.sendMessage(text { formattedContent(sentMessage) })
+                                   it.sendColouredMessage(sentMessage)
                                }
                             }
                     }
 
                     val openPriority = configStateI.database.getOpenIDPriorityPairs().map { it.first }.toList()
                     val openCount = openPriority.count()
-                    val assignments = configStateI.database.getBasicTickets(openPriority).mapNotNull { it.assignedTo }.toList()
+
+                    // Gets associated tickets
+                    val assignments =
+                        if (openCount == 0) listOf()
+                        else configStateI.database.getBasicTickets(openPriority).mapNotNull { it.assignedTo }.toList()
 
                     // Open and Assigned Notify
                     Bukkit.getOnlinePlayers().asFlow()
                         .filter { it.has("ticketmanager.notify.openTickets.scheduled") }
-                        .onEach { p ->
+                        .collect { p ->
                             launch {
                                 val groups = perms.getPlayerGroups(p).map { "::$it" }
-                                val assignedCount = assignments
-                                    .filter { it == p.name || it in groups }
-                                    .count()
+                                val assignedCount = assignments.count { it == p.name || it in groups }
 
                                 val sentMessage = p.toTMLocale().notifyOpenAssigned
                                     .replace("%open%", "$openCount")
                                     .replace("%assigned%", "$assignedCount")
-                                p.sendMessage(text { formattedContent(sentMessage) })
+                                p.sendColouredMessage(sentMessage)
                             }
                         }
                 } catch (e: Exception) {
