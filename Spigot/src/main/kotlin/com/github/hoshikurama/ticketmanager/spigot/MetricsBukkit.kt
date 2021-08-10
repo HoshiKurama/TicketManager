@@ -171,6 +171,7 @@ class Metrics(plugin: JavaPlugin, serviceId: Int) {
         }
 
         /** Checks that the class was properly relocated.  */
+        @OptIn(ExperimentalStdlibApi::class)
         private fun checkRelocation() {
             // You can use the property to disable the check in your test environment
             if (System.getProperty("bstats.relocatecheck") == null
@@ -709,6 +710,7 @@ class Metrics(plugin: JavaPlugin, serviceId: Int) {
              * @param value The value to escape.
              * @return The escaped value.
              */
+            @OptIn(ExperimentalStdlibApi::class)
             private fun escape(value: String): String {
                 val builder = StringBuilder()
                 for (i in 0 until value.length) {
