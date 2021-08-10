@@ -10,7 +10,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 
 class PaperTabComplete(
-    private val mainPlugin: PaperTicketManagerPlugin,
+    private val pluginData: PaperTicketManagerPlugin,
     private val perms: Permission
 ) : TabComplete(), Listener {
 
@@ -24,8 +24,8 @@ class PaperTabComplete(
 
             val sender = event.sender
             val tmSender: Sender =
-                if (sender is Player) PaperPlayer(sender, mainPlugin, perms)
-                else PaperConsole(mainPlugin.configState.localeHandler.consoleLocale)
+                if (sender is Player) PaperPlayer(sender, pluginData, perms)
+                else PaperConsole(pluginData.configState.localeHandler.consoleLocale)
 
             event.completions = getReturnedTabs(tmSender, args)
         }

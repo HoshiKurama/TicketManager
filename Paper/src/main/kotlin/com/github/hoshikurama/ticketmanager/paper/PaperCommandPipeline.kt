@@ -105,6 +105,7 @@ class PaperConsole(
     consoleLocale: TMLocale
 ) : Console() {
     override val locale = consoleLocale
+    override val name = locale.consoleName
 
     override fun sendMessage(msg: String) {
         text { formattedContent(msg) }
@@ -114,7 +115,4 @@ class PaperConsole(
     override fun sendMessage(component: Component) {
         Bukkit.getConsoleSender().sendMessage(component)
     }
-
-    override val name = locale.consoleName
 }
-

@@ -63,7 +63,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            //postModifiedStacktrace(e) todo
+            pluginData.postModifiedStacktrace(e)
             sender.sendMessage(senderLocale.warningsUnexpectedError)
         } finally {
             pluginData.jobCount.run { set(get() - 1) }
@@ -1514,7 +1514,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
     abstract fun stripColour(msg: String): String
     abstract fun offlinePlayerNameToUUIDOrNull(name: String): UUID?
     abstract fun uuidToName(uuid: UUID?, locale: TMLocale): String
-    abstract fun teleportToTicketLocation(player: Player, location: BasicTicket.TicketLocation)
+    abstract fun teleportToTicketLocation(player: Player, loc: BasicTicket.TicketLocation)
 }
 
 /*-------------------------*/

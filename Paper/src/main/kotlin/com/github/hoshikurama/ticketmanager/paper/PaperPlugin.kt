@@ -12,7 +12,7 @@ import kotlinx.coroutines.runBlocking
 import net.milkbowl.vault.permission.Permission
 import org.bukkit.Bukkit
 
-class PaperPlugin: SuspendingJavaPlugin() {
+class PaperPlugin : SuspendingJavaPlugin() {
     private lateinit var ticketManagerPlugin: PaperTicketManagerPlugin
     internal lateinit var perms: Permission
     private lateinit var metrics: Metrics
@@ -23,6 +23,7 @@ class PaperPlugin: SuspendingJavaPlugin() {
             ?.let { perms = it }
             ?: this.pluginLoader.disablePlugin(this)
 
+        // Creates Platform object
         ticketManagerPlugin = PaperTicketManagerPlugin(
             this,
             minecraftDispatcher as CoroutineDispatcher,

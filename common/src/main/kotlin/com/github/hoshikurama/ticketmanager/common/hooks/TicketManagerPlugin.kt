@@ -1,6 +1,7 @@
 package com.github.hoshikurama.ticketmanager.common.hooks
 
 
+import com.github.hoshikurama.componentDSL.buildComponent
 import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.common.ConfigState
 import com.github.hoshikurama.ticketmanager.common.MutexControlled
@@ -120,7 +121,7 @@ abstract class TicketManagerPlugin<T>(
 
             } catch (e: Exception) {
                 e.printStackTrace()
-                //postModifiedStacktrace(e)
+                postModifiedStacktrace(e)
             }
         }
     }
@@ -130,5 +131,33 @@ abstract class TicketManagerPlugin<T>(
 
     abstract suspend fun loadConfig(): ConfigState
     abstract suspend fun performRegistration()
+    suspend fun postModifiedStacktrace(e: Exception) {
+        commandPipeline.getOnlinePlayers()
+            .filter { it.has("ticketmanager.notify.warning") }
+            .collect { p ->
+                p.sendMessage(
+                    buildComponent {
+                        // Builds header
+                        listOf(
+                            p.locale.stacktraceLine1,
+                            p.locale.stacktraceLine2.replace("%exception%", e.javaClass.simpleName),
+                            p.locale.stacktraceLine3.replace("%message%", e.message ?: "?"),
+                            p.locale.stacktraceLine4,
+                        )
+                            .forEach { text { formattedContent(it) } }
 
+                        // Adds stacktrace entries
+                        e.stackTrace
+                            .filter { it.className.startsWith("com.github.hoshikurama.ticketmanager") }
+                            .map {
+                                p.locale.stacktraceEntry
+                                    .replace("%method%", it.methodName)
+                                    .replace("%file%", it.fileName ?: "?")
+                                    .replace("%line%", "${it.lineNumber}")
+                            }
+                            .forEach { text { formattedContent(it) } }
+                  }
+              )
+            }
+    }
 }
