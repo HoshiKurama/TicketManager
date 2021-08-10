@@ -1,41 +1,22 @@
-package com.github.hoshikurama.ticketmanager.paper.events
+package com.github.hoshikurama.ticketmanager.common.hooks
 
-import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent
-import com.github.hoshikurama.ticketmanager.common.TMLocale
-import com.github.hoshikurama.ticketmanager.common.databases.Database
-import com.github.hoshikurama.ticketmanager.paper.has
-import com.github.hoshikurama.ticketmanager.paper.mainPlugin
-import com.github.hoshikurama.ticketmanager.paper.toTMLocale
-import org.bukkit.Bukkit
-import org.bukkit.World
-import org.bukkit.command.CommandSender
-import org.bukkit.entity.Player
-import org.bukkit.event.EventHandler
-import org.bukkit.event.Listener
+import com.github.hoshikurama.ticketmanager.common.database.Database
 
-class TabComplete: Listener {
-    @EventHandler
-    fun onTabCompleteAsync(event: AsyncTabCompleteEvent) {
-        if (event.buffer.startsWith("/ticket ")) {
-            val args = event.buffer
-                .replace(" +".toRegex(), " ")
-                .split(" ")
-                .run { subList(1, this.size) }
+abstract class TabComplete {
 
-            event.completions = tabCompleteFunction(event.sender, args).toMutableList()
-        }
-    }
+    abstract fun getPermissionGroups(): List<String>
+    abstract fun getOfflinePlayerNames(): List<String>
+    abstract fun getOnlineSeenPlayerNames(sender: Sender): List<String>
+    abstract fun getWorldNames(): List<String>
 
-    private fun tabCompleteFunction(
-        sender: CommandSender,
-        args: List<String>
+    fun getReturnedTabs(
+        sender: Sender,
+        args: List<String>,
     ): List<String> {
-
         if (!sender.has("ticketmanager.commandArg.autotab") && sender is Player) return listOf("")
-        val locale = sender.toTMLocale()
-        val perms = LazyPermissions(locale, sender)
+        val perms = LazyPermissions(sender)
 
-        return locale.run {
+        return sender.locale.run {
             if (args.size <= 1) return@run perms.getPermissiveCommands()
                 .filter { it.startsWith(args[0]) }
 
@@ -45,8 +26,8 @@ class TabComplete: Listener {
                     args.size == 2 -> listOf("<$parameterID>")
                         .filter { it.startsWith(args[1]) }
                     args.size == 3 -> {
-                        val groups = mainPlugin.perms.groups.map { "::$it" }
-                        (listOf("<$parameterAssignment...>") + offlinePlayerNames() + groups + listOf(locale.consoleName))
+                        val groups = getPermissionGroups().map { "::$it" }
+                        (listOf("<$parameterAssignment...>") + getOfflinePlayerNames() + groups + listOf(consoleName))
                             .filter { it.startsWith(args[2]) }
                     }
                     else -> listOf("")
@@ -61,7 +42,7 @@ class TabComplete: Listener {
                 commandWordClose, commandWordSilentClose -> when { // /ticket close <ID> [Comment...]
                     !perms.hasClose -> listOf("")
                     args.size == 2 -> listOf("<$parameterID>").filter { it.startsWith(args[1]) }
-                    else -> (listOf("[$parameterComment...]") + onlineSeenPlayers(sender))
+                    else -> (listOf("[$parameterComment...]") + getOnlineSeenPlayerNames(sender))
                         .filter { it.startsWith(args[args.lastIndex]) }
                 }
 
@@ -75,13 +56,13 @@ class TabComplete: Listener {
                 commandWordComment, commandWordSilentComment -> when { // /ticket comment <ID> <Comment…>
                     !perms.hasComment -> listOf("")
                     args.size == 2 -> listOf("<$parameterID>").filter { it.startsWith(args[1]) }
-                    else -> (listOf("<$parameterComment...>") + onlineSeenPlayers(sender))
+                    else -> (listOf("<$parameterComment...>") + getOnlineSeenPlayerNames(sender))
                         .filter { it.startsWith(args[args.lastIndex]) }
                 }
 
                 commandWordCreate -> when { // /ticket create <Message…>
                     !perms.hasCreate -> listOf("")
-                    else -> (listOf("<$parameterComment...>") + onlineSeenPlayers(sender))
+                    else -> (listOf("<$parameterComment...>") + getOnlineSeenPlayerNames(sender))
                         .filter { it.startsWith(args[args.lastIndex]) }
                 }
 
@@ -89,7 +70,7 @@ class TabComplete: Listener {
 
                 commandWordHistory -> when { // /ticket history [User] [Page]
                     !perms.hasHistory -> listOf("")
-                    args.size == 2 -> (listOf("[$parameterUser]", locale.consoleName) + offlinePlayerNames())
+                    args.size == 2 -> (listOf("[$parameterUser]", consoleName) + getOfflinePlayerNames())
                         .filter { it.startsWith(args[1]) }
                     args.size == 3 -> listOf("[$parameterPage]").filter { it.startsWith(args[2]) }
                     else -> listOf("")
@@ -147,7 +128,7 @@ class TabComplete: Listener {
                     val splitArgs = curArgument.split(":", limit = 2)
 
                     if (splitArgs.size < 2)
-                        return@run locale.run {
+                        return@run run {
                             listOf(
                                 "$searchAssigned:",
                                 "$searchCreator:",
@@ -165,14 +146,14 @@ class TabComplete: Listener {
                     // String now has form "constraint:"
                     return@run when (splitArgs[0]) {
                         searchAssigned -> {
-                            val groups = mainPlugin.perms.groups.map { "::$it" }
-                            (offlinePlayerNames() + groups)
+                            val groups = getPermissionGroups().map { "::$it" }
+                            (getOfflinePlayerNames() + groups)
                                 .filter { it.startsWith(splitArgs[1]) }
                                 .map { "${splitArgs[0]}:$it" }
                         }
 
                         searchCreator, searchLastClosedBy, searchClosedBy -> {
-                            (offlinePlayerNames() + listOf(locale.consoleName))
+                            (getOfflinePlayerNames() + listOf(consoleName))
                                 .filter { it.startsWith(splitArgs[1]) }
                                 .map { "${splitArgs[0]}:$it" }
                         }
@@ -183,32 +164,29 @@ class TabComplete: Listener {
                                 .map { "${splitArgs[0]}:$it" }
                         }
 
-                        locale.searchStatus -> {
-                            listOf(locale.statusOpen, locale.statusClosed)
+                        searchStatus -> {
+                            listOf(statusOpen, statusClosed)
                                 .filter { it.startsWith(splitArgs[1]) }
                                 .map { "${splitArgs[0]}:$it" }
                         }
 
                         searchWorld -> {
-                            Bukkit.getWorlds()
-                                .map(World::getName)
+                            getWorldNames()
                                 .filter { it.startsWith(splitArgs[1]) }
                                 .map { "${splitArgs[0]}:$it" }
                         }
 
                         searchTime -> {
-                            locale.run {
-                                listOf(
-                                    searchTimeSecond,
-                                    searchTimeMinute,
-                                    searchTimeHour,
-                                    searchTimeDay,
-                                    searchTimeWeek,
-                                    searchTimeYear
-                                )
-                            }
-                                .filter { curArgument.last().digitToIntOrNull() != null }
-                                .map { "${splitArgs[0]}:${splitArgs[1]}$it" }
+                            listOf(
+                                searchTimeSecond,
+                                searchTimeMinute,
+                                searchTimeHour,
+                                searchTimeDay,
+                                searchTimeWeek,
+                                searchTimeYear
+                            )
+                            .filter { curArgument.last().digitToIntOrNull() != null }
+                            .map { "${splitArgs[0]}:${splitArgs[1]}$it" }
                         }
 
                         searchKeywords -> listOf(curArgument)
@@ -231,19 +209,7 @@ class TabComplete: Listener {
         }
     }
 
-    private fun onlineSeenPlayers(sender: CommandSender): List<String> {
-        return if (sender is Player)
-            Bukkit.getOnlinePlayers()
-                .filter(sender::canSee)
-                .map { it.name }
-        else Bukkit.getOnlinePlayers()
-            .map { it.name }
-    }
-
-    private fun offlinePlayerNames() = Bukkit.getOfflinePlayers().mapNotNull { it.name }.toList()
-
-
-    class LazyPermissions(private val locale: TMLocale, private val sender: CommandSender) {
+    class LazyPermissions(private val sender: Sender) {
         val hasAssignVariation by lazy { sender.has("ticketmanager.command.assign") }
         val hasCreate by lazy { sender.has("ticketmanager.command.create") }
         val hasListVariation by lazy { sender.has("ticketmanager.command.list") }
@@ -279,6 +245,7 @@ class TabComplete: Listener {
 
 
         fun getPermissiveCommands(): List<String> {
+            val locale = sender.locale
             return mapOf(
                 locale.commandWordAssign to hasAssignVariation,
                 locale.commandWordSilentAssign to (hasAssignVariation && hasSilent),

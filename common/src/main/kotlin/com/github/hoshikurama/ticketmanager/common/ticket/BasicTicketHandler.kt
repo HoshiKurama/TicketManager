@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common.ticket
 
-import com.github.hoshikurama.ticketmanager.common.databases.Database
+import com.github.hoshikurama.ticketmanager.common.database.Database
 
 class BasicTicketHandler(
     private val basicTicket: BasicTicket,

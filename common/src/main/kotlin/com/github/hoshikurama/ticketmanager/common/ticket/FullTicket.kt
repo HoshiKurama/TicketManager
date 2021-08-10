@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common.ticket
 
-import com.github.hoshikurama.ticketmanager.common.databases.Database
+import com.github.hoshikurama.ticketmanager.common.database.Database
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind

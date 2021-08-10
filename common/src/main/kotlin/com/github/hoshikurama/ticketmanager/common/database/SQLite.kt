@@ -1,4 +1,4 @@
-package com.github.hoshikurama.ticketmanager.common.databases
+package com.github.hoshikurama.ticketmanager.common.database
 
 import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.byteToPriority
@@ -6,10 +6,10 @@ import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.ConcreteBasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.toTicketLocation
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotliquery.*
 import java.sql.DriverManager
 import java.time.Instant
@@ -79,7 +79,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         }
     }
 
-    override suspend fun addNewTicket(basicTicket: BasicTicket, context: CoroutineContext, message: String): Int {
+    override suspend fun addNewTicket(basicTicket: BasicTicket, scope: CoroutineScope, message: String): Int {
         return using(getSession()) { session ->
             val id = writeTicket(basicTicket, session)!!.toInt()
             writeAction(FullTicket.Action(FullTicket.Action.Type.OPEN, basicTicket.creatorUUID, message), id, session)
@@ -87,7 +87,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         }
     }
 
-    override suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?, context: CoroutineContext) {
+    override suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?, scope: CoroutineScope) {
         using(getSession()) { session ->
 
             val idStatusPairs = session.run(queryOf("SELECT ID, STATUS FROM TicketManager_V4_Tickets WHERE ID BETWEEN $lowerBound AND $upperBound;")
@@ -198,7 +198,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
                 .asFlow()
     }
 
-    override suspend fun getFullTickets(ids: List<Int>, context: CoroutineContext): Flow<FullTicket> {
+    override suspend fun getFullTickets(ids: List<Int>, scope: CoroutineScope): Flow<FullTicket> {
         return ids.asFlow()
             .mapNotNull { getBasicTicket(it) }
             .map { it.toFullTicket() }
@@ -207,7 +207,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
     }
 
     override suspend fun searchDatabase(
-        context: CoroutineContext,
+        scope: CoroutineScope,
         locale: TMLocale,
         mainTableConstraints: List<Pair<String, String?>>,
         searchFunction: (FullTicket) -> Boolean
@@ -294,11 +294,11 @@ class SQLite(absoluteDataFolderPath: String) : Database {
     }
 
     override suspend fun migrateDatabase(
-        context: CoroutineContext,
+        scope: CoroutineScope,
         to: Database.Type,
-        mySQLBuilder: suspend () -> MySQL,
+        mySQLBuilder: suspend () -> MySQL?,
         sqLiteBuilder: suspend () -> SQLite,
-        memoryBuilder: suspend () -> Memory,
+        memoryBuilder: suspend () -> Memory?,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit
     ) {
@@ -310,7 +310,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
             Database.Type.MySQL,
             Database.Type.Memory -> {
                 val otherDB = if (to == Database.Type.MySQL) mySQLBuilder() else memoryBuilder()
-                otherDB.initialiseDatabase()
+                otherDB?.initialiseDatabase()
 
                 using(getSession()) { session ->
                     session.run(
@@ -320,14 +320,12 @@ class SQLite(absoluteDataFolderPath: String) : Database {
                     )
                 }
                     .forEach {
-                        withContext(context) {
-                            launch {
-                                val fullTicket = it.toFullTicket(this@SQLite)
-                                otherDB.addFullTicket(fullTicket)
-                            }
+                        scope.launch {
+                            val fullTicket = it.toFullTicket(this@SQLite)
+                            otherDB?.addFullTicket(fullTicket)
                         }
                     }
-                otherDB.closeDatabase()
+                otherDB?.closeDatabase()
             }
         }
 
@@ -335,7 +333,6 @@ class SQLite(absoluteDataFolderPath: String) : Database {
     }
 
     override suspend fun updateDatabase(
-        context: CoroutineContext,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit,
         offlinePlayerNameToUuidOrNull: (String) -> UUID?

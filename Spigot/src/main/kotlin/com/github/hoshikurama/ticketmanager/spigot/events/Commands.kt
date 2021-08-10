@@ -1,10 +1,10 @@
 package com.github.hoshikurama.ticketmanager.spigot.events
 
 import com.github.hoshikurama.ticketmanager.common.*
-import com.github.hoshikurama.ticketmanager.common.databases.Database
-import com.github.hoshikurama.ticketmanager.common.databases.Memory
-import com.github.hoshikurama.ticketmanager.common.databases.MySQL
-import com.github.hoshikurama.ticketmanager.common.databases.SQLite
+import com.github.hoshikurama.ticketmanager.common.database.Database
+import com.github.hoshikurama.ticketmanager.common.database.Memory
+import com.github.hoshikurama.ticketmanager.common.database.MySQL
+import com.github.hoshikurama.ticketmanager.common.database.SQLite
 import com.github.hoshikurama.ticketmanager.common.ticket.*
 import com.github.hoshikurama.ticketmanager.spigot.*
 import com.github.shynixn.mccoroutine.SuspendingCommandExecutor

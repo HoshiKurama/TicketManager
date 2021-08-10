@@ -30,6 +30,18 @@ class UpdateChecker(private val resourceID: Int) {
     }
 }
 
+class MutexControlled<T>(private var t: T) {
+    private val mutex = Mutex()
+
+    suspend fun get(): T = mutex.withLock { t }
+    suspend fun set(t: T) = mutex.withLock { this.t = t }
+}
+
+class IncrementalMutexController(private var n: Int) {
+    private val mutex = Mutex()
+    suspend fun getAndIncrement() = mutex.withLock { n.also { n++ } }
+}
+
 
 fun byteToPriority(byte: Byte) = when (byte.toInt()) {
     1 -> BasicTicket.Priority.LOWEST
@@ -87,23 +99,23 @@ fun relTimeToEpochSecond(relTime: String, locale: TMLocale): Long {
     return Instant.now().epochSecond - seconds
 }
 
-val sortForList: Comparator<BasicTicket> = Comparator.comparing(BasicTicket::priority).reversed().thenComparing(Comparator.comparing(BasicTicket::id).reversed())
-
 val sortActions: Comparator<FullTicket.Action> = Comparator.comparing(FullTicket.Action::timestamp)
 
 fun <T> T.notEquals(t: T) = this != t
 
-class MutexControlled<T>(private var t: T) {
-    private val mutex = Mutex()
+inline fun <T> tryOrDefault(attempted: () -> T?, default: T): T =
+    tryOrNull(attempted).run { this ?: default }
 
-    suspend fun get(): T = mutex.withLock { t }
-    suspend fun set(t: T) = mutex.withLock { this.t = t }
-}
+inline fun <T> tryOrNull(function: () -> T): T? =
+    try { function() }
+    catch (e: Exception) { e.printStackTrace(); null }
 
-class IncrementalMutexController(private var n: Int) {
-    private val mutex = Mutex()
-    suspend fun getAndIncrement() = mutex.withLock { n.also { n++ } }
-}
+suspend inline fun <T> tryOrDefaultSuspend(crossinline attempted: suspend () -> T?, default: T): T =
+    tryOrNullSuspend(attempted).run { this ?: default }
+
+suspend inline fun <T> tryOrNullSuspend(crossinline function: suspend () -> T): T? =
+    try { function() }
+    catch (ignored: Exception) { null }
 
 
 // Code from https://github.com/CruGlobal/android-gto-support/blob/47b44477e94e7d913de15066e3dd3eb8b54c4828/gto-support-kotlin-coroutines/src/main/java/org/ccci/gto/android/common/kotlin/coroutines/ReadWriteMutex.kt

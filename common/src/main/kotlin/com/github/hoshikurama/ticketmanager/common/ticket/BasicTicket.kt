@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.common.ticket
 
 import com.github.hoshikurama.ticketmanager.common.TMLocale
-import com.github.hoshikurama.ticketmanager.common.databases.Database
+import com.github.hoshikurama.ticketmanager.common.database.Database
 import kotlinx.serialization.Serializable
 import java.util.*
 

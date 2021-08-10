@@ -1,6 +1,5 @@
-package com.github.hoshikurama.ticketmanager.common.discord
+package com.github.hoshikurama.ticketmanager.common
 
-import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.toLocaledWord
 import dev.kord.common.Color
@@ -16,7 +15,7 @@ class Discord(
     private val locale: TMLocale,
     private val kord: Kord,
 
-) {
+    ) {
 
     companion object {
         suspend fun create(

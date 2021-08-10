@@ -1,4 +1,4 @@
-package com.github.hoshikurama.ticketmanager.common.databases
+package com.github.hoshikurama.ticketmanager.common.database
 
 import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.byteToPriority
@@ -83,44 +83,40 @@ class MySQL(
         }
     }
 
-    override suspend fun addNewTicket(basicTicket: BasicTicket, context: CoroutineContext, message: String): Int {
-        return withContext(context) {
-            val id = writeBasicTicket(basicTicket).toInt()
-            launch { writeAction(id, FullTicket.Action(FullTicket.Action.Type.OPEN, basicTicket.creatorUUID, message)) }
-            id
-        }
+    override suspend fun addNewTicket(basicTicket: BasicTicket, scope: CoroutineScope, message: String): Int {
+        val id = writeBasicTicket(basicTicket).toInt()
+        scope.launch { writeAction(id, FullTicket.Action(FullTicket.Action.Type.OPEN, basicTicket.creatorUUID, message)) }
+        return id
     }
 
-    override suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?, context: CoroutineContext) {
-        withContext(context) {
-            val statusPairs = flow {
-                suspendingCon.sendPreparedStatement("SELECT ID, STATUS FROM TicketManager_V4_Tickets WHERE ID BETWEEN $lowerBound AND $upperBound;")
-                    .rows
-                    .map { (it.getInt(0)!!) to BasicTicket.Status.valueOf(it.getString(1)!!) }
-                    .filter { it.second == BasicTicket.Status.OPEN }
-                    .forEach { emit(it.first) }
-            }
+    override suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?, scope: CoroutineScope) {
+        val statusPairs = flow {
+            suspendingCon.sendPreparedStatement("SELECT ID, STATUS FROM TicketManager_V4_Tickets WHERE ID BETWEEN $lowerBound AND $upperBound;")
+                .rows
+                .map { (it.getInt(0)!!) to BasicTicket.Status.valueOf(it.getString(1)!!) }
+                .filter { it.second == BasicTicket.Status.OPEN }
+                .forEach { emit(it.first) }
+        }
 
-            launch {
-                val idString = statusPairs.toList().joinToString(", ")
-                suspendingCon.sendPreparedStatement(
-                    query = "UPDATE TicketManager_V4_Tickets SET STATUS = ? WHERE ID IN ($idString);",
-                    values = listOf(BasicTicket.Status.CLOSED.name)
+        scope.launch {
+            val idString = statusPairs.toList().joinToString(", ")
+            suspendingCon.sendPreparedStatement(
+                query = "UPDATE TicketManager_V4_Tickets SET STATUS = ? WHERE ID IN ($idString);",
+                values = listOf(BasicTicket.Status.CLOSED.name)
+            )
+        }
+
+        statusPairs.collect {
+            scope.launch {
+                writeAction(
+                    action = FullTicket.Action(
+                        type = FullTicket.Action.Type.MASS_CLOSE,
+                        user = uuid,
+                        message = null,
+                        timestamp = Instant.now().epochSecond
+                    ),
+                    ticketID = it
                 )
-            }
-
-            statusPairs.collect {
-                launch {
-                    writeAction(
-                        action = FullTicket.Action(
-                            type = FullTicket.Action.Type.MASS_CLOSE,
-                            user = uuid,
-                            message = null,
-                            timestamp = Instant.now().epochSecond
-                        ),
-                        ticketID = it
-                    )
-                }
             }
         }
     }
@@ -204,7 +200,7 @@ class MySQL(
             .forEach { emit(it) }
     }
 
-    override suspend fun getFullTickets(ids: List<Int>, context: CoroutineContext): Flow<FullTicket> = flow {
+    override suspend fun getFullTickets(ids: List<Int>, scope: CoroutineScope): Flow<FullTicket> = flow {
         val idsSQL = ids.joinToString(", ") { "$it" }
 
         suspendingCon.sendQuery("SELECT * FROM TicketManager_V4_Tickets WHERE ID IN ($idsSQL) ORDER BY PRIORITY DESC, ID DESC;")
@@ -212,16 +208,14 @@ class MySQL(
             .map { it.toBasicTicket() }
             .asFlow()
             .map {
-                withContext(context) {
-                    async { it.toFullTicket() }
-                }
+                scope.async { it.toFullTicket() }
             }
             .map { it.await() }
             .collect { emit(it) }
     }
 
     override suspend fun searchDatabase(
-        context: CoroutineContext,
+        scope: CoroutineScope,
         locale: TMLocale,
         mainTableConstraints: List<Pair<String, String?>>,
         searchFunction: (FullTicket) -> Boolean
@@ -245,9 +239,7 @@ class MySQL(
             .rows
             .map { it.toBasicTicket() }
             .map {
-                withContext(context) {
-                    async { it.toFullTicket() }
-                }
+                scope.async { it.toFullTicket() }
             }
             .map { it.await() }
             .filter(searchFunction)
@@ -302,11 +294,11 @@ class MySQL(
     }
 
     override suspend fun migrateDatabase(
-        context: CoroutineContext,
+        scope: CoroutineScope,
         to: Database.Type,
-        mySQLBuilder: suspend () -> MySQL,
+        mySQLBuilder: suspend () -> MySQL?,
         sqLiteBuilder: suspend () -> SQLite,
-        memoryBuilder: suspend () -> Memory,
+        memoryBuilder: suspend () -> Memory?,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit
     ) {
@@ -324,9 +316,7 @@ class MySQL(
                     .rows
                     .map { it.toBasicTicket().toFullTicket(this) }
                     .forEach {
-                        withContext(context) {
-                            launch { sqlite.addFullTicket(it) }
-                        }
+                        scope.launch { sqlite.addFullTicket(it) }
                     }
 
                 sqlite.closeDatabase()
@@ -334,15 +324,15 @@ class MySQL(
 
             Database.Type.Memory -> {
                 val memory = memoryBuilder()
-                memory.initialiseDatabase()
+                memory?.initialiseDatabase()
 
                 // Gets all tables from MySQL
                 suspendingCon.sendPreparedStatement("SELECT * FROM TicketManager_V4_Tickets")
                     .rows
                     .map { it.toBasicTicket().toFullTicket(this) }
-                    .forEach { memory.addFullTicket(it) }
+                    .forEach { memory?.addFullTicket(it) }
 
-                memory.closeDatabase()
+                memory?.closeDatabase()
             }
         }
 
@@ -350,12 +340,11 @@ class MySQL(
     }
 
     override suspend fun updateDatabase(
-        context: CoroutineContext,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit,
         offlinePlayerNameToUuidOrNull: (String) -> UUID?
     ) {
-        withContext(context) {
+        coroutineScope {
             onBegin()
 
             suspendingCon.sendPreparedStatement("SELECT * FROM TicketManagerTicketsV2;").rows

@@ -1,9 +1,8 @@
 package com.github.hoshikurama.ticketmanager.common
 
 import kotlinx.coroutines.async
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.coroutineScope
 import org.yaml.snakeyaml.Yaml
-import kotlin.coroutines.CoroutineContext
 
 const val translationNotFound = " TNF "
 
@@ -20,8 +19,7 @@ class LocaleHandler(
             preferredLocale: String,
             console_Locale: String,
             forceLocale: Boolean,
-            context: CoroutineContext
-        ): LocaleHandler = withContext(context) {
+        ): LocaleHandler = coroutineScope {
             val fallback = async { TMLocale(mainColourCode, "en_CA") }
 
             val activeTypes =

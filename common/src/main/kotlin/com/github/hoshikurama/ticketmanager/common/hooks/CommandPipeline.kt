@@ -1,21 +1,18 @@
-package com.github.hoshikurama.ticketmanager.paper.events
+package com.github.hoshikurama.ticketmanager.common.hooks
 
 import com.github.hoshikurama.componentDSL.buildComponent
 import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.componentDSL.onClick
 import com.github.hoshikurama.componentDSL.onHover
 import com.github.hoshikurama.ticketmanager.common.*
-import com.github.hoshikurama.ticketmanager.common.databases.Database
-import com.github.hoshikurama.ticketmanager.common.databases.Memory
-import com.github.hoshikurama.ticketmanager.common.databases.MySQL
-import com.github.hoshikurama.ticketmanager.common.databases.SQLite
+import com.github.hoshikurama.ticketmanager.common.database.Database
+import com.github.hoshikurama.ticketmanager.common.database.Memory
+import com.github.hoshikurama.ticketmanager.common.database.MySQL
+import com.github.hoshikurama.ticketmanager.common.database.SQLite
 import com.github.hoshikurama.ticketmanager.common.ticket.*
-import com.github.hoshikurama.ticketmanager.paper.*
-import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
-import com.github.shynixn.mccoroutine.asyncDispatcher
-import com.github.shynixn.mccoroutine.minecraftDispatcher
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import net.kyori.adventure.extra.kotlin.text
 import net.kyori.adventure.text.Component
@@ -24,64 +21,55 @@ import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.event.HoverEvent
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
-import org.bukkit.Bukkit
-import org.bukkit.ChatColor
-import org.bukkit.Location
-import org.bukkit.command.Command
-import org.bukkit.command.CommandSender
-import org.bukkit.entity.Player
 import java.util.*
 
-class Commands : SuspendingCommandExecutor {
 
-    override suspend fun onCommand(
-        sender: CommandSender,
-        command: Command,
-        label: String,
-        args: Array<out String>,
-    ): Boolean = withContext(mainPlugin.asyncDispatcher) {
+abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>) {
 
-        val senderLocale = sender.toTMLocale()
-        val argList = args.toList()
+    suspend fun execute(
+        sender: Sender,
+        args: List<String>,
+    ) = coroutineScope {
+        val senderLocale = sender.locale
 
-        if (argList.isEmpty()) {
-            sender.sendColouredMessage(senderLocale.warningsInvalidCommand)
-            return@withContext false
+        if (args.isEmpty()) {
+            sender.sendMessage(senderLocale.warningsInvalidCommand)
+            return@coroutineScope false
         }
 
-        if (mainPlugin.pluginState.pluginLocked.get()) {
-            sender.sendColouredMessage(senderLocale.warningsLocked)
-            return@withContext false
+        if (pluginData.pluginLocked.get()) {
+            sender.sendMessage(senderLocale.warningsLocked)
+            return@coroutineScope false
         }
 
         // Grabs BasicTicket. Only null if ID required but doesn't exist. Filters non-valid tickets
-        val pseudoTicket = getBasicTicketHandler(argList, senderLocale)
+        val pseudoTicket = getBasicTicketHandler(args, senderLocale)
         if (pseudoTicket == null) {
-            sender.sendColouredMessage(senderLocale.warningsInvalidID)
-            return@withContext false
+            sender.sendMessage(senderLocale.warningsInvalidID)
+            return@coroutineScope false
         }
 
         // Async Calculations
-        val hasValidPermission = async { hasValidPermission(sender, pseudoTicket, argList, senderLocale) }
-        val isValidCommand = async { isValidCommand(sender, pseudoTicket, argList, senderLocale) }
-        val notUnderCooldown = async { notUnderCooldown(sender, senderLocale, argList) }
+        val hasValidPermission = async { hasValidPermission(sender, pseudoTicket, args) }
+        val isValidCommand = async { isValidCommand(sender, pseudoTicket, args) }
+        val notUnderCooldown = async { notUnderCooldown(sender, senderLocale, args) }
         // Shortened Commands
-        val executeCommand = suspend { executeCommand(sender, argList, senderLocale, pseudoTicket) }
+        val executeCommand = suspend { executeCommand(sender, args, pseudoTicket) }
 
         try {
-            mainPlugin.pluginState.jobCount.run { set(get() + 1) }
+            pluginData.jobCount.run { set(get() + 1) }
             if (notUnderCooldown.await() && isValidCommand.await() && hasValidPermission.await()) {
-                executeCommand()?.let { pushNotifications(sender, it, senderLocale, pseudoTicket) }
+                executeCommand()?.let { pushNotifications(sender, it, pseudoTicket) }
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            postModifiedStacktrace(e)
-            sender.sendColouredMessage(senderLocale.warningsUnexpectedError)
+            //postModifiedStacktrace(e) todo
+            sender.sendMessage(senderLocale.warningsUnexpectedError)
         } finally {
-            mainPlugin.pluginState.jobCount.run { set(get() - 1) }
+            pluginData.jobCount.run { set(get() - 1) }
         }
 
-        return@withContext true
+        return@coroutineScope true
     }
 
     private suspend fun getBasicTicketHandler(
@@ -89,7 +77,7 @@ class Commands : SuspendingCommandExecutor {
         senderLocale: TMLocale,
     ): BasicTicketHandler? {
 
-        suspend fun buildFromID(id: Int) = BasicTicketHandler.buildHandler(configState.database, id)
+        suspend fun buildFromID(id: Int) = BasicTicketHandler.buildHandler(pluginData.configState.database, id)
 
         return when (args[0]) {
             senderLocale.commandWordAssign,
@@ -112,75 +100,74 @@ class Commands : SuspendingCommandExecutor {
                 args.getOrNull(1)
                     ?.toIntOrNull()
                     ?.let { buildFromID(it) }
-            else -> ConcreteBasicTicket(creatorUUID = null, location = null).run { BasicTicketHandler(this, configState.database) } // Occurs when command does not need valid handler
+            else -> ConcreteBasicTicket(creatorUUID = null, location = null).run { BasicTicketHandler(this, pluginData.configState.database) } // Occurs when command does not need valid handler
         }
     }
 
     private fun hasValidPermission(
-        sender: CommandSender,
+        sender: Sender,
         basicTicket: BasicTicket,
         args: List<String>,
-        senderLocale: TMLocale
     ): Boolean {
         try {
-           if (sender !is Player) return true
+            if (sender is Console) return true
+            val player = sender as Player
 
-           fun has(perm: String) = sender.has(perm)
-           fun hasSilent() = has("ticketmanager.commandArg.silence")
-           fun hasDuality(basePerm: String): Boolean {
-               val senderUUID = sender.toUUIDOrNull()
-               val ownsTicket = basicTicket.uuidMatches(senderUUID)
-               return has("$basePerm.all") || (sender.has("$basePerm.own") && ownsTicket)
-           }
+            fun has(perm: String) = player.has(perm)
+            fun hasSilent() = has("ticketmanager.commandArg.silence")
+            fun hasDuality(basePerm: String): Boolean {
+                val ownsTicket = basicTicket.uuidMatches(player.uniqueID)
+                return has("$basePerm.all") || (sender.has("$basePerm.own") && ownsTicket)
+            }
 
-           return senderLocale.run {
-               when (args[0]) {
-                   commandWordAssign, commandWordClaim, commandWordUnassign ->
-                       has("ticketmanager.command.assign")
-                   commandWordSilentAssign, commandWordSilentClaim,commandWordSilentUnassign ->
-                       has("ticketmanager.command.assign") && hasSilent()
-                   commandWordClose -> hasDuality("ticketmanager.command.close")
-                   commandWordSilentClose -> hasDuality("ticketmanager.command.close") && hasSilent()
-                   commandWordCloseAll -> has("ticketmanager.command.closeAll")
-                   commandWordSilentCloseAll -> has("ticketmanager.command.closeAll") && hasSilent()
-                   commandWordComment -> hasDuality("ticketmanager.command.comment")
-                   commandWordSilentComment -> hasDuality("ticketmanager.command.comment") && hasSilent()
-                   commandWordCreate -> has("ticketmanager.command.create")
-                   commandWordHelp -> has("ticketmanager.command.help")
-                   commandWordReload -> has("ticketmanager.command.reload")
-                   commandWordList, commandWordListAssigned, commandWordListUnassigned -> has("ticketmanager.command.list")
-                   commandWordReopen -> has("ticketmanager.command.reopen")
-                   commandWordSilentReopen -> has("ticketmanager.command.reopen") && hasSilent()
-                   commandWordSearch -> has("ticketmanager.command.search")
-                   commandWordSetPriority -> has("ticketmanager.command.setPriority")
-                   commandWordSilentSetPriority -> has("ticketmanager.command.setPriority") && hasSilent()
-                   commandWordTeleport -> has("ticketmanager.command.teleport")
-                   commandWordView -> hasDuality("ticketmanager.command.view")
-                   commandWordDeepView -> hasDuality("ticketmanager.command.viewdeep")
-                   commandWordConvertDB -> has("ticketmanager.command.convertDatabase")
-                   commandWordHistory ->
-                       sender.has("ticketmanager.command.history.all") ||
-                               sender.has("ticketmanager.command.history.own").let { hasPerm ->
-                                   if (args.size >= 2) hasPerm && args[1] == sender.name
-                                   else hasPerm
-                               }
-                   else -> true
-               }
-           }
-               .also { if (!it) sender.sendColouredMessage(senderLocale.warningsNoPermission) }
-       } catch (e: Exception) {
-           sender.sendColouredMessage(senderLocale.warningsNoPermission)
+            return sender.locale.run {
+                when (args[0]) {
+                    commandWordAssign, commandWordClaim, commandWordUnassign ->
+                        has("ticketmanager.command.assign")
+                    commandWordSilentAssign, commandWordSilentClaim,commandWordSilentUnassign ->
+                        has("ticketmanager.command.assign") && hasSilent()
+                    commandWordClose -> hasDuality("ticketmanager.command.close")
+                    commandWordSilentClose -> hasDuality("ticketmanager.command.close") && hasSilent()
+                    commandWordCloseAll -> has("ticketmanager.command.closeAll")
+                    commandWordSilentCloseAll -> has("ticketmanager.command.closeAll") && hasSilent()
+                    commandWordComment -> hasDuality("ticketmanager.command.comment")
+                    commandWordSilentComment -> hasDuality("ticketmanager.command.comment") && hasSilent()
+                    commandWordCreate -> has("ticketmanager.command.create")
+                    commandWordHelp -> has("ticketmanager.command.help")
+                    commandWordReload -> has("ticketmanager.command.reload")
+                    commandWordList, commandWordListAssigned, commandWordListUnassigned -> has("ticketmanager.command.list")
+                    commandWordReopen -> has("ticketmanager.command.reopen")
+                    commandWordSilentReopen -> has("ticketmanager.command.reopen") && hasSilent()
+                    commandWordSearch -> has("ticketmanager.command.search")
+                    commandWordSetPriority -> has("ticketmanager.command.setPriority")
+                    commandWordSilentSetPriority -> has("ticketmanager.command.setPriority") && hasSilent()
+                    commandWordTeleport -> has("ticketmanager.command.teleport")
+                    commandWordView -> hasDuality("ticketmanager.command.view")
+                    commandWordDeepView -> hasDuality("ticketmanager.command.viewdeep")
+                    commandWordConvertDB -> has("ticketmanager.command.convertDatabase")
+                    commandWordHistory ->
+                        player.has("ticketmanager.command.history.all") ||
+                                player.has("ticketmanager.command.history.own").let { hasPerm ->
+                                    if (args.size >= 2) hasPerm && args[1] == sender.name
+                                    else hasPerm
+                                }
+                    else -> true
+                }
+            }
+                .also { if (!it) player.sendMessage(sender.locale.warningsNoPermission) }
+        } catch (e: Exception) {
+            sender.sendMessage(sender.locale.warningsNoPermission)
             return false
-       }
+        }
     }
 
     private fun isValidCommand(
-        sender: CommandSender,
+        sender: Sender,
         basicTicket: BasicTicket,
         args: List<String>,
-        senderLocale: TMLocale
     ): Boolean {
-        fun sendMessage(msg: String) = msg.run(sender::sendColouredMessage)
+        val senderLocale = sender.locale
+        fun sendMessage(msg: String) = msg.run(sender::sendMessage)
         fun invalidCommand() = sendMessage(senderLocale.warningsInvalidCommand)
         fun notANumber() = sendMessage(senderLocale.warningsInvalidNumber)
         fun outOfBounds() = sendMessage(senderLocale.warningsPriorityOutOfBounds)
@@ -238,7 +225,7 @@ class Commands : SuspendingCommandExecutor {
                 commandWordList, commandWordListAssigned, commandWordListUnassigned ->
                     check(::notANumber) { if (args.size == 2) args[1].toIntOrNull() != null else true }
 
-                commandWordSearch -> check(::invalidCommand) { args.size >= 2}
+                commandWordSearch -> check(::invalidCommand) { args.size >= 2 }
 
                 commandWordReload -> true
                 commandWordVersion -> true
@@ -253,7 +240,7 @@ class Commands : SuspendingCommandExecutor {
                             }
                         )
                         .thenCheck( { sendMessage(senderLocale.warningsConvertToSameDBType) } )
-                        { configState.database.type != Database.Type.valueOf(args[1]) }
+                        { pluginData.configState.database.type != Database.Type.valueOf(args[1]) }
 
                 else -> false.also { invalidCommand() }
             }
@@ -261,36 +248,39 @@ class Commands : SuspendingCommandExecutor {
     }
 
     private suspend fun notUnderCooldown(
-        sender: CommandSender,
+        sender: Sender,
         senderLocale: TMLocale,
         args: List<String>
     ): Boolean {
+        if (sender is Console) return true
+        val player = sender as Player
+
         val underCooldown = when (args[0]) {
             senderLocale.commandWordCreate,
             senderLocale.commandWordComment,
             senderLocale.commandWordSilentComment ->
-                configState.cooldowns.checkAndSetAsync(sender.toUUIDOrNull())
+                pluginData.configState.cooldowns.checkAndSetAsync(player.uniqueID)
             else -> false
         }
 
         if (underCooldown)
-            sender.sendColouredMessage(senderLocale.warningsUnderCooldown)
+            player.sendMessage(senderLocale.warningsUnderCooldown)
         return !underCooldown
     }
 
     private suspend fun executeCommand(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
-        senderLocale: TMLocale,
         ticketHandler: BasicTicketHandler
     ): NotifyParams? {
+        val senderLocale = sender.locale
         return senderLocale.run {
             when (args[0]) {
-                commandWordAssign -> assign(sender, args, false, senderLocale, ticketHandler)
-                commandWordAssign -> assign(sender, args, false, senderLocale, ticketHandler)
-                commandWordSilentAssign -> assign(sender, args, true, senderLocale, ticketHandler)
-                commandWordClaim -> claim(sender, args, false, senderLocale, ticketHandler)
-                commandWordSilentClaim -> claim(sender, args, true, senderLocale, ticketHandler)
+                commandWordAssign -> assign(sender, args, false, ticketHandler)
+                commandWordAssign -> assign(sender, args, false, ticketHandler)
+                commandWordSilentAssign -> assign(sender, args, true, ticketHandler)
+                commandWordClaim -> claim(sender, args, false, ticketHandler)
+                commandWordSilentClaim -> claim(sender, args, true, ticketHandler)
                 commandWordClose -> close(sender, args, false, ticketHandler)
                 commandWordSilentClose -> close(sender, args, true, ticketHandler)
                 commandWordCloseAll -> closeAll(sender, args, false, ticketHandler)
@@ -298,23 +288,23 @@ class Commands : SuspendingCommandExecutor {
                 commandWordComment -> comment(sender, args, false, ticketHandler)
                 commandWordSilentComment -> comment(sender, args, true, ticketHandler)
                 commandWordCreate -> create(sender, args)
-                commandWordHelp -> help(sender, senderLocale).let { null }
-                commandWordHistory -> history(sender, args, senderLocale).let { null }
-                commandWordList -> list(sender, args, senderLocale).let { null }
-                commandWordListAssigned -> listAssigned(sender, args, senderLocale).let { null }
-                commandWordListUnassigned -> listUnassigned(sender, args, senderLocale).let { null }
-                commandWordReload -> reload(sender, senderLocale).let { null }
+                commandWordHelp -> help(sender).let { null }
+                commandWordHistory -> history(sender, args).let { null }
+                commandWordList -> list(sender, args).let { null }
+                commandWordListAssigned -> listAssigned(sender, args).let { null }
+                commandWordListUnassigned -> listUnassigned(sender, args).let { null }
+                commandWordReload -> reload(sender).let { null }
                 commandWordReopen -> reopen(sender,args, false, ticketHandler)
                 commandWordSilentReopen -> reopen(sender,args, true, ticketHandler)
-                commandWordSearch -> search(sender, args, senderLocale).let { null }
+                commandWordSearch -> search(sender, args).let { null }
                 commandWordSetPriority -> setPriority(sender, args, false, ticketHandler)
                 commandWordSilentSetPriority -> setPriority(sender, args, true, ticketHandler)
                 commandWordTeleport -> teleport(sender, ticketHandler).let { null }
-                commandWordUnassign -> unAssign(sender, args, false, senderLocale, ticketHandler)
-                commandWordSilentUnassign -> unAssign(sender, args, true, senderLocale, ticketHandler)
-                commandWordVersion -> version(sender, senderLocale).let { null }
-                commandWordView -> view(sender, senderLocale, ticketHandler).let { null }
-                commandWordDeepView -> viewDeep(sender, senderLocale, ticketHandler).let { null }
+                commandWordUnassign -> unAssign(sender, args, false, ticketHandler)
+                commandWordSilentUnassign -> unAssign(sender, args, true, ticketHandler)
+                commandWordVersion -> version(sender).let { null }
+                commandWordView -> view(sender, ticketHandler).let { null }
+                commandWordDeepView -> viewDeep(sender, ticketHandler).let { null }
                 commandWordConvertDB -> convertDatabase(args).let { null }
                 else -> null
             }
@@ -322,20 +312,19 @@ class Commands : SuspendingCommandExecutor {
     }
 
     private fun pushNotifications(
-        sender: CommandSender,
+        sender: Sender,
         params: NotifyParams,
-        locale: TMLocale,
         basicTicket: BasicTicket
     ) {
         params.run {
             if (sendSenderMSG)
-                senderLambda!!(locale)
+                senderLambda!!(sender.locale)
                     .run(sender::sendMessage)
 
             if (sendCreatorMSG)
                 basicTicket.creatorUUID
-                    ?.run(Bukkit::getPlayer)
-                    ?.let { creatorLambda!!(it.toTMLocale()) }
+                    ?.run(::buildPlayer)
+                    ?.let { creatorLambda!!(it.locale) }
                     ?.run(creator!!::sendMessage)
 
             if (sendMassNotifyMSG)
@@ -343,23 +332,24 @@ class Commands : SuspendingCommandExecutor {
         }
     }
 
-    private class NotifyParams(
+    private inner class NotifyParams(
         silent: Boolean,
         basicTicket: BasicTicket,
-        sender: CommandSender,
+        sender: Sender,
         creatorAlertPerm: String,
+
         val massNotifyPerm: String,
         val senderLambda: ((TMLocale) -> Component)?,
         val creatorLambda: ((TMLocale) -> Component)?,
         val massNotifyLambda: ((TMLocale) -> Component)?,
     ) {
-        val creator: Player? = basicTicket.creatorUUID?.let(Bukkit::getPlayer)
+        val creator: Player? = basicTicket.creatorUUID?.run(::buildPlayer)
         val sendSenderMSG: Boolean = (!sender.has(massNotifyPerm) || silent)
                 && senderLambda != null
         val sendCreatorMSG: Boolean = sender.nonCreatorMadeChange(basicTicket.creatorUUID)
-                && !silent && (creator?.isOnline ?: false)
-                && (creator?.has(creatorAlertPerm) ?: false)
-                && (creator?.has(massNotifyPerm)?.run { !this } ?: false)
+                && !silent && (creator != null)
+                && creator.has(creatorAlertPerm)
+                && creator.has(massNotifyPerm).run { !this }
                 && creatorLambda != null
         val sendMassNotifyMSG: Boolean = !silent
                 && massNotifyLambda != null
@@ -370,27 +360,26 @@ class Commands : SuspendingCommandExecutor {
     /*-------------------------*/
 
     private suspend fun allAssignVariations(
-        sender: CommandSender,
+        sender: Sender,
         silent: Boolean,
-        senderLocale: TMLocale,
         assignmentID: String,
         dbAssignment: String?,
         ticketHandler: BasicTicketHandler,
-    ): NotifyParams = withContext(asyncContext) {
-        val shownAssignment = dbAssignment ?: senderLocale.miscNobody
+    ): NotifyParams = coroutineScope {
+        val shownAssignment = dbAssignment ?: sender.locale.miscNobody
 
         launchIndependent { ticketHandler.setAssignedTo(dbAssignment) }
         launchIndependent {
-            configState.database.addAction(
+            pluginData.configState.database.addAction(
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.ASSIGN, sender.toUUIDOrNull(), dbAssignment)
             )
         }
 
-        if (!silent && configState.discord?.state?.notifyOnAssign == true) {
-            launchIndependent {
+        if (!silent && pluginData.configState.discord?.state?.notifyOnAssign == true) {
+            pluginData.asyncScope.launch {
                 tryNoCatch {
-                    configState.discord?.assignUpdate(sender.name, assignmentID, shownAssignment)
+                    pluginData.configState.discord?.assignUpdate(sender.name, assignmentID, shownAssignment)
                 }
             }
         }
@@ -400,17 +389,17 @@ class Commands : SuspendingCommandExecutor {
             sender = sender,
             basicTicket = ticketHandler,
             senderLambda = {
-                val content = it.notifyTicketAssignSuccess
+                it.notifyTicketAssignSuccess
                     .replace("%id%", assignmentID)
                     .replace("%assign%", shownAssignment)
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             massNotifyLambda = {
-                val content = it.notifyTicketAssignEvent
+                it.notifyTicketAssignEvent
                     .replace("%user%", sender.name)
                     .replace("%id%", assignmentID)
                     .replace("%assign%", shownAssignment)
-                text { formattedContent(content) }
+                    .run(::toColouredAdventure)
             },
             creatorLambda = null,
             creatorAlertPerm = "ticketmanager.notify.change.assign",
@@ -420,64 +409,62 @@ class Commands : SuspendingCommandExecutor {
 
     // /ticket assign <ID> <Assignment>
     private suspend fun assign(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
         silent: Boolean,
-        senderLocale: TMLocale,
         ticketHandler: BasicTicketHandler,
     ): NotifyParams {
         val sqlAssignment = args.subList(2, args.size).joinToString(" ")
-        return allAssignVariations(sender, silent, senderLocale, args[1], sqlAssignment, ticketHandler)
+        return allAssignVariations(sender, silent, args[1], sqlAssignment, ticketHandler)
     }
 
     // /ticket claim <ID>
     private suspend fun claim(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
         silent: Boolean,
-        senderLocale: TMLocale,
         ticketHandler: BasicTicketHandler,
     ): NotifyParams {
-        return allAssignVariations(sender, silent, senderLocale, args[1], sender.name, ticketHandler)
+        return allAssignVariations(sender, silent, args[1], sender.name, ticketHandler)
     }
 
     // /ticket close <ID> [Comment...]
     private suspend fun close(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
         silent: Boolean,
         ticketHandler: BasicTicketHandler
-    ): NotifyParams = withContext(asyncContext) {
-        val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && configState.allowUnreadTicketUpdates
+    ): NotifyParams = coroutineScope {
+        val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && pluginData.configState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
             launchIndependent { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
         }
 
-        return@withContext if (args.size >= 3)
+        return@coroutineScope if (args.size >= 3)
             closeWithComment(sender, args, silent, ticketHandler)
         else closeWithoutComment(sender, args, silent, ticketHandler)
     }
 
     private suspend fun closeWithComment(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
         silent: Boolean,
         ticketHandler: BasicTicketHandler,
-    ): NotifyParams = withContext(asyncContext) {
+    ): NotifyParams = coroutineScope {
         val message = args.subList(2, args.size)
             .joinToString(" ")
-            .run(ChatColor::stripColor)!!
+            .let(::stripColour)
 
-        if (!silent && configState.discord?.state?.notifyOnClose == true) {
+        if (!silent && pluginData.configState.discord?.state?.notifyOnClose == true) {
             launchIndependent {
                 tryNoCatch {
-                    configState.discord?.closeUpdate(sender.name, ticketHandler.id.toString(), message)
+                    pluginData.configState.discord?.closeUpdate(sender.name, ticketHandler.id.toString(), message)
                 }
             }
         }
 
         launchIndependent {
-            configState.database.run {
+            pluginData.configState.database.run {
                 addAction(
                     ticketID = ticketHandler.id,
                     action = FullTicket.Action(FullTicket.Action.Type.COMMENT, sender.toUUIDOrNull(), message)
@@ -517,24 +504,24 @@ class Commands : SuspendingCommandExecutor {
     }
 
     private suspend fun closeWithoutComment(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
         silent: Boolean,
         ticketHandler: BasicTicketHandler
-    ): NotifyParams = withContext(asyncContext) {
+    ): NotifyParams = coroutineScope {
 
         launchIndependent {
-            configState.database.addAction(
+            pluginData.configState.database.addAction(
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.CLOSE, sender.toUUIDOrNull())
             )
             ticketHandler.setTicketStatus(BasicTicket.Status.CLOSED)
         }
 
-        if (!silent && configState.discord?.state?.notifyOnClose == true) {
+        if (!silent && pluginData.configState.discord?.state?.notifyOnClose == true) {
             launchIndependent {
                 tryNoCatch {
-                    configState.discord?.closeUpdate(sender.name, ticketHandler.id.toString())
+                    pluginData.configState.discord?.closeUpdate(sender.name, ticketHandler.id.toString())
                 }
             }
         }
@@ -566,20 +553,20 @@ class Commands : SuspendingCommandExecutor {
 
     // /ticket closeall <Lower ID> <Upper ID>
     private suspend fun closeAll(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
         silent: Boolean,
         basicTicket: BasicTicket
-    ): NotifyParams = withContext(asyncContext) {
+    ): NotifyParams = coroutineScope {
         val lowerBound = args[1].toInt()
         val upperBound = args[2].toInt()
 
-        launchIndependent { configState.database.massCloseTickets(lowerBound, upperBound, sender.toUUIDOrNull(), asyncContext) }
+        launchIndependent { pluginData.configState.database.massCloseTickets(lowerBound, upperBound, sender.toUUIDOrNull(), this) }
 
-        if (!silent && configState.discord?.state?.notifyOnCloseAll == true) {
+        if (!silent && pluginData.configState.discord?.state?.notifyOnCloseAll == true) {
             launchIndependent {
                 tryNoCatch {
-                    configState.discord?.closeAllUpdate(sender.name, "$lowerBound", "$upperBound")
+                    pluginData.configState.discord?.closeAllUpdate(sender.name, "$lowerBound", "$upperBound")
                 }
             }
         }
@@ -609,31 +596,31 @@ class Commands : SuspendingCommandExecutor {
 
     // /ticket comment <ID> <Comment…>
     private suspend fun comment(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
         silent: Boolean,
         ticketHandler: BasicTicketHandler,
-    ): NotifyParams = withContext(asyncContext) {
+    ): NotifyParams = coroutineScope {
         val message = args.subList(2, args.size)
             .joinToString(" ")
-            .run(ChatColor::stripColor)!!
+            .let(::stripColour)
 
-        val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && configState.allowUnreadTicketUpdates
+        val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && pluginData.configState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
             launchIndependent { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
         }
 
         launchIndependent {
-            configState.database.addAction(
+            pluginData.configState.database.addAction(
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.COMMENT, sender.toUUIDOrNull(), message)
             )
         }
 
-        if (!silent && configState.discord?.state?.notifyOnComment == true) {
+        if (!silent && pluginData.configState.discord?.state?.notifyOnComment == true) {
             launchIndependent {
                 tryNoCatch {
-                    configState.discord?.commentUpdate(sender.name, ticketHandler.id.toString(), message)
+                    pluginData.configState.discord?.commentUpdate(sender.name, ticketHandler.id.toString(), message)
                 }
             }
         }
@@ -665,33 +652,25 @@ class Commands : SuspendingCommandExecutor {
     }
 
     // /ticket convertdatabase <Target Database>
-    private suspend fun convertDatabase(args: List<String>) {
+    private suspend fun convertDatabase(
+        args: List<String>,
+    ) {
         val type = args[1].run(Database.Type::valueOf)
-        val config = mainPlugin.config
+        val configState = pluginData.configState
 
         try {
+            val sqLite: suspend () -> SQLite = { pluginData.configState.sqliteBuilder.build() as SQLite }
+            val mySQL: suspend () -> MySQL? = { pluginData.configState.mySQLBuilder.build() as MySQL? }
+            val memory: suspend () -> Memory? = { pluginData.configState.memoryBuilder.build() as Memory? }
+
             configState.database.migrateDatabase(
-                context = asyncContext,
+                scope = pluginData.asyncScope,
                 to = type,
-                sqLiteBuilder = { SQLite(mainPlugin.dataFolder.absolutePath) },
-                mySQLBuilder = {
-                    MySQL(
-                        config.getString("MySQL_Host")!!,
-                        config.getString("MySQL_Port")!!,
-                        config.getString("MySQL_DBName")!!,
-                        config.getString("MySQL_Username")!!,
-                        config.getString("MySQL_Password")!!,
-                        asyncDispatcher = (mainPlugin.asyncDispatcher as CoroutineDispatcher)
-                    )
-                },
-                memoryBuilder = {
-                    Memory(
-                        filePath = mainPlugin.dataFolder.absolutePath,
-                        backupFrequency = config.getLong("Memory_Backup_Frequency", 600),
-                    )
-                },
+                sqLiteBuilder = sqLite,
+                mySQLBuilder = mySQL,
+                memoryBuilder = memory,
                 onBegin = {
-                    mainPlugin.pluginState.pluginLocked.set(true)
+                    pluginData .pluginLocked.set(true)
                     pushMassNotify("ticketmanager.notify.info") {
                         it.informationDBConvertInit
                             .replace("%fromDB%", configState.database.type.name)
@@ -700,37 +679,38 @@ class Commands : SuspendingCommandExecutor {
                     }
                 },
                 onComplete = {
-                    mainPlugin.pluginState.pluginLocked.set(false)
+                    pluginData.pluginLocked.set(false)
                     pushMassNotify("ticketmanager.notify.info") {
                         it.informationDBConvertSuccess.run(::toColouredAdventure)
                     }
                 }
             )
         } catch (e: Exception) {
-            mainPlugin.pluginState.pluginLocked.set(false)
+            pluginData.pluginLocked.set(false)
             throw e
         }
     }
 
     // /ticket create <Message…>
     private suspend fun create(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
-    ): NotifyParams = withContext(asyncContext) {
+    ): NotifyParams = coroutineScope {
         val message = args.subList(1, args.size)
             .joinToString(" ")
-            .run(ChatColor::stripColor)!!
+            .let(::stripColour)
 
-        val ticket = ConcreteBasicTicket(creatorUUID = sender.toUUIDOrNull(), location = sender.toTicketLocationOrNull())
+        val ticket = if (sender is Player) ConcreteBasicTicket(creatorUUID = sender.uniqueID, location = sender.location)
+        else ConcreteBasicTicket(creatorUUID = null, location = null)
 
-        val deferredID = async { configState.database.addNewTicket(ticket, asyncContext, message) }
-        mainPlugin.pluginState.ticketCountMetrics.run { set(get() + 1) }
+        val deferredID = async { pluginData.configState.database.addNewTicket(ticket, this, message) }
+        pluginData.ticketCountMetrics.run { set(get() + 1) }
         val id = deferredID.await().toString()
 
-        if (configState.discord?.state?.notifyOnCreate == true) {
+        if (pluginData.configState.discord?.state?.notifyOnCreate == true) {
             launchIndependent {
                 tryNoCatch {
-                    configState.discord?.createUpdate(sender.name, id, message)
+                    pluginData.configState.discord?.createUpdate(sender.name, id, message)
                 }
             }
         }
@@ -759,11 +739,11 @@ class Commands : SuspendingCommandExecutor {
 
     // /ticket help
     private fun help(
-        sender: CommandSender,
-        locale: TMLocale,
+        sender: Sender,
     ) {
         val hasSilentPerm = sender.has("ticketmanager.commandArg.silence")
-        val cc = configState.localeHandler.mainColourCode
+        val cc = pluginData.configState.localeHandler.mainColourCode
+        val locale = sender.locale
 
         val component = buildComponent {
             text { formattedContent(locale.helpHeader) }
@@ -816,26 +796,27 @@ class Commands : SuspendingCommandExecutor {
 
     // /ticket history [User] [Page]
     private suspend fun history(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
-        locale: TMLocale,
     ) {
-        withContext(asyncContext) {
+        val locale = sender.locale
+
+        coroutineScope {
             val targetName =
                 if (args.size >= 2) args[1].takeIf { it != locale.consoleName } else sender.name.takeIf { sender is Player }
             val requestedPage = if (args.size >= 3) args[2].toInt() else 1
 
             // Leaves console as null. Otherwise attempts UUID grab or [PLAYERNOTFOUND]
-            fun String.attemptToUUIDString(): String =
-                Bukkit.getOfflinePlayers().asSequence()
-                    .firstOrNull { equals(it.name) }
-                    ?.run { uniqueId.toString() }
-                    ?: "[PLAYERNOTFOUND]"
+            suspend fun String.attemptToUUIDString() = getOnlinePlayers()
+                .toList()
+                .firstOrNull { equals(it.name) }
+                ?.run { uniqueID.toString() }
+                ?: "[PLAYERNOTFOUND]"
 
             val searchedUser = targetName?.attemptToUUIDString()
 
             val resultSize: Int
-            val resultsChunked = configState.database.searchDatabase(asyncContext, locale, listOf(locale.searchCreator to searchedUser)) { true }
+            val resultsChunked = pluginData.configState.database.searchDatabase(this, locale, listOf(locale.searchCreator to searchedUser)) { true }
                 .toList()
                 .sortedByDescending(BasicTicket::id)
                 .also { resultSize = it.size }
@@ -886,52 +867,48 @@ class Commands : SuspendingCommandExecutor {
 
     // /ticket list [Page]
     private suspend fun list(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
-        locale: TMLocale,
     ) {
-        createGeneralList(args, locale, locale.listFormatHeader,
+        createGeneralList(args, sender.locale, sender.locale.listFormatHeader,
             getIDPriorityPair = Database::getOpenIDPriorityPairs,
-            baseCommand = locale.run{ { "/$commandBase $commandWordList " } }
+            baseCommand = sender.locale.run{ { "/$commandBase $commandWordList " } }
         )
             .run(sender::sendMessage)
     }
 
     // /ticket listassigned [Page]
     private suspend fun listAssigned(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
-        locale: TMLocale,
     ) {
-        val groups: List<String> = if (sender is Player) mainPlugin.perms.getPlayerGroups(sender).toList() else listOf()
+        val groups: List<String> = if (sender is Player) sender.permissionGroups else listOf()
 
-        createGeneralList(args, locale, locale.listFormatAssignedHeader,
+        createGeneralList(args, sender.locale, sender.locale.listFormatAssignedHeader,
             getIDPriorityPair = { it.getAssignedOpenIDPriorityPairs(sender.name, groups) },
-            baseCommand = locale.run { { "/$commandBase $commandWordListAssigned " } }
+            baseCommand = sender.locale.run { { "/$commandBase $commandWordListAssigned " } }
         )
             .run(sender::sendMessage)
     }
 
     private suspend fun listUnassigned(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
-        locale: TMLocale,
     ) {
-        createGeneralList(args, locale, locale.listFormatUnassignedHeader,
+        createGeneralList(args, sender.locale, sender.locale.listFormatUnassignedHeader,
             getIDPriorityPair = Database::getUnassignedOpenIDPriorityPairs,
-            baseCommand = locale.run { { "/$commandBase $commandWordListUnassigned " } }
+            baseCommand = sender.locale.run { { "/$commandBase $commandWordListUnassigned " } }
         )
             .run(sender::sendMessage)
     }
 
     // /ticket reload
     private suspend fun reload(
-        sender: CommandSender,
-        locale: TMLocale,
+        sender: Sender
     ) {
-        withContext(asyncContext) {
+        coroutineScope {
             try {
-                mainPlugin.pluginState.pluginLocked.set(true)
+                pluginData.pluginLocked.set(true)
                 pushMassNotify("ticketmanager.notify.info") {
                     it.informationReloadInitiated
                         .replace("%user%", sender.name)
@@ -946,13 +923,13 @@ class Commands : SuspendingCommandExecutor {
                         pushMassNotify("ticketmanager.notify.warning") {
                             it.warningsLongTaskDuringReload.run(::toColouredAdventure)
                         }
-                        mainPlugin.pluginState.jobCount.set(1)
-                        mainPlugin.asyncDispatcher.cancelChildren()
+                        pluginData.jobCount.set(1)
+                        pluginData.asyncDispatcher.cancelChildren()
                     }
                 }
 
                 // Waits for other tasks to complete
-                while (mainPlugin.pluginState.jobCount.get() > 1) delay(1000L)
+                while (pluginData.jobCount.get() > 1) delay(1000L)
 
                 if (!forceQuitJob.isCancelled)
                     forceQuitJob.cancel("Tasks closed on time")
@@ -960,15 +937,15 @@ class Commands : SuspendingCommandExecutor {
                 pushMassNotify("ticketmanager.notify.info") {
                     it.informationReloadTasksDone.run(::toColouredAdventure)
                 }
-                configState.database.closeDatabase()
-                configState.discord?.shutdown()
-                mainPlugin.loadPlugin()
+                pluginData.configState.database.closeDatabase()
+                pluginData.configState.discord?.shutdown()
+                pluginData.loadPlugin()
 
                 pushMassNotify("ticketmanager.notify.info") {
                     it.informationReloadSuccess.run(::toColouredAdventure)
                 }
                 if (!sender.has("ticketmanager.notify.info")) {
-                    sender.sendColouredMessage(locale.informationReloadSuccess)
+                    sender.sendMessage(sender.locale.informationReloadSuccess)
                 }
             } catch (e: Exception) {
                 pushMassNotify("ticketmanager.notify.info") {
@@ -981,28 +958,28 @@ class Commands : SuspendingCommandExecutor {
 
     // /ticket reopen <ID>
     private suspend fun reopen(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
         silent: Boolean,
         ticketHandler: BasicTicketHandler,
-    ): NotifyParams = withContext(asyncContext) {
+    ): NotifyParams = coroutineScope {
         val action = FullTicket.Action(FullTicket.Action.Type.REOPEN, sender.toUUIDOrNull())
 
         // Updates user status if needed
-        val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && configState.allowUnreadTicketUpdates
+        val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && pluginData.configState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
             launchIndependent { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
         }
 
         launchIndependent {
-            configState.database.addAction(ticketHandler.id, action)
+            pluginData.configState.database.addAction(ticketHandler.id, action)
             ticketHandler.setTicketStatus(BasicTicket.Status.OPEN)
         }
 
-        if (!silent && configState.discord?.state?.notifyOnReopen == true) {
+        if (!silent && pluginData.configState.discord?.state?.notifyOnReopen == true) {
             launchIndependent {
                 tryNoCatch {
-                    configState.discord?.reopenUpdate(sender.name, ticketHandler.id.toString())
+                    pluginData.configState.discord?.reopenUpdate(sender.name, ticketHandler.id.toString())
                 }
             }
         }
@@ -1033,16 +1010,17 @@ class Commands : SuspendingCommandExecutor {
     }
 
     private suspend fun search(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
-        locale: TMLocale,
     ) {
-        withContext(asyncContext) {
-            fun String.attemptToUUIDString(): String? =
+        val locale = sender.locale
+
+        coroutineScope {
+            suspend fun String.attemptToUUIDString(): String? =
                 if (equals(locale.consoleName)) null
-                else Bukkit.getOfflinePlayers().asSequence()
+                else getOnlinePlayers()
                     .firstOrNull { equals(it.name) }
-                    ?.run { uniqueId.toString() }
+                    ?.run { uniqueID.toString() }
                     ?: "[PLAYERNOTFOUND]"
 
             // Beginning of execution
@@ -1120,7 +1098,7 @@ class Commands : SuspendingCommandExecutor {
 
             // Results Computation
             val resultSize: Int
-            val chunkedTickets = configState.database.searchDatabase(asyncContext, locale, mainTableConstrains, composedSearch)
+            val chunkedTickets = pluginData.configState.database.searchDatabase(this, locale, mainTableConstrains, composedSearch)
                 .toList()
                 .sortedByDescending(BasicTicket::id)
                 .apply { resultSize = size }
@@ -1148,7 +1126,7 @@ class Commands : SuspendingCommandExecutor {
                                 .replace("%SCC%", it.status.colourCode)
                                 .replace("%id%", "${it.id}")
                                 .replace("%status%", it.status.toLocaledWord(locale))
-                                .replace("%creator%", it.creatorUUID.toName(locale))
+                                .replace("%creator%", uuidToName(it.creatorUUID, sender.locale))
                                 .replace("%assign%", it.assignedTo ?: "")
                                 .replace("%world%", it.location?.world ?: "")
                                 .replace("%time%", it.actions[0].timestamp.toLargestRelativeTime(locale))
@@ -1186,25 +1164,25 @@ class Commands : SuspendingCommandExecutor {
 
     // /ticket setpriority <ID> <Level>
     private suspend fun setPriority(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
         silent: Boolean,
         ticketHandler: BasicTicketHandler,
-    ): NotifyParams = withContext(asyncContext) {
+    ): NotifyParams = coroutineScope {
         val newPriority = byteToPriority(args[2].toByte())
 
         launchIndependent {
-            configState.database.addAction(
+            pluginData.configState.database.addAction(
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.SET_PRIORITY, sender.toUUIDOrNull(), args[2])
             )
             ticketHandler.setTicketPriority(newPriority)
         }
 
-        if (!silent && configState.discord?.state?.notifyOnPriorityChange == true) {
+        if (!silent && pluginData.configState.discord?.state?.notifyOnPriorityChange == true) {
             launchIndependent {
                 tryNoCatch {
-                    configState.discord?.priorityChangeUpdate(sender.name, ticketHandler.id.toString(), newPriority)
+                    pluginData.configState.discord?.priorityChangeUpdate(sender.name, ticketHandler.id.toString(), newPriority)
                 }
             }
         }
@@ -1234,32 +1212,29 @@ class Commands : SuspendingCommandExecutor {
 
     // /ticket teleport <ID>
     private suspend fun teleport(
-        sender: CommandSender,
+        sender: Sender,
         basicTicket: BasicTicket,
     ) {
         if (sender is Player && basicTicket.location != null) {
-            val loc = basicTicket.location!!.run { Location(Bukkit.getWorld(world), x.toDouble(), y.toDouble(), z.toDouble()) }
-            withContext(mainPlugin.minecraftDispatcher) {
-                sender.teleport(loc)
+            withContext(pluginData.mainDispatcher) {
+                teleportToTicketLocation(sender, basicTicket.location!!)
             }
         }
     }
 
     // /ticket unassign <ID>
     private suspend fun unAssign(
-        sender: CommandSender,
+        sender: Sender,
         args: List<String>,
         silent: Boolean,
-        senderLocale: TMLocale,
         ticketHandler: BasicTicketHandler,
     ): NotifyParams {
-        return allAssignVariations(sender, silent, senderLocale, args[1], null, ticketHandler)
+        return allAssignVariations(sender, silent, args[1], null, ticketHandler)
     }
 
     // /ticket version
     private fun version(
-        sender: CommandSender,
-        locale: TMLocale,
+        sender: Sender,
     ) {
         val sentComponent = buildComponent {
             text {
@@ -1280,8 +1255,8 @@ class Commands : SuspendingCommandExecutor {
                 content("HERE\n")
                 color(NamedTextColor.GRAY)
                 decorate(TextDecoration.UNDERLINED)
-                clickEvent(ClickEvent.openUrl(locale.wikiLink))
-                onHover { showText(Component.text(locale.clickWiki)) }
+                clickEvent(ClickEvent.openUrl(sender.locale.wikiLink))
+                onHover { showText(Component.text(sender.locale.clickWiki)) }
             }
             text {
                 content("           V$pluginVersion\n")
@@ -1298,13 +1273,12 @@ class Commands : SuspendingCommandExecutor {
 
     // /ticket view <ID>
     private suspend fun view(
-        sender: CommandSender,
-        locale: TMLocale,
+        sender: Sender,
         ticketHandler: BasicTicketHandler,
     ) {
-        withContext(asyncContext) {
+        coroutineScope {
             val fullTicket = ticketHandler.toFullTicket()
-            val baseComponent = buildTicketInfoComponent(fullTicket, locale)
+            val baseComponent = buildTicketInfoComponent(fullTicket, sender.locale)
 
             if (!sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && ticketHandler.creatorStatusUpdate)
                 launchIndependent { ticketHandler.setCreatorStatusUpdate(false) }
@@ -1312,8 +1286,8 @@ class Commands : SuspendingCommandExecutor {
             val entries = fullTicket.actions.asSequence()
                 .filter { it.type == FullTicket.Action.Type.COMMENT || it.type == FullTicket.Action.Type.OPEN }
                 .map {
-                    "\n${locale.viewFormatComment}"
-                        .replace("%user%", it.user.toName(locale))
+                    "\n${sender.locale.viewFormatComment}"
+                        .replace("%user%", uuidToName(it.user, sender.locale))
                         .replace("%comment%", it.message!!)
                 }
                 .map { text { formattedContent(it) } }
@@ -1325,13 +1299,12 @@ class Commands : SuspendingCommandExecutor {
 
     // /ticket viewdeep <ID>
     private suspend fun viewDeep(
-        sender: CommandSender,
-        locale: TMLocale,
+        sender: Sender,
         ticketHandler: BasicTicketHandler,
     ) {
-        withContext(asyncContext) {
+        coroutineScope {
             val fullTicket = ticketHandler.toFullTicket()
-            val baseComponent = buildTicketInfoComponent(fullTicket, locale)
+            val baseComponent = buildTicketInfoComponent(fullTicket, sender.locale)
 
             if (!sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && ticketHandler.creatorStatusUpdate)
                 launchIndependent { ticketHandler.setCreatorStatusUpdate(false) }
@@ -1339,26 +1312,26 @@ class Commands : SuspendingCommandExecutor {
             fun formatDeepAction(action: FullTicket.Action): String {
                 val result = when (action.type) {
                     FullTicket.Action.Type.OPEN, FullTicket.Action.Type.COMMENT ->
-                        "\n${locale.viewFormatDeepComment}"
+                        "\n${sender.locale.viewFormatDeepComment}"
                             .replace("%comment%", action.message!!)
 
                     FullTicket.Action.Type.SET_PRIORITY ->
-                        "\n${locale.viewFormatDeepSetPriority}"
+                        "\n${sender.locale.viewFormatDeepSetPriority}"
                             .replace("%priority%",
-                                byteToPriority(action.message!!.toByte()).run { colourCode + toLocaledWord(locale) }
+                                byteToPriority(action.message!!.toByte()).run { colourCode + toLocaledWord(sender.locale) }
                             )
 
                     FullTicket.Action.Type.ASSIGN ->
-                        "\n${locale.viewFormatDeepAssigned}"
+                        "\n${sender.locale.viewFormatDeepAssigned}"
                             .replace("%assign%", action.message ?: "")
 
-                    FullTicket.Action.Type.REOPEN -> "\n${locale.viewFormatDeepReopen}"
-                    FullTicket.Action.Type.CLOSE -> "\n${locale.viewFormatDeepClose}"
-                    FullTicket.Action.Type.MASS_CLOSE -> "\n${locale.viewFormatDeepMassClose}"
+                    FullTicket.Action.Type.REOPEN -> "\n${sender.locale.viewFormatDeepReopen}"
+                    FullTicket.Action.Type.CLOSE -> "\n${sender.locale.viewFormatDeepClose}"
+                    FullTicket.Action.Type.MASS_CLOSE -> "\n${sender.locale.viewFormatDeepMassClose}"
                 }
                 return result
-                    .replace("%user%", action.user.toName(locale))
-                    .replace("%time%", action.timestamp.toLargestRelativeTime(locale))
+                    .replace("%user%", uuidToName(action.user, sender.locale))
+                    .replace("%time%", action.timestamp.toLargestRelativeTime(sender.locale))
             }
 
             val finalMSG = fullTicket.actions.asSequence()
@@ -1396,7 +1369,7 @@ class Commands : SuspendingCommandExecutor {
             content("...............")
             color(NamedTextColor.DARK_GRAY)
         }
-        val cc = configState.localeHandler.mainColourCode
+        val cc = pluginData.configState.localeHandler.mainColourCode
         val ofSection = text { formattedContent("$cc($curPage${locale.pageOf}$pageCount)") }
 
         when (curPage) {
@@ -1426,7 +1399,7 @@ class Commands : SuspendingCommandExecutor {
         ticket: FullTicket,
         locale: TMLocale
     ): Component {
-        val creator = ticket.creatorUUID.toName(locale)
+        val creator = uuidToName(ticket.creatorUUID, locale)
         val fixedAssign = ticket.assignedTo ?: ""
 
         // Shortens comment preview to fit on one line
@@ -1463,7 +1436,7 @@ class Commands : SuspendingCommandExecutor {
         getIDPriorityPair: suspend (Database) -> Flow<Pair<Int, Byte>>,
         baseCommand: (TMLocale) -> String
     ): Component {
-        val chunkedIDs = getIDPriorityPair(configState.database)
+        val chunkedIDs = getIDPriorityPair(pluginData.configState.database)
             .toList()
             .sortedWith(compareByDescending<Pair<Int, Byte>> { it.second }.thenByDescending { it.first } )
             .map { it.first }
@@ -1471,7 +1444,7 @@ class Commands : SuspendingCommandExecutor {
         val page = if (args.size == 2 && args[1].toInt() in 1..chunkedIDs.size) args[1].toInt() else 1
 
         val fullTickets = chunkedIDs.getOrNull(page - 1)
-            ?.run { configState.database.getFullTickets(this, asyncContext) }
+            ?.run { pluginData.configState.database.getFullTickets(this, pluginData.asyncScope) }
             ?.toList()
             ?: emptyList()
 
@@ -1502,7 +1475,7 @@ class Commands : SuspendingCommandExecutor {
         text {
             formattedContent(
                 "\n${locale.viewFormatInfo1}"
-                    .replace("%creator%", ticket.creatorUUID.toName(locale))
+                    .replace("%creator%", uuidToName(ticket.creatorUUID, locale))
                     .replace("%assignment%", ticket.assignedTo ?: "")
             )
         }
@@ -1530,6 +1503,18 @@ class Commands : SuspendingCommandExecutor {
         text { formattedContent("\n${locale.viewFormatSep2}") }
     }
 
+
+    private inline fun launchIndependent(crossinline f: suspend () -> Unit) {
+        pluginData.asyncScope.launch { f() }
+    }
+
+    abstract fun pushMassNotify(permission: String, localeMsg: (TMLocale) -> Component)
+    abstract fun buildPlayer(uuid: UUID): Player
+    abstract fun getOnlinePlayers(): Flow<Player>
+    abstract fun stripColour(msg: String): String
+    abstract fun offlinePlayerNameToUUIDOrNull(name: String): UUID?
+    abstract fun uuidToName(uuid: UUID?, locale: TMLocale): String
+    abstract fun teleportToTicketLocation(player: Player, location: BasicTicket.TicketLocation)
 }
 
 /*-------------------------*/
@@ -1546,17 +1531,11 @@ private inline fun Boolean.thenCheck(error: () -> Unit, predicate: () -> Boolean
     else error().run { false }
 }
 
-private fun CommandSender.nonCreatorMadeChange(creatorUUID: UUID?): Boolean {
+private fun Sender.nonCreatorMadeChange(creatorUUID: UUID?): Boolean {
     if (creatorUUID == null) return false
-    return this.toUUIDOrNull()?.notEquals(creatorUUID) ?: true
+    return if (this is Player) this.uniqueID.notEquals(creatorUUID) else true
 }
-
-private fun CommandSender.toTicketLocationOrNull() = if (this is Player)
-        location.run { BasicTicket.TicketLocation(world.name, blockX, blockY, blockZ) }
-    else null
 
 private inline fun tryNoCatch(f: () -> Unit) =
     try { f() }
     catch(e: Exception) {}
-
-private suspend inline fun launchIndependent(crossinline f: suspend CoroutineScope.() -> Unit) = CoroutineScope(asyncDispatcher).launch { f(this) }

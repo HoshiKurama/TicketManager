@@ -1,8 +1,9 @@
-package com.github.hoshikurama.ticketmanager.common.databases
+package com.github.hoshikurama.ticketmanager.common.database
 
 import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import java.util.*
 import kotlin.coroutines.CoroutineContext
@@ -29,10 +30,10 @@ interface Database {
     // Database additions
     suspend fun addAction(ticketID: Int, action: FullTicket.Action)
     suspend fun addFullTicket(fullTicket: FullTicket)
-    suspend fun addNewTicket(basicTicket: BasicTicket, context: CoroutineContext, message: String): Int
+    suspend fun addNewTicket(basicTicket: BasicTicket, scope: CoroutineScope, message: String): Int
 
     // Database removals
-    suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?, context: CoroutineContext)
+    suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?, scope: CoroutineScope)
 
     // Collections of tickets
     suspend fun getOpenIDPriorityPairs(): Flow<Pair<Int, Byte>>
@@ -42,11 +43,11 @@ interface Database {
     suspend fun getIDsWithUpdatesFor(uuid: UUID): Flow<Int>
     suspend fun getBasicTickets(ids: List<Int>): Flow<BasicTicket>
     suspend fun getFullTicketsFromBasics(basicTickets: List<BasicTicket>, context: CoroutineContext): Flow<FullTicket>
-    suspend fun getFullTickets(ids: List<Int>, context: CoroutineContext): Flow<FullTicket>
+    suspend fun getFullTickets(ids: List<Int>, scope: CoroutineScope): Flow<FullTicket>
 
     // Database searching
     suspend fun searchDatabase(
-        context: CoroutineContext,
+        scope: CoroutineScope,
         locale: TMLocale,
         mainTableConstraints: List<Pair<String, String?>>,
         searchFunction: (FullTicket) -> Boolean
@@ -57,16 +58,15 @@ interface Database {
     suspend fun initialiseDatabase()
     suspend fun updateNeeded(): Boolean
     suspend fun migrateDatabase(
-        context: CoroutineContext,
+        scope: CoroutineScope,
         to: Type,
-        mySQLBuilder: suspend () -> MySQL,
+        mySQLBuilder: suspend () -> MySQL?,
         sqLiteBuilder: suspend () -> SQLite,
-        memoryBuilder: suspend () -> Memory,
+        memoryBuilder: suspend () -> Memory?,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit,
     )
     suspend fun updateDatabase(
-        context: CoroutineContext,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit,
         offlinePlayerNameToUuidOrNull: (String) -> UUID?

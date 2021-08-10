@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.spigot.events
 
 import com.github.hoshikurama.ticketmanager.common.TMLocale
-import com.github.hoshikurama.ticketmanager.common.databases.Database
+import com.github.hoshikurama.ticketmanager.common.database.Database
 import com.github.hoshikurama.ticketmanager.spigot.has
 import com.github.hoshikurama.ticketmanager.spigot.mainPlugin
 import com.github.hoshikurama.ticketmanager.spigot.toTMLocale

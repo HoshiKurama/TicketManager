@@ -1,4 +1,4 @@
-package com.github.hoshikurama.ticketmanager.common.databases
+package com.github.hoshikurama.ticketmanager.common.database
 
 import com.github.hoshikurama.ticketmanager.common.*
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
@@ -117,7 +117,7 @@ class Memory(
         }
     }
 
-    override suspend fun addNewTicket(basicTicket: BasicTicket, context: CoroutineContext, message: String): Int {
+    override suspend fun addNewTicket(basicTicket: BasicTicket, scope: CoroutineScope, message: String): Int {
         val id = nextTicketID.getAndIncrement()
         val action = FullTicket.Action(FullTicket.Action.Type.OPEN, basicTicket.creatorUUID, message)
         val fullTicket = FullTicket(id, basicTicket.creatorUUID, basicTicket.location, basicTicket.priority, basicTicket.status, basicTicket.assignedTo, basicTicket.creatorStatusUpdate, listOf(action))
@@ -129,7 +129,7 @@ class Memory(
         return id
     }
 
-    override suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?, context: CoroutineContext) {
+    override suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?, scope: CoroutineScope) {
         val ticketsToChange = mutableListOf<FullTicket>()
 
         (lowerBound..upperBound).forEach { ticketID ->
@@ -229,14 +229,14 @@ class Memory(
         return getBasicTickets(ids).map { it as FullTicket }.toList().asFlow()
     }
 
-    override suspend fun getFullTickets(ids: List<Int>, context: CoroutineContext): Flow<FullTicket> {
+    override suspend fun getFullTickets(ids: List<Int>, scope: CoroutineScope): Flow<FullTicket> {
         return mapMutex.read.withLock {
             ids.mapNotNull { ticketMap[it] }
         }.asFlow()
     }
 
     override suspend fun searchDatabase(
-        context: CoroutineContext,
+        scope: CoroutineScope,
         locale: TMLocale,
         mainTableConstraints: List<Pair<String, String?>>,
         searchFunction: (FullTicket) -> Boolean
@@ -288,45 +288,39 @@ class Memory(
     }
 
     override suspend fun migrateDatabase(
-        context: CoroutineContext,
+        scope: CoroutineScope,
         to: Database.Type,
-        mySQLBuilder: suspend () -> MySQL,
+        mySQLBuilder: suspend () -> MySQL?,
         sqLiteBuilder: suspend () -> SQLite,
-        memoryBuilder: suspend () -> Memory,
+        memoryBuilder: suspend () -> Memory?,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit
     ) {
-        withContext(context) {
-            launch { onBegin() }
-        }
+        scope.launch { onBegin() }
+
         when (to) {
             Database.Type.Memory -> return
 
             Database.Type.MySQL,
             Database.Type.SQLite -> {
                 val otherDB = if (to == Database.Type.MySQL) mySQLBuilder() else sqLiteBuilder()
-                otherDB.initialiseDatabase()
+                otherDB?.initialiseDatabase()
 
                 mapMutex.read.withLock {
                     ticketMap.map { it.value }
                 }
                     .map {
-                        withContext(context) {
-                            launch { otherDB.addFullTicket(it) }
-                        }
+                        scope.launch { otherDB?.addFullTicket(it) }
                     }
 
-                otherDB.closeDatabase()
+                otherDB?.closeDatabase()
             }
         }
 
-        withContext(context) {
-            launch { onComplete() }
-        }
+        scope.launch { onComplete() }
     }
 
     override suspend fun updateDatabase(
-        context: CoroutineContext,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit,
         offlinePlayerNameToUuidOrNull: (String) -> UUID?
