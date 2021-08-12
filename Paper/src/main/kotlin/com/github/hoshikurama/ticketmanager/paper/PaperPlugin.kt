@@ -6,7 +6,6 @@ import com.github.shynixn.mccoroutine.asyncDispatcher
 import com.github.shynixn.mccoroutine.launchAsync
 import com.github.shynixn.mccoroutine.minecraftDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.milkbowl.vault.permission.Permission
@@ -31,31 +30,24 @@ class PaperPlugin : SuspendingJavaPlugin() {
         )
         ticketManagerPlugin.commandPipeline = PaperCommandPipeline(ticketManagerPlugin, perms)
 
-        // Launch Metrics async once ticketManager object is booted
-        launchAsync {
-            while (!(::ticketManagerPlugin.isInitialized)) {
-                delay(100)
-
-                ticketManagerPlugin.mainScope.launch {
-                    metrics = Metrics(this@PaperPlugin, metricsKey)
-                    metrics.addCustomChart(
-                        Metrics.SingleLineChart("tickets_made") {
-                            runBlocking {
-                                val ticketCount = ticketManagerPlugin.ticketCountMetrics.get()
-                                ticketManagerPlugin.ticketCountMetrics.set(0)
-                                ticketCount
-                            }
-                        }
-                    )
-                    metrics.addCustomChart(
-                        Metrics.SimplePie("database_type") {
-                            ticketManagerPlugin.configState.database.type.name
-                        }
-                    )
+        // Launch Metrics
+        metrics = Metrics(this@PaperPlugin, metricsKey)
+        metrics.addCustomChart(
+            Metrics.SingleLineChart("tickets_made") {
+                runBlocking {
+                    val ticketCount = ticketManagerPlugin.ticketCountMetrics.get()
+                    ticketManagerPlugin.ticketCountMetrics.set(0)
+                    ticketCount
                 }
             }
-        }
+        )
+        metrics.addCustomChart(
+            Metrics.SimplePie("database_type") {
+                ticketManagerPlugin.configState.database.type.name
+            }
+        )
 
+        // Enable normal plugin startup
         launchAsync { ticketManagerPlugin.enable() }
 
         // Schedules async repeating tasks

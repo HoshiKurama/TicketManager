@@ -6,7 +6,6 @@ import com.github.shynixn.mccoroutine.asyncDispatcher
 import com.github.shynixn.mccoroutine.launchAsync
 import com.github.shynixn.mccoroutine.minecraftDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
@@ -37,30 +36,22 @@ class SpigotPlugin : SuspendingJavaPlugin() {
         )
         ticketManagerPlugin.commandPipeline = SpigotCommandPipeline(ticketManagerPlugin, perms, adventure)
 
-        // Launch Metrics async once ticketManager object is booted
-        launchAsync {
-            while (!(::ticketManagerPlugin.isInitialized)) {
-                delay(100)
-
-                ticketManagerPlugin.mainScope.launch {
-                    metrics = Metrics(this@SpigotPlugin, metricsKey)
-                    metrics.addCustomChart(
-                        Metrics.SingleLineChart("tickets_made") {
-                            runBlocking {
-                                val ticketCount = ticketManagerPlugin.ticketCountMetrics.get()
-                                ticketManagerPlugin.ticketCountMetrics.set(0)
-                                ticketCount
-                            }
-                        }
-                    )
-                    metrics.addCustomChart(
-                        Metrics.SimplePie("database_type") {
-                            ticketManagerPlugin.configState.database.type.name
-                        }
-                    )
+        // Launch Metrics
+        metrics = Metrics(this@SpigotPlugin, metricsKey)
+        metrics.addCustomChart(
+            Metrics.SingleLineChart("tickets_made") {
+                runBlocking {
+                    val ticketCount = ticketManagerPlugin.ticketCountMetrics.get()
+                    ticketManagerPlugin.ticketCountMetrics.set(0)
+                    ticketCount
                 }
             }
-        }
+        )
+        metrics.addCustomChart(
+            Metrics.SimplePie("database_type") {
+                ticketManagerPlugin.configState.database.type.name
+            }
+        )
 
         launchAsync { ticketManagerPlugin.enable() }
 
