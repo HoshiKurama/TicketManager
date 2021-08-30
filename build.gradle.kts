@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-   kotlin("jvm") version "1.5.21"
+   kotlin("jvm") version "1.5.30"
    java
 }
 
@@ -10,11 +10,11 @@ repositories {
 }
 
 dependencies {
-   implementation(kotlin("stdlib", version = "1.5.21"))
+   implementation(kotlin("stdlib"))
 }
 
 subprojects {
-   group = "com.hoshikurama.github"
+   group = "com.github.hoshikurama"
    version = "6.0.1"
 
    tasks.withType<KotlinCompile> {

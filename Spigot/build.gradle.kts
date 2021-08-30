@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     compileOnly("org.spigotmc:spigot-api:1.17-R0.1-SNAPSHOT")
-    implementation(kotlin("stdlib", version = "1.5.21"))
+    implementation(kotlin("stdlib"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.5.1")
     implementation("com.github.HoshiKurama:KyoriComponentDSL:1.1.0")
     implementation("net.kyori:adventure-extra-kotlin:4.8.1")
