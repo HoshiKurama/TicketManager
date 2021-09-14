@@ -38,20 +38,14 @@ Translators must comply with the following:
 
 # Translation Instructions
 TicketManager has a few different types of translations needed, and each type has its own documentation.
-Please follow instructions carefully.
 
 ## Locale File
-Locale files are responsible for how users will interact with TicketManager.
-
 ### Instructions:
-* Below the section "Input Data", you will see a table. This is where you write translations.
-* "English" column contains the English word or sentence that needs to be translated.
-* "Description" column has more information about the English word, such as how it is used.
-* "Translation" column is where the translations are written.
-	* To fill in, write the translation between the last two vertical bars.
-		* Example: *| Don't touch | Don't touch | Don't touch | Write here! |*
-		* Make sure to leave a space between the beginning and end of your translation.
-* **DO NOT** write or change any field other than the translation column!
+* The formatting of your translation file only requires two things:
+	* YML_Key
+	* Translation
+* DO NOT edit the YML key! This is needed for when I create the actual localization file!
+* Any formatting is fine, but the formatting should be clear and consistent.
 * Anything inside [] is **NOT** a part of the translation. It is a placeholder for something like another word or a number. **DO NOT** change the word inside!! Please copy and paste the placeholder where it is needed for the translation to be accurate. More information about the placeholder may be contained in the description column.
 	* Words will always be singular or plural based on how they are spelled in the English column. If your language does not distinguish within the context, please use whatever makes sense in your language.
 * Inside the Description column, a few words might be used:
@@ -60,6 +54,11 @@ Locale files are responsible for how users will interact with TicketManager.
 * If a direct translation does not exist or the direct translation would not be used by native speakers, use a word or phrase that native speakers would use instead.
 
 ### Input Data:
+* "YML_Key" refers to the key value inside the translation file.
+* "English" column contains the English word or sentence that needs to be translated.
+* "Description" column has more information about the English word, such as how it is used.
+* "Translation" column is self-explanatory
+
 | YML_Key | Description | English | Translation |  
 | -- | -- | -- | -- |  
 | ViewFormat_Header | Tells user which ticket number they are viewing | Viewing Ticket [number] |  |  
