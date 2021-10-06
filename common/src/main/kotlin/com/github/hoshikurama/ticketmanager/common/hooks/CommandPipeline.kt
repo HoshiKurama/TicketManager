@@ -25,6 +25,8 @@ import java.util.*
 
 
 abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>) {
+    private val database: Database
+        get() = pluginData.configState.database
 
     suspend fun execute(
         sender: Sender,
@@ -43,7 +45,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         }
 
         // Grabs BasicTicket. Only null if ID required but doesn't exist. Filters non-valid tickets
-        val pseudoTicket = getBasicTicketHandler(args, senderLocale)
+        val pseudoTicket = getBasicTicket(args, senderLocale)
         if (pseudoTicket == null) {
             sender.sendMessage(senderLocale.warningsInvalidID)
             return@coroutineScope false
@@ -72,12 +74,12 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         return@coroutineScope true
     }
 
-    private suspend fun getBasicTicketHandler(
+    private suspend fun getBasicTicket(
         args: List<String>,
         senderLocale: TMLocale,
-    ): BasicTicketHandler? {
+    ): BasicTicket? {
 
-        suspend fun buildFromID(id: Int) = BasicTicketHandler.buildHandler(pluginData.configState.database, id)
+        suspend fun buildFromID(id: Int) = database.getBasicTicket(id)
 
         return when (args[0]) {
             senderLocale.commandWordAssign,
@@ -100,7 +102,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
                 args.getOrNull(1)
                     ?.toIntOrNull()
                     ?.let { buildFromID(it) }
-            else -> ConcreteBasicTicket(creatorUUID = null, location = null).run { BasicTicketHandler(this, pluginData.configState.database) } // Occurs when command does not need valid handler
+            else -> BasicTicketImpl(creatorUUID = null, location = null).run { BasicTicketImpl(creatorUUID = null, location = null) } // Occurs when command does not need valid handler
         }
     }
 
@@ -271,22 +273,22 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
     private suspend fun executeCommand(
         sender: Sender,
         args: List<String>,
-        ticketHandler: BasicTicketHandler
+        ticket: BasicTicket
     ): NotifyParams? {
         val senderLocale = sender.locale
         return senderLocale.run {
             when (args[0]) {
-                commandWordAssign -> assign(sender, args, false, ticketHandler)
-                commandWordAssign -> assign(sender, args, false, ticketHandler)
-                commandWordSilentAssign -> assign(sender, args, true, ticketHandler)
-                commandWordClaim -> claim(sender, args, false, ticketHandler)
-                commandWordSilentClaim -> claim(sender, args, true, ticketHandler)
-                commandWordClose -> close(sender, args, false, ticketHandler)
-                commandWordSilentClose -> close(sender, args, true, ticketHandler)
-                commandWordCloseAll -> closeAll(sender, args, false, ticketHandler)
-                commandWordSilentCloseAll -> closeAll(sender, args, true, ticketHandler)
-                commandWordComment -> comment(sender, args, false, ticketHandler)
-                commandWordSilentComment -> comment(sender, args, true, ticketHandler)
+                commandWordAssign -> assign(sender, args, false, ticket)
+                commandWordAssign -> assign(sender, args, false, ticket)
+                commandWordSilentAssign -> assign(sender, args, true, ticket)
+                commandWordClaim -> claim(sender, args, false, ticket)
+                commandWordSilentClaim -> claim(sender, args, true, ticket)
+                commandWordClose -> close(sender, args, false, ticket)
+                commandWordSilentClose -> close(sender, args, true, ticket)
+                commandWordCloseAll -> closeAll(sender, args, false, ticket)
+                commandWordSilentCloseAll -> closeAll(sender, args, true, ticket)
+                commandWordComment -> comment(sender, args, false, ticket)
+                commandWordSilentComment -> comment(sender, args, true, ticket)
                 commandWordCreate -> create(sender, args)
                 commandWordHelp -> help(sender).let { null }
                 commandWordHistory -> history(sender, args).let { null }
@@ -294,17 +296,17 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
                 commandWordListAssigned -> listAssigned(sender, args).let { null }
                 commandWordListUnassigned -> listUnassigned(sender, args).let { null }
                 commandWordReload -> reload(sender).let { null }
-                commandWordReopen -> reopen(sender,args, false, ticketHandler)
-                commandWordSilentReopen -> reopen(sender,args, true, ticketHandler)
+                commandWordReopen -> reopen(sender,args, false, ticket)
+                commandWordSilentReopen -> reopen(sender,args, true, ticket)
                 commandWordSearch -> search(sender, args).let { null }
-                commandWordSetPriority -> setPriority(sender, args, false, ticketHandler)
-                commandWordSilentSetPriority -> setPriority(sender, args, true, ticketHandler)
-                commandWordTeleport -> teleport(sender, ticketHandler).let { null }
-                commandWordUnassign -> unAssign(sender, args, false, ticketHandler)
-                commandWordSilentUnassign -> unAssign(sender, args, true, ticketHandler)
+                commandWordSetPriority -> setPriority(sender, args, false, ticket)
+                commandWordSilentSetPriority -> setPriority(sender, args, true, ticket)
+                commandWordTeleport -> teleport(sender, ticket).let { null }
+                commandWordUnassign -> unAssign(sender, args, false, ticket)
+                commandWordSilentUnassign -> unAssign(sender, args, true, ticket)
                 commandWordVersion -> version(sender).let { null }
-                commandWordView -> view(sender, ticketHandler).let { null }
-                commandWordDeepView -> viewDeep(sender, ticketHandler).let { null }
+                commandWordView -> view(sender, ticket).let { null }
+                commandWordDeepView -> viewDeep(sender, ticket).let { null }
                 commandWordConvertDB -> convertDatabase(args).let { null }
                 else -> null
             }
@@ -364,11 +366,11 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         silent: Boolean,
         assignmentID: String,
         dbAssignment: String?,
-        ticketHandler: BasicTicketHandler,
+        ticketHandler: BasicTicket
     ): NotifyParams = coroutineScope {
         val shownAssignment = dbAssignment ?: sender.locale.miscNobody
 
-        launchIndependent { ticketHandler.setAssignedTo(dbAssignment) }
+        launchIndependent { database.setAssignment(ticketHandler.id, dbAssignment) }
         launchIndependent {
             pluginData.configState.database.addAction(
                 ticketID = ticketHandler.id,
@@ -412,7 +414,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         sender: Sender,
         args: List<String>,
         silent: Boolean,
-        ticketHandler: BasicTicketHandler,
+        ticketHandler: BasicTicket,
     ): NotifyParams {
         val sqlAssignment = args.subList(2, args.size).joinToString(" ")
         return allAssignVariations(sender, silent, args[1], sqlAssignment, ticketHandler)
@@ -423,7 +425,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         sender: Sender,
         args: List<String>,
         silent: Boolean,
-        ticketHandler: BasicTicketHandler,
+        ticketHandler: BasicTicket,
     ): NotifyParams {
         return allAssignVariations(sender, silent, args[1], sender.name, ticketHandler)
     }
@@ -433,11 +435,11 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         sender: Sender,
         args: List<String>,
         silent: Boolean,
-        ticketHandler: BasicTicketHandler
+        ticketHandler: BasicTicket
     ): NotifyParams = coroutineScope {
         val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && pluginData.configState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
-            launchIndependent { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
+            launchIndependent { database.setCreatorStatusUpdate(ticketHandler.id, newCreatorStatusUpdate) }
         }
 
         return@coroutineScope if (args.size >= 3)
@@ -449,7 +451,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         sender: Sender,
         args: List<String>,
         silent: Boolean,
-        ticketHandler: BasicTicketHandler,
+        ticketHandler: BasicTicket,
     ): NotifyParams = coroutineScope {
         val message = args.subList(2, args.size)
             .joinToString(" ")
@@ -473,7 +475,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
                     ticketID = ticketHandler.id,
                     action = FullTicket.Action(FullTicket.Action.Type.CLOSE, sender.toUUIDOrNull())
                 )
-                ticketHandler.setTicketStatus(BasicTicket.Status.CLOSED)
+                database.setStatus(ticketHandler.id, BasicTicket.Status.CLOSED)
             }
         }
 
@@ -507,7 +509,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         sender: Sender,
         args: List<String>,
         silent: Boolean,
-        ticketHandler: BasicTicketHandler
+        ticketHandler: BasicTicket
     ): NotifyParams = coroutineScope {
 
         launchIndependent {
@@ -515,7 +517,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.CLOSE, sender.toUUIDOrNull())
             )
-            ticketHandler.setTicketStatus(BasicTicket.Status.CLOSED)
+            database.setStatus(ticketHandler.id, BasicTicket.Status.CLOSED)
         }
 
         if (!silent && pluginData.configState.discord?.state?.notifyOnClose == true) {
@@ -599,7 +601,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         sender: Sender,
         args: List<String>,
         silent: Boolean,
-        ticketHandler: BasicTicketHandler,
+        ticketHandler: BasicTicket,
     ): NotifyParams = coroutineScope {
         val message = args.subList(2, args.size)
             .joinToString(" ")
@@ -607,7 +609,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
 
         val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && pluginData.configState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
-            launchIndependent { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
+            launchIndependent { database.setCreatorStatusUpdate(ticketHandler.id, newCreatorStatusUpdate) }
         }
 
         launchIndependent {
@@ -700,8 +702,8 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
             .joinToString(" ")
             .let(::stripColour)
 
-        val ticket = if (sender is Player) ConcreteBasicTicket(creatorUUID = sender.uniqueID, location = sender.location)
-        else ConcreteBasicTicket(creatorUUID = null, location = null)
+        val ticket = if (sender is Player) BasicTicketImpl(creatorUUID = sender.uniqueID, location = sender.location)
+        else BasicTicketImpl(creatorUUID = null, location = null)
 
         val deferredID = async { pluginData.configState.database.addNewTicket(ticket, this, message) }
         pluginData.ticketCountMetrics.run { set(get() + 1) }
@@ -961,19 +963,19 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         sender: Sender,
         args: List<String>,
         silent: Boolean,
-        ticketHandler: BasicTicketHandler,
+        ticketHandler: BasicTicket,
     ): NotifyParams = coroutineScope {
         val action = FullTicket.Action(FullTicket.Action.Type.REOPEN, sender.toUUIDOrNull())
 
         // Updates user status if needed
         val newCreatorStatusUpdate = sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && pluginData.configState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticketHandler.creatorStatusUpdate) {
-            launchIndependent { ticketHandler.setCreatorStatusUpdate(newCreatorStatusUpdate) }
+            launchIndependent { database.setCreatorStatusUpdate(ticketHandler.id, newCreatorStatusUpdate) }
         }
 
         launchIndependent {
             pluginData.configState.database.addAction(ticketHandler.id, action)
-            ticketHandler.setTicketStatus(BasicTicket.Status.OPEN)
+            database.setStatus(ticketHandler.id, BasicTicket.Status.OPEN)
         }
 
         if (!silent && pluginData.configState.discord?.state?.notifyOnReopen == true) {
@@ -1167,7 +1169,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         sender: Sender,
         args: List<String>,
         silent: Boolean,
-        ticketHandler: BasicTicketHandler,
+        ticketHandler: BasicTicket,
     ): NotifyParams = coroutineScope {
         val newPriority = byteToPriority(args[2].toByte())
 
@@ -1176,7 +1178,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
                 ticketID = ticketHandler.id,
                 action = FullTicket.Action(FullTicket.Action.Type.SET_PRIORITY, sender.toUUIDOrNull(), args[2])
             )
-            ticketHandler.setTicketPriority(newPriority)
+            database.setPriority(ticketHandler.id, newPriority)
         }
 
         if (!silent && pluginData.configState.discord?.state?.notifyOnPriorityChange == true) {
@@ -1227,7 +1229,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         sender: Sender,
         args: List<String>,
         silent: Boolean,
-        ticketHandler: BasicTicketHandler,
+        ticketHandler: BasicTicket,
     ): NotifyParams {
         return allAssignVariations(sender, silent, args[1], null, ticketHandler)
     }
@@ -1274,14 +1276,14 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
     // /ticket view <ID>
     private suspend fun view(
         sender: Sender,
-        ticketHandler: BasicTicketHandler,
+        ticketHandler: BasicTicket,
     ) {
         coroutineScope {
-            val fullTicket = ticketHandler.toFullTicket()
+            val fullTicket = ticketHandler.toFullTicket(database)
             val baseComponent = buildTicketInfoComponent(fullTicket, sender.locale)
 
             if (!sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && ticketHandler.creatorStatusUpdate)
-                launchIndependent { ticketHandler.setCreatorStatusUpdate(false) }
+                launchIndependent { database.setCreatorStatusUpdate(ticketHandler.id, false) }
 
             val entries = fullTicket.actions.asSequence()
                 .filter { it.type == FullTicket.Action.Type.COMMENT || it.type == FullTicket.Action.Type.OPEN }
@@ -1300,14 +1302,14 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
     // /ticket viewdeep <ID>
     private suspend fun viewDeep(
         sender: Sender,
-        ticketHandler: BasicTicketHandler,
+        ticketHandler: BasicTicket,
     ) {
         coroutineScope {
-            val fullTicket = ticketHandler.toFullTicket()
+            val fullTicket = ticketHandler.toFullTicket(database)
             val baseComponent = buildTicketInfoComponent(fullTicket, sender.locale)
 
             if (!sender.nonCreatorMadeChange(ticketHandler.creatorUUID) && ticketHandler.creatorStatusUpdate)
-                launchIndependent { ticketHandler.setCreatorStatusUpdate(false) }
+                launchIndependent { database.setCreatorStatusUpdate(ticketHandler.id, false) }
 
             fun formatDeepAction(action: FullTicket.Action): String {
                 val result = when (action.type) {

@@ -4,7 +4,7 @@ import com.github.hoshikurama.ticketmanager.common.database.Database
 import com.github.hoshikurama.ticketmanager.common.sortActions
 import java.util.*
 
-open class ConcreteBasicTicket(
+open class BasicTicketImpl(
     override val id: Int = -1,
     override val creatorUUID: UUID?,
     override val location: BasicTicket.TicketLocation?,

@@ -5,7 +5,7 @@ import com.github.hoshikurama.ticketmanager.common.byteToPriority
 import com.github.hoshikurama.ticketmanager.common.pmap
 import com.github.hoshikurama.ticketmanager.common.sortActions
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
-import com.github.hoshikurama.ticketmanager.common.ticket.ConcreteBasicTicket
+import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicketImpl
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.toTicketLocation
 import com.github.jasync.sql.db.ConnectionPoolConfiguration
@@ -408,7 +408,7 @@ class MySQL(
     }
 
     private fun RowData.toBasicTicket(): BasicTicket {
-        return ConcreteBasicTicket(
+        return BasicTicketImpl(
             id = getInt(0)!!,
             assignedTo = getString(4),
             creatorStatusUpdate = getBoolean(5)!!,

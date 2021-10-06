@@ -3,7 +3,7 @@ package com.github.hoshikurama.ticketmanager.common.database
 import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.byteToPriority
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
-import com.github.hoshikurama.ticketmanager.common.ticket.ConcreteBasicTicket
+import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicketImpl
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.toTicketLocation
 import kotlinx.coroutines.CoroutineScope
@@ -404,7 +404,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
     }
 
     private fun Row.toBasicTicket(): BasicTicket {
-        return ConcreteBasicTicket(
+        return BasicTicketImpl(
             id = int(1),
             creatorUUID = stringOrNull(2)?.let(UUID::fromString),
             priority = byteToPriority(byte(3)),

@@ -44,7 +44,7 @@ class PaperTicketManagerPlugin(
         mainPlugin.reloadConfig()
 
         return mainPlugin.config.run {
-            ConfigBuilder.buildConfigState(
+             ConfigBuilder.buildConfigState(
                 mySQLBuilder = MySQLBuilder(
                     getString("MySQL_Host")!!,
                     getString("MySQL_Port")!!,
