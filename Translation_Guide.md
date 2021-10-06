@@ -1,13 +1,6 @@
 
 # Locale Guide
 Thank you so much for helping to translate TicketManager! Before you begin, please read all of the information below.
-NOTE: This is a markdown file! It is recommended to open this file in a markdown editor. If you do not have a markdown editor:
- * Ctrl + A to copy all text in the file.
- * Go to [stackedit.io](https://stackedit.io/app#) and enter the site.
- * Clear any text already on the site on the left side.
- * Ctrl + V to paste all text to the left side.
- * Use the left size to write text. Use the right side to read text.
-You do not need a markdown editor however. You can use a normal text editor if you wish.
 
 ## Information:
 * TicketManager expects high-quality and accurate translations.
@@ -18,14 +11,14 @@ Translators must comply with the following:
 * Have a basic understanding of English.
 * Have a fluent understanding of the translated language.
 * Language must be supported by the Minecraft client.
-* Language must not yet be implemented by TicketManger.
-* If your language has different versions *(US English vs UK English)*, additional requirements apply:
-  - Language version must be supported by Minecraft client.
-  - Language version must not yet be implemented by TicketManager.
-  - Language version must have different spellings or  different words from the other language file *(color vs colour)*.
+* Language or dialect of the language must not yet be implemented by TicketManger.
+* If your language has different dialects *(US English vs UK English)*, additional requirements apply:
+  - Dialect must be supported by Minecraft client.
+  - Dialect must not yet be implemented by TicketManager.
+  - Dialect must have different spellings or different words from the other language file *(color vs colour)*. If the dialect needs no changes from an already supported locale, let me know and I'll handle it!
     - The change could be as small as one line or nearly all lines.
 * Fulfill the extra eligibility criteria outlined for the specific type of translation. More information is provided in the instructions section.
-* Translate for the latest version of TicketManager. Translations will not be accepted for previous versions.
+* Translate for the latest version of TicketManager.
 
 ## Steps:
  1. Contact me and express interest in translating TicketManager.
@@ -45,20 +38,14 @@ Translators must comply with the following:
 
 # Translation Instructions
 TicketManager has a few different types of translations needed, and each type has its own documentation.
-Please follow instructions carefully.
 
 ## Locale File
-Locale files are responsible for how users will interact with TicketManager.
-
 ### Instructions:
-* Below the section "Input Data", you will see a table. This is where you write translations.
-* "English" column contains the English word or sentence that needs to be translated.
-* "Description" column has more information about the English word, such as how it is used.
-* "Translation" column is where the translations are written.
-	* To fill in, write the translation between the last two vertical bars.
-		* Example: *| Don't touch | Don't touch | Don't touch | Write here! |*
-		* Make sure to leave a space between the beginning and end of your translation.
-* **DO NOT** write or change any field other than the translation column!
+* The formatting of your translation file only requires two things:
+	* YML_Key
+	* Translation
+* DO NOT edit the YML key! This is needed for when I create the actual localization file!
+* Any formatting is fine, but the formatting should be clear and consistent.
 * Anything inside [] is **NOT** a part of the translation. It is a placeholder for something like another word or a number. **DO NOT** change the word inside!! Please copy and paste the placeholder where it is needed for the translation to be accurate. More information about the placeholder may be contained in the description column.
 	* Words will always be singular or plural based on how they are spelled in the English column. If your language does not distinguish within the context, please use whatever makes sense in your language.
 * Inside the Description column, a few words might be used:
@@ -67,6 +54,11 @@ Locale files are responsible for how users will interact with TicketManager.
 * If a direct translation does not exist or the direct translation would not be used by native speakers, use a word or phrase that native speakers would use instead.
 
 ### Input Data:
+* "YML_Key" refers to the key value inside the translation file.
+* "English" column contains the English word or sentence that needs to be translated.
+* "Description" column has more information about the English word, such as how it is used.
+* "Translation" column is self-explanatory
+
 | YML_Key | Description | English | Translation |  
 | -- | -- | -- | -- |  
 | ViewFormat_Header | Tells user which ticket number they are viewing | Viewing Ticket [number] |  |  
