@@ -1,8 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common.hooks
 
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.count
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 
 abstract class TMPlayerJoinEvent<T>(val pluginData: TicketManagerPlugin<T>) {

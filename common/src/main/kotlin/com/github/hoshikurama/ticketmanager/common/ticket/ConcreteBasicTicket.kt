@@ -2,7 +2,6 @@ package com.github.hoshikurama.ticketmanager.common.ticket
 
 import com.github.hoshikurama.ticketmanager.common.database.Database
 import com.github.hoshikurama.ticketmanager.common.sortActions
-import kotlinx.coroutines.flow.toList
 import java.util.*
 
 open class ConcreteBasicTicket(
@@ -16,7 +15,7 @@ open class ConcreteBasicTicket(
 ) : BasicTicket {
 
     override suspend fun toFullTicket(database: Database): FullTicket {
-        val sortedActions = database.getActionsAsFlow(id)
+        val sortedActions = database.getActions(id)
             .toList()
             .sortedWith(sortActions)
 

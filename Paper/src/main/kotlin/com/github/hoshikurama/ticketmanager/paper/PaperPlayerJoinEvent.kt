@@ -9,7 +9,8 @@ import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
 
 class PaperPlayerJoinEvent(
-    pluginData: TicketManagerPlugin<PaperPlugin>, private val perms: Permission
+    pluginData: TicketManagerPlugin<PaperPlugin>,
+    private val perms: Permission
 ) : TMPlayerJoinEvent<PaperPlugin>(pluginData), Listener {
 
     @EventHandler

@@ -1433,11 +1433,10 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         args: List<String>,
         locale: TMLocale,
         headerFormat: String,
-        getIDPriorityPair: suspend (Database) -> Flow<Pair<Int, Byte>>,
+        getIDPriorityPair: suspend (Database) -> List<Pair<Int, Byte>>,
         baseCommand: (TMLocale) -> String
     ): Component {
         val chunkedIDs = getIDPriorityPair(pluginData.configState.database)
-            .toList()
             .sortedWith(compareByDescending<Pair<Int, Byte>> { it.second }.thenByDescending { it.first } )
             .map { it.first }
             .chunked(8)

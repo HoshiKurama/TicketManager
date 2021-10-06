@@ -4,10 +4,6 @@ import com.github.hoshikurama.ticketmanager.common.*
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -23,7 +19,7 @@ import kotlin.io.path.createFile
 import kotlin.io.path.exists
 import kotlin.io.path.notExists
 
-@OptIn(DelicateCoroutinesApi::class)
+@OptIn(DelicateCoroutinesApi::class, kotlinx.serialization.ExperimentalSerializationApi::class)
 class Memory(
     private val filePath: String,
     backupFrequency: Long
@@ -65,8 +61,8 @@ class Memory(
         }
     }
 
-    override suspend fun getActionsAsFlow(ticketID: Int): Flow<FullTicket.Action> {
-        return ticketMap[ticketID]!!.actions.asFlow()
+    override suspend fun getActions(ticketID: Int): List<FullTicket.Action> {
+        return ticketMap[ticketID]!!.actions
     }
 
     override suspend fun setAssignment(ticketID: Int, assignment: String?) {
@@ -155,7 +151,7 @@ class Memory(
         }
     }
 
-    override suspend fun getOpenIDPriorityPairs(): Flow<Pair<Int, Byte>> {
+    override suspend fun getOpenIDPriorityPairs(): List<Pair<Int, Byte>> {
         val openTickets: Sequence<FullTicket>
 
         mapMutex.read.withLock {
@@ -164,13 +160,13 @@ class Memory(
                 .filter { it.status == BasicTicket.Status.OPEN }
         }
 
-        return openTickets.map { it.id to it.priority.level }.asFlow()
+        return openTickets.map { it.id to it.priority.level }.toList()
     }
 
     override suspend fun getAssignedOpenIDPriorityPairs(
         assignment: String,
         unfixedGroupAssignment: List<String>
-    ): Flow<Pair<Int, Byte>> {
+    ): List<Pair<Int, Byte>> {
         val openTickets: Sequence<FullTicket>
         val assignments = unfixedGroupAssignment.map { "::$it" } + assignment
 
@@ -181,10 +177,10 @@ class Memory(
                 .filter { it.assignedTo in assignments }
         }
 
-        return openTickets.map { it.id to it.priority.level }.asFlow()
+        return openTickets.map { it.id to it.priority.level }.toList()
     }
 
-    override suspend fun getUnassignedOpenIDPriorityPairs(): Flow<Pair<Int, Byte>> {
+    override suspend fun getUnassignedOpenIDPriorityPairs(): List<Pair<Int, Byte>> {
         val tickets = mapMutex.read.withLock {
             ticketMap.asSequence()
                 .map { it.value }
@@ -192,47 +188,48 @@ class Memory(
                 .filter { it.assignedTo == null }
         }
 
-        return tickets.map { it.id to it.priority.level }.asFlow()
+        return tickets.map { it.id to it.priority.level }.toList()
     }
 
-    override suspend fun getIDsWithUpdates(): Flow<Int> {
+    override suspend fun getIDsWithUpdates(): List<Int> {
         return mapMutex.read.withLock {
             ticketMap.asSequence()
                 .map { it.value }
                 .filter { it.creatorStatusUpdate }
                 .map { it.id }
-        }.asFlow()
+
+        }.toList()
     }
 
-    override suspend fun getIDsWithUpdatesFor(uuid: UUID): Flow<Int> {
+    override suspend fun getIDsWithUpdatesFor(uuid: UUID): List<Int> {
         return mapMutex.read.withLock {
             ticketMap.asSequence()
                 .map { it.value }
                 .filter { it.creatorUUID?.equals(uuid) == true }
                 .filter { it.creatorStatusUpdate }
                 .map { it.id }
-        }.asFlow()
+        }.toList()
     }
 
-    override suspend fun getBasicTickets(ids: List<Int>): Flow<BasicTicket> {
+    override suspend fun getBasicTickets(ids: List<Int>): List<BasicTicket> {
         return mapMutex.read.withLock {
             ids.mapNotNull { ticketMap[it] }
-        }.asFlow()
+        }
     }
 
     override suspend fun getFullTicketsFromBasics(
         basicTickets: List<BasicTicket>,
         context: CoroutineContext
-    ): Flow<FullTicket> {
+    ): List<FullTicket> {
         val ids = basicTickets.map { it.id }
 
-        return getBasicTickets(ids).map { it as FullTicket }.toList().asFlow()
+        return getBasicTickets(ids).map { it as FullTicket }.toList()
     }
 
-    override suspend fun getFullTickets(ids: List<Int>, scope: CoroutineScope): Flow<FullTicket> {
+    override suspend fun getFullTickets(ids: List<Int>, scope: CoroutineScope): List<FullTicket> {
         return mapMutex.read.withLock {
             ids.mapNotNull { ticketMap[it] }
-        }.asFlow()
+        }
     }
 
     override suspend fun searchDatabase(
@@ -240,7 +237,7 @@ class Memory(
         locale: TMLocale,
         mainTableConstraints: List<Pair<String, String?>>,
         searchFunction: (FullTicket) -> Boolean
-    ): Flow<FullTicket> {
+    ): List<FullTicket> {
         val mainToFunction = mainTableConstraints.mapNotNull { (word, arg) ->
             when (word) {
                 locale.searchAssigned -> { t: FullTicket -> t.assignedTo == arg }
@@ -262,10 +259,10 @@ class Memory(
         val newSearchFunction = { t: FullTicket -> mainToFunction.all { it(t) } && searchFunction(t) }
 
         return mapMutex.read.withLock {
-            ticketMap.asSequence()
+            ticketMap
                 .filter { newSearchFunction(it.value) }
                 .map { it.value }
-        }.asFlow()
+        }
     }
 
     override suspend fun closeDatabase() {

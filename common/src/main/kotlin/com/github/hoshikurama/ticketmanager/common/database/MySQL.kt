@@ -2,6 +2,7 @@ package com.github.hoshikurama.ticketmanager.common.database
 
 import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.byteToPriority
+import com.github.hoshikurama.ticketmanager.common.pmap
 import com.github.hoshikurama.ticketmanager.common.sortActions
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.ConcreteBasicTicket
@@ -15,7 +16,6 @@ import com.github.jasync.sql.db.mysql.MySQLConnectionBuilder
 import com.github.jasync.sql.db.mysql.MySQLQueryResult
 import com.github.jasync.sql.db.util.ExecutorServiceUtils
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.Executor
@@ -46,9 +46,9 @@ class MySQL(
 
     override val type = Database.Type.MySQL
 
-    override suspend fun getActionsAsFlow(ticketID: Int) = flow {
-        suspendingCon.sendPreparedStatement(query = "SELECT ACTION_ID, ACTION_TYPE, CREATOR_UUID, MESSAGE, TIMESTAMP FROM TicketManager_V4_Actions WHERE TICKET_ID = $ticketID;").rows
-            .forEach { emit(it.toAction()) }
+    override suspend fun getActions(ticketID: Int): List<FullTicket.Action> {
+        return suspendingCon.sendPreparedStatement(query = "SELECT ACTION_ID, ACTION_TYPE, CREATOR_UUID, MESSAGE, TIMESTAMP FROM TicketManager_V4_Actions WHERE TICKET_ID = $ticketID;").rows
+            .map { it.toAction() }
     }
 
     override suspend fun setAssignment(ticketID: Int, assignment: String?) {
@@ -90,13 +90,10 @@ class MySQL(
     }
 
     override suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?, scope: CoroutineScope) {
-        val statusPairs = flow {
-            suspendingCon.sendPreparedStatement("SELECT ID, STATUS FROM TicketManager_V4_Tickets WHERE ID BETWEEN $lowerBound AND $upperBound;")
-                .rows
-                .map { (it.getInt(0)!!) to BasicTicket.Status.valueOf(it.getString(1)!!) }
-                .filter { it.second == BasicTicket.Status.OPEN }
-                .forEach { emit(it.first) }
-        }
+        val statusPairs = suspendingCon.sendPreparedStatement("SELECT ID, STATUS FROM TicketManager_V4_Tickets WHERE ID BETWEEN $lowerBound AND $upperBound;")
+            .rows
+            .pmap { (it.getInt(0)!!) to BasicTicket.Status.valueOf(it.getString(1)!!) }
+            .filter { it.second == BasicTicket.Status.OPEN }
 
         scope.launch {
             val idString = statusPairs.toList().joinToString(", ")
@@ -106,7 +103,7 @@ class MySQL(
             )
         }
 
-        statusPairs.collect {
+        statusPairs.forEach {
             scope.launch {
                 writeAction(
                     action = FullTicket.Action(
@@ -115,103 +112,85 @@ class MySQL(
                         message = null,
                         timestamp = Instant.now().epochSecond
                     ),
-                    ticketID = it
+                    ticketID = it.first
                 )
             }
         }
     }
 
-    override suspend fun getOpenIDPriorityPairs(): Flow<Pair<Int, Byte>> = flow {
-        suspendingCon.sendPreparedStatement(
+    override suspend fun getOpenIDPriorityPairs(): List<Pair<Int, Byte>> {
+        return suspendingCon.sendPreparedStatement(
             query = "SELECT ID, PRIORITY FROM TicketManager_V4_Tickets WHERE STATUS = ?;",
             values = listOf(BasicTicket.Status.OPEN.name)
         )
             .rows
-            .map { it.getInt(0)!! to it.getByte(1)!! }
-            .forEach { emit(it) }
+            .pmap { it.getInt(0)!! to it.getByte(1)!! }
     }
 
     override suspend fun getAssignedOpenIDPriorityPairs(
         assignment: String,
         unfixedGroupAssignment: List<String>
-    ): Flow<Pair<Int, Byte>> = flow {
+    ): List<Pair<Int, Byte>>  {
         val groupsSQLStatement = unfixedGroupAssignment.joinToString(" OR ") { "ASSIGNED_TO = ?" }
         val groupsFixed = unfixedGroupAssignment.map { "::$it" }
 
-        suspendingCon.sendPreparedStatement(
+        return suspendingCon.sendPreparedStatement(
             query = "SELECT ID, PRIORITY FROM TicketManager_V4_Tickets WHERE STATUS = ? AND ($groupsSQLStatement);",
             values = listOf(BasicTicket.Status.OPEN.name) + groupsFixed
         )
             .rows
-            .map { it.getInt(0)!! to it.getByte(1)!! }
-            .forEach { emit(it) }
+            .pmap { it.getInt(0)!! to it.getByte(1)!! }
     }
 
-    override suspend fun getUnassignedOpenIDPriorityPairs(): Flow<Pair<Int, Byte>> = flow {
-        suspendingCon.sendPreparedStatement(
+    override suspend fun getUnassignedOpenIDPriorityPairs(): List<Pair<Int, Byte>> {
+        return suspendingCon.sendPreparedStatement(
             query = "SELECT ID, PRIORITY FROM TicketManager_V4_Tickets WHERE STATUS = ? AND ASSIGNED_TO IS NULL",
             values = listOf(BasicTicket.Status.OPEN.name)
         )
             .rows
-            .map { it.getInt(0)!! to it.getByte(1)!! }
-            .forEach { emit(it) }
+            .pmap { it.getInt(0)!! to it.getByte(1)!! }
     }
 
-    override suspend fun getIDsWithUpdates(): Flow<Int> = flow {
-        suspendingCon.sendPreparedStatement(
+    override suspend fun getIDsWithUpdates(): List<Int> {
+        return suspendingCon.sendPreparedStatement(
             query = "SELECT ID FROM TicketManager_V4_Tickets WHERE STATUS_UPDATE_FOR_CREATOR = ?;",
             values = listOf(true)
         )
             .rows
-            .map { it.getInt(0)!! }
-            .forEach { emit(it) }
+            .pmap { it.getInt(0)!! }
     }
 
-    override suspend fun getIDsWithUpdatesFor(uuid: UUID): Flow<Int> = flow {
-        suspendingCon.sendPreparedStatement(
+    override suspend fun getIDsWithUpdatesFor(uuid: UUID): List<Int> {
+        return suspendingCon.sendPreparedStatement(
             query = "SELECT ID FROM TicketManager_V4_Tickets WHERE STATUS_UPDATE_FOR_CREATOR = ? AND CREATOR_UUID = ?;",
             values = listOf(true, uuid.toString())
         )
             .rows
-            .map { it.getInt(0)!! }
-            .forEach { emit(it) }
+            .pmap { it.getInt(0)!! }
     }
 
-    override suspend fun getBasicTickets(ids: List<Int>): Flow<BasicTicket> = flow {
+    override suspend fun getBasicTickets(ids: List<Int>): List<BasicTicket> {
         val idsSQL = ids.joinToString(", ") { "$it" }
 
-        suspendingCon.sendQuery("SELECT * FROM TicketManager_V4_Tickets WHERE ID IN ($idsSQL);")
+        return suspendingCon.sendQuery("SELECT * FROM TicketManager_V4_Tickets WHERE ID IN ($idsSQL);")
             .rows
-            .map { it.toBasicTicket() }
-            .forEach { emit(it) }
+            .pmap { it.toBasicTicket() }
     }
 
     override suspend fun getFullTicketsFromBasics(
         basicTickets: List<BasicTicket>,
         context: CoroutineContext
-    ): Flow<FullTicket> = flow {
-        basicTickets
-            .map {
-                withContext(context) {
-                    async { it.toFullTicket() }
-                }
-            }
-            .map { it.await() }
-            .forEach { emit(it) }
+    ): List<FullTicket> {
+        return basicTickets.pmap { it.toFullTicket() }
     }
 
-    override suspend fun getFullTickets(ids: List<Int>, scope: CoroutineScope): Flow<FullTicket> = flow {
+    override suspend fun getFullTickets(ids: List<Int>, scope: CoroutineScope): List<FullTicket> {
         val idsSQL = ids.joinToString(", ") { "$it" }
 
-        suspendingCon.sendQuery("SELECT * FROM TicketManager_V4_Tickets WHERE ID IN ($idsSQL) ORDER BY PRIORITY DESC, ID DESC;")
+        return suspendingCon.sendQuery("SELECT * FROM TicketManager_V4_Tickets WHERE ID IN ($idsSQL) ORDER BY PRIORITY DESC, ID DESC;")
             .rows
-            .map { it.toBasicTicket() }
-            .asFlow()
-            .map {
-                scope.async { it.toFullTicket() }
-            }
-            .map { it.await() }
-            .collect { emit(it) }
+            .pmap { it.toBasicTicket() }
+            .pmap { it.toFullTicket() }
     }
 
     override suspend fun searchDatabase(
@@ -219,7 +198,7 @@ class MySQL(
         locale: TMLocale,
         mainTableConstraints: List<Pair<String, String?>>,
         searchFunction: (FullTicket) -> Boolean
-    ): Flow<FullTicket> = flow {
+    ): List<FullTicket> {
         fun equalsOrIs(string: String?) = if (string == null) "IS NULL" else "= ?"
 
         val mainTableSQL = mainTableConstraints.joinToString(" AND ") {
@@ -235,15 +214,11 @@ class MySQL(
         if (mainTableConstraints.isNotEmpty())
             statementSQL += " WHERE $mainTableSQL"
 
-        suspendingCon.sendPreparedStatement("$statementSQL;", mainTableConstraints.mapNotNull { it.second })
+        return suspendingCon.sendPreparedStatement("$statementSQL;", mainTableConstraints.mapNotNull { it.second })
             .rows
-            .map { it.toBasicTicket() }
-            .map {
-                scope.async { it.toFullTicket() }
-            }
-            .map { it.await() }
+            .pmap { it.toBasicTicket() }
+            .pmap { it.toFullTicket() }
             .filter(searchFunction)
-            .forEach{ emit(it) }
     }
 
 
@@ -461,5 +436,5 @@ class MySQL(
     }
 
     private suspend fun BasicTicket.toFullTicket() =
-        FullTicket(this, getActionsAsFlow(id).toList().sortedWith(sortActions))
+        FullTicket(this, getActions(id).toList().sortedWith(sortActions))
 }

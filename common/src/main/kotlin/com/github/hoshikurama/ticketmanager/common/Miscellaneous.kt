@@ -3,6 +3,9 @@ package com.github.hoshikurama.ticketmanager.common
 import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -159,4 +162,8 @@ internal class ReadWriteMutexImpl : ReadWriteMutex {
         override fun holdsLock(owner: Any) = TODO("Not supported")
         override fun tryLock(owner: Any?) = TODO("Not supported")
     }
+}
+
+suspend fun <A, B> Iterable<A>.pmap(f: suspend (A) -> B): List<B> = coroutineScope {
+    map { async { f(it) } }.awaitAll()
 }

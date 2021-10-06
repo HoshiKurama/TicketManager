@@ -4,7 +4,6 @@ import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
 import java.util.*
 import kotlin.coroutines.CoroutineContext
 
@@ -16,7 +15,7 @@ interface Database {
     }
 
     // Individual property getters
-    suspend fun getActionsAsFlow(ticketID: Int): Flow<FullTicket.Action>
+    suspend fun getActions(ticketID: Int): List<FullTicket.Action>
 
     // Individual property setters
     suspend fun setAssignment(ticketID: Int, assignment: String?)
@@ -36,14 +35,14 @@ interface Database {
     suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, uuid: UUID?, scope: CoroutineScope)
 
     // Collections of tickets
-    suspend fun getOpenIDPriorityPairs(): Flow<Pair<Int, Byte>>
-    suspend fun getAssignedOpenIDPriorityPairs(assignment: String, unfixedGroupAssignment: List<String>): Flow<Pair<Int, Byte>>
-    suspend fun getUnassignedOpenIDPriorityPairs(): Flow<Pair<Int, Byte>>
-    suspend fun getIDsWithUpdates(): Flow<Int>
-    suspend fun getIDsWithUpdatesFor(uuid: UUID): Flow<Int>
-    suspend fun getBasicTickets(ids: List<Int>): Flow<BasicTicket>
-    suspend fun getFullTicketsFromBasics(basicTickets: List<BasicTicket>, context: CoroutineContext): Flow<FullTicket>
-    suspend fun getFullTickets(ids: List<Int>, scope: CoroutineScope): Flow<FullTicket>
+    suspend fun getOpenIDPriorityPairs(): List<Pair<Int, Byte>>
+    suspend fun getAssignedOpenIDPriorityPairs(assignment: String, unfixedGroupAssignment: List<String>): List<Pair<Int, Byte>>
+    suspend fun getUnassignedOpenIDPriorityPairs(): List<Pair<Int, Byte>>
+    suspend fun getIDsWithUpdates(): List<Int>
+    suspend fun getIDsWithUpdatesFor(uuid: UUID): List<Int>
+    suspend fun getBasicTickets(ids: List<Int>): List<BasicTicket>
+    suspend fun getFullTicketsFromBasics(basicTickets: List<BasicTicket>, context: CoroutineContext): List<FullTicket>
+    suspend fun getFullTickets(ids: List<Int>, scope: CoroutineScope): List<FullTicket>
 
     // Database searching
     suspend fun searchDatabase(
@@ -51,7 +50,7 @@ interface Database {
         locale: TMLocale,
         mainTableConstraints: List<Pair<String, String?>>,
         searchFunction: (FullTicket) -> Boolean
-    ): Flow<FullTicket>
+    ): List<FullTicket>
 
     // Internal Database Functions
     suspend fun closeDatabase()

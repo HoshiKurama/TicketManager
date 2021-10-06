@@ -4,5 +4,4 @@ include(
     "common",
     "Paper",
     "Spigot",
-    "Minestorm",
 )

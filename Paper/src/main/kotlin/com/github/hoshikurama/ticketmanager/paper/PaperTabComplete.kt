@@ -16,7 +16,8 @@ class PaperTabComplete(
 
     @EventHandler
     fun onTabCompleteAsync(event: AsyncTabCompleteEvent) {
-        if (event.buffer.startsWith("/ticket ")) {
+
+        if (event.buffer.isValidCommandStarter()) {
             val args = event.buffer
                 .replace(" +".toRegex(), " ")
                 .split(" ")
@@ -29,6 +30,11 @@ class PaperTabComplete(
 
             event.completions = getReturnedTabs(tmSender, args)
         }
+    }
+
+    private fun String.isValidCommandStarter(): Boolean {
+        return pluginData.configState.localeHandler.getCommandBases()
+            .any { startsWith("/$it ") }
     }
 
     override fun getPermissionGroups(): List<String> = perms.groups.toList()
