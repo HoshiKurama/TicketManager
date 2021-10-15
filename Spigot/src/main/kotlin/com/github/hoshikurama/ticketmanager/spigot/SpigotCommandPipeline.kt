@@ -50,7 +50,7 @@ class SpigotCommandPipeline(
             .forEach { localeMsg(it.locale).run(it::sendMessage) }
     }
 
-    override fun buildPlayer(uuid: UUID): Player = Bukkit.getPlayer(uuid)!!.run { SpigotPlayer(this, pluginData, perms, adventure) }
+    override fun buildPlayer(uuid: UUID): Player? = Bukkit.getPlayer(uuid)?.run { SpigotPlayer(this, pluginData, perms, adventure) }
 
     override fun getOnlinePlayers(): Flow<Player> = flow {
         Bukkit.getOnlinePlayers().asSequence()

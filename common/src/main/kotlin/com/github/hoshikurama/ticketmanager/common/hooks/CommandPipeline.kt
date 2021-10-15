@@ -339,7 +339,6 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         basicTicket: BasicTicket,
         sender: Sender,
         creatorAlertPerm: String,
-
         val massNotifyPerm: String,
         val senderLambda: ((TMLocale) -> Component)?,
         val creatorLambda: ((TMLocale) -> Component)?,
@@ -1510,8 +1509,8 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
     }
 
     abstract fun pushMassNotify(permission: String, localeMsg: (TMLocale) -> Component)
-    abstract fun buildPlayer(uuid: UUID): Player
-    abstract fun getOnlinePlayers(): Flow<Player>
+    abstract fun buildPlayer(uuid: UUID): Player?
+    abstract fun getOnlinePlayers(): Flow<Player> //TODO Make it return a list
     abstract fun stripColour(msg: String): String
     abstract fun offlinePlayerNameToUUIDOrNull(name: String): UUID?
     abstract fun uuidToName(uuid: UUID?, locale: TMLocale): String

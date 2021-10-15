@@ -41,7 +41,7 @@ class PaperCommandPipeline(
             .forEach { localeMsg(it.locale).run(it::sendMessage) }
     }
 
-    override fun buildPlayer(uuid: UUID): Player = Bukkit.getPlayer(uuid)!!.run { PaperPlayer(this, pluginData, perms) }
+    override fun buildPlayer(uuid: UUID): Player? = Bukkit.getPlayer(uuid)?.run { PaperPlayer(this, pluginData, perms) }
 
     override fun getOnlinePlayers(): Flow<Player> = flow {
         Bukkit.getOnlinePlayers().asSequence()

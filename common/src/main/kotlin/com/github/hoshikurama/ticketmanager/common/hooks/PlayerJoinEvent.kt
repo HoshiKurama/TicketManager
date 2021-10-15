@@ -3,6 +3,7 @@ package com.github.hoshikurama.ticketmanager.common.hooks
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
+// TODO: REPLACE PLUGIN DATA WITH ACTUAL DATA NEEDED
 abstract class TMPlayerJoinEvent<T>(val pluginData: TicketManagerPlugin<T>) {
 
     suspend fun whenPlayerJoins(player: Player) = coroutineScope {
