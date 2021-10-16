@@ -3,10 +3,7 @@ package com.github.hoshikurama.ticketmanager.common
 import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.common.ticket.FullTicket
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import net.kyori.adventure.extra.kotlin.text
@@ -120,6 +117,14 @@ suspend inline fun <T> tryOrNullSuspend(crossinline function: suspend () -> T): 
     try { function() }
     catch (ignored: Exception) { null }
 
+suspend fun <A, B> Iterable<A>.pmap(f: suspend (A) -> B): List<B> = coroutineScope {
+    map { async { f(it) } }.awaitAll()
+}
+
+suspend fun <A> Iterable<A>.pforEach(f: suspend (A) -> Unit): Unit = coroutineScope {
+    forEach { launch { f(it) } }
+}
+
 
 // Code from https://github.com/CruGlobal/android-gto-support/blob/47b44477e94e7d913de15066e3dd3eb8b54c4828/gto-support-kotlin-coroutines/src/main/java/org/ccci/gto/android/common/kotlin/coroutines/ReadWriteMutex.kt
 interface ReadWriteMutex {
@@ -162,8 +167,4 @@ internal class ReadWriteMutexImpl : ReadWriteMutex {
         override fun holdsLock(owner: Any) = TODO("Not supported")
         override fun tryLock(owner: Any?) = TODO("Not supported")
     }
-}
-
-suspend fun <A, B> Iterable<A>.pmap(f: suspend (A) -> B): List<B> = coroutineScope {
-    map { async { f(it) } }.awaitAll()
 }

@@ -11,9 +11,6 @@ import com.github.hoshikurama.ticketmanager.common.database.MySQL
 import com.github.hoshikurama.ticketmanager.common.database.SQLite
 import com.github.hoshikurama.ticketmanager.common.ticket.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.toList
 import net.kyori.adventure.extra.kotlin.text
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.TextComponent
@@ -808,8 +805,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
             val requestedPage = if (args.size >= 3) args[2].toInt() else 1
 
             // Leaves console as null. Otherwise attempts UUID grab or [PLAYERNOTFOUND]
-            suspend fun String.attemptToUUIDString() = getOnlinePlayers()
-                .toList()
+            fun String.attemptToUUIDString() = getOnlinePlayers()
                 .firstOrNull { equals(it.name) }
                 ?.run { uniqueID.toString() }
                 ?: "[PLAYERNOTFOUND]"
@@ -818,7 +814,6 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
 
             val resultSize: Int
             val resultsChunked = pluginData.configState.database.searchDatabase(this, locale, listOf(locale.searchCreator to searchedUser)) { true }
-                .toList()
                 .sortedByDescending(BasicTicket::id)
                 .also { resultSize = it.size }
                 .chunked(6)
@@ -1017,7 +1012,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
         val locale = sender.locale
 
         coroutineScope {
-            suspend fun String.attemptToUUIDString(): String? =
+            fun String.attemptToUUIDString(): String? =
                 if (equals(locale.consoleName)) null
                 else getOnlinePlayers()
                     .firstOrNull { equals(it.name) }
@@ -1100,7 +1095,6 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
             // Results Computation
             val resultSize: Int
             val chunkedTickets = pluginData.configState.database.searchDatabase(this, locale, mainTableConstrains, composedSearch)
-                .toList()
                 .sortedByDescending(BasicTicket::id)
                 .apply { resultSize = size }
                 .chunked(8)
@@ -1445,7 +1439,6 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
 
         val fullTickets = chunkedIDs.getOrNull(page - 1)
             ?.run { pluginData.configState.database.getFullTickets(this, pluginData.asyncScope) }
-            ?.toList()
             ?: emptyList()
 
         return buildComponent {
@@ -1510,7 +1503,7 @@ abstract class CommandPipeline<T>(private val pluginData: TicketManagerPlugin<T>
 
     abstract fun pushMassNotify(permission: String, localeMsg: (TMLocale) -> Component)
     abstract fun buildPlayer(uuid: UUID): Player?
-    abstract fun getOnlinePlayers(): Flow<Player> //TODO Make it return a list
+    abstract fun getOnlinePlayers(): List<Player>
     abstract fun stripColour(msg: String): String
     abstract fun offlinePlayerNameToUUIDOrNull(name: String): UUID?
     abstract fun uuidToName(uuid: UUID?, locale: TMLocale): String

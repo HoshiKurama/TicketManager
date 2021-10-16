@@ -5,9 +5,9 @@ import com.github.hoshikurama.componentDSL.buildComponent
 import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.common.ConfigState
 import com.github.hoshikurama.ticketmanager.common.MutexControlled
+import com.github.hoshikurama.ticketmanager.common.pforEach
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import net.kyori.adventure.extra.kotlin.text
 
@@ -82,10 +82,10 @@ abstract class TicketManagerPlugin<T>(
                     if (configState.allowUnreadTicketUpdates) {
                         commandPipeline.getOnlinePlayers()
                             .filter { it.has("ticketmanager.notify.unreadUpdates.scheduled") }
-                            .collect {
-                                val ticketIDs = configState.database.getIDsWithUpdatesFor(it.uniqueID).toList()
+                            .pforEach {
+                                val ticketIDs = configState.database.getIDsWithUpdatesFor(it.uniqueID)
                                 val tickets = ticketIDs.joinToString(", ")
-                                if (ticketIDs.isEmpty()) return@collect
+                                if (ticketIDs.isEmpty()) return@pforEach
 
                                 val template = if (ticketIDs.size > 1) it.locale.notifyUnreadUpdateMulti
                                 else it.locale.notifyUnreadUpdateSingle
@@ -98,17 +98,17 @@ abstract class TicketManagerPlugin<T>(
 
                 // Open and Assigned Notify
                 launch {
-                    val openPriority = configState.database.getOpenIDPriorityPairs().map { it.first }.toList()
+                    val openPriority = configState.database.getOpenIDPriorityPairs().map { it.first }
                     val openCount = openPriority.count()
 
                     // Gets associated tickets
                     val assignments =
                         if (openCount == 0) listOf()
-                        else configState.database.getBasicTickets(openPriority).mapNotNull { it.assignedTo }.toList()
+                        else configState.database.getBasicTickets(openPriority).mapNotNull { it.assignedTo }
 
                     commandPipeline.getOnlinePlayers()
                         .filter { it.has("ticketmanager.notify.openTickets.scheduled") }
-                        .collect { p ->
+                        .pforEach { p ->
                             val groups = p.permissionGroups.map { "::$it" }
                             val assignedCount = assignments.count { it == p.name || it in groups }
 
@@ -134,7 +134,7 @@ abstract class TicketManagerPlugin<T>(
     suspend fun postModifiedStacktrace(e: Exception) {
         commandPipeline.getOnlinePlayers()
             .filter { it.has("ticketmanager.notify.warning") }
-            .collect { p ->
+            .pforEach { p ->
                 p.sendMessage(
                     buildComponent {
                         // Builds header
