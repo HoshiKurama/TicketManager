@@ -48,7 +48,7 @@ object ConfigBuilder {
                     .build()!!
                     .apply { initialiseDatabase() }
             } catch (e: Exception) {
-                sqliteBuilder.build()
+                sqliteBuilder.build().apply { initialiseDatabase() }
             }
         }
 
