@@ -8,8 +8,6 @@ import com.github.hoshikurama.ticketmanager.common.hooks.Player
 import com.github.hoshikurama.ticketmanager.common.hooks.TicketManagerPlugin
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import net.kyori.adventure.extra.kotlin.text
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
@@ -52,11 +50,7 @@ class SpigotCommandPipeline(
 
     override fun buildPlayer(uuid: UUID): Player? = Bukkit.getPlayer(uuid)?.run { SpigotPlayer(this, pluginData, perms, adventure) }
 
-    override fun getOnlinePlayers(): Flow<Player> = flow {
-        Bukkit.getOnlinePlayers().asSequence()
-            .map { SpigotPlayer(it, pluginData, perms, adventure) }
-            .forEach { emit(it) }
-    }
+    override fun getOnlinePlayers(): List<Player> = Bukkit.getOnlinePlayers().map { SpigotPlayer(it, pluginData, perms, adventure) }
 
     override fun stripColour(msg: String) = ChatColor.stripColor(msg)!!
 

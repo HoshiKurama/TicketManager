@@ -5,8 +5,6 @@ import com.github.hoshikurama.ticketmanager.common.TMLocale
 import com.github.hoshikurama.ticketmanager.common.hooks.*
 import com.github.hoshikurama.ticketmanager.common.ticket.BasicTicket
 import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import net.kyori.adventure.extra.kotlin.text
 import net.kyori.adventure.text.Component
 import net.milkbowl.vault.permission.Permission
@@ -43,11 +41,7 @@ class PaperCommandPipeline(
 
     override fun buildPlayer(uuid: UUID): Player? = Bukkit.getPlayer(uuid)?.run { PaperPlayer(this, pluginData, perms) }
 
-    override fun getOnlinePlayers(): Flow<Player> = flow {
-        Bukkit.getOnlinePlayers().asSequence()
-            .map { PaperPlayer(it, pluginData, perms) }
-            .forEach { emit(it) }
-    }
+    override fun getOnlinePlayers(): List<Player> = Bukkit.getOnlinePlayers().map { PaperPlayer(it, pluginData, perms) }
 
     override fun stripColour(msg: String) = ChatColor.stripColor(msg)!!
 
