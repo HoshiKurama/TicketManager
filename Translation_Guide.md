@@ -5,6 +5,7 @@ Thank you so much for helping to translate TicketManager! Before you begin, plea
 ## Information:
 * TicketManager expects high-quality and accurate translations.
 * Users whose work is incorporated into TicketManager will be acknowledged as the rightful translator for that language everywhere TicketManager is posted.
+* Unless agreed upon before, translations are considered as volunteering and won't be paid. TicketManager is a passion project after all!
 
 ## Requirements:
 Translators must comply with the following:
