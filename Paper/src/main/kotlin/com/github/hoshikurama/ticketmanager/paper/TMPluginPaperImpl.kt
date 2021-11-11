@@ -1,9 +1,8 @@
-package com.github.hoshikurama.ticketmanager.paper.old
+package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.TMPlugin
 import com.github.hoshikurama.ticketmanager.metricsKey
 import com.github.hoshikurama.ticketmanager.misc.ConfigParameters
-import com.github.hoshikurama.ticketmanager.paper.Metrics
 import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
 import com.github.shynixn.mccoroutine.registerSuspendingEvents
 import com.github.shynixn.mccoroutine.setSuspendingExecutor
@@ -20,7 +19,7 @@ class TMPluginPaperImpl(
     private val perms: Permission,
     mainDispatcher: CoroutineDispatcher,
     asyncDispatcher: CoroutineDispatcher,
-): TMPlugin(
+) : TMPlugin(
     mainDispatcher = mainDispatcher,
     asyncDispatcher = asyncDispatcher,
     platformFunctions = PaperFunctions(perms),
@@ -28,7 +27,6 @@ class TMPluginPaperImpl(
     buildTabComplete = { platform, instance -> PaperTabComplete(platform, instance, perms) },
     buildJoinEvent = { global, instance -> PaperJoinEvent(global, instance, perms) },
 )  {
-
     private lateinit var metrics: Metrics
 
     override fun performSyncBefore() {
@@ -58,7 +56,7 @@ class TMPluginPaperImpl(
     }
 
     override fun configExists(): Boolean {
-        return !File(paperPlugin.dataFolder, "config.yml").exists()
+        return File(paperPlugin.dataFolder, "config.yml").exists()
     }
 
     override fun generateConfig() {
@@ -117,10 +115,10 @@ class TMPluginPaperImpl(
     }
 
     override fun unregisterProcesses() {
-       /* Until Kotlin supports top-level property reflection, I cannot unregister anything other than tab complete */
+        // Removes current task timers
+        paperPlugin.server.scheduler.cancelTasks(paperPlugin)
 
-        // TabComplete: HandlerList.unregisterAll()
         //Bukkit.getCommandMap().knownCommands
-        //CANCEL EVENTS, TASK TIMERS, EXECUTORS, AND TAB COMPLETE
+       /* Until Kotlin supports top-level property reflection, I cannot unregister anything other than tab complete */
     }
 }

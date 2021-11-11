@@ -1,4 +1,4 @@
-package com.github.hoshikurama.ticketmanager.paper.old
+package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.componentDSL.buildComponent
 import com.github.hoshikurama.componentDSL.formattedContent
@@ -24,10 +24,11 @@ class PaperFunctions(private val perms: Permission) : PlatformFunctions {
     override fun massNotify(localeHandler: LocaleHandler, permission: String, localeMsg: (TMLocale) -> Component) {
         Bukkit.getConsoleSender().sendMessage(localeMsg(localeHandler.consoleLocale))
 
-        Bukkit.getOnlinePlayers().asSequence()
-            .map { PaperPlayer(it, perms, localeHandler) }
-            .filter { it.has(permission) }
-            .forEach { localeMsg(it.locale).run(it::sendMessage) }
+        Bukkit.getOnlinePlayers()
+            .filter { perms.has(it, permission) }
+            .map { it to localeHandler.getOrDefault(it.locale().toString()) }
+            .forEach { (p, locale) -> localeMsg(locale).run(p::sendMessage) }
+
     }
 
     override fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): Player? {
@@ -93,15 +94,15 @@ class PaperFunctions(private val perms: Permission) : PlatformFunctions {
     }
 
     override fun pushInfoToConsole(message: String) {
-        Bukkit.getLogger().log(Level.INFO, message)
+        Bukkit.getLogger().log(Level.INFO, "[TicketManager] $message")
     }
 
     override fun pushWarningToConsole(message: String) {
-        Bukkit.getLogger().log(Level.WARNING, message)
+        Bukkit.getLogger().log(Level.WARNING, "[TicketManager] $message")
     }
 
     override fun pushErrorToConsole(message: String) {
-        Bukkit.getLogger().log(Level.SEVERE, message)
+        Bukkit.getLogger().log(Level.SEVERE, "[TicketManager] $message")
     }
 
     override fun getPermissionGroups(): List<String> {

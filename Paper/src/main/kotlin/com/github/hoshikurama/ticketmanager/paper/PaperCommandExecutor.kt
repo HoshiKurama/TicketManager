@@ -1,4 +1,4 @@
-package com.github.hoshikurama.ticketmanager.paper.old
+package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState

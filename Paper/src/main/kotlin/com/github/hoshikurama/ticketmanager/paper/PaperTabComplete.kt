@@ -1,4 +1,4 @@
-package com.github.hoshikurama.ticketmanager.paper.old
+package com.github.hoshikurama.ticketmanager.paper
 
 import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
@@ -7,7 +7,6 @@ import com.github.hoshikurama.ticketmanager.platform.Sender
 import com.github.hoshikurama.ticketmanager.platform.TabComplete
 
 import net.milkbowl.vault.permission.Permission
-import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 
@@ -29,7 +28,7 @@ class PaperTabComplete(
             val sender = event.sender
             val localeHandler = instanceState.localeHandler
             val tmSender: Sender =
-                if (sender is Player) PaperPlayer(sender, perms, localeHandler)
+                if (sender is org.bukkit.entity.Player) PaperPlayer(sender, perms, localeHandler)
                 else PaperConsole(localeHandler.consoleLocale)
 
             event.completions = getReturnedTabs(tmSender, args)

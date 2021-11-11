@@ -1,4 +1,4 @@
-package com.github.hoshikurama.ticketmanager.paper.old
+package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.shynixn.mccoroutine.SuspendingJavaPlugin
 import com.github.shynixn.mccoroutine.asyncDispatcher
@@ -8,8 +8,8 @@ import net.milkbowl.vault.permission.Permission
 
 class PaperPlugin : SuspendingJavaPlugin() {
 
-    lateinit var tmPlugin: TMPluginPaperImpl
-    lateinit var perms: Permission
+    private lateinit var tmPlugin: TMPluginPaperImpl
+    private lateinit var perms: Permission
 
     override fun onEnable() {
         // Find Vault plugin
