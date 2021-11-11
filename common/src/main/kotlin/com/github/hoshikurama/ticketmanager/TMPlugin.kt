@@ -5,10 +5,7 @@ import com.github.hoshikurama.ticketmanager.data.Cooldown
 import com.github.hoshikurama.ticketmanager.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.database.*
-import com.github.hoshikurama.ticketmanager.misc.ConfigParameters
-import com.github.hoshikurama.ticketmanager.misc.UpdateChecker
-import com.github.hoshikurama.ticketmanager.misc.pForEach
-import com.github.hoshikurama.ticketmanager.misc.toColouredAdventure
+import com.github.hoshikurama.ticketmanager.misc.*
 import com.github.hoshikurama.ticketmanager.platform.CommandPipeline
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.platform.PlayerJoinEvent
@@ -16,7 +13,6 @@ import com.github.hoshikurama.ticketmanager.platform.TabComplete
 import kotlinx.coroutines.*
 import net.kyori.adventure.extra.kotlin.text
 
-//TODO LATER REDO THE WARNING AND ERROR SYSTEM
 abstract class TMPlugin(
     mainDispatcher: CoroutineDispatcher,
     asyncDispatcher: CoroutineDispatcher,
@@ -105,7 +101,7 @@ abstract class TMPlugin(
                         }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                pushErrors(platformFunctions, instancePluginState, e, TMLocale::consoleErrorScheduledNotifications)
             }
         }
     }
@@ -177,7 +173,10 @@ abstract class TMPlugin(
                         Database.Type.MEMORY -> databaseBuilders.memoryBuilder.build().apply { initializeDatabase() }
                     }
                 } catch (e: Exception) {
-                    //TODO PRINT ERROR THAT SOMETHING WENT WRONG WITH BUILDING THE DATABASE. DEFAULT TO SQLITE
+                    independentAsyncScope.launch {
+                        while (!::instancePluginState.isInitialized) delay(100L)
+                        pushErrors(platformFunctions, instancePluginState, e, TMLocale::consoleErrorBadDatabase)
+                    }
                     databaseBuilders.sqLiteBuilder.build().apply { initializeDatabase() }
                 }
             }
@@ -209,9 +208,11 @@ abstract class TMPlugin(
             // Other config items
             val allowUnreadTicketUpdates = c.allowUnreadTicketUpdates ?: true.addToErrors("Allow_Unread_Ticket_Updates", Boolean::toString)
             val updateChecker = UpdateChecker(canCheck = c.checkForPluginUpdates ?: true.addToErrors("Allow_UpdateChecking", Boolean::toString))
+            val printModifiedStacktrace = c.printModifiedStacktrace ?: true.addToErrors("Print_Modified_Stacktrace", Boolean::toString)
+            val printFullStacktrace = c.printFullStacktrace ?: false.addToErrors("Print_Full_Stacktrace", Boolean::toString)
 
             // Builds and assigns final objects
-            instancePluginState = InstancePluginState(database, cooldowns, discord, databaseBuilders, localeHandler, allowUnreadTicketUpdates, updateChecker)
+            instancePluginState = InstancePluginState(database, cooldowns, discord, databaseBuilders, localeHandler, allowUnreadTicketUpdates, updateChecker, printModifiedStacktrace, printFullStacktrace)
             tabComplete = buildTabComplete(platformFunctions, instancePluginState)
             commandPipeline = buildPipeline(platformFunctions, instancePluginState, globalPluginState)
             joinEvent = buildJoinEvent(globalPluginState, instancePluginState)
@@ -223,6 +224,7 @@ abstract class TMPlugin(
                     .replaceFirst("%default%", default)
                     .run(platformFunctions::pushWarningToConsole)
             }
+
             if (errors.size > 0) {
                 platformFunctions.massNotify(localeHandler, "ticketmanager.notify.warning") {
                     it.warningsInvalidConfig.replaceFirst("%num%", errors.size.toString())
@@ -231,14 +233,15 @@ abstract class TMPlugin(
             }
         }
 
+        platformFunctions.pushInfoToConsole(instancePluginState.localeHandler.consoleLocale.consoleInitializationComplete)
+
 
         // Launch Discord if requested on coroutine with independent scope
         instancePluginState.discord?.run {
             CoroutineScope(globalPluginState.asyncDispatcher).launch {
                 try { login() }
                 catch (e: Exception) {
-                    // TODO: PRINT MESSAGE ERROR FOR DISCORD FAILING TO LOGIN
-                    e.printStackTrace()
+                    pushErrors(platformFunctions, instancePluginState, e, TMLocale::consoleErrorBadDiscord)
                 }
             }
         }
@@ -248,35 +251,3 @@ abstract class TMPlugin(
         globalPluginState.pluginLocked.set(false)
     }
 }
-
-/*
-suspend fun postModifiedStacktrace(e: Exception) {
-        commandPipeline.getOnlinePlayers()
-            .filter { it.has("ticketmanager.notify.warning") }
-            .pforEach { p ->
-                p.sendMessage(
-                    buildComponent {
-                        // Builds header
-                        listOf(
-                            p.locale.stacktraceLine1,
-                            p.locale.stacktraceLine2.replace("%exception%", e.javaClass.simpleName),
-                            p.locale.stacktraceLine3.replace("%message%", e.message ?: "?"),
-                            p.locale.stacktraceLine4,
-                        )
-                            .forEach { text { formattedContent(it) } }
-
-                        // Adds stacktrace entries
-                        e.stackTrace
-                            .filter { it.className.startsWith("com.github.hoshikurama.ticketmanager") }
-                            .map {
-                                p.locale.stacktraceEntry
-                                    .replace("%method%", it.methodName)
-                                    .replace("%file%", it.fileName ?: "?")
-                                    .replace("%line%", "${it.lineNumber}")
-                            }
-                            .forEach { text { formattedContent(it) } }
-                  }
-              )
-            }
-    }
- */

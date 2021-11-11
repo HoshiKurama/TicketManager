@@ -14,6 +14,7 @@
 # ##########################################
 #       Locale:
 # ##########################################
+#
 # Force Locale: Forces specific language to be used for commands and responses.
 # Values: true, false
 Force_Locale: false
@@ -38,6 +39,7 @@ Console_Locale: 'en_CA'
 # ##########################################
 #                 Cooldown:
 # ##########################################
+#
 # Use Cool-down: Determine if cool-downs should be applied to ticket commands
 # that create or modify a ticket. Cool-downs apply to ALL users without the
 # override permission.
@@ -75,9 +77,7 @@ Cooldown_Time: 0
 #                 Memory:
 # Memory refers to TicketManager's custom solution for running the entire
 # database in RAM. Data is backed up throughout normal server operations or
-# on server shutdowns. It is then loaded up on startup if selected. DO NOT
-# USE THIS DATABASE TYPE UNLESS YOU UNDERSTAND THE RISKS OF RUNNING A
-# DATABASE IN RAM!!!
+# on server shutdowns. It is then loaded back into RAM on startup.
 # Pros: + Incredibly responsive
 #       + Incredibly fast queries
 # Cons: - Any power loss or server crash will result in all data beyond
@@ -102,8 +102,28 @@ MySQL_Password: ''
 Memory_Backup_Frequency: 600
 #
 # ###########################################
+#              Error Printing
+# ###########################################
+#
+# The following setting determine how TicketManager displays unexpected error.
+# These values do not affect error in-game. Please use permission nodes for that
+# instead. These values only affect the way error messages appear in Console.
+#
+# Print Modified Stacktrace: Prints a modified stacktrace only containing where
+# errors occurred in TicketManager's code. Useful for quickly deciding where the issue
+# lies, but not always enough to determine where the issue lies.
+# Values: true, false
+Print_Modified_Stacktrace: true
+#
+# Print Full Stacktrace: Prints a full stacktrace containing all much more info
+# than the modified stacktrace. Contains more information, but harder to sort through.
+# Values: true, false
+Print_Full_Stacktrace: false
+#
+# ###########################################
 #             Discord Settings
 # ###########################################
+#
 # Discord Bot: On ticket updates of your choosing, TicketManager
 # is able to send a notification to a text channel in your Discord server.
 # This is NOT plug and play. You will be required to generate the
@@ -137,6 +157,7 @@ Discord_Notify_On_Priority_Change: true
 # ###########################################
 #                   Other
 # ###########################################
+#
 # Colour Code: Colour code used to add simple colour customization.
 # Must be in the form "&<colour code>".   eg: &3, &6, &b, etc
 # DO NOT USE ANY COLOUR CODES OTHER THAN COLOUR!

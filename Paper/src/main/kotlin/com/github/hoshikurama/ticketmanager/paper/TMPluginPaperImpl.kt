@@ -97,6 +97,8 @@ class TMPluginPaperImpl(
                 DiscordNotifyOnPriorityChange = getBoolean("Discord_Notify_On_Priority_Change"),
                 DiscordToken = getString("Discord_Bot_Token"),
                 DiscordChannelID = getLong("Discord_Channel_ID"),
+                printModifiedStacktrace = getBoolean("Print_Modified_Stacktrace"),
+                printFullStacktrace = getBoolean("Print_Full_Stacktrace"),
             )
         }
     }

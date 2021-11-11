@@ -110,9 +110,12 @@ permissions:
   ticketmanager.notify.pluginUpdate:
     description: Get notified of plugin update on login
     default: false
-  ticketmanager.notify.warning:
+  ticketmanager.notify.error.stacktrace:
     description: See modified stacktrace on errors
     default: false
+    ticketmanager.notify.error.message:
+      description: See when errors occur
+      default: false
   ticketmanager.notify.change.comment:
     description: Creator sees when user comments on their ticket
     default: false
@@ -193,7 +196,8 @@ permissions:
       ticketmanager.notify.openTickets.scheduled: true
       ticketmanager.notify.unreadUpdates.onJoin: true
       ticketmanager.notify.unreadUpdates.scheduled: true
-      ticketmanager.notify.warning: true
+      ticketmanager.notify.error.stacktrace: true
+      ticketmanager.notify.error.message: true
       ticketmanager.notify.info: true
       ticketmanager.massNotify.*: true
       ticketmanager.notify.change.*: true

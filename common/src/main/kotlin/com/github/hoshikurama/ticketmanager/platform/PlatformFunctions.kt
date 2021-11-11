@@ -4,6 +4,7 @@ package com.github.hoshikurama.ticketmanager.platform
 import com.github.hoshikurama.ticketmanager.LocaleHandler
 import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
+import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
 import java.util.*
 
@@ -15,9 +16,9 @@ interface PlatformFunctions {
     fun offlinePlayerNameToUUIDOrNull(name: String): UUID?
     fun nameFromUUID(uuid: UUID): String
     fun teleportToTicketLocation(player: Player, loc: BasicTicket.TicketLocation)
-    suspend fun postModifiedStacktrace(e: Exception, localeHandler: LocaleHandler)
 
     // Console Messages
+    fun getConsoleAudience(): Audience
     fun pushInfoToConsole(message: String)
     fun pushWarningToConsole(message: String)
     fun pushErrorToConsole(message: String)

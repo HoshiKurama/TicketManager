@@ -89,7 +89,6 @@ class TMLocale(
     val warningsNoPermission: String
     val warningsInvalidID: String
     val warningsInvalidNumber: String
-    val warningsVaultNotFound: String
     val warningsNoConfig: String
     val warningsInvalidCommand: String
     val warningsPriorityOutOfBounds: String
@@ -101,9 +100,16 @@ class TMLocale(
     val warningsUnexpectedError: String
     val warningsLongTaskDuringReload: String
     val warningsInvalidConfig: String
+    val warningsInternalError: String
 
-    // Console Warnings
+    // Console Messages
+    val consoleErrorBadDiscord: String
+    val consoleInitializationComplete: String
+    val consoleErrorBadDatabase: String
     val consoleWarningInvalidConfigNode: String
+    val consoleErrorScheduledNotifications: String
+    val consoleErrorCommandExecution: String
+    val consoleErrorDBConversion: String
 
     // Command Types
     val commandBase: String
@@ -222,8 +228,6 @@ class TMLocale(
     val informationReloadInitiated: String
     val informationReloadSuccess: String
     val informationReloadTasksDone: String
-    val informationDBUpdate: String
-    val informationDBUpdateComplete: String
     val informationDBConvertInit: String
     val informationDBConvertSuccess: String
     val informationReloadFailure: String
@@ -315,7 +319,6 @@ class TMLocale(
         pageNext = matchOrDefault("Page_Next")
         notifyUnreadUpdateSingle = matchOrDefault("Notify_UnreadUpdate_Single")
         notifyUnreadUpdateMulti = matchOrDefault("Notify_UnreadUpdate_Multi")
-        warningsVaultNotFound = matchOrDefault("Warning_VaultNotFound")
         warningsNoConfig = matchOrDefault("Warning_NoConfig")
         notifyOpenAssigned = matchOrDefault("Notify_OpenAssigned")
         commandWordComment = matchOrDefault("Command_Comment")
@@ -396,8 +399,6 @@ class TMLocale(
         stacktraceLine3 = matchOrDefault("Stacktrace_Line3")
         stacktraceLine4 = matchOrDefault("Stacktrace_Line4")
         stacktraceEntry = matchOrDefault("Stacktrace_Entry")
-        informationDBUpdate = matchOrDefault("Info_DBUpdate")
-        informationDBUpdateComplete = matchOrDefault("Info_DBUpdateComplete")
         informationDBConvertInit = matchOrDefault("Info_DBConversionInit")
         informationDBConvertSuccess = matchOrDefault("Info_DBConversionSuccess")
         commandWordConvertDB = matchOrDefault("Command_ConvertDB")
@@ -428,5 +429,12 @@ class TMLocale(
         discordOnCreate = matchOrDefault("Discord_OnCreate")
         discordOnReopen = matchOrDefault("Discord_OnReopen")
         discordOnPriorityChange = matchOrDefault("Discord_OnPriorityChange")
+        consoleErrorScheduledNotifications = matchOrDefault("ConsoleError_ScheduledNotifications")
+        warningsInternalError = matchOrDefault("Warning_InternalError")
+        consoleErrorBadDatabase = matchOrDefault("ConsoleError_DatabaseInitialize")
+        consoleInitializationComplete = matchOrDefault("Console_InitializationComplete")
+        consoleErrorBadDiscord = matchOrDefault("ConsoleError_DiscordInitialize")
+        consoleErrorCommandExecution = matchOrDefault("ConsoleError_CommandExecution")
+        consoleErrorDBConversion = matchOrDefault("ConsoleError_DatabaseConversion")
     }
 }

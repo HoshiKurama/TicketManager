@@ -28,4 +28,6 @@ data class ConfigParameters(
     val DiscordNotifyOnPriorityChange: Boolean?,
     val DiscordToken: String?,
     val DiscordChannelID: Long?,
+    val printModifiedStacktrace: Boolean?,
+    val printFullStacktrace: Boolean?,
 )

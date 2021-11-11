@@ -53,7 +53,6 @@ Warning_Locked: '&c[TicketManager] Commands are currently locked! Please try aga
 Warning_NoPermission: '&c[TicketManager] You do not have permission to perform this command!'
 Warning_InvalidID: '&c[TicketManager] Please enter a valid ticket ID!'
 Warning_NAN: '&c[TicketManager] Please enter a valid number!'
-Warning_VaultNotFound: '&c[TicketManager] Vault plugin not found! TicketManager shutting down...'
 Warning_NoConfig: '&c[TicketManager] Config file not found! New file generated.'
 Warning_InvalidCommand: '&c[TicketManager] No such command exists or number of arguments is incorrect!'
 Warning_PriorityOutOfBounds: '&c[TicketManager] Priority must be between 1 and 5!'
@@ -65,9 +64,16 @@ Warning_ConvertToSameDBType: '&c[TicketManager] Unable to convert database to ty
 Warning_UnexpectedError: '&c[TicketManager] Unexpected error has occurred!'
 Warning_LongTaskDuringReload: '&c[TicketManager] Long-standing task detected during reload attempt. Forcefully ending all other tasks!'
 Warning_InvalidConfig: '&c[TicketManager] %num% config values defaulted! Please check console for more information'
+Warning_InternalError: '&c[TicketManager] An internal error has occurred! Please check Console for details'
 #
-# Console Errors
-ConsoleWarning_InvalidConfigNode: 'Error reading configuration node %node% from config! Defaulting to: %default%'
+# Console Messages
+Console_InitializationComplete: '[TicketManager] Data Initialization Complete!'
+ConsoleError_CommandExecution: '[TicketManager] An error occurred during command execution!'
+ConsoleError_DatabaseConversion: '[TicketManager] An error occurred during database conversion!'
+ConsoleError_DatabaseInitialize: '[TicketManager] An error occurred during database creation or initialization! Defaulting to SQLite...'
+ConsoleError_DiscordInitialize: '[TicketManager] An error occurred during initialization of the Discord bot!'
+ConsoleError_ScheduledNotifications: '[TicketManager] An error occurred while performing scheduled notifications!'
+ConsoleWarning_InvalidConfigNode: '[TicketManager] An error occurred while reading configuration node "%node%"! Defaulting to: %default%'
 #
 # Modified Stacktrace
 Stacktrace_Line1: '%nl%%nl%%nl%&4[TicketManager] WARNING! An unexpected error has occurred!'
@@ -136,8 +142,6 @@ Info_ReloadInitiated: '%CC%[TicketManager]&7 %user%%CC% has initiated a plugin r
 Info_Reload_TasksDone: '%CC%[TicketManager] All other tasks complete! Reloading now...'
 Info_ReloadSuccess: '%CC%[TicketManager] Reload&a successful%CC%!'
 Info_ReloadFailure: '%CC%[TicketManager] Reload&c failure%CC%!'
-Info_DBUpdate: '%CC%[TicketManager] Database updating to latest version! Plugin Locked! DO NOT TURN OFF SERVER!'
-Info_DBUpdateComplete: '%CC%[TicketManager] Database update complete! Plugin unlocked!'
 Info_DBConversionInit: '%CC%[TicketManager] Database conversion from &7%fromDB%%CC% to &7%toDB%%CC%! Plugin locked!'
 Info_DBConversionSuccess: '%CC%[TicketManager] Database conversion complete! Plugin unlocked! Change config and reload plugin to use new database type.'
 #

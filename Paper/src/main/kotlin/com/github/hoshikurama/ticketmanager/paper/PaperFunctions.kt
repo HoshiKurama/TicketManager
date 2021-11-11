@@ -1,10 +1,7 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.componentDSL.buildComponent
-import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.LocaleHandler
 import com.github.hoshikurama.ticketmanager.TMLocale
-import com.github.hoshikurama.ticketmanager.misc.pForEach
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.platform.Player
 import com.github.hoshikurama.ticketmanager.platform.Sender
@@ -62,47 +59,20 @@ class PaperFunctions(private val perms: Permission) : PlatformFunctions {
         }
     }
 
-    override suspend fun postModifiedStacktrace(e: Exception, localeHandler: LocaleHandler) {
-        Bukkit.getOnlinePlayers()
-            .filter { perms.has(it, "ticketmanager.notify.warning") }
-            .map { it as Audience to localeHandler.getOrDefault(it.locale().toString()) }
-            .pForEach { (p, locale) ->
-                p.sendMessage(
-                    buildComponent {
-                        // Builds header
-                        listOf(
-                            locale.stacktraceLine1,
-                            locale.stacktraceLine2.replace("%exception%", e.javaClass.simpleName),
-                            locale.stacktraceLine3.replace("%message%", e.message ?: "?"),
-                            locale.stacktraceLine4,
-                        )
-                            .forEach { text { formattedContent(it) } }
-
-                        // Adds stacktrace entries
-                        e.stackTrace
-                            .filter { it.className.startsWith("com.github.hoshikurama.ticketmanager") }
-                            .map {
-                                locale.stacktraceEntry
-                                    .replace("%method%", it.methodName)
-                                    .replace("%file%", it.fileName ?: "?")
-                                    .replace("%line%", "${it.lineNumber}")
-                            }
-                            .forEach { text { formattedContent(it) } }
-                    }
-                )
-            }
+    override fun getConsoleAudience(): Audience {
+        return Bukkit.getConsoleSender()
     }
 
     override fun pushInfoToConsole(message: String) {
-        Bukkit.getLogger().log(Level.INFO, "[TicketManager] $message")
+        Bukkit.getLogger().log(Level.INFO, message)
     }
 
     override fun pushWarningToConsole(message: String) {
-        Bukkit.getLogger().log(Level.WARNING, "[TicketManager] $message")
+        Bukkit.getLogger().log(Level.WARNING, message)
     }
 
     override fun pushErrorToConsole(message: String) {
-        Bukkit.getLogger().log(Level.SEVERE, "[TicketManager] $message")
+        Bukkit.getLogger().log(Level.SEVERE, message)
     }
 
     override fun getPermissionGroups(): List<String> {

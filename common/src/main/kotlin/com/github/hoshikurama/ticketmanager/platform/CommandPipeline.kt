@@ -65,8 +65,7 @@ abstract class CommandPipeline(
                 executeCommand()?.let { pushNotifications(sender, it, ticket) }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            platform.postModifiedStacktrace(e, instanceState.localeHandler)
+            pushErrors(platform, instanceState, e, TMLocale::consoleErrorCommandExecution)
             sender.sendMessage(sender.locale.warningsUnexpectedError)
         } finally {
             globalState.jobCount.run { set(get() - 1) }
@@ -674,7 +673,7 @@ abstract class CommandPipeline(
             },
             onError = {
                 globalState.pluginLocked.set(false)
-                //TODO PRINT ERROR
+                pushErrors(platform, instanceState, it, TMLocale::consoleErrorDBConversion)
             }
         )
     }
@@ -919,7 +918,7 @@ abstract class CommandPipeline(
                 it.informationReloadSuccess.run(::toColouredAdventure)
             }
             if (!sender.has("ticketmanager.notify.info")) {
-                sender.sendMessage(sender.locale.informationReloadSuccess) //TODO STATE THAT CHANGES WILL SHOW AFTER THIS MESSAGE
+                sender.sendMessage(sender.locale.informationReloadSuccess)
             }
             globalState.pluginLocked.set(false)
         } catch (e: Exception) {

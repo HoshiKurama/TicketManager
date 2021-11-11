@@ -1,9 +1,14 @@
 package com.github.hoshikurama.ticketmanager.misc
 
+import com.github.hoshikurama.componentDSL.buildComponent
 import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.TMLocale
+import com.github.hoshikurama.ticketmanager.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.ticket.FullTicket
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import net.kyori.adventure.extra.kotlin.text
 import java.time.Instant
 
@@ -66,3 +71,59 @@ fun relTimeToEpochSecond(relTime: String, locale: TMLocale): Long {
 fun stringToStatusOrNull(str: String) = tryOrNull { BasicTicket.Status.valueOf(str) }
 
 fun toColouredAdventure(s: String) = text { formattedContent(s) }
+
+fun generateModifiedStacktrace(e: Exception, locale: TMLocale) = buildComponent {
+    // Builds header
+    listOf(
+        locale.stacktraceLine1,
+        locale.stacktraceLine2.replace("%exception%", e.javaClass.simpleName),
+        locale.stacktraceLine3.replace("%message%", e.message ?: "?"),
+        locale.stacktraceLine4,
+    )
+        .forEach { text { formattedContent(it) } }
+
+    // Adds stacktrace entries
+    e.stackTrace
+        .filter { it.className.startsWith("com.github.hoshikurama.ticketmanager") }
+        .map {
+            locale.stacktraceEntry
+                .replace("%method%", it.methodName)
+                .replace("%file%", it.fileName ?: "?")
+                .replace("%line%", "${it.lineNumber}")
+        }
+        .forEach { text { formattedContent(it) } }
+}
+
+suspend fun pushErrors(
+    platform: PlatformFunctions,
+    instanceState: InstancePluginState,
+    exception: Exception,
+    consoleErrorMessage: (TMLocale) -> String,
+
+) = coroutineScope {
+    val onlinePlayers = platform.getOnlinePlayers(instanceState.localeHandler)
+
+    launch {
+        // Logs error
+        platform.pushErrorToConsole(consoleErrorMessage(instanceState.localeHandler.consoleLocale))
+
+        // Pushes full stacktrace to console
+        if (instanceState.printFullStacktrace)
+            exception.printStackTrace()
+    }
+
+    launch {
+        // Pushes modified stacktrace to relevant users
+        if (instanceState.printModifiedStacktrace)
+            platform.getConsoleAudience().sendMessage(generateModifiedStacktrace(exception, instanceState.localeHandler.consoleLocale))
+
+        onlinePlayers.pFilter { it.has("ticketmanager.notify.error.stacktrace") }
+            .pForEach { generateModifiedStacktrace(exception, it.locale).run(it::sendMessage) }
+    }
+
+    launch {
+        // Sends out other error message for users with warning and without stacktrace
+        onlinePlayers.pFilter { it.has("ticketmanager.notify.error.message") && !it.has("ticketmanager.notify.error.stacktrace") }
+            .pForEach { it.locale.warningsInternalError.run(it::sendMessage) }
+    }
+}

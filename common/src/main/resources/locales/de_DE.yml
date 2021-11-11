@@ -54,7 +54,6 @@ Warning_Locked: '&c[TicketManager] Aktuell sind alle Befehle gesperrt! Versuche 
 Warning_NoPermission: '&c[TicketManager] Du hast keine Berechtigungen um diesen Befehl auszuführen!'
 Warning_InvalidID: '&c[TicketManager] Bitte gebe eine gültige Ticket-ID an!'
 Warning_NAN: '&c[TicketManager] Bitte gebe eine gültige ID an!'
-Warning_VaultNotFound: '&c[TicketManager] Vault wurde nicht gefunden! TicketManager wird deaktiviert...'
 Warning_NoConfig: '&c[TicketManager] Konfiguration nicht gefunden! Neue Konfiguration wird generiert.'
 Warning_InvalidCommand: '&c[TicketManager] Dieser Befehl existiert nicht oder die Anzahl der Argumente ist falsch!'
 Warning_PriorityOutOfBounds: '&c[TicketManager] Die Priorität muss zwischen 1 und 5 liegen!'
@@ -65,6 +64,17 @@ Warning_InvalidDBType: '&c[TicketManager] Ungültiger Datenbanktyp!'
 Warning_ConvertToSameDBType: '&c[TicketManager] Kann die Datenbank nicht in den bereits genutzten Typ umwandeln!'
 Warning_UnexpectedError: '&c[TicketManager] Ein unerwarteter Fehler ist aufgetreten!'
 Warning_LongTaskDuringReload: '&c[TicketManager] Beim neuladen wurde eine Aufgabe gefunden die zu lange braucht. Alle anderen Aufgaben werden zwangsmäßig beendet!'
+Warning_InternalError
+Warning_InvalidConfig
+#
+# Console Messages
+Console_InitializationComplete
+ConsoleError_CommandExecution
+ConsoleError_DatabaseConversion
+ConsoleError_DatabaseInitialize
+ConsoleError_DiscordInitialize
+ConsoleError_ScheduledNotifications
+ConsoleWarning_InvalidConfigNode
 #
 # Modified Stacktrace
 Stacktrace_Line1: '%nl%%nl%%nl%&4[TicketManager] WARNUNG! Ein unerwarteter Fehler ist aufgetreten!'
@@ -133,8 +143,6 @@ Info_ReloadInitiated: '%CC%[TicketManager]&7 %user%%CC% hat ein neuladen des Plu
 Info_Reload_TasksDone: '%CC%[TicketManager]Alle Aufgaben abgeschlossen! Wird neu geladen...'
 Info_ReloadSuccess: '%CC%[TicketManager] &aErfolgreich %CC%neu geladen!'
 Info_ReloadFailure: '%CC%[TicketManager] Neuladen&c fehlgeschlagen%CC%!'
-Info_DBUpdate: '%CC%[TicketManager] Datenbank wird auf die neueste Version aktualisiert! Plugin gesperrt! SERVER NICHT AUSSCHALTEN!'
-Info_DBUpdateComplete: '%CC%[TicketManager] Datenbank aktualisiert! Plugin entsperrt!'
 Info_DBConversionInit: '%CC%[TicketManager] Datenbank wird von &7%fromDB%%CC% zu &7%toDB%%CC% konvertiert! Plugin gesperrt!'
 Info_DBConversionSuccess: '%CC%[TicketManager] Datenbank wurde konvertiert! Plugin entsperrt! Ändere die Konfiguration zum neuen Datenbanktyp und lade das Plugin neu.'
 #

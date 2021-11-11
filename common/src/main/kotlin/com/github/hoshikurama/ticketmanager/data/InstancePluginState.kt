@@ -15,4 +15,6 @@ class InstancePluginState(
 
     val allowUnreadTicketUpdates: Boolean,
     val pluginUpdateChecker: UpdateChecker,
+    val printModifiedStacktrace: Boolean,
+    val printFullStacktrace: Boolean,
 )
