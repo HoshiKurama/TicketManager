@@ -1,6 +1,6 @@
 name: TicketManager
 version: 6.1.0
-main: com.github.hoshikurama.ticketmanager.paper.old.PaperPlugin
+main: com.github.hoshikurama.ticketmanager.paper.PaperPlugin
 api-version: 1.17
 authors: [HoshiKurama]
 depend: [Vault]

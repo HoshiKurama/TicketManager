@@ -23,6 +23,7 @@ Force_Locale: false
 # Values:
 #   'en_CA' = Canadian English
 #   'en_US' = United States English
+#   'de_DE' = German
 Preferred_Locale: 'en_CA'
 #
 # Console Locale: Locale Console will use. Using a non-supported locale will cause
@@ -31,6 +32,7 @@ Preferred_Locale: 'en_CA'
 # Values:
 #   'en_CA' = Canadian English
 #   'en_US' = United States English
+#   'de_DE' = German
 Console_Locale: 'en_CA'
 #
 # ##########################################
