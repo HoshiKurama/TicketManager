@@ -1,7 +1,7 @@
 ##############################################
 ##############################################
 #       TicketManager Config File
-#             Version 6.0.3
+#             Version 6.1.0
 ##############################################
 ##############################################
 #
@@ -81,8 +81,8 @@ Cooldown_Time: 0
 # Cons: - Any power loss or server crash will result in all data beyond
 #         the last backup being lost.
 #
-# Values: 'MySQL','SQLite','Memory'
-Database_Mode: 'SQLite'
+# Values: 'MYSQL','SQLITE','MEMORY'
+Database_Mode: 'SQLITE'
 #
 # ######################
 #    MySQL Database
@@ -149,6 +149,7 @@ Colour_Code: '&3'
 # Values: true, false
 Allow_Unread_Ticket_Updates: true
 #
-# Allow Update Checking: Server can check that the latest version of TicketManager is installed during startup or reloads.
+# Allow Update Checking: Server can check that the latest version of
+# TicketManager is installed during startup or reloads.
 # Values: true, false
 Allow_UpdateChecking: true

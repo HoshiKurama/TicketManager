@@ -64,6 +64,10 @@ Warning_InvalidDBType: '&c[TicketManager] Invalid database type!'
 Warning_ConvertToSameDBType: '&c[TicketManager] Unable to convert database to type already in use!'
 Warning_UnexpectedError: '&c[TicketManager] Unexpected error has occurred!'
 Warning_LongTaskDuringReload: '&c[TicketManager] Long-standing task detected during reload attempt. Forcefully ending all other tasks!'
+Warning_InvalidConfig: '&c[TicketManager] %num% config values defaulted! Please check console for more information'
+#
+# Console Errors
+ConsoleWarning_InvalidConfigNode: 'Error reading configuration node %node% from config! Defaulting to: %default%'
 #
 # Modified Stacktrace
 Stacktrace_Line1: '%nl%%nl%%nl%&4[TicketManager] WARNING! An unexpected error has occurred!'
