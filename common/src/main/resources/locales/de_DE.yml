@@ -185,7 +185,7 @@ Notify_Event_TicketClose: '%CC%[TicketManager] &7%user%%CC% hat Ticket &7#%id%%C
 Notify_Event_TicketCloseWithComment: '%CC%[TicketManager] &7%user%%CC% hat Ticket &7#%id%%CC% mit Kommentar geschlossen:%nl%&7%message%'
 Notify_Event_MassClose: '%CC%[TicketManager]&7 %user%%CC% schließt mehrere Tickets von &7#%low%%CC% bis &7#%high%%CC%.'
 Notify_Event_TicketComment: '%CC%[TicketManager]&7 %user%%CC% Kommentierte auf dem Ticket &7#%id%%CC%:&7%nl%%message%'
-Notify_Event_TicketCreation: '%CC%[TicketManager] &7%user%%CC% hat ein Ticket &7#%id%%CC% erstellt:&7%nl%%message%'
+Notify_Event_TicketCreation: '%CC%[TicketManager] &7%user%%CC% hat Ticket &7#%id%%CC% erstellt:&7%nl%%message%'
 Notify_Event_TicketModification: '%CC%[TicketManager] Ticket &7#%id%%CC% wurde geupdated! Nutze &7/ticket view %id%%CC% um das Ticket anzusehen.'
 Notify_Event_TicketReopen: '%CC%[TicketManager]&7 %user%%CC% hat das Ticket &7#%id%%CC% erneut geöffnet.'
 Notify_Event_SetPriority: '%CC%[TicketManager] &7%user%%CC% hat die Ticket &7#%id%%CC% Priorität zu %priority% geändert'
