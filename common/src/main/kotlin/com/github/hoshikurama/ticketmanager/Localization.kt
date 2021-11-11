@@ -27,7 +27,7 @@ class LocaleHandler(
                 else mapOf(
                     "en_ca" to fallback,
                     "en_us" to async { TMLocale(mainColourCode, "en_CA") },
-                    "en_uk" to async { TMLocale(mainColourCode, "en_CA") },
+                    "en_uk" to async { TMLocale(mainColourCode, "en_UK") },
                     "de_de" to async { TMLocale(mainColourCode, "de_DE") },
                 )
                     .mapValues { it.value.await() }

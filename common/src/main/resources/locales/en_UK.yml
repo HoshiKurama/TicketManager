@@ -70,8 +70,8 @@ Warning_InternalError: '&c[TicketManager] An internal error has occurred! Please
 Console_InitializationComplete: '[TicketManager] Data initialization complete!'
 ConsoleError_CommandExecution: '[TicketManager] An error occurred during command execution!'
 ConsoleError_DatabaseConversion: '[TicketManager] An error occurred during database conversion!'
-ConsoleError_DatabaseInitialize: '[TicketManager] An error occurred during database creation or initialization! Defaulting to SQLite...'
-ConsoleError_DiscordInitialize: '[TicketManager] An error occurred during initialization of the Discord bot!'
+ConsoleError_DatabaseInitialize: '[TicketManager] An error occurred during database creation or initialisation! Defaulting to SQLite...'
+ConsoleError_DiscordInitialize: '[TicketManager] An error occurred during initialisation of the Discord bot!'
 ConsoleError_ScheduledNotifications: '[TicketManager] An error occurred while performing scheduled notifications!'
 ConsoleWarning_InvalidConfigNode: '[TicketManager] An error occurred while reading configuration node "%node%"! Defaulting to: %default%'
 #
