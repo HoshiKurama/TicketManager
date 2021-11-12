@@ -1063,6 +1063,7 @@ abstract class CommandPipeline(
                     val constraintArgs = arguments
                         .filter { it.key != locale.searchPage }
                         .map { (k, v) -> "$k:$v" }
+                        .joinToString(" ")
                     "/${locale.commandBase} ${locale.commandWordSearch} $constraintArgs ${locale.searchPage}:"
                 }
                 append(pageComponent)

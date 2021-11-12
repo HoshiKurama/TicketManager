@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.database
 
+import com.github.hoshikurama.ticketmanager.database.impl.CachedSQLite
 import com.github.hoshikurama.ticketmanager.database.impl.Memory
 import com.github.hoshikurama.ticketmanager.database.impl.MySQL
 import com.github.hoshikurama.ticketmanager.database.impl.SQLite
@@ -31,4 +32,11 @@ class SQLiteBuilder(private val pathToFolder: String) : DatabaseBuilder {
     override suspend fun build() = SQLite(pathToFolder)
 }
 
-class DatabaseBuilders(val memoryBuilder: MemoryBuilder, val sqLiteBuilder: SQLiteBuilder, val mySQLBuilder: MySQLBuilder)
+class CachedSQLiteBuilder(
+    private val pathToFolder: String,
+    private val dispatcher: CoroutineDispatcher,
+) : DatabaseBuilder {
+    override suspend fun build() = CachedSQLite(pathToFolder, dispatcher)
+}
+
+class DatabaseBuilders(val memoryBuilder: MemoryBuilder, val sqLiteBuilder: SQLiteBuilder, val mySQLBuilder: MySQLBuilder, val cachedSQLiteBuilder: CachedSQLiteBuilder)

@@ -56,7 +56,7 @@ Cooldown_Time: 0
 # ##########################################
 #
 # Database mode: Type of database used. Internally defaults
-# to SQLite if invalid value is used. Information only needs
+# to Cached_SQLite if invalid value is used. Information only needs
 # to be filled out for the desired database type.
 #
 #                 SQLite:
@@ -83,8 +83,15 @@ Cooldown_Time: 0
 # Cons: - Any power loss or server crash will result in all data beyond
 #         the last backup being lost.
 #
-# Values: 'MYSQL','SQLITE','MEMORY'
-Database_Mode: 'SQLITE'
+#                Cached SQL:
+# Blend between the Memory and SQLite option. Data is loaded from SQLite into
+# the Memory model, and all changes reflect in the SQLite file.
+# Pros: + Extreme speed of the Memory mode
+#       + Reliability of the SQLite mode
+# Cons: - Possibly slower database initialization
+#
+# Values: 'MYSQL','SQLITE','MEMORY', 'CACHED_SQLITE'
+Database_Mode: 'CACHED_SQLITE'
 #
 # ######################
 #    MySQL Database

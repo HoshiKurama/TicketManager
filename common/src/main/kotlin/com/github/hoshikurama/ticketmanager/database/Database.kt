@@ -10,7 +10,7 @@ interface Database {
 
 
     enum class Type {
-        MYSQL, SQLITE, MEMORY
+        MYSQL, SQLITE, MEMORY, CACHED_SQLITE,
     }
 
     // Individual property setters

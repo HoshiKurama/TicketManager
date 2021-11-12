@@ -155,29 +155,31 @@ abstract class TMPlugin(
                 },
                 memoryBuilder = kotlin.run {
                     val backupFrequency = c.memoryFrequency ?: 600L.addToErrors("Memory_Backup_Frequency", Long::toString)
-                    MemoryBuilder(c.memoryPath, backupFrequency)
+                    MemoryBuilder(c.pluginFolderPath, backupFrequency)
                 },
-                sqLiteBuilder = SQLiteBuilder(c.sqLitePath)
+                sqLiteBuilder = SQLiteBuilder(c.pluginFolderPath),
+                cachedSQLiteBuilder = CachedSQLiteBuilder(c.pluginFolderPath, globalPluginState.asyncDispatcher),
             )
 
             // Builds Database object
             val database = kotlin.run {
                 val type =
                     try { Database.Type.valueOf(c.dbTypeAsStr!!.uppercase()) }
-                    catch (e: Exception) { Database.Type.SQLITE.addToErrors("Database_Mode", Database.Type::name) }
+                    catch (e: Exception) { Database.Type.CACHED_SQLITE.addToErrors("Database_Mode", Database.Type::name) }
 
                 try {
                     when (type) {
                         Database.Type.SQLITE -> databaseBuilders.sqLiteBuilder.build().apply { initializeDatabase() }
                         Database.Type.MYSQL -> databaseBuilders.mySQLBuilder.build().apply { initializeDatabase() }
                         Database.Type.MEMORY -> databaseBuilders.memoryBuilder.build().apply { initializeDatabase() }
+                        Database.Type.CACHED_SQLITE -> databaseBuilders.cachedSQLiteBuilder.build().apply { initializeDatabase() }
                     }
                 } catch (e: Exception) {
                     independentAsyncScope.launch {
                         while (!::instancePluginState.isInitialized) delay(100L)
                         pushErrors(platformFunctions, instancePluginState, e, TMLocale::consoleErrorBadDatabase)
                     }
-                    databaseBuilders.sqLiteBuilder.build().apply { initializeDatabase() }
+                    databaseBuilders.cachedSQLiteBuilder.build().apply { initializeDatabase() }
                 }
             }
 

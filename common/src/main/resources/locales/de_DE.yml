@@ -64,17 +64,17 @@ Warning_InvalidDBType: '&c[TicketManager] Ungültiger Datenbanktyp!'
 Warning_ConvertToSameDBType: '&c[TicketManager] Kann die Datenbank nicht in den bereits genutzten Typ umwandeln!'
 Warning_UnexpectedError: '&c[TicketManager] Ein unerwarteter Fehler ist aufgetreten!'
 Warning_LongTaskDuringReload: '&c[TicketManager] Beim neuladen wurde eine Aufgabe gefunden die zu lange braucht. Alle anderen Aufgaben werden zwangsmäßig beendet!'
-Warning_InternalError
-Warning_InvalidConfig
+Warning_InternalError: ''
+Warning_InvalidConfig: ''
 #
 # Console Messages
-Console_InitializationComplete
-ConsoleError_CommandExecution
-ConsoleError_DatabaseConversion
-ConsoleError_DatabaseInitialize
-ConsoleError_DiscordInitialize
-ConsoleError_ScheduledNotifications
-ConsoleWarning_InvalidConfigNode
+Console_InitializationComplete: ''
+ConsoleError_CommandExecution: ''
+ConsoleError_DatabaseConversion: ''
+ConsoleError_DatabaseInitialize: ''
+ConsoleError_DiscordInitialize: ''
+ConsoleError_ScheduledNotifications: ''
+ConsoleWarning_InvalidConfigNode: ''
 #
 # Modified Stacktrace
 Stacktrace_Line1: '%nl%%nl%%nl%&4[TicketManager] WARNUNG! Ein unerwarteter Fehler ist aufgetreten!'

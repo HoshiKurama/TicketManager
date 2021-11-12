@@ -1,3 +1,5 @@
+@file:Suppress("DuplicatedCode")
+
 package com.github.hoshikurama.ticketmanager.database.impl
 
 import com.github.hoshikurama.ticketmanager.TMLocale
@@ -7,64 +9,43 @@ import com.github.hoshikurama.ticketmanager.database.Result
 import com.github.hoshikurama.ticketmanager.database.SearchConstraint
 import com.github.hoshikurama.ticketmanager.misc.*
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
+import com.github.hoshikurama.ticketmanager.ticket.BasicTicketImpl
 import com.github.hoshikurama.ticketmanager.ticket.FullTicket
 import com.github.hoshikurama.ticketmanager.ticket.plus
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import java.io.BufferedWriter
-import java.nio.charset.Charset
-import java.nio.file.Files
-import java.nio.file.Path
+import kotliquery.Connection
+import kotliquery.Session
+import kotliquery.queryOf
+import kotliquery.using
+import java.sql.DriverManager
 import java.time.Instant
 import java.util.*
-import kotlin.io.path.createFile
-import kotlin.io.path.exists
-import kotlin.io.path.notExists
+import kotlin.collections.set
 
-@OptIn(DelicateCoroutinesApi::class, kotlinx.serialization.ExperimentalSerializationApi::class)
-class Memory(
-    private val filePath: String,
-    backupFrequency: Long
+class CachedSQLite(
+    absoluteDataFolderPath: String,
+    private val asyncDispatcher: CoroutineDispatcher,
 ) : Database {
+    override val type = Database.Type.CACHED_SQLITE
 
-    override val type = Database.Type.MEMORY
+    // Cache Data
     private val mapMutex = ReadWriteMutex()
-    private val ticketMap: MutableMap<Int, FullTicket>
-    private val fileIOOccurring = MutexControlled(false)
+    private val ticketMap = mutableMapOf<Int, FullTicket>()
+    private lateinit var nextTicketID: IncrementalMutexController
 
-    private val nextTicketID: IncrementalMutexController
-    private val backupJob: Job
+    // SQLite Data
+    private val url: String = "jdbc:sqlite:$absoluteDataFolderPath/TicketManager-SQLite.db"
+    private fun getSession() = Session(Connection(DriverManager.getConnection(url)))
 
-    init {
-        val path = Path.of("$filePath/TicketManager-Database4-Memory.ticketmanager")
+    private val sqlWriteQueue = Channel<(Session) -> Unit>(1_000)
 
-        if (path.exists()) {
-            val encodedMap = Files.readString(path)
-            ticketMap = Json.decodeFromString(encodedMap)
-
-            val highestID = ticketMap.maxByOrNull { it.key }?.key ?: 0
-            nextTicketID = IncrementalMutexController(highestID + 1)
-        } else {
-            ticketMap = mutableMapOf()
-            nextTicketID = IncrementalMutexController(1)
-        }
-
-        // Launches backup system for duration of database
-        backupJob = GlobalScope.launch(Dispatchers.IO) {
-            while (true) {
-                delay(1000L * backupFrequency)
-
-                if (!fileIOOccurring.get()) {
-                    fileIOOccurring.set(true)
-                    writeDatabaseToFileBlocking()
-                    fileIOOccurring.set(false)
-                }
-            }
-        }
-    }
+    private val asyncScope: CoroutineScope
+        get() = CoroutineScope(asyncDispatcher)
 
 
 
@@ -73,6 +54,8 @@ class Memory(
             val t = ticketMap[ticketID]!!
             ticketMap[ticketID] = FullTicket(t.id, t.creatorUUID, t.location, t.priority, t.status, assignment, t.creatorStatusUpdate, t.actions)
         }
+
+        sqlWriteQueue.send { it.update(queryOf("UPDATE TicketManager_V4_Tickets SET ASSIGNED_TO = ? WHERE ID = $ticketID;", assignment)) }
     }
 
     override suspend fun setCreatorStatusUpdate(ticketID: Int, status: Boolean) {
@@ -80,6 +63,8 @@ class Memory(
             val t = ticketMap[ticketID]!!
             ticketMap[ticketID] = FullTicket(t.id, t.creatorUUID, t.location, t.priority, t.status, t.assignedTo, status, t.actions)
         }
+
+        sqlWriteQueue.send { it.update(queryOf("UPDATE TicketManager_V4_Tickets SET STATUS_UPDATE_FOR_CREATOR = ? WHERE ID = $ticketID;", status)) }
     }
 
     override suspend fun setPriority(ticketID: Int, priority: BasicTicket.Priority) {
@@ -87,6 +72,8 @@ class Memory(
             val t = ticketMap[ticketID]!!
             ticketMap[ticketID] = FullTicket(t.id, t.creatorUUID, t.location, priority, t.status, t.assignedTo, t.creatorStatusUpdate, t.actions)
         }
+
+        sqlWriteQueue.send { it.update(queryOf("UPDATE TicketManager_V4_Tickets SET PRIORITY = ? WHERE ID = $ticketID;", priority.level)) }
     }
 
     override suspend fun setStatus(ticketID: Int, status: BasicTicket.Status) {
@@ -94,11 +81,25 @@ class Memory(
             val t = ticketMap[ticketID]!!
             ticketMap[ticketID] = FullTicket(t.id, t.creatorUUID, t.location, t.priority, status, t.assignedTo, t.creatorStatusUpdate, t.actions)
         }
+
+        sqlWriteQueue.send { it.update(queryOf("UPDATE TicketManager_V4_Tickets SET STATUS = ? WHERE ID = $ticketID;", status.name)) }
     }
 
     override suspend fun insertAction(id: Int, action: FullTicket.Action) {
         mapMutex.write.withLock {
             ticketMap[id] = ticketMap[id]!! + action
+        }
+
+        sqlWriteQueue.send {
+            it.update(
+                queryOf("INSERT INTO TicketManager_V4_Actions (TICKET_ID,ACTION_TYPE,CREATOR_UUID,MESSAGE,TIMESTAMP) VALUES (?,?,?,?,?);",
+                    id,
+                    action.type.name,
+                    action.user?.toString(),
+                    action.message,
+                    action.timestamp
+                )
+            )
         }
     }
 
@@ -108,6 +109,36 @@ class Memory(
 
         mapMutex.write.withLock {
             ticketMap[newID] = newTicket
+        }
+
+        // Writes ticket
+        sqlWriteQueue.send {
+            it.update(
+                queryOf("INSERT INTO TicketManager_V4_Tickets (ID, CREATOR_UUID, PRIORITY, STATUS, ASSIGNED_TO, STATUS_UPDATE_FOR_CREATOR, LOCATION) VALUES (?,?,?,?,?,?,?);",
+                    newID,
+                    newTicket.creatorUUID,
+                    newTicket.priority.level,
+                    newTicket.status.name,
+                    newTicket.assignedTo,
+                    newTicket.creatorStatusUpdate,
+                    newTicket.location?.toString()
+                )
+            )
+        }
+
+        // Writes Actions
+        fullTicket.actions.forEach { action ->
+            sqlWriteQueue.send {
+                it.update(
+                    queryOf("INSERT INTO TicketManager_V4_Actions (TICKET_ID,ACTION_TYPE,CREATOR_UUID,MESSAGE,TIMESTAMP) VALUES (?,?,?,?,?);",
+                        newID,
+                        action.type.name,
+                        action.user?.toString(),
+                        action.message,
+                        action.timestamp
+                    )
+                )
+            }
         }
 
         return newID
@@ -187,6 +218,26 @@ class Memory(
                 ticketMap[it.id] = it
             }
         }
+
+        // SQLite stuff
+        sqlWriteQueue.send { session ->
+            val ids = ticketsToChange.map { it.id }
+            val now = Instant.now().epochSecond
+
+            session.update(queryOf("UPDATE TicketManager_V4_Tickets SET STATUS = ? WHERE ID IN (${ids.joinToString(", ")});", BasicTicket.Status.CLOSED.name))
+
+            ids.forEach {
+                session.update(
+                    queryOf("INSERT INTO TicketManager_V4_Actions (TICKET_ID,ACTION_TYPE,CREATOR_UUID,MESSAGE,TIMESTAMP) VALUES (?,?,?,?,?);",
+                        it,
+                        FullTicket.Action.Type.MASS_CLOSE.name,
+                        actor?.toString(),
+                        null,
+                        now,
+                    )
+                )
+            }
+        }
     }
 
     override suspend fun countOpenTickets(): Int {
@@ -229,7 +280,7 @@ class Memory(
         }
 
         val combinedFunction = if (functions.isNotEmpty()) { t: FullTicket -> functions.all { it(t) }}
-                               else { _: FullTicket -> true }
+        else { _: FullTicket -> true }
 
         val totalSize: Int
         val maxPages: Int
@@ -266,19 +317,103 @@ class Memory(
             .pMap { it.id }
     }
 
-    override suspend fun initializeDatabase() {
-        // Done on object instantiation
+    override suspend fun closeDatabase() {
+        sqlWriteQueue.close()
     }
 
-    override suspend fun closeDatabase() {
-        while (fileIOOccurring.get()) delay(100)
+    override suspend fun initializeDatabase() {
+        // Creates table if it doesn't exist
+        using(getSession()) {
+            if (!tableExists("TicketManager_V4_Tickets")) {
+                it.run(
+                    queryOf("""
+                        CREATE TABLE TicketManager_V4_Tickets (
+                        ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                        CREATOR_UUID VARCHAR(36) COLLATE NOCASE,
+                        PRIORITY TINYINT NOT NULL,
+                        STATUS VARCHAR(10) COLLATE NOCASE NOT NULL,
+                        ASSIGNED_TO VARCHAR(255) COLLATE NOCASE,
+                        STATUS_UPDATE_FOR_CREATOR BOOLEAN NOT NULL,
+                        LOCATION VARCHAR(255) COLLATE NOCASE
+                        );""".trimIndent()
+                    ).asExecute
+                )
+                it.run(queryOf("CREATE INDEX STATUS_V4 ON TicketManager_V4_Tickets (STATUS)").asExecute)
+                it.run(queryOf("CREATE INDEX STATUS_UPDATE_FOR_CREATOR_V4 ON TicketManager_V4_Tickets (STATUS_UPDATE_FOR_CREATOR)").asExecute)
+            }
 
-        // Cancels GlobalScope backup job
-        backupJob.cancel()
+            if (!tableExists("TicketManager_V4_Actions")) {
+                it.run(
+                    queryOf("""
+                        CREATE TABLE TicketManager_V4_Actions (
+                        ACTION_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                        TICKET_ID INTEGER NOT NULL,
+                        ACTION_TYPE VARCHAR(20) COLLATE NOCASE NOT NULL,
+                        CREATOR_UUID VARCHAR(36) COLLATE NOCASE,
+                        MESSAGE TEXT COLLATE NOCASE,
+                        TIMESTAMP BIGINT NOT NULL
+                        );""".trimIndent()
+                    ).asExecute
+                )
+            }
+        }
 
-        fileIOOccurring.set(true)
-        writeDatabaseToFileBlocking()
-        fileIOOccurring.set(false)
+        // Loads tickets to memory
+        val basicTickets = using(getSession()) { session ->
+            session.run(
+                queryOf("SELECT * FROM TicketManager_V4_Tickets;")
+                    .map {
+                        BasicTicketImpl(
+                            id = it.int(1),
+                            creatorUUID = it.stringOrNull(2)?.let(UUID::fromString),
+                            priority = byteToPriority(it.byte(3)),
+                            status = BasicTicket.Status.valueOf(it.string(4)),
+                            assignedTo = it.stringOrNull(5),
+                            creatorStatusUpdate = it.boolean(6),
+                            location = it.stringOrNull(7)?.split(" ")?.let { l ->
+                                BasicTicket.TicketLocation(
+                                    world = l[0],
+                                    x = l[1].toInt(),
+                                    y = l[2].toInt(),
+                                    z = l[3].toInt()
+                                )
+                            }
+                        )
+                    }
+                    .asList
+            )
+        }
+        val actions = using(getSession()) { session ->
+            session.run(
+                queryOf("SELECT TICKET_ID, ACTION_TYPE, CREATOR_UUID, MESSAGE, TIMESTAMP FROM TicketManager_V4_Actions;")
+                    .map { r ->
+                        r.int(1) to FullTicket.Action(
+                            type = FullTicket.Action.Type.valueOf(r.string(2)),
+                            user = r.stringOrNull(3)?.let { UUID.fromString(it) },
+                            message = r.stringOrNull(4),
+                            timestamp = r.long(5)
+                        )
+                    }
+                    .asList
+            )
+        }
+
+        // Combine actions and basic tickets to FullTickets and adds those to ticket map
+        actions.groupBy({ it.first }, { it.second })
+            .mapValues { it.value.sortedBy(FullTicket.Action::timestamp) }
+            .run { basicTickets.map { it + get(it.id)!! } }
+            .forEach { ticketMap[it.id] = it } // No sync needed as action is linear
+
+        nextTicketID = IncrementalMutexController((ticketMap.keys.maxOrNull() ?: 0) + 1)
+
+        // Launches async coroutine to linearly process SQL writes to the database
+        asyncScope.launch {
+            for (instructions in sqlWriteQueue) {
+                using(getSession()) {
+                    instructions(it)
+                }
+            }
+        }
     }
 
     override suspend fun migrateDatabase(
@@ -286,13 +421,23 @@ class Memory(
         databaseBuilders: DatabaseBuilders,
         onBegin: suspend () -> Unit,
         onComplete: suspend () -> Unit,
-        onError: suspend (Exception) -> Unit,
+        onError: suspend (Exception) -> Unit
     ) = coroutineScope {
         launch { onBegin() }
 
         try {
             when (to) {
-                Database.Type.MEMORY -> return@coroutineScope
+                Database.Type.CACHED_SQLITE -> return@coroutineScope
+                Database.Type.SQLITE -> return@coroutineScope // Backed by the same SQLite file already
+
+                Database.Type.MEMORY -> {
+                    val otherDB = databaseBuilders.memoryBuilder.build()
+                        .also { it.initializeDatabase() }
+
+                    mapMutex.read.withLock { ticketMap.values.toList() }
+                        .pForEach(otherDB::insertTicket)
+                    otherDB.closeDatabase()
+                }
 
                 Database.Type.MYSQL -> {
                     val otherDB = databaseBuilders.mySQLBuilder.build()
@@ -302,15 +447,6 @@ class Memory(
                         .pForEach(otherDB::insertTicket)
                     otherDB.closeDatabase()
                 }
-
-                Database.Type.SQLITE, Database.Type.CACHED_SQLITE -> {
-                    val otherDB = databaseBuilders.sqLiteBuilder.build()
-                        .also { it.initializeDatabase() }
-
-                    mapMutex.read.withLock { ticketMap.values.toList() }
-                        .forEach { otherDB.insertTicket(it) }
-                    otherDB.closeDatabase()
-                }
             }
             onComplete()
         } catch (e: Exception) {
@@ -318,22 +454,11 @@ class Memory(
         }
     }
 
-    @Suppress("BlockingMethodInNonBlockingContext")
-    private suspend fun writeDatabaseToFileBlocking() {
-        val path = Path.of("$filePath/TicketManager-Database4-Memory.ticketmanager")
-        if (path.notExists()) path.createFile()
-
-        val encodedString: String
-        mapMutex.read.withLock {
-            encodedString = Json.encodeToString(ticketMap)
-        }
-
-        var writer: BufferedWriter? = null
-        try {
-            writer = Files.newBufferedWriter(path, Charset.forName("UTF-8"))
-            writer.write(encodedString)
-        } finally {
-            writer?.close()
+    private fun tableExists(table: String): Boolean {
+        return using(getSession().connection.underlying.metaData.getTables(null, null, table, null)) {
+            while (it.next())
+                if (it.getString("TABLE_NAME")?.lowercase()?.equals(table.lowercase()) == true) return@using true
+            return@using false
         }
     }
 }

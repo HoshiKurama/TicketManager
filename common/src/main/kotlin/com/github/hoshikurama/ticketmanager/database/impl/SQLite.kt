@@ -118,7 +118,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
             }
             .sortedWith(compareByDescending<BasicTicket> { it.priority.level }.thenByDescending { it.id })
             .apply { totalSize = count() }
-            .run { if (pageSize == 0) listOf(this) else chunked(pageSize) }
+            .run { if (pageSize == 0 || size == 0) listOf(this) else chunked(pageSize) }
             .apply { totalPages = count() }
 
         val fixedPage = when {
@@ -258,7 +258,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
             .pFilter { combinedFunction(it) }
             .sortedWith(compareByDescending { it.id})
             .apply { totalSize = count() }
-            .run { if (!equals(0)) chunked(pageSize) else listOf(this) }
+            .run { if (pageSize == 0 || size == 0) listOf(this) else chunked(pageSize) }
             .apply { totalPages = count() }
 
         val fixedPage = when {
@@ -300,7 +300,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
     }
 
     override suspend fun initializeDatabase() {
-        //Creates table if doesn't exist
+        // Creates table if doesn't exist
         using(getSession()) {
             if (!tableExists("TicketManager_V4_Tickets")) {
                 it.run(
@@ -345,32 +345,35 @@ class SQLite(absoluteDataFolderPath: String) : Database {
         onError: suspend (Exception) -> Unit
     ) = coroutineScope {
         launch { onBegin() }
-        var otherDB: Database? = null
+
+        val getFullTickets = suspend {
+            using(getSession()) { session ->
+                session.run(
+                    queryOf("SELECT * FROM TicketManager_V4_Tickets")
+                        .map { it.toBasicTicket() }
+                        .asList
+                )
+            }
+                .pMap(this@SQLite::getFullTicket)
+        }
 
         try {
             when (to) {
                 Database.Type.SQLITE -> return@coroutineScope
-                Database.Type.MEMORY,
-                Database.Type.MYSQL -> {
-                    otherDB = if (to == Database.Type.MEMORY) databaseBuilders.memoryBuilder.build() else databaseBuilders.sqLiteBuilder.build()
-                    otherDB.initializeDatabase()
+                Database.Type.CACHED_SQLITE -> return@coroutineScope
 
-                    using(getSession()) { session ->
-                        session.run(
-                            queryOf("SELECT * FROM TicketManager_V4_Tickets")
-                                .map { it.toBasicTicket() }
-                                .asList
-                        )
-                    }
-                        .pMap(this@SQLite::getFullTicket)
-                        .pForEach(otherDB::insertTicket)
+                Database.Type.MEMORY, Database.Type.MYSQL -> {
+                    val otherDB = databaseBuilders.run { if (equals(Database.Type.MEMORY)) memoryBuilder else mySQLBuilder }
+                        .build()
+                        .also { it.initializeDatabase() }
+
+                    getFullTickets().pForEach(otherDB::insertTicket)
+                    otherDB.closeDatabase()
                 }
             }
             onComplete()
         } catch (e: Exception) {
             launch { onError(e) }
-        } finally {
-            otherDB?.closeDatabase()
         }
     }
 

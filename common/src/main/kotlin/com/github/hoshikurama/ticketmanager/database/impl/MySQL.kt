@@ -17,7 +17,10 @@ import com.github.jasync.sql.db.asSuspending
 import com.github.jasync.sql.db.mysql.MySQLConnectionBuilder
 import com.github.jasync.sql.db.mysql.MySQLQueryResult
 import com.github.jasync.sql.db.util.ExecutorServiceUtils
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.Executor
@@ -28,7 +31,7 @@ class MySQL(
     dbName: String,
     username: String,
     password: String,
-    private val asyncDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val asyncDispatcher: CoroutineDispatcher,
     asyncExecutor: Executor = ExecutorServiceUtils.CommonPool,
 ) : Database {
 
@@ -146,7 +149,7 @@ class MySQL(
             .pMap { it.toBasicTicket() }
             .sortedWith(compareByDescending<BasicTicket> { it.priority.level }.thenByDescending { it.id })
             .apply { totalSize = count() }
-            .run { if (pageSize == 0) listOf(this) else chunked(pageSize) }
+            .run { if (pageSize == 0 || size == 0) listOf(this) else chunked(pageSize) }
             .apply { totalPages = count() }
 
         val fixedPage = when {
@@ -277,7 +280,7 @@ class MySQL(
             .pFilter { combinedFunction(it) }
             .sortedWith(compareByDescending { it.id})
             .apply { totalSize = count() }
-            .run { if (!equals(0)) chunked(pageSize) else listOf(this) }
+            .run { if (pageSize == 0 || size == 0) listOf(this) else chunked(pageSize) }
             .apply { totalPages = count() }
 
         val fixedPage = when {
@@ -362,33 +365,36 @@ class MySQL(
         onError: suspend (Exception) -> Unit
     ) = coroutineScope {
         launch { onBegin() }
-        var otherDB: Database? = null
 
         try {
             when (to) {
                 Database.Type.MYSQL -> return@coroutineScope
-                Database.Type.SQLITE,
+
+                Database.Type.CACHED_SQLITE, Database.Type.SQLITE -> {
+                    val otherDB = databaseBuilders.sqLiteBuilder.build()
+                        .also { it.initializeDatabase() }
+
+                    suspendingCon.sendPreparedStatement("SELECT * FROM TicketManager_V4_Tickets").rows
+                        .pMap { it.toBasicTicket() }
+                        .pMap(this@MySQL::getFullTicket)
+                        .forEach { otherDB.insertTicket(it) }
+                    otherDB.closeDatabase()
+                }
+
                 Database.Type.MEMORY -> {
-                    otherDB = if (to == Database.Type.MEMORY) databaseBuilders.memoryBuilder.build() else databaseBuilders.sqLiteBuilder.build()
-                    otherDB.initializeDatabase()
+                    val otherDB = databaseBuilders.memoryBuilder.build()
+                        .also { it.initializeDatabase() }
 
-                    val tickets = suspendingCon.sendPreparedStatement("SELECT * FROM TicketManager_V4_Tickets").rows
-                            .pMap { it.toBasicTicket() }
-                            .pMap(this@MySQL::getFullTicket)
-
-                    when (to) {
-                        Database.Type.MEMORY -> tickets.pForEach(otherDB::insertTicket)
-                        Database.Type.SQLITE -> tickets.forEach { otherDB.insertTicket(it) }
-                        Database.Type.MYSQL -> Unit
-                    }
+                    suspendingCon.sendPreparedStatement("SELECT * FROM TicketManager_V4_Tickets").rows
+                        .pMap { it.toBasicTicket() }
+                        .pMap(this@MySQL::getFullTicket)
+                        .pForEach(otherDB::insertTicket)
+                    otherDB.closeDatabase()
                 }
             }
-
             onComplete()
         } catch (e: Exception) {
             launch { onError(e) }
-        } finally {
-            otherDB?.closeDatabase()
         }
     }
 
