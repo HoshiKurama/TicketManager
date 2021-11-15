@@ -64,8 +64,8 @@ Warning_InvalidDBType: '&c[TicketManager] Ungültiger Datenbanktyp!'
 Warning_ConvertToSameDBType: '&c[TicketManager] Kann die Datenbank nicht in den bereits genutzten Typ umwandeln!'
 Warning_UnexpectedError: '&c[TicketManager] Ein unerwarteter Fehler ist aufgetreten!'
 Warning_LongTaskDuringReload: '&c[TicketManager] Beim neuladen wurde eine Aufgabe gefunden die zu lange braucht. Alle anderen Aufgaben werden zwangsmäßig beendet!'
-Warning_InternalError
-Warning_InvalidConfig
+Warning_InvalidConfig: '&c[TicketManager] %num% config values defaulted! Please check console for more information'
+Warning_InternalError: '&c[TicketManager] An internal error has occurred! Please check console for details'
 #
 # Console Messages
 Console_InitializationComplete: '[TicketManager] Initialisieren der Daten abgeschlossen!'
