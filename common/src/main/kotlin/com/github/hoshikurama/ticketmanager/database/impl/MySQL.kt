@@ -197,7 +197,7 @@ class MySQL(
     }
 
     override suspend fun countOpenTickets(): Int {
-        return suspendingCon.sendPreparedStatement("SELECT COUNT(*) FROM TicketManager_V4_Tickets WHERE STATUS = ?;", listOf(BasicTicket.Status.OPEN))
+        return suspendingCon.sendPreparedStatement("SELECT COUNT(*) FROM TicketManager_V4_Tickets WHERE STATUS = ?;", listOf(BasicTicket.Status.OPEN.name))
             .rows
             .map { it.getInt(1)!! }
             .run { first() }
