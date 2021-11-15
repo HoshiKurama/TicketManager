@@ -6,7 +6,7 @@ TicketManager aims to be a high-performance ticket system for Minecraft servers!
 
 # Translations
 TicketManager supports full localization on a per-individual basis! However, without any of the translators, anything other than English would have been impossible. Everyone who provides translations have my full gratitude!
-## In-game Localization: 
+### In-game Localization: 
 | Language | Locale | Contributor | Social Links |
 | --- | --- | --- | --- |
 | Canadian English | en_CA | HoshiKurama |  |
@@ -14,12 +14,12 @@ TicketManager supports full localization on a per-individual basis! However, wit
 | UK English | en_UK | HoshiKurama |  |
 | German | de_DE | _CuzImRex | \[[Spigot Forums](https://www.spigotmc.org/members/_cuzimrex.230750/)\] |
 
-## Config File: 
+### Config File: 
 | Language | Locale | Contributor | Social Links |
 | --- | --- | --- | --- |
 | Canadian English | en_CA | HoshiKurama |  |
 
-## Wiki:
+### Wiki:
 | Language | Locale | Contributor | Social Links |
 | --- | --- | --- | --- |
 | Canadian English | en_CA | HoshiKurama |  |
