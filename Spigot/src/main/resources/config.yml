@@ -1,7 +1,7 @@
 ##############################################
 ##############################################
 #       TicketManager Config File
-#             Version 6.1.0
+#             Version 6.1.1
 ##############################################
 ##############################################
 #
@@ -23,17 +23,15 @@ Force_Locale: false
 # locale will cause TicketManager to internally default to Canadian English.
 # Values:
 #   'en_CA' = Canadian English
-#   'en_US' = United States English
+#   'en_US' = US English
+#   'en_UK' = UK English
 #   'de_DE' = German
 Preferred_Locale: 'en_CA'
 #
 # Console Locale: Locale Console will use. Using a non-supported locale will cause
 # TicketManager to internally default to Preferred_Locale. When discord support is
 # enabled, discord locale uses this value.
-# Values:
-#   'en_CA' = Canadian English
-#   'en_US' = United States English
-#   'de_DE' = German
+# Values: Same as in Preferred_Locale
 Console_Locale: 'en_CA'
 #
 # ##########################################
