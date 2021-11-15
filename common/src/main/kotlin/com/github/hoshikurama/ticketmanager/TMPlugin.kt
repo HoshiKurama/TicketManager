@@ -186,19 +186,29 @@ abstract class TMPlugin(
             // Builds Discord object
             val discord = kotlin.run {
                 val enableDiscord = c.enableDiscord ?: false.addToErrors("Use_Discord_Bot", Boolean::toString)
-                if (enableDiscord) Discord.create(
-                    notifyOnAssign = c.DiscordNotifyOnAssign ?: true.addToErrors("Discord_Notify_On_Assign", Boolean::toString),
-                    notifyOnClose = c.DiscordNotifyOnClose ?: true.addToErrors("Discord_Notify_On_Close", Boolean::toString),
-                    notifyOnCloseAll = c.DiscordNotifyOnCloseAll ?: true.addToErrors("Discord_Notify_On_Close_All", Boolean::toString),
-                    notifyOnComment = c.DiscordNotifyOnComment ?: true.addToErrors("Discord_Notify_On_Comment", Boolean::toString),
-                    notifyOnCreate = c.DiscordNotifyOnCreate ?: true.addToErrors("Discord_Notify_On_Create", Boolean::toString),
-                    notifyOnReopen = c.DiscordNotifyOnReopen ?: true.addToErrors("Discord_Notify_On_Reopen", Boolean::toString),
-                    notifyOnPriorityChange = c.DiscordNotifyOnPriorityChange ?: true.addToErrors("Discord_Notify_On_Priority_Change", Boolean::toString),
-                    token = c.DiscordToken ?: "0".addToErrors("Discord_Bot_Token") { it },
-                    channelID = c.DiscordChannelID ?: (-1L).addToErrors("Discord_Channel_ID", Long::toString),
-                    locale = localeHandler.consoleLocale,
-                    asyncDispatcher = globalPluginState.asyncDispatcher,
-                ) else null
+                if (enableDiscord) {
+                    try {
+                        Discord.create(
+                            notifyOnAssign = c.DiscordNotifyOnAssign ?: true.addToErrors("Discord_Notify_On_Assign", Boolean::toString),
+                            notifyOnClose = c.DiscordNotifyOnClose ?: true.addToErrors("Discord_Notify_On_Close", Boolean::toString),
+                            notifyOnCloseAll = c.DiscordNotifyOnCloseAll ?: true.addToErrors("Discord_Notify_On_Close_All", Boolean::toString),
+                            notifyOnComment = c.DiscordNotifyOnComment ?: true.addToErrors("Discord_Notify_On_Comment", Boolean::toString),
+                            notifyOnCreate = c.DiscordNotifyOnCreate ?: true.addToErrors("Discord_Notify_On_Create", Boolean::toString),
+                            notifyOnReopen = c.DiscordNotifyOnReopen ?: true.addToErrors("Discord_Notify_On_Reopen", Boolean::toString),
+                            notifyOnPriorityChange = c.DiscordNotifyOnPriorityChange ?: true.addToErrors("Discord_Notify_On_Priority_Change", Boolean::toString),
+                            token = c.DiscordToken ?: "0".addToErrors("Discord_Bot_Token") { it },
+                            channelID = c.DiscordChannelID ?: (-1L).addToErrors("Discord_Channel_ID", Long::toString),
+                            locale = localeHandler.consoleLocale,
+                            asyncDispatcher = globalPluginState.asyncDispatcher,
+                        )
+                    } catch (e: Exception) {
+                        independentAsyncScope.launch {
+                            while (!::instancePluginState.isInitialized) delay(100L)
+                            pushErrors(platformFunctions, instancePluginState, e, TMLocale::consoleErrorBadDiscord)
+                        }
+                        null
+                    }
+                } else null
             }
 
             // Builds Cooldowns
