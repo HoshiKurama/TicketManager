@@ -17,9 +17,9 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.17.1-R0.1-SNAPSHOT")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.5.31")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.0")
     implementation("com.github.HoshiKurama:KyoriComponentDSL:1.1.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.5.2-native-mt")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.5.2")
     implementation("net.kyori:adventure-extra-kotlin:4.9.3")
     implementation("joda-time:joda-time:2.10.13")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
@@ -34,7 +34,7 @@ tasks {
 
         dependencies {
             include(dependency("com.github.HoshiKurama:KyoriComponentDSL:1.1.0"))
-            include(dependency("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.3.0"))
+            include(dependency("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.3.1"))
             include(project(":common"))
 
             relocate("com.github.hoshikurama.componentDSL", "com.github.hoshikurama.ticketmanager.componentDSL")

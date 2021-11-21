@@ -1,5 +1,5 @@
 plugins {
-    kotlin("plugin.serialization") version "1.5.31"
+    kotlin("plugin.serialization") version "1.6.0"
     kotlin("jvm")
     java
 }
@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.5.31")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.0")
     implementation("mysql:mysql-connector-java:8.0.25")
     implementation("org.xerial:sqlite-jdbc:3.36.0.2")
     implementation("com.github.jasync-sql:jasync-mysql:2.0.2")
@@ -21,6 +21,6 @@ dependencies {
     implementation("net.kyori:adventure-text-serializer-legacy:4.9.3")
     implementation("org.yaml:snakeyaml:1.29")
     implementation("joda-time:joda-time:2.10.13")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.3.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.3.1")
     implementation("dev.kord:kord-core:0.7.4")
 }
