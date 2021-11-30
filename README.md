@@ -5,7 +5,7 @@ TicketManager aims to be a high-performance ticket system for Minecraft servers!
 * HoshiKurama  
 
 # Translations
-TicketManager supports full localization on a per-individual basis! However, without any of the translators, anything other than English would have been impossible. Everyone who provides translations have my full gratitude!
+TicketManager supports full localization on a per-individual basis! However, without any of the translators, anything other than English would have been impossible. Everyone who provides translations has my full gratitude!
 ### In-game Localization: 
 | Language | Locale | Contributor | Social Links |
 | --- | --- | --- | --- |
