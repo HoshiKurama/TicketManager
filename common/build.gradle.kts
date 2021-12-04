@@ -13,7 +13,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.0")
     implementation("mysql:mysql-connector-java:8.0.25")
     implementation("org.xerial:sqlite-jdbc:3.36.0.2")
-    implementation("com.github.jasync-sql:jasync-mysql:2.0.2")
+    implementation("com.github.jasync-sql:jasync-mysql:2.0.4")
     implementation("com.github.seratch:kotliquery:1.6.0")
     implementation("com.github.HoshiKurama:KyoriComponentDSL:1.1.0")
     implementation("net.kyori:adventure-api:4.9.3")
