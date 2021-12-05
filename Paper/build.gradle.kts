@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.17.1-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.18-R0.1-SNAPSHOT")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.0")
     implementation("com.github.HoshiKurama:KyoriComponentDSL:1.1.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.5.2")
