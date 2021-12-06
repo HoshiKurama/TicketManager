@@ -21,6 +21,6 @@ dependencies {
     implementation("net.kyori:adventure-text-serializer-legacy:4.9.3")
     implementation("org.yaml:snakeyaml:1.29")
     implementation("joda-time:joda-time:2.10.13")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.3.1")
     implementation("dev.kord:kord-core:0.7.4")
+    implementation("com.google.code.gson:gson:2.8.9")
 }

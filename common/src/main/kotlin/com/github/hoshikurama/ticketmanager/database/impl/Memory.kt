@@ -9,11 +9,10 @@ import com.github.hoshikurama.ticketmanager.misc.*
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.ticket.FullTicket
 import com.github.hoshikurama.ticketmanager.ticket.plus
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.io.BufferedWriter
 import java.nio.charset.Charset
 import java.nio.file.Files
@@ -24,7 +23,7 @@ import kotlin.io.path.createFile
 import kotlin.io.path.exists
 import kotlin.io.path.notExists
 
-@OptIn(DelicateCoroutinesApi::class, kotlinx.serialization.ExperimentalSerializationApi::class)
+@OptIn(DelicateCoroutinesApi::class)
 class Memory(
     private val filePath: String,
     backupFrequency: Long
@@ -38,12 +37,15 @@ class Memory(
     private val nextTicketID: IncrementalMutexController
     private val backupJob: Job
 
+    private val gsonType = object : TypeToken<MutableMap<Int, FullTicket>>() {}.type!!
+
     init {
         val path = Path.of("$filePath/TicketManager-Database4-Memory.ticketmanager")
 
         if (path.exists()) {
+
             val encodedMap = Files.readString(path)
-            ticketMap = Json.decodeFromString(encodedMap)
+            ticketMap = Gson().fromJson(encodedMap, gsonType)
 
             val highestID = ticketMap.maxByOrNull { it.key }?.key ?: 0
             nextTicketID = IncrementalMutexController(highestID + 1)
@@ -237,7 +239,7 @@ class Memory(
             .pFilter { combinedFunction(it) }
             .apply { totalSize = count() }
             .sortedWith(compareByDescending { it.id })
-            .run { if (pageSize == 0 || size == 0) listOf(this) else chunked(pageSize) }
+            .run { if (pageSize == 0 || isEmpty()) listOf(this) else chunked(pageSize) }
             .apply { maxPages = count() }
 
         val fixedPage = when {
@@ -325,12 +327,13 @@ class Memory(
 
         val encodedString: String
         mapMutex.read.withLock {
-            encodedString = Json.encodeToString(ticketMap)
+            encodedString = Gson().toJson(ticketMap, gsonType)
         }
 
         var writer: BufferedWriter? = null
         try {
             writer = Files.newBufferedWriter(path, Charset.forName("UTF-8"))
+
             writer.write(encodedString)
         } finally {
             writer?.close()

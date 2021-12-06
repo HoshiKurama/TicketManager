@@ -1,5 +1,5 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "7.0.0"
+    id("com.github.johnrengelman.shadow") version "7.1.0"
     kotlin("jvm")
     java
     application
@@ -41,11 +41,9 @@ tasks {
 
         dependencies {
             include(dependency("com.github.HoshiKurama:KyoriComponentDSL:1.1.0"))
-            include(dependency("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.3.1"))
             include(project(":common"))
 
             relocate("com.github.hoshikurama.componentDSL", "com.github.hoshikurama.ticketmanager.componentDSL")
-            relocate("kotlinx.serialization.json", "com.github.hoshikurama.ticketmanager.shaded.kotlinx.serialization.json")
         }
     }
 }
