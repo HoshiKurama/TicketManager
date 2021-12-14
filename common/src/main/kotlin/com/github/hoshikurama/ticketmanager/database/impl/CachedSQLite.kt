@@ -8,6 +8,7 @@ import com.github.hoshikurama.ticketmanager.database.DatabaseBuilders
 import com.github.hoshikurama.ticketmanager.database.Result
 import com.github.hoshikurama.ticketmanager.database.SearchConstraint
 import com.github.hoshikurama.ticketmanager.misc.*
+import com.github.hoshikurama.ticketmanager.misc.TypeSafeStream.Companion.asTypeSafeStream
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicketImpl
 import com.github.hoshikurama.ticketmanager.ticket.FullTicket
@@ -48,6 +49,7 @@ class CachedSQLite(
         get() = CoroutineScope(asyncDispatcher)
 
 
+    suspend fun ticketCopies() = mapMutex.read.withLock { ticketMap.values.toList() }
 
     override suspend fun setAssignment(ticketID: Int, assignment: String?) {
         mapMutex.write.withLock {
@@ -144,13 +146,12 @@ class CachedSQLite(
         return newID
     }
 
-    override suspend fun getBasicTicketsOrNull(ids: List<Int>): List<BasicTicket> = coroutineScope {
-        ids.pMap { mapMutex.read.withLock { ticketMap[it] } }
-            .filterNotNull()
+    override suspend fun getBasicTicketsOrNull(ids: List<Int>): List<BasicTicket> {
+        return mapMutex.read.withLock { ids.asTypeSafeStream().map(ticketMap::get) }.filterNotNull().toList()
     }
 
     override suspend fun getFullTickets(basicTickets: List<BasicTicket>): List<FullTicket> {
-        return basicTickets.pMap { it as FullTicket }
+        return basicTickets.map { it as FullTicket }
     }
 
     override suspend fun getOpenTickets(page: Int, pageSize: Int): Result<BasicTicket> {
@@ -175,11 +176,13 @@ class CachedSQLite(
         val totalSize: Int
         val totalPages: Int
 
-        val results = mapMutex.read.withLock { ticketMap.values.toList() }
-            .pFilter { f(it) }
+        val results = ticketCopies()
+            .asParallelStream()
+            .filter(f)
+            .toList()
             .sortedWith(compareByDescending<FullTicket> { it.priority.level }.thenByDescending { it.id })
             .apply { totalSize = count() }
-            .run { if (pageSize == 0 || size == 0) listOf(this) else chunked(pageSize) }
+            .run { if (pageSize == 0 || isEmpty()) listOf(this) else chunked(pageSize) }
             .apply { totalPages = count() }
 
         val fixedPage = when {
@@ -197,36 +200,30 @@ class CachedSQLite(
     }
 
     override suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, actor: UUID?) {
-        val ticketsToChange = mutableListOf<FullTicket>()
-
-        (lowerBound..upperBound).pForEach { ticketID ->
-            val ticket = mapMutex.read.withLock { ticketMap[ticketID] }
-            ticket?.run {
-                if (status == BasicTicket.Status.OPEN)
-                    ticketsToChange += ticket
-            }
-        }
-
         val curTime = Instant.now().epochSecond
-        val newTickets = ticketsToChange.pMap {
-            val action = FullTicket.Action(FullTicket.Action.Type.MASS_CLOSE, actor, timestamp = curTime)
-            FullTicket(it.id, it.creatorUUID, it.location, it.priority, BasicTicket.Status.CLOSED, it.assignedTo, it.creatorStatusUpdate, it.actions + action)
-        }
+        mapMutex.read.lock()
 
-        mapMutex.write.withLock {
-            newTickets.pForEach {
-                ticketMap[it.id] = it
+        // Writes to ticketMap
+        val changes = (lowerBound..upperBound).asSequence()
+            .asParallelStream()
+            .map { ticketMap[it] }
+            .filterNotNull()
+            .filter { it.status == BasicTicket.Status.OPEN }
+            .toList()
+            .onEach {
+                val action = FullTicket.Action(FullTicket.Action.Type.MASS_CLOSE, actor, timestamp = curTime)
+                ticketMap[it.id] = FullTicket(it.id, it.creatorUUID, it.location, it.priority, BasicTicket.Status.CLOSED, it.assignedTo, it.creatorStatusUpdate, it.actions + action)
             }
-        }
 
-        // SQLite stuff
+        mapMutex.read.unlock()
+
+        // SQL stuff
         sqlWriteQueue.send { session ->
-            val ids = ticketsToChange.map { it.id }
             val now = Instant.now().epochSecond
 
-            session.update(queryOf("UPDATE TicketManager_V4_Tickets SET STATUS = ? WHERE ID IN (${ids.joinToString(", ")});", BasicTicket.Status.CLOSED.name))
+            session.update(queryOf("UPDATE TicketManager_V4_Tickets SET STATUS = ? WHERE ID IN (${changes.joinToString(", ")});", BasicTicket.Status.CLOSED.name))
 
-            ids.forEach {
+            changes.forEach {
                 session.update(
                     queryOf("INSERT INTO TicketManager_V4_Actions (TICKET_ID,ACTION_TYPE,CREATOR_UUID,MESSAGE,TIMESTAMP) VALUES (?,?,?,?,?);",
                         it,
@@ -241,12 +238,18 @@ class CachedSQLite(
     }
 
     override suspend fun countOpenTickets(): Int {
-        return mapMutex.read.withLock { ticketMap.values }.pFilter { it.status == BasicTicket.Status.OPEN }.count()
+        return ticketCopies().asParallelStream()
+            .filter { it.status == BasicTicket.Status.OPEN }
+            .toList()
+            .count()
     }
 
     override suspend fun countOpenTicketsAssignedTo(assignment: String, unfixedGroupAssignment: List<String>): Int {
         val assignments = unfixedGroupAssignment.map { "::$it" } + assignment
-        return mapMutex.read.withLock { ticketMap.values }.pFilter { it.status == BasicTicket.Status.OPEN && it.assignedTo in assignments }.count()
+        return ticketCopies().asParallelStream()
+            .filter { it.status == BasicTicket.Status.OPEN && it.assignedTo in assignments }
+            .toList()
+            .count()
     }
 
     override suspend fun searchDatabase(
@@ -284,11 +287,12 @@ class CachedSQLite(
 
         val totalSize: Int
         val maxPages: Int
-        val results = mapMutex.read.withLock { ticketMap.values.toList() }
-            .pFilter { combinedFunction(it) }
+        val results = ticketCopies().asParallelStream()
+            .filter(combinedFunction)
+            .toList()
             .apply { totalSize = count() }
             .sortedWith(compareByDescending { it.id })
-            .run { if (pageSize == 0 || size == 0) listOf(this) else chunked(pageSize) }
+            .run { if (pageSize == 0 || isEmpty()) listOf(this) else chunked(pageSize) }
             .apply { maxPages = count() }
 
         val fixedPage = when {
@@ -306,15 +310,17 @@ class CachedSQLite(
     }
 
     override suspend fun getTicketIDsWithUpdates(): List<Int> {
-        return mapMutex.read.withLock { ticketMap.values }
-            .pFilter { it.creatorStatusUpdate }
-            .pMap { it.id }
+        return ticketCopies().asParallelStream()
+            .filter { it.creatorStatusUpdate }
+            .map { it.id }
+            .toList()
     }
 
     override suspend fun getTicketIDsWithUpdatesFor(uuid: UUID): List<Int> {
-        return mapMutex.read.withLock { ticketMap.values }
-            .pFilter { it.creatorStatusUpdate && it.creatorUUID?.equals(uuid) == true }
-            .pMap { it.id }
+        return ticketCopies().asParallelStream()
+            .filter { it.creatorStatusUpdate && it.creatorUUID?.equals(uuid) == true }
+            .map { it.id }
+            .toList()
     }
 
     override suspend fun closeDatabase() {
@@ -435,7 +441,7 @@ class CachedSQLite(
                         .also { it.initializeDatabase() }
 
                     mapMutex.read.withLock { ticketMap.values.toList() }
-                        .pForEach(otherDB::insertTicket)
+                        .parallelFlowForEach(otherDB::insertTicket)
                     otherDB.closeDatabase()
                 }
 
@@ -444,7 +450,7 @@ class CachedSQLite(
                         .also { it.initializeDatabase() }
 
                     mapMutex.read.withLock { ticketMap.values.toList() }
-                        .pForEach(otherDB::insertTicket)
+                        .parallelFlowForEach(otherDB::insertTicket)
                     otherDB.closeDatabase()
                 }
             }

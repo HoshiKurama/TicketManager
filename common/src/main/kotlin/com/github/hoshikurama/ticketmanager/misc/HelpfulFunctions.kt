@@ -1,31 +1,14 @@
 package com.github.hoshikurama.ticketmanager.misc
 
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import com.github.hoshikurama.ticketmanager.misc.TypeSafeStream.Companion.asTypeSafeStream
+import kotlinx.coroutines.flow.*
 
-suspend fun <A, B> Iterable<A>.pMap(f: suspend (A) -> B): List<B> = coroutineScope {
-    map { async { f(it) } }.awaitAll()
-}
+fun <T> List<T>.asParallelStream() = asTypeSafeStream().parallel()
+fun <T> Sequence<T>.asParallelStream() = asTypeSafeStream().parallel()
 
-suspend fun <A> Iterable<A>.pForEach(f: suspend (A) -> Unit): Unit = coroutineScope {
-    forEach { launch { f(it) } }
-}
-
-suspend fun <A> Iterable<A>.pFilter(f: suspend (A) -> Boolean): List<A> = coroutineScope {
-    val result = mutableListOf<A>()
-    val channel = Channel<Pair<Boolean, A>>(100_000)
-
-    pForEach { channel.send(f(it) to it) }
-    channel.close()
-
-    for ((passed, value) in channel)
-        if (passed) result.add(value)
-
-    result
-}
+// ONLY use these when you MUST use suspending function
+suspend fun <T, U> Iterable<T>.parallelFlowMap(f: suspend (T) -> U) = asFlow().buffer(10_000).map(f).toList()
+suspend fun <T> Iterable<T>.parallelFlowForEach(f: suspend (T) -> Unit) =  asFlow().buffer(10_000).collect(f)
 
 fun <T> T.notEquals(t: T) = this != t
 

@@ -7,8 +7,6 @@ import com.github.hoshikurama.ticketmanager.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.ticket.FullTicket
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import net.kyori.adventure.extra.kotlin.text
 import java.time.Instant
 
@@ -94,36 +92,31 @@ fun generateModifiedStacktrace(e: Exception, locale: TMLocale) = buildComponent 
         .forEach { text { formattedContent(it) } }
 }
 
-suspend fun pushErrors(
+fun pushErrors(
     platform: PlatformFunctions,
     instanceState: InstancePluginState,
     exception: Exception,
     consoleErrorMessage: (TMLocale) -> String,
 
-) = coroutineScope {
+) {
+    // Logs error
+    platform.pushErrorToConsole(consoleErrorMessage(instanceState.localeHandler.consoleLocale))
+    // Pushes full stacktrace to console
+    if (instanceState.printFullStacktrace)
+        exception.printStackTrace()
+
+    // Pushed modified stacktrace to console if requested
+    if (instanceState.printModifiedStacktrace)
+        platform.getConsoleAudience().sendMessage(generateModifiedStacktrace(exception, instanceState.localeHandler.consoleLocale))
+
+
+    // Pushes other messages to other players
     val onlinePlayers = platform.getOnlinePlayers(instanceState.localeHandler)
+    onlinePlayers.asParallelStream()
+        .filter { it.has("ticketmanager.notify.error.stacktrace") }
+        .forEach { generateModifiedStacktrace(exception, it.locale).run(it::sendMessage) }
 
-    launch {
-        // Logs error
-        platform.pushErrorToConsole(consoleErrorMessage(instanceState.localeHandler.consoleLocale))
-
-        // Pushes full stacktrace to console
-        if (instanceState.printFullStacktrace)
-            exception.printStackTrace()
-    }
-
-    launch {
-        // Pushes modified stacktrace to relevant users
-        if (instanceState.printModifiedStacktrace)
-            platform.getConsoleAudience().sendMessage(generateModifiedStacktrace(exception, instanceState.localeHandler.consoleLocale))
-
-        onlinePlayers.pFilter { it.has("ticketmanager.notify.error.stacktrace") }
-            .pForEach { generateModifiedStacktrace(exception, it.locale).run(it::sendMessage) }
-    }
-
-    launch {
-        // Sends out other error message for users with warning and without stacktrace
-        onlinePlayers.pFilter { it.has("ticketmanager.notify.error.message") && !it.has("ticketmanager.notify.error.stacktrace") }
-            .pForEach { it.locale.warningsInternalError.run(it::sendMessage) }
-    }
+    onlinePlayers.asParallelStream()
+        .filter { it.has("ticketmanager.notify.error.message") && !it.has("ticketmanager.notify.error.stacktrace") }
+        .forEach { it.locale.warningsInternalError.run(it::sendMessage) }
 }

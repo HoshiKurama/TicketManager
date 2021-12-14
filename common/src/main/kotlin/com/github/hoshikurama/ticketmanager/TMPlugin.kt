@@ -69,10 +69,10 @@ abstract class TMPlugin(
                     if (instancePluginState.allowUnreadTicketUpdates) {
                         platformFunctions.getOnlinePlayers(instancePluginState.localeHandler)
                             .filter { it.has("ticketmanager.notify.unreadUpdates.scheduled") }
-                            .pForEach {
+                            .parallelFlowForEach {
                                 val ticketIDs = instancePluginState.database.getTicketIDsWithUpdatesFor(it.uniqueID)
                                 val tickets = ticketIDs.joinToString(", ")
-                                if (ticketIDs.isEmpty()) return@pForEach
+                                if (ticketIDs.isEmpty()) return@parallelFlowForEach
 
                                 val template = if (ticketIDs.size > 1) it.locale.notifyUnreadUpdateMulti
                                 else it.locale.notifyUnreadUpdateSingle
@@ -88,8 +88,9 @@ abstract class TMPlugin(
                     val (openTickets, _, openCount,_) = instancePluginState.database.getOpenTickets(1, 0)
 
                     platformFunctions.getOnlinePlayers(instancePluginState.localeHandler)
+                        .asParallelStream()
                         .filter { it.has("ticketmanager.notify.openTickets.scheduled") }
-                        .pForEach { p ->
+                        .forEach { p ->
                             val groups = p.permissionGroups.map { "::$it" }
                             val assignedCount = openTickets.count { it.assignedTo == p.name || it.assignedTo in groups }
 

@@ -6,12 +6,16 @@ import com.github.hoshikurama.ticketmanager.database.DatabaseBuilders
 import com.github.hoshikurama.ticketmanager.database.Result
 import com.github.hoshikurama.ticketmanager.database.SearchConstraint
 import com.github.hoshikurama.ticketmanager.misc.*
+import com.github.hoshikurama.ticketmanager.misc.TypeSafeStream.Companion.asTypeSafeStream
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.ticket.FullTicket
 import com.github.hoshikurama.ticketmanager.ticket.plus
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.sync.withLock
 import java.io.BufferedWriter
 import java.nio.charset.Charset
@@ -68,7 +72,7 @@ class Memory(
         }
     }
 
-
+    suspend fun ticketCopies() = mapMutex.read.withLock { ticketMap.values.toList() }
 
     override suspend fun setAssignment(ticketID: Int, assignment: String?) {
         mapMutex.write.withLock {
@@ -115,13 +119,12 @@ class Memory(
         return newID
     }
 
-    override suspend fun getBasicTicketsOrNull(ids: List<Int>): List<BasicTicket> = coroutineScope {
-        ids.pMap { mapMutex.read.withLock { ticketMap[it] } }
-            .filterNotNull()
+    override suspend fun getBasicTicketsOrNull(ids: List<Int>): List<BasicTicket> {
+        return mapMutex.read.withLock { ids.asTypeSafeStream().map(ticketMap::get) }.filterNotNull().toList()
     }
 
     override suspend fun getFullTickets(basicTickets: List<BasicTicket>): List<FullTicket> {
-        return basicTickets.pMap { it as FullTicket }
+        return basicTickets.map { it as FullTicket }
     }
 
     override suspend fun getOpenTickets(page: Int, pageSize: Int): Result<BasicTicket> {
@@ -146,11 +149,13 @@ class Memory(
         val totalSize: Int
         val totalPages: Int
 
-        val results = mapMutex.read.withLock { ticketMap.values.toList() }
-            .pFilter { f(it) }
+        val results = ticketCopies()
+            .asParallelStream()
+            .filter(f)
+            .toList()
             .sortedWith(compareByDescending<FullTicket> { it.priority.level }.thenByDescending { it.id })
             .apply { totalSize = count() }
-            .run { if (pageSize == 0 || size == 0) listOf(this) else chunked(pageSize) }
+            .run { if (pageSize == 0 || isEmpty()) listOf(this) else chunked(pageSize) }
             .apply { totalPages = count() }
 
         val fixedPage = when {
@@ -168,36 +173,35 @@ class Memory(
     }
 
     override suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, actor: UUID?) {
-        val ticketsToChange = mutableListOf<FullTicket>()
-
-        (lowerBound..upperBound).pForEach { ticketID ->
-            val ticket = mapMutex.read.withLock { ticketMap[ticketID] }
-            ticket?.run {
-                if (status == BasicTicket.Status.OPEN)
-                    ticketsToChange += ticket
-            }
-        }
-
         val curTime = Instant.now().epochSecond
-        val newTickets = ticketsToChange.pMap {
-            val action = FullTicket.Action(FullTicket.Action.Type.MASS_CLOSE, actor, timestamp = curTime)
-            FullTicket(it.id, it.creatorUUID, it.location, it.priority, BasicTicket.Status.CLOSED, it.assignedTo, it.creatorStatusUpdate, it.actions + action)
-        }
+        mapMutex.write.lock()
 
-        mapMutex.write.withLock {
-            newTickets.pForEach {
-                ticketMap[it.id] = it
+        (lowerBound..upperBound).asSequence()
+            .asParallelStream()
+            .map { ticketMap[it] }
+            .filter { it != null  }
+            .filter { it!!.status == BasicTicket.Status.OPEN }
+            .toList()
+            .forEach {
+                val action = FullTicket.Action(FullTicket.Action.Type.MASS_CLOSE, actor, timestamp = curTime)
+                ticketMap[it!!.id] = FullTicket(it.id, it.creatorUUID, it.location, it.priority, BasicTicket.Status.CLOSED, it.assignedTo, it.creatorStatusUpdate, it.actions + action)
             }
-        }
+        mapMutex.write.unlock()
     }
 
     override suspend fun countOpenTickets(): Int {
-        return mapMutex.read.withLock { ticketMap.values }.pFilter { it.status == BasicTicket.Status.OPEN }.count()
+        return ticketCopies().asParallelStream()
+            .filter { it.status == BasicTicket.Status.OPEN }
+            .toList()
+            .count()
     }
 
     override suspend fun countOpenTicketsAssignedTo(assignment: String, unfixedGroupAssignment: List<String>): Int {
         val assignments = unfixedGroupAssignment.map { "::$it" } + assignment
-        return mapMutex.read.withLock { ticketMap.values }.pFilter { it.status == BasicTicket.Status.OPEN && it.assignedTo in assignments }.count()
+        return ticketCopies().asParallelStream()
+            .filter { it.status == BasicTicket.Status.OPEN && it.assignedTo in assignments }
+            .toList()
+            .count()
     }
 
     override suspend fun searchDatabase(
@@ -235,8 +239,9 @@ class Memory(
 
         val totalSize: Int
         val maxPages: Int
-        val results = mapMutex.read.withLock { ticketMap.values.toList() }
-            .pFilter { combinedFunction(it) }
+        val results = ticketCopies().asParallelStream()
+            .filter(combinedFunction)
+            .toList()
             .apply { totalSize = count() }
             .sortedWith(compareByDescending { it.id })
             .run { if (pageSize == 0 || isEmpty()) listOf(this) else chunked(pageSize) }
@@ -257,15 +262,17 @@ class Memory(
     }
 
     override suspend fun getTicketIDsWithUpdates(): List<Int> {
-        return mapMutex.read.withLock { ticketMap.values }
-            .pFilter { it.creatorStatusUpdate }
-            .pMap { it.id }
+        return ticketCopies().asParallelStream()
+            .filter { it.creatorStatusUpdate }
+            .map { it.id }
+            .toList()
     }
 
     override suspend fun getTicketIDsWithUpdatesFor(uuid: UUID): List<Int> {
-        return mapMutex.read.withLock { ticketMap.values }
-            .pFilter { it.creatorStatusUpdate && it.creatorUUID?.equals(uuid) == true }
-            .pMap { it.id }
+        return ticketCopies().asParallelStream()
+            .filter { it.creatorStatusUpdate && it.creatorUUID?.equals(uuid) == true }
+            .map { it.id }
+            .toList()
     }
 
     override suspend fun initializeDatabase() {
@@ -300,8 +307,10 @@ class Memory(
                     val otherDB = databaseBuilders.mySQLBuilder.build()
                         .also { it.initializeDatabase() }
 
-                    mapMutex.read.withLock { ticketMap.values.toList() }
-                        .pForEach(otherDB::insertTicket)
+                    mapMutex.read.withLock { ticketMap.values }
+                        .asFlow()
+                        .buffer(10_000)
+                        .onEach(otherDB::insertTicket)
                     otherDB.closeDatabase()
                 }
 
@@ -309,7 +318,7 @@ class Memory(
                     val otherDB = databaseBuilders.sqLiteBuilder.build()
                         .also { it.initializeDatabase() }
 
-                    mapMutex.read.withLock { ticketMap.values.toList() }
+                    mapMutex.read.withLock { ticketMap.values }
                         .forEach { otherDB.insertTicket(it) }
                     otherDB.closeDatabase()
                 }

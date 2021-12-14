@@ -118,7 +118,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
             }
             .sortedWith(compareByDescending<BasicTicket> { it.priority.level }.thenByDescending { it.id })
             .apply { totalSize = count() }
-            .run { if (pageSize == 0 || size == 0) listOf(this) else chunked(pageSize) }
+            .run { if (pageSize == 0 || isEmpty()) listOf(this) else chunked(pageSize) }
             .apply { totalPages = count() }
 
         val fixedPage = when {
@@ -255,10 +255,12 @@ class SQLite(absoluteDataFolderPath: String) : Database {
             )
         }
             .run { getFullTickets(this) }
-            .pFilter { combinedFunction(it) }
+            .asParallelStream()
+            .filter(combinedFunction)
+            .toList()
             .sortedWith(compareByDescending { it.id})
             .apply { totalSize = count() }
-            .run { if (pageSize == 0 || size == 0) listOf(this) else chunked(pageSize) }
+            .run { if (pageSize == 0 || isEmpty()) listOf(this) else chunked(pageSize) }
             .apply { totalPages = count() }
 
         val fixedPage = when {
@@ -354,7 +356,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
                         .asList
                 )
             }
-                .pMap(this@SQLite::getFullTicket)
+                .parallelFlowMap(this@SQLite::getFullTicket)
         }
 
         try {
@@ -367,7 +369,7 @@ class SQLite(absoluteDataFolderPath: String) : Database {
                         .build()
                         .also { it.initializeDatabase() }
 
-                    getFullTickets().pForEach(otherDB::insertTicket)
+                    getFullTickets().parallelFlowForEach(otherDB::insertTicket)
                     otherDB.closeDatabase()
                 }
             }

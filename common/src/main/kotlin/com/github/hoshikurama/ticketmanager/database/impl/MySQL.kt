@@ -110,12 +110,12 @@ class MySQL(
 
         return suspendingCon.sendQuery("SELECT * FROM TicketManager_V4_Tickets WHERE ID IN ($idsSQL);")
             .rows
-            .pMap { it.toBasicTicket() }
-            .run { if (size == 0) null else this }
+            .parallelFlowMap { it.toBasicTicket() }
+            .run { ifEmpty { null } }
     }
 
     override suspend fun getFullTickets(basicTickets: List<BasicTicket>): List<FullTicket> {
-        return basicTickets.pMap {
+        return basicTickets.parallelFlowMap {
             it + getActions(it.id)
         }
     }
@@ -146,10 +146,10 @@ class MySQL(
 
         val results = suspendingCon.sendPreparedStatement(preparedQuery, values)
             .rows
-            .pMap { it.toBasicTicket() }
+            .parallelFlowMap { it.toBasicTicket() }
             .sortedWith(compareByDescending<BasicTicket> { it.priority.level }.thenByDescending { it.id })
             .apply { totalSize = count() }
-            .run { if (pageSize == 0 || size == 0) listOf(this) else chunked(pageSize) }
+            .run { if (pageSize == 0 || isEmpty()) listOf(this) else chunked(pageSize) }
             .apply { totalPages = count() }
 
         val fixedPage = when {
@@ -170,7 +170,7 @@ class MySQL(
         asyncScope.launch {
             val rows = suspendingCon.sendPreparedStatement("SELECT ID FROM TicketManager_V4_Tickets WHERE STATUS = ? AND ID BETWEEN $lowerBound AND $upperBound;", listOf(BasicTicket.Status.OPEN.name))
                 .rows
-                .pMap { it.getInt(0)!! }
+                .map{ it.getInt(0)!! }
 
             // Sets ticket status
             launch {
@@ -182,7 +182,7 @@ class MySQL(
             }
 
             // Adds to Actions Table
-            rows.pForEach {
+            rows.parallelFlowForEach {
                 insertAction(
                     action = FullTicket.Action(
                         type = FullTicket.Action.Type.MASS_CLOSE,
@@ -275,12 +275,12 @@ class MySQL(
         val totalSize: Int
         val totalPages: Int
         val results = suspendingCon.sendPreparedStatement("$searchString;", args).rows
-            .pMap { it.toBasicTicket() }
+            .parallelFlowMap { it.toBasicTicket() }
             .run { getFullTickets(this) }
-            .pFilter { combinedFunction(it) }
+            .filter(combinedFunction)
             .sortedWith(compareByDescending { it.id})
             .apply { totalSize = count() }
-            .run { if (pageSize == 0 || size == 0) listOf(this) else chunked(pageSize) }
+            .run { if (pageSize == 0 || isEmpty()) listOf(this) else chunked(pageSize) }
             .apply { totalPages = count() }
 
         val fixedPage = when {
@@ -303,7 +303,7 @@ class MySQL(
             values = listOf(true)
         )
             .rows
-            .pMap { it.getInt(0)!! }
+            .parallelFlowMap { it.getInt(0)!! }
     }
 
     override suspend fun getTicketIDsWithUpdatesFor(uuid: UUID): List<Int> {
@@ -312,7 +312,7 @@ class MySQL(
             values = listOf(true, uuid.toString())
         )
             .rows
-            .pMap { it.getInt(0)!! }
+            .parallelFlowMap { it.getInt(0)!! }
     }
 
     override suspend fun closeDatabase() {
@@ -375,8 +375,10 @@ class MySQL(
                         .also { it.initializeDatabase() }
 
                     suspendingCon.sendPreparedStatement("SELECT * FROM TicketManager_V4_Tickets").rows
-                        .pMap { it.toBasicTicket() }
-                        .pMap(this@MySQL::getFullTicket)
+                        .asParallelStream()
+                        .map { it.toBasicTicket() }
+                        .toList()
+                        .parallelFlowMap(this@MySQL::getFullTicket)
                         .forEach { otherDB.insertTicket(it) }
                     otherDB.closeDatabase()
                 }
@@ -386,9 +388,11 @@ class MySQL(
                         .also { it.initializeDatabase() }
 
                     suspendingCon.sendPreparedStatement("SELECT * FROM TicketManager_V4_Tickets").rows
-                        .pMap { it.toBasicTicket() }
-                        .pMap(this@MySQL::getFullTicket)
-                        .pForEach(otherDB::insertTicket)
+                        .asParallelStream()
+                        .map { it.toBasicTicket() }
+                        .toList()
+                        .parallelFlowMap(this@MySQL::getFullTicket)
+                        .parallelFlowForEach(otherDB::insertTicket)
                     otherDB.closeDatabase()
                 }
             }
