@@ -18,6 +18,7 @@ libraries:
   - com.github.shynixn.mccoroutine:mccoroutine-bukkit-core:1.5.0
   - dev.kord:kord-core:0.7.4
   - com.google.code.gson:gson:2.8.9
+  - com.beust:klaxon:5.5
 commands:
   ticket:
     description: Base for all TicketManager commands

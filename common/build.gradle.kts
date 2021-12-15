@@ -23,4 +23,5 @@ dependencies {
     implementation("joda-time:joda-time:2.10.13")
     implementation("dev.kord:kord-core:0.7.4")
     implementation("com.google.code.gson:gson:2.8.9")
+    implementation("com.beust:klaxon:5.5")
 }

@@ -248,6 +248,15 @@ abstract class TMPlugin(
 
         platformFunctions.pushInfoToConsole(instancePluginState.localeHandler.consoleLocale.consoleInitializationComplete)
 
+        // Places update is available into Console
+        instancePluginState.run {
+            if (pluginUpdateChecker.run { canCheck && latestVersionOrNull != null })
+                localeHandler.consoleLocale.notifyPluginUpdate
+                    .replace("%current%", pluginVersion)
+                    .replace("%latest%", pluginUpdateChecker.latestVersionOrNull!!)
+                    .run(::toColouredAdventure)
+                    .run(platformFunctions.getConsoleAudience()::sendMessage)
+        }
 
         // Launch Discord if requested on coroutine with independent scope
         instancePluginState.discord?.run {

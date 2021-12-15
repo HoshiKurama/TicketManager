@@ -1,42 +1,46 @@
 package com.github.hoshikurama.ticketmanager.misc
 
+import com.beust.klaxon.Klaxon
 import com.github.hoshikurama.ticketmanager.pluginVersion
-import java.io.InputStream
 import java.net.URL
-import java.util.*
 
 class UpdateChecker(val canCheck: Boolean) {
-    val latestVersionOrNull: String? by lazy {
-        if (!canCheck) return@lazy null
+    val latestVersionOrNull = kotlin.run {
+        if (!canCheck) return@run null
 
-        val latestVersion = getLatestVersion() ?: return@lazy null
-        if (pluginVersion == latestVersion) return@lazy null
+        val latestVersion = getLatestVersion() ?: return@run null
+        if (pluginVersion == latestVersion) return@run null
 
         val curVersSplit = pluginVersion.split(".").map(String::toInt)
         val latestVersSplit = latestVersion.split(".").map(String::toInt)
 
         for (i in 0..latestVersSplit.lastIndex) {
-            if (curVersSplit[i] > latestVersSplit[i])
-                return@lazy null
+            when {
+                curVersSplit[i] > latestVersSplit[i] -> return@run null
+                curVersSplit[i] < latestVersSplit[i] -> return@run latestVersion
+                else -> continue // Equal
+            }
         }
 
-        // If code reaches here, the latest version is higher than current version
-        latestVersion
+        return@run null
     }
 
     private fun getLatestVersion(): String? {
-        var inputStream: InputStream? = null
-        var scanner: Scanner? = null
-
         return try {
-            inputStream = URL("https://api.spigotmc.org/legacy/update.php?resource=91178").openStream()
-            scanner = Scanner(inputStream!!)
-            if (scanner.hasNext()) scanner.next() else null
-        }
-        catch (ignored: Exception) { null }
-        finally {
-            inputStream?.close()
-            scanner?.close()
-        }
+            URL("https://api.github.com/repos/HoshiKurama/TicketManager/tags")
+                .openStream()
+                .let { Klaxon().parseArray<Release>(it) }
+                ?.get(0)?.name
+        } catch (e: Exception) { null }
     }
 }
+
+data class Release(
+    val name: String,
+    val zipball_url: String,
+    val tarball_url: String,
+    val commit: CommitInformation,
+    val node_id: String,
+)
+
+data class CommitInformation(val sha: String, val url: String)
