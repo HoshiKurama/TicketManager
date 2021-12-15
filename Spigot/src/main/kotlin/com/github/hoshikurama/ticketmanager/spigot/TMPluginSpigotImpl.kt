@@ -52,6 +52,8 @@ class TMPluginSpigotImpl(
                 }
             }
         )
+
+        metrics.addCustomChart(Metrics.SimplePie("plugin_platform") { "Spigot" })
     }
 
     override fun performAsyncTaskTimer(action: () -> Unit) {

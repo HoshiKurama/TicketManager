@@ -49,6 +49,8 @@ class TMPluginPaperImpl(
                 }
             }
         )
+
+        metrics.addCustomChart(Metrics.SimplePie("plugin_platform") { "Paper" })
     }
 
     override fun performAsyncTaskTimer(action: () -> Unit) {
