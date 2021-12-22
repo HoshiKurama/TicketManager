@@ -3,6 +3,8 @@ package com.github.hoshikurama.ticketmanager
 import com.github.hoshikurama.ticketmanager.misc.TypeSafeStream.Companion.asTypeSafeStream
 import com.github.hoshikurama.ticketmanager.misc.supportedLocales
 import org.yaml.snakeyaml.Yaml
+import java.nio.file.Paths
+import kotlin.io.path.inputStream
 
 class TMLocale(
 // Core locale file fields
@@ -485,8 +487,11 @@ class TMLocale(
         }
 
         fun buildLocaleFromExternal(localeID: String, rootFileLocation: String, colour: String, internalVersion: TMLocale): TMLocale {
-            val visuals = try { loadYMLFrom("$rootFileLocation/locales/$localeID.yml") }
-                          catch (e: Exception) { mapOf() }
+            val visuals: Map<String, String> = try {
+                Paths.get("$rootFileLocation/locales/$localeID.yml")
+                    .inputStream()
+                    .let { Yaml().load(it) }
+            } catch (e: Exception) { mapOf() }
 
             // Prepares Headers for inlining (Still has placeholders)
             val uniformHeader = visuals["Uniform_Header"] ?: "<%CC%>[TicketManager] "
