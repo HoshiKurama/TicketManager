@@ -220,7 +220,7 @@ class CachedSQLite(
         sqlWriteQueue.send { session ->
             val now = Instant.now().epochSecond
 
-            session.update(queryOf("UPDATE TicketManager_V4_Tickets SET STATUS = ? WHERE ID IN (${changes.joinToString(", ")});", BasicTicket.Status.CLOSED.name))
+            session.update(queryOf("UPDATE TicketManager_V4_Tickets SET STATUS = ? WHERE ID IN (${changes.map(FullTicket::id).joinToString(", ")});", BasicTicket.Status.CLOSED.name))
 
             changes.forEach {
                 session.update(
