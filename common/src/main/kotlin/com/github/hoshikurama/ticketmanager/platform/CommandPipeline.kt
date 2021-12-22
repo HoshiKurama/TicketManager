@@ -1,8 +1,6 @@
 package com.github.hoshikurama.ticketmanager.platform
 
 import com.github.hoshikurama.componentDSL.buildComponent
-import com.github.hoshikurama.componentDSL.formattedContent
-import com.github.hoshikurama.componentDSL.onClick
 import com.github.hoshikurama.componentDSL.onHover
 import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.TMPlugin
@@ -15,12 +13,13 @@ import com.github.hoshikurama.ticketmanager.database.SearchConstraint
 import com.github.hoshikurama.ticketmanager.misc.*
 import com.github.hoshikurama.ticketmanager.pluginVersion
 import com.github.hoshikurama.ticketmanager.ticket.*
+import com.github.jasync.sql.db.util.size
 import kotlinx.coroutines.*
-import net.kyori.adventure.extra.kotlin.text
+import net.kyori.adventure.extra.kotlin.plus
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.TextComponent
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.event.HoverEvent
+import net.kyori.adventure.text.event.HoverEvent.showText
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
 import java.time.Instant
@@ -277,7 +276,6 @@ abstract class CommandPipeline(
         return sender.locale.run {
             when (args[0]) {
                 commandWordAssign -> assign(sender, args, false, ticket)
-                commandWordAssign -> assign(sender, args, false, ticket)
                 commandWordSilentAssign -> assign(sender, args, true, ticket)
                 commandWordClaim -> claim(sender, args, false, ticket)
                 commandWordSilentClaim -> claim(sender, args, true, ticket)
@@ -389,17 +387,17 @@ abstract class CommandPipeline(
             sender = sender,
             ticket = ticket,
             senderLambda = {
-                it.notifyTicketAssignSuccess
-                    .replace("%id%", assignmentID)
-                    .replace("%assign%", shownAssignment)
-                    .run(::toColouredAdventure)
+                it.notifyTicketAssignSuccess.parseMiniMessage(
+                    "ID" templated assignmentID,
+                    "Assigned" templated shownAssignment
+                )
             },
             massNotifyLambda = {
-                it.notifyTicketAssignEvent
-                    .replace("%user%", sender.name)
-                    .replace("%id%", assignmentID)
-                    .replace("%assign%", shownAssignment)
-                    .run(::toColouredAdventure)
+                it.notifyTicketAssignEvent.parseMiniMessage(
+                    "User" templated sender.name,
+                    "ID" templated assignmentID,
+                    "Assigned" templated shownAssignment,
+                )
             },
             creatorLambda = null,
             creatorAlertPerm = "ticketmanager.notify.change.assign",
@@ -479,22 +477,14 @@ abstract class CommandPipeline(
             silent = silent,
             sender = sender,
             ticket = ticket,
-            senderLambda = {
-                it.notifyTicketCloseWCommentSuccess
-                    .replace("%id%", args[1])
-                    .run(::toColouredAdventure)
-            },
+            senderLambda = { it.notifyTicketCloseWCommentSuccess.parseMiniMessage("ID" templated args[1]) },
+            creatorLambda = { it.notifyTicketModificationEvent.parseMiniMessage("ID" templated args[1]) },
             massNotifyLambda = {
-                it.notifyTicketCloseWCommentEvent
-                    .replace("%user%", sender.name)
-                    .replace("%id%", args[1])
-                    .replace("%message%", message)
-                    .run(::toColouredAdventure)
-            },
-            creatorLambda = {
-                it.notifyTicketModificationEvent
-                    .replace("%id%", args[1])
-                    .run(::toColouredAdventure)
+                it.notifyTicketCloseWCommentEvent.parseMiniMessage(
+                    "User" templated sender.name,
+                    "ID" templated args[1],
+                    "Message" templated message,
+                )
             },
             massNotifyPerm = "ticketmanager.notify.massNotify.close",
             creatorAlertPerm = "ticketmanager.notify.change.close"
@@ -526,21 +516,13 @@ abstract class CommandPipeline(
             silent = silent,
             sender = sender,
             ticket = ticketHandler,
-            creatorLambda = {
-                it.notifyTicketModificationEvent
-                    .replace("%id%", args[1])
-                    .run(::toColouredAdventure)
-            },
+            creatorLambda = { it.notifyTicketModificationEvent.parseMiniMessage("ID" templated args[1]) },
+            senderLambda = { it.notifyTicketCloseSuccess.parseMiniMessage("ID" templated args[1]) },
             massNotifyLambda = {
-                it.notifyTicketCloseEvent
-                    .replace("%user%", sender.name)
-                    .replace("%id%", args[1])
-                    .run(::toColouredAdventure)
-            },
-            senderLambda = {
-                it.notifyTicketCloseSuccess
-                    .replace("%id%", args[1])
-                    .run(::toColouredAdventure)
+                it.notifyTicketCloseEvent.parseMiniMessage(
+                    "User" templated sender.name,
+                    "ID" templated args[1],
+                )
             },
             massNotifyPerm = "ticketmanager.notify.massNotify.close",
             creatorAlertPerm = "ticketmanager.notify.change.close"
@@ -573,17 +555,17 @@ abstract class CommandPipeline(
             ticket = ticket,
             creatorLambda = null,
             senderLambda = {
-                it.notifyTicketMassCloseSuccess
-                    .replace("%low%", args[1])
-                    .replace("%high%", args[2])
-                    .run(::toColouredAdventure)
+                it.notifyTicketMassCloseSuccess.parseMiniMessage(
+                    "Lower" templated args[1],
+                    "Upper" templated args[2],
+                )
             },
             massNotifyLambda = {
-                it.notifyTicketMassCloseEvent
-                    .replace("%user%", sender.name)
-                    .replace("%low%", args[1])
-                    .replace("%high%", args[2])
-                    .run(::toColouredAdventure)
+                it.notifyTicketMassCloseEvent.parseMiniMessage(
+                    "User" templated sender.name,
+                    "Lower" templated args[1],
+                    "Upper" templated args[2],
+                )
             },
             massNotifyPerm = "ticketmanager.notify.massNotify.massClose",
             creatorAlertPerm = "ticketmanager.notify.change.massClose"
@@ -625,22 +607,14 @@ abstract class CommandPipeline(
             silent = silent,
             sender = sender,
             ticket = ticket,
-            creatorLambda = {
-                it.notifyTicketModificationEvent
-                    .replace("%id%", args[1])
-                    .run(::toColouredAdventure)
-            },
-            senderLambda = {
-                it.notifyTicketCommentSuccess
-                    .replace("%id%", args[1])
-                    .run(::toColouredAdventure)
-            },
+            creatorLambda = { it.notifyTicketModificationEvent.parseMiniMessage("ID" templated args[1]) },
+            senderLambda = { it.notifyTicketCommentSuccess.parseMiniMessage("ID" templated args[1]) },
             massNotifyLambda = {
-                it.notifyTicketCommentEvent
-                    .replace("%user%", sender.name)
-                    .replace("%id%", args[1])
-                    .replace("%message%", message)
-                    .run(::toColouredAdventure)
+                it.notifyTicketCommentEvent.parseMiniMessage(
+                    "User" templated sender.name,
+                    "ID" templated args[1],
+                    "Message" templated message,
+                )
             },
             massNotifyPerm = "ticketmanager.notify.massNotify.comment",
             creatorAlertPerm = "ticketmanager.notify.change.comment"
@@ -659,16 +633,16 @@ abstract class CommandPipeline(
             onBegin = {
                 globalState.pluginLocked.set(true)
                 platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
-                    it.informationDBConvertInit
-                        .replace("%fromDB%", instanceState.database.type.name)
-                        .replace("%toDB%", type.name)
-                        .run(::toColouredAdventure)
+                    it.informationDBConvertInit.parseMiniMessage(
+                        "FromDB" templated instanceState.database.type.name,
+                        "ToDB" templated type.name
+                    )
                 }
             },
             onComplete = {
                 globalState.pluginLocked.set(false)
                 platform.massNotify(instanceState.localeHandler,"ticketmanager.notify.info") {
-                    it.informationDBConvertSuccess.run(::toColouredAdventure)
+                    it.informationDBConvertSuccess.parseMiniMessage()
                 }
             },
             onError = {
@@ -707,17 +681,13 @@ abstract class CommandPipeline(
             sender = sender,
             ticket= ticket,
             creatorLambda = null,
-            senderLambda = {
-                it.notifyTicketCreationSuccess
-                    .replace("%id%", id)
-                    .run(::toColouredAdventure)
-            },
+            senderLambda = { it.notifyTicketCreationSuccess.parseMiniMessage("ID" templated id) },
             massNotifyLambda = {
-                it.notifyTicketCreationEvent
-                    .replace("%user%", sender.name)
-                    .replace("%id%", id)
-                    .replace("%message%", message)
-                    .run(::toColouredAdventure)
+                it.notifyTicketCreationEvent.parseMiniMessage(
+                    "User" templated sender.name,
+                    "ID" templated id,
+                    "Message" templated message
+                )
             },
             creatorAlertPerm = "ticketmanager.NO NODE",
             massNotifyPerm = "ticketmanager.notify.massNotify.create",
@@ -728,6 +698,13 @@ abstract class CommandPipeline(
     private fun help(
         sender: Sender,
     ) {
+
+        sender.sendMessage("Sorry! This is a work in progress") //todo wtf should I do with this part
+
+
+
+
+        /*
         val hasSilentPerm = sender.has("ticketmanager.commandArg.silence")
         val cc = instanceState.localeHandler.mainColourCode
         val locale = sender.locale
@@ -779,6 +756,7 @@ abstract class CommandPipeline(
         }
 
         sender.sendMessage(component)
+         */
     }
 
     // /ticket history [User] [Page]
@@ -794,35 +772,41 @@ abstract class CommandPipeline(
 
             val searchedUserUUID: Option<UUID?> = targetName?.run { platform.offlinePlayerNameToUUIDOrNull(this)?.run { Option(this) } ?: Option(UUID.randomUUID()) } ?: Option(null)
             val constraints = SearchConstraint(creator = searchedUserUUID)
-            val (results, pageCount, resultCount, returnedPage) = instanceState.database.searchDatabase(locale, constraints, requestedPage, 9)
+            val (results, pageCount, resultCount, returnedPage) = instanceState.database.searchDatabase(
+                constraints,
+                requestedPage,
+                9
+            )
 
             val sentComponent = buildComponent {
-                text {
-                    formattedContent(
-                        locale.historyHeader
-                            .replace("%name%", targetName ?: locale.consoleName)
-                            .replace("%count%", "$resultCount")
-                    )
-                }
+                // Header
+                locale.historyHeader.parseMiniMessage(
+                    "Name" templated (targetName ?: locale.consoleName),
+                    "Count" templated "$resultCount"
+                ).let(this::append)
 
                 if (results.isNotEmpty()) {
                     results.forEach { t ->
-                        text {
-                            formattedContent(
-                                locale.historyEntry
-                                    .let { "\n$it" }
-                                    .replace("%id%", "${t.id}")
-                                    .replace("%SCC%", t.status.colourCode)
-                                    .replace("%status%", t.status.toLocaledWord(locale))
-                                    .replace("%comment%", t.actions[0].message!!)
-                                    .let { if (it.length > 80) "${it.substring(0, 81)}..." else it }
+                        val id = "${t.id}"
+                        val status = t.status.toLocaledWord(locale)
+                        val comment = trimCommentToSize(
+                            comment = t.actions[0].message!!,
+                            preSize = id.size + status.size + locale.historyFormattingSize,
+                            maxSize = locale.historyMaxLineSize
+                        )
+
+                        val entry = locale.historyEntry
+                            .replace("%SCC%", statusToHexColour(t.status, sender.locale))
+                            .parseMiniMessage(
+                                "ID" templated id,
+                                "STATUS" templated status,
+                                "Comment" templated comment,
                             )
-                            onHover { showText(Component.text(locale.clickViewTicket)) }
-                            onClick {
-                                action = ClickEvent.Action.RUN_COMMAND
-                                value = locale.run { "/$commandBase $commandWordView ${t.id}" }
-                            }
-                        }
+
+                        // Adds click/hover events and appends
+                        entry.hoverEvent(showText(Component.text(locale.clickViewTicket)))
+                            .clickEvent(ClickEvent.runCommand(locale.run { "/$commandBase $commandWordView ${t.id}" } ))
+                            .let(this::append)
                     }
 
                     if (pageCount > 1) {
@@ -844,7 +828,7 @@ abstract class CommandPipeline(
     ) {
         val page = if (args.size == 2) args[1].toIntOrNull() ?: 1 else 1
         val results = instanceState.database.getOpenTickets(page, 8)
-        createGeneralList(sender.locale, sender.locale.listFormatHeader, results) { sender.locale.run { "/$commandBase $commandWordList " } }
+        createGeneralList(sender.locale, sender.locale.listHeader, results) { sender.locale.run { "/$commandBase $commandWordList " } }
             .run(sender::sendMessage)
     }
 
@@ -857,7 +841,7 @@ abstract class CommandPipeline(
         val groups: List<String> = if (sender is Player) sender.permissionGroups else listOf()
         val results = instanceState.database.getOpenTicketsAssignedTo(page,8, sender.name, groups)
 
-        createGeneralList(sender.locale, sender.locale.listFormatAssignedHeader, results) { sender.locale.run { "/$commandBase $commandWordListAssigned " } }
+        createGeneralList(sender.locale, sender.locale.listAssignedHeader, results) { sender.locale.run { "/$commandBase $commandWordListAssigned " } }
             .run(sender::sendMessage)
     }
 
@@ -868,7 +852,7 @@ abstract class CommandPipeline(
         val page = if (args.size == 2) args[1].toIntOrNull() ?: 1 else 1
         val results = instanceState.database.getOpenTicketsNotAssigned(page, 8)
 
-        createGeneralList(sender.locale, sender.locale.listFormatUnassignedHeader, results) { sender.locale.run { "/$commandBase $commandWordListUnassigned " } }
+        createGeneralList(sender.locale, sender.locale.listUnassignedHeader, results) { sender.locale.run { "/$commandBase $commandWordListUnassigned " } }
             .run(sender::sendMessage)
     }
 
@@ -879,9 +863,7 @@ abstract class CommandPipeline(
         try {
             globalState.pluginLocked.set(true)
             platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
-                it.informationReloadInitiated
-                    .replace("%user%", sender.name)
-                    .run(::toColouredAdventure)
+                it.informationReloadInitiated.parseMiniMessage("User" templated sender.name)
             }
 
             val forceQuitJob = launch {
@@ -890,7 +872,7 @@ abstract class CommandPipeline(
                 // Long standing task has occurred if it reaches this point
                 launch {
                     platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.warning") {
-                        it.warningsLongTaskDuringReload.run(::toColouredAdventure)
+                        it.warningsLongTaskDuringReload.parseMiniMessage()
                     }
                     globalState.jobCount.set(1)
                     globalState.asyncDispatcher.cancelChildren()
@@ -904,7 +886,7 @@ abstract class CommandPipeline(
                 forceQuitJob.cancel("Tasks closed on time")
 
             platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
-                it.informationReloadTasksDone.run(::toColouredAdventure)
+                it.informationReloadTasksDone.parseMiniMessage()
             }
             instanceState.database.closeDatabase()
             instanceState.discord?.shutdown()
@@ -915,7 +897,7 @@ abstract class CommandPipeline(
 
             // Notifications
             platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
-                it.informationReloadSuccess.run(::toColouredAdventure)
+                it.informationReloadSuccess.parseMiniMessage()
             }
             if (!sender.has("ticketmanager.notify.info")) {
                 sender.sendMessage(sender.locale.informationReloadSuccess)
@@ -923,7 +905,7 @@ abstract class CommandPipeline(
             globalState.pluginLocked.set(false)
         } catch (e: Exception) {
             platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
-                it.informationReloadFailure.run(::toColouredAdventure)
+                it.informationReloadFailure.parseMiniMessage()
             }
             globalState.pluginLocked.set(false)
             throw e
@@ -960,21 +942,13 @@ abstract class CommandPipeline(
             silent = silent,
             sender = sender,
             ticket = ticket,
-            creatorLambda = {
-                it.notifyTicketModificationEvent
-                    .replace("%id%", args[1])
-                    .run(::toColouredAdventure)
-            },
-            senderLambda = {
-                it.notifyTicketReopenSuccess
-                    .replace("%id%", args[1])
-                    .run(::toColouredAdventure)
-            },
+            creatorLambda = { it.notifyTicketModificationEvent.parseMiniMessage("ID" templated args[1]) },
+            senderLambda = { it.notifyTicketReopenSuccess.parseMiniMessage("ID" templated args[1]) },
             massNotifyLambda = {
-                it.notifyTicketReopenEvent
-                    .replace("%user%", sender.name)
-                    .replace("%id%", args[1])
-                    .run(::toColouredAdventure)
+                it.notifyTicketReopenEvent.parseMiniMessage(
+                    "User" templated sender.name,
+                    "ID" templated args[1],
+                )
             },
             creatorAlertPerm = "ticketmanager.notify.change.reopen",
             massNotifyPerm = "ticketmanager.notify.massNotify.reopen",
@@ -984,11 +958,11 @@ abstract class CommandPipeline(
     private suspend fun search(
         sender: Sender,
         args: List<String>,
-    ) = coroutineScope {
+    ) {
         val locale = sender.locale
 
         // Beginning of execution
-        sender.sendMessage(text { formattedContent(locale.searchFormatQuerying) })
+        sender.sendMessage(locale.searchQuerying.parseMiniMessage())
 
         fun doComplexStuffWithUUID(value: String): Option<UUID?> = value.takeIf { it != locale.consoleName }?.run { platform.offlinePlayerNameToUUIDOrNull(this)?.run { Option(this) } ?: Option(UUID.randomUUID()) } ?: Option(null)
 
@@ -1017,56 +991,55 @@ abstract class CommandPipeline(
         }
 
         // Results calculation and destructuring
-        val (results, pageCount, resultCount, returnedPage) = instanceState.database.searchDatabase(locale, constraints, attemptedPage, 9)
-        val fixMSGLength = { t: FullTicket -> t.actions[0].message!!.run { if (length > 25) "${substring(0,21)}..." else this } }
+        val (results, pageCount, resultCount, returnedPage) = instanceState.database.searchDatabase(
+            constraints,
+            attemptedPage,
+            9
+        )
+        //val fixMSGLength = { t: FullTicket -> t.actions[0].message!!.run { if (length > 25) "${substring(0,21)}..." else this } } //TODO UHH
 
         val sentComponent = buildComponent {
-
             // Initial header
-            text {
-                formattedContent(
-                    locale.searchFormatHeader.replace("%size%", "$resultCount")
-                )
-            }
+            append(locale.searchHeader.parseMiniMessage("Size" templated "$resultCount"))
 
             // Adds entries
             if (results.isNotEmpty()) {
-                    results.map {
-                        val content = "\n${locale.searchFormatEntry}"
-                            .replace("%PCC%", it.priority.colourCode)
-                            .replace("%SCC%", it.status.colourCode)
-                            .replace("%id%", "${it.id}")
-                            .replace("%status%", it.status.toLocaledWord(locale))
-                            .replace("%creator%", it.creatorUUID?.run(platform::nameFromUUID) ?: sender.locale.consoleName )
-                            .replace("%assign%", it.assignedTo ?: "")
-                            .replace("%world%", it.location?.world ?: "")
-                            .replace("%time%", it.actions[0].timestamp.toLargestRelativeTime(locale))
-                            .replace("%comment%", fixMSGLength(it))
-                        it.id to content
-                    }
-                    .forEach {
-                        text {
-                            formattedContent(it.second)
-                            onHover { showText(Component.text(locale.clickViewTicket)) }
-                            onClick {
-                                action = ClickEvent.Action.RUN_COMMAND
-                                value = locale.run { "/$commandBase $commandWordView ${it.first}" }
-                            }
-                        }
-                    }
-            }
+                results.forEach {
+                    val time = it.actions[0].timestamp.toLargestRelativeTime(locale)
+                    val comment = trimCommentToSize(
+                        comment = it.actions[0].message!!,
+                        preSize = locale.searchFormattingSize + time.length,
+                        maxSize = locale.searchMaxLineSize,
+                    )
 
-            // Implements pages if needed
-            if (pageCount > 1) {
-                val pageComponent = buildPageComponent(returnedPage, pageCount, locale) {
-                    // Removes page constraint and converts rest to key:arg
-                    val constraintArgs = arguments
-                        .filter { it.key != locale.searchPage }
-                        .map { (k, v) -> "$k:$v" }
-                        .joinToString(" ")
-                    "/${locale.commandBase} ${locale.commandWordSearch} $constraintArgs ${locale.searchPage}:"
+                    locale.searchEntry
+                        .replace("%PCC%", priorityToHexColour(it.priority, locale))
+                        .replace("%SCC%", statusToHexColour(it.status, locale))
+                        .parseMiniMessage(
+                            "ID" templated "${it.id}",
+                            "Status" templated it.status.toLocaledWord(locale),
+                            "Creator" templated (it.creatorUUID?.run(platform::nameFromUUID) ?: sender.locale.consoleName),
+                            "Assignment" templated (it.assignedTo ?: ""),
+                            "World" templated (it.location?.world ?: ""),
+                            "Time" templated time,
+                            "Comment" templated comment,
+                        )
+                        .hoverEvent(showText(Component.text(locale.clickViewTicket)))
+                        .clickEvent(ClickEvent.runCommand(locale.run { "/$commandBase $commandWordView ${it.id}" }))
+                        .let(this::append)
                 }
-                append(pageComponent)
+
+                // Implement pages if needed
+                if (pageCount > 1) {
+                    buildPageComponent(returnedPage, pageCount, locale) {
+                        // Removes page constraint and converts rest to key:arg
+                        val constraintArgs = arguments
+                            .filter { it.key != locale.searchPage }
+                            .map { (k, v) -> "$k:$v" }
+                            .joinToString(" ")
+                        "/${locale.commandBase} ${locale.commandWordSearch} $constraintArgs ${locale.searchPage}:"
+                    }.let(this::append)
+                 }
             }
         }
 
@@ -1103,18 +1076,15 @@ abstract class CommandPipeline(
             sender = sender,
             ticket = ticket,
             creatorLambda = null,
-            senderLambda = {
-                it.notifyTicketSetPrioritySuccess
-                    .replace("%id%", args[1])
-                    .replace("%priority%", ticket.run { newPriority.colourCode + newPriority.toLocaledWord(it) })
-                    .run(::toColouredAdventure)
-            },
+            senderLambda = { it.notifyTicketSetPrioritySuccess.parseMiniMessage("ID" templated args[1]) },
             massNotifyLambda = {
                 it.notifyTicketSetPriorityEvent
-                    .replace("%user%", sender.name)
-                    .replace("%id%", args[1])
-                    .replace("%priority%", ticket.run { newPriority.colourCode + newPriority.toLocaledWord(it) })
-                    .run(::toColouredAdventure)
+                    .replace("%PCC%", priorityToHexColour(newPriority, sender.locale))
+                    .parseMiniMessage(
+                        "User" templated sender.name,
+                        "ID" templated args[1],
+                        "Priority" templated newPriority.toLocaledWord(sender.locale),
+                    )
             },
             creatorAlertPerm = "ticketmanager.notify.change.priority",
             massNotifyPerm =  "ticketmanager.notify.massNotify.priority"
@@ -1191,7 +1161,7 @@ abstract class CommandPipeline(
     private suspend fun view(
         sender: Sender,
         ticket: BasicTicket,
-    ) = coroutineScope {
+    ) {
         val fullTicket = instanceState.database.getFullTicket(ticket)
         val baseComponent = buildTicketInfoComponent(fullTicket, sender.locale)
 
@@ -1201,12 +1171,12 @@ abstract class CommandPipeline(
         val entries = fullTicket.actions.asSequence()
             .filter { it.type == FullTicket.Action.Type.COMMENT || it.type == FullTicket.Action.Type.OPEN }
             .map {
-                "\n${sender.locale.viewFormatComment}"
-                    .replace("%user%", it.user?.run(platform::nameFromUUID) ?: sender.locale.consoleName)
-                    .replace("%comment%", it.message!!)
+                sender.locale.viewComment.parseMiniMessage(
+                    "User" templated (it.user?.run(platform::nameFromUUID) ?: sender.locale.consoleName),
+                    "Comment" templated it.message!!,
+                )
             }
-            .map { text { formattedContent(it) } }
-            .reduce(TextComponent::append)
+            .reduce(Component::append)
 
         sender.sendMessage(baseComponent.append(entries))
     }
@@ -1216,46 +1186,39 @@ abstract class CommandPipeline(
         sender: Sender,
         ticket: BasicTicket,
     ) {
-        coroutineScope {
-            val fullTicket = instanceState.database.getFullTicket(ticket)
-            val baseComponent = buildTicketInfoComponent(fullTicket, sender.locale)
+        val fullTicket = instanceState.database.getFullTicket(ticket)
+        val baseComponent = buildTicketInfoComponent(fullTicket, sender.locale)
 
-            if (!sender.nonCreatorMadeChange(ticket.creatorUUID) && ticket.creatorStatusUpdate)
-                launchIndependent { instanceState.database.setCreatorStatusUpdate(ticket.id, false) }
+        if (!sender.nonCreatorMadeChange(ticket.creatorUUID) && ticket.creatorStatusUpdate)
+            launchIndependent { instanceState.database.setCreatorStatusUpdate(ticket.id, false) }
 
-            fun formatDeepAction(action: FullTicket.Action): String {
-                val result = when (action.type) {
-                    FullTicket.Action.Type.OPEN, FullTicket.Action.Type.COMMENT ->
-                        "\n${sender.locale.viewFormatDeepComment}"
-                            .replace("%comment%", action.message!!)
+        fun formatDeepAction(action: FullTicket.Action): Component {
+            val templatedUser = "User" templated (action.user?.run(platform::nameFromUUID) ?: sender.locale.consoleName)
+            val templatedTime = "Time" templated action.timestamp.toLargestRelativeTime(sender.locale)
 
-                    FullTicket.Action.Type.SET_PRIORITY ->
-                        "\n${sender.locale.viewFormatDeepSetPriority}"
-                            .replace("%priority%",
-                                byteToPriority(action.message!!.toByte()).run { colourCode + toLocaledWord(sender.locale) }
-                            )
+            return when (action.type) {
+                FullTicket.Action.Type.OPEN, FullTicket.Action.Type.COMMENT ->
+                    sender.locale.viewDeepComment.parseMiniMessage(templatedUser, templatedTime, "Comment" templated action.message!!)
 
-                    FullTicket.Action.Type.ASSIGN ->
-                        "\n${sender.locale.viewFormatDeepAssigned}"
-                            .replace("%assign%", action.message ?: "")
+                FullTicket.Action.Type.SET_PRIORITY ->
+                    byteToPriority(action.message!!.toByte())
+                        .let { it to sender.locale.viewDeepSetPriority.replace("%PCC%", priorityToHexColour(it, sender.locale)) }
+                        .let { (priority, string) -> string.parseMiniMessage(templatedUser,templatedTime, "Priority" templated priority.toLocaledWord(sender.locale)) }
 
-                    FullTicket.Action.Type.REOPEN -> "\n${sender.locale.viewFormatDeepReopen}"
-                    FullTicket.Action.Type.CLOSE -> "\n${sender.locale.viewFormatDeepClose}"
-                    FullTicket.Action.Type.MASS_CLOSE -> "\n${sender.locale.viewFormatDeepMassClose}"
-                }
-                return result
-                    .replace("%user%", action.user?.run(platform::nameFromUUID) ?: sender.locale.consoleName)
-                    .replace("%time%", action.timestamp.toLargestRelativeTime(sender.locale))
+                FullTicket.Action.Type.ASSIGN ->
+                    sender.locale.viewDeepAssigned.parseMiniMessage(templatedUser, templatedTime, "Assignment" templated (action.message ?: ""))
+
+                FullTicket.Action.Type.REOPEN -> sender.locale.viewDeepReopen.parseMiniMessage(templatedUser, templatedTime)
+                FullTicket.Action.Type.CLOSE -> sender.locale.viewDeepClose.parseMiniMessage(templatedUser, templatedTime)
+                FullTicket.Action.Type.MASS_CLOSE -> sender.locale.viewDeepMassClose.parseMiniMessage(templatedUser, templatedTime)
             }
-
-            val finalMSG = fullTicket.actions.asSequence()
-                .map(::formatDeepAction)
-                .map(::toColouredAdventure)
-                .reduce(TextComponent::append)
-                .run(baseComponent::append)
-
-            sender.sendMessage(finalMSG)
         }
+
+        fullTicket.actions.asSequence()
+            .map(::formatDeepAction)
+            .reduce(Component::append)
+            .run(baseComponent::append)
+            .run(sender::sendMessage)
     }
 
     private fun buildPageComponent(
@@ -1266,81 +1229,64 @@ abstract class CommandPipeline(
     ): Component {
 
         fun Component.addForward(): Component {
-            return color(NamedTextColor.WHITE)
-                .clickEvent(ClickEvent.runCommand(baseCommand(locale) + "${curPage + 1}"))
+            return clickEvent(ClickEvent.runCommand(baseCommand(locale) + "${curPage + 1}"))
                 .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(locale.clickNextPage)))
         }
 
         fun Component.addBack(): Component {
-            return color(NamedTextColor.WHITE)
-                .clickEvent(ClickEvent.runCommand(baseCommand(locale) + "${curPage - 1}"))
+            return clickEvent(ClickEvent.runCommand(baseCommand(locale) + "${curPage - 1}"))
                 .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(locale.clickBackPage)))
         }
 
-        var back: Component = Component.text("[${locale.pageBack}]")
-        var next: Component = Component.text("[${locale.pageNext}]")
-        val separator = text {
-            content("...............")
-            color(NamedTextColor.DARK_GRAY)
-        }
-        val cc = instanceState.localeHandler.mainColourCode
-        val ofSection = text { formattedContent("$cc($curPage${locale.pageOf}$pageCount)") }
+        val back: Component
+        val next: Component
 
         when (curPage) {
             1 -> {
-                back = back.color(NamedTextColor.DARK_GRAY)
-                next = next.addForward()
+                back = locale.pageInactiveBack.parseMiniMessage()
+                next = locale.pageActiveNext.parseMiniMessage().addForward()
             }
             pageCount -> {
-                back = back.addBack()
-                next = next.color(NamedTextColor.DARK_GRAY)
+                back = locale.pageActiveBack.parseMiniMessage().addBack()
+                next = locale.pageInactiveNext.parseMiniMessage()
             }
             else -> {
-                back = back.addBack()
-                next = next.addForward()
+                back = locale.pageActiveBack.parseMiniMessage().addBack()
+                next = locale.pageActiveNext.parseMiniMessage().addForward()
             }
         }
 
-        return Component.text("\n")
-            .append(back)
-            .append(separator)
-            .append(ofSection)
-            .append(separator)
-            .append(next)
+        return Component.text("\n") + locale.pageFormat.parseMiniMessage(
+            "Back_Button" templated back,
+            "Cur_Page" templated "$curPage",
+            "Max_Pages" templated "$pageCount",
+            "Next_Button" templated next,
+        )
     }
 
     private fun createListEntry(
         ticket: FullTicket,
         locale: TMLocale
     ): Component {
+        val id = "${ticket.id}"
         val creator = ticket.creatorUUID?.run(platform::nameFromUUID) ?: locale.consoleName
         val fixedAssign = ticket.assignedTo ?: ""
+        val pcc = priorityToHexColour(ticket.priority, locale)
+        val fixedComment = trimCommentToSize(
+            comment = ticket.actions[0].message!!,
+            preSize = locale.listFormattingSize + id.size + creator.size + fixedAssign.size,
+            maxSize = 58,
+        )
 
-        // Shortens comment preview to fit on one line
-        val fixedComment = ticket.run {
-            if (12 + id.toString().length + creator.length + fixedAssign.length + actions[0].message!!.length > 58)
-                actions[0].message!!.substring(
-                    0,
-                    43 - id.toString().length - fixedAssign.length - creator.length
-                ) + "..."
-            else actions[0].message!!
-        }
-
-        return text {
-            formattedContent(
-                "\n${locale.listFormatEntry}"
-                    .replace("%priorityCC%", ticket.priority.colourCode)
-                    .replace("%ID%", "${ticket.id}")
-                    .replace("%creator%", creator)
-                    .replace("%assign%", fixedAssign)
-                    .replace("%comment%", fixedComment)
+        return locale.listEntry.replace("%PCC%", pcc)
+            .parseMiniMessage(
+                "ID" templated id,
+                "Creator" templated creator,
+                "Assignment" templated fixedAssign,
+                "Comment" templated fixedComment,
             )
-            onHover { showText(Component.text(locale.clickViewTicket)) }
-            onClick {
-                action = ClickEvent.Action.RUN_COMMAND
-                value = locale.run { "/$commandBase $commandWordView ${ticket.id}" }
-            }
-        }
+            .hoverEvent(showText(Component.text(locale.clickViewTicket)))
+            .clickEvent(ClickEvent.runCommand(locale.run { "/$commandBase $commandWordView ${ticket.id}" }))
     }
 
     private suspend fun createGeneralList(
@@ -1353,7 +1299,7 @@ abstract class CommandPipeline(
         val fullTickets = instanceState.database.getFullTickets(basicTickets)
 
         return buildComponent {
-            text { formattedContent(headerFormat) }
+            append(headerFormat.parseMiniMessage())
 
             if (fullTickets.isNotEmpty()) {
                 fullTickets.forEach { append(createListEntry(it, locale)) }
@@ -1369,50 +1315,40 @@ abstract class CommandPipeline(
         ticket: FullTicket,
         locale: TMLocale,
     ) = buildComponent {
-        text {
-            formattedContent(
-                "\n${locale.viewFormatHeader}"
-                    .replace("%num%", "${ticket.id}")
-            )
-        }
-        text { formattedContent("\n${locale.viewFormatSep1}") }
-        text {
-            formattedContent(
-                "\n${locale.viewFormatInfo1}"
-                    .replace("%creator%", ticket.creatorUUID?.run(platform::nameFromUUID) ?: locale.consoleName)
-                    .replace("%assignment%", ticket.assignedTo ?: "")
-            )
-        }
-        text {
-            formattedContent(
-                "\n${locale.viewFormatInfo2}"
-                    .replace("%priority%", ticket.priority.run { colourCode + toLocaledWord(locale) })
-                    .replace("%status%", ticket.status.run { colourCode + toLocaledWord(locale) })
-            )
-        }
-        text {
-            formattedContent(
-                "\n${locale.viewFormatInfo3}"
-                    .replace("%location%", ticket.location?.toString() ?: "")
-            )
 
-            if (ticket.location != null) {
-                onHover { showText(Component.text(locale.clickTeleport)) }
-                onClick {
-                    action = ClickEvent.Action.RUN_COMMAND
-                    value = locale.run { "/$commandBase $commandWordTeleport ${ticket.id}" }
-                }
+        append(locale.viewHeader.parseMiniMessage("ID" templated "${ticket.id}"))
+        append(locale.viewSep1.parseMiniMessage())
+        append(locale.viewCreator.parseMiniMessage("Creator" templated (ticket.creatorUUID?.run(platform::nameFromUUID) ?: locale.consoleName)))
+        append(locale.viewAssignedTo.parseMiniMessage("Assignment" templated (ticket.assignedTo ?: "")))
+
+        locale.viewPriority.replace("%PCC%", priorityToHexColour(ticket.priority, locale))
+            .parseMiniMessage("Priority" templated ticket.priority.toLocaledWord(locale))
+            .let(this::append)
+        locale.viewStatus.replace("%SCC%", statusToHexColour(ticket.status, locale))
+            .parseMiniMessage("Status" templated ticket.status.toLocaledWord(locale))
+            .let(this::append)
+
+        locale.viewLocation.parseMiniMessage("Location" templated (ticket.location?.toString() ?: ""))
+            .let {
+                if (ticket.location != null)
+                    it.hoverEvent(showText(Component.text(locale.clickTeleport)))
+                        .clickEvent(ClickEvent.runCommand(locale.run { "/$commandBase $commandWordTeleport ${ticket.id}" }))
+                else it
             }
-        }
-        text { formattedContent("\n${locale.viewFormatSep2}") }
+            .let(this::append)
+
+        append(locale.viewSep2.parseMiniMessage())
     }
-
-
 }
 
 /*-------------------------*/
 /*     Other Functions     */
 /*-------------------------*/
+
+fun trimCommentToSize(comment: String, preSize: Int, maxSize: Int): String {
+    return if (comment.length + preSize > maxSize) "${comment.substring(0,maxSize-preSize-3)}..."
+    else comment
+}
 
 private inline fun check(error: () -> Unit, predicate: () -> Boolean): Boolean {
     return if (predicate()) true else error().run { false }
@@ -1431,4 +1367,4 @@ private fun Sender.nonCreatorMadeChange(creatorUUID: UUID?): Boolean {
 
 private inline fun tryNoCatch(f: () -> Unit) =
     try { f() }
-    catch(e: Exception) {}
+    catch(_: Exception) {}

@@ -1,6 +1,5 @@
 package com.github.hoshikurama.ticketmanager
 
-import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.data.Cooldown
 import com.github.hoshikurama.ticketmanager.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
@@ -11,7 +10,10 @@ import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.platform.PlayerJoinEvent
 import com.github.hoshikurama.ticketmanager.platform.TabComplete
 import kotlinx.coroutines.*
-import net.kyori.adventure.extra.kotlin.text
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
+import kotlin.io.path.exists
 
 abstract class TMPlugin(
     mainDispatcher: CoroutineDispatcher,
@@ -77,8 +79,7 @@ abstract class TMPlugin(
                                 val template = if (ticketIDs.size > 1) it.locale.notifyUnreadUpdateMulti
                                 else it.locale.notifyUnreadUpdateSingle
 
-                                template.replace("%num%", tickets)
-                                    .run(it::sendMessage)
+                                template.parseMiniMessage("Num" templated tickets).run(it::sendMessage)
                             }
                     }
                 }
@@ -95,10 +96,10 @@ abstract class TMPlugin(
                             val assignedCount = openTickets.count { it.assignedTo == p.name || it.assignedTo in groups }
 
                             if (assignedCount != 0)
-                                p.locale.notifyOpenAssigned
-                                    .replace("%open%", "$openCount")
-                                    .replace("%assigned%", "$assignedCount")
-                                    .run(p::sendMessage)
+                                p.locale.notifyOpenAssigned.parseMiniMessage(
+                                    "Open" templated "$openCount",
+                                    "Assigned" templated "$assignedCount"
+                                ).run(p::sendMessage)
                         }
                 }
             } catch (e: Exception) {
@@ -112,7 +113,7 @@ abstract class TMPlugin(
         instancePluginState.database.closeDatabase()
     }
 
-    suspend fun initializeData() = coroutineScope {
+    suspend fun initializeData(): Unit = coroutineScope {
         globalPluginState.pluginLocked.set(true)
 
         // Generate config file if not found and alert users new config was generated
@@ -123,7 +124,7 @@ abstract class TMPlugin(
                 while (!::instancePluginState.isInitialized)
                     delay(100L)
                 platformFunctions.massNotify(instancePluginState.localeHandler, "ticketmanager.notify.warning") {
-                    text { formattedContent(it.warningsNoConfig) }
+                    it.warningsNoConfig.parseMiniMessage()
                 }
             }
         }
@@ -135,13 +136,29 @@ abstract class TMPlugin(
             val errors = mutableListOf<Pair<String, String>>()
             fun <T> T.addToErrors(location: String, toString: (T) -> String): T = this.also { errors.add(location to toString(it)) }
 
+            // Generates Advanced Visual Control files
+            try {
+                if (c.enableAdvancedVisualControl == true) {
+                    File("${c.pluginFolderPath}/locales").let { if (!it.exists()) it.mkdir() }
+
+                    supportedLocales
+                        .filterNot { Paths.get("${c.pluginFolderPath}/locales/$it.yml").exists() }
+                        .forEach {
+                            this@TMPlugin::class.java.classLoader
+                                .getResourceAsStream("locales/visual/$it.yml")!!
+                                .use { input -> Files.copy(input, Paths.get("${c.pluginFolderPath}/locales/$it.yml")) }
+                        }
+                }
+            } catch (e: Exception) { e.printStackTrace() }
+
             // Builds LocaleHandler object
             val localeHandler = kotlin.run {
                 val colourCode = c.localeHandlerColourCode ?: "&3".addToErrors("Colour_Code") { it }
                 val preferredLocale = c.localeHandlerPreferredLocale ?: "en_ca".addToErrors("Preferred_Locale") { it }
                 val consoleLocale = c.localeHandlerConsoleLocale ?: "en_ca".addToErrors("Console_Locale") { it }
                 val forceLocale = c.localeHandlerForceLocale ?: false.addToErrors("Force_Locale", Boolean::toString)
-                LocaleHandler.buildLocalesAsync(colourCode, preferredLocale, consoleLocale, forceLocale)
+                val enableAdvancedVisualControl = c.enableAdvancedVisualControl ?: false.addToErrors("Enable_Advanced_Visual_Control", Boolean::toString)
+                LocaleHandler.buildLocales(colourCode, preferredLocale.lowercase(), consoleLocale.lowercase(), forceLocale, c.pluginFolderPath, enableAdvancedVisualControl)
             }
 
             // Builds DatabaseBuilders object
@@ -240,8 +257,7 @@ abstract class TMPlugin(
 
             if (errors.size > 0) {
                 platformFunctions.massNotify(localeHandler, "ticketmanager.notify.warning") {
-                    it.warningsInvalidConfig.replaceFirst("%num%", errors.size.toString())
-                        .run(::toColouredAdventure)
+                    it.warningsInvalidConfig.parseMiniMessage("Count" templated "${errors.size}")
                 }
             }
         }
@@ -252,9 +268,10 @@ abstract class TMPlugin(
         instancePluginState.run {
             if (pluginUpdateChecker.run { canCheck && latestVersionOrNull != null })
                 localeHandler.consoleLocale.notifyPluginUpdate
-                    .replace("%current%", pluginVersion)
-                    .replace("%latest%", pluginUpdateChecker.latestVersionOrNull!!)
-                    .run(::toColouredAdventure)
+                    .parseMiniMessage(
+                        "Current" templated pluginVersion,
+                        "Latest" templated pluginUpdateChecker.latestVersionOrNull!!
+                    )
                     .run(platformFunctions.getConsoleAudience()::sendMessage)
         }
 

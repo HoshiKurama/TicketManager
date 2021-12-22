@@ -1,16 +1,20 @@
 package com.github.hoshikurama.ticketmanager.misc
 
 import com.github.hoshikurama.componentDSL.buildComponent
-import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.ticket.FullTicket
-import net.kyori.adventure.extra.kotlin.text
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.minimessage.MiniMessage
+import net.kyori.adventure.text.minimessage.Template
 import java.time.Instant
 
 typealias FullTicketPredicate = (FullTicket) -> Boolean
+
+
+val supportedLocales = listOf("en_ca")
 
 fun byteToPriority(byte: Byte) = when (byte.toInt()) {
     1 -> BasicTicket.Priority.LOWEST
@@ -19,6 +23,19 @@ fun byteToPriority(byte: Byte) = when (byte.toInt()) {
     4 -> BasicTicket.Priority.HIGH
     5 -> BasicTicket.Priority.HIGHEST
     else -> BasicTicket.Priority.NORMAL
+}
+
+fun priorityToHexColour(priority: BasicTicket.Priority, locale: TMLocale) = when (priority) {
+    BasicTicket.Priority.LOWEST -> locale.priorityColourLowestHex
+    BasicTicket.Priority.LOW -> locale.priorityColourLowHex
+    BasicTicket.Priority.NORMAL -> locale.priorityColourNormalHex
+    BasicTicket.Priority.HIGH -> locale.priorityColourHighHex
+    BasicTicket.Priority.HIGHEST -> locale.priorityColourHighestHex
+}
+
+fun statusToHexColour(status: BasicTicket.Status, locale: TMLocale) = when (status) {
+    BasicTicket.Status.OPEN -> locale.statusColourOpenHex
+    BasicTicket.Status.CLOSED -> locale.statusColourClosedHex
 }
 
 fun Long.toLargestRelativeTime(locale: TMLocale): String {
@@ -68,28 +85,31 @@ fun relTimeToEpochSecond(relTime: String, locale: TMLocale): Long {
 
 fun stringToStatusOrNull(str: String) = tryOrNull { BasicTicket.Status.valueOf(str) }
 
-fun toColouredAdventure(s: String) = text { formattedContent(s) }
+// MiniMessage helper functions
+fun String.parseMiniMessage(vararg template: Template) = MiniMessage.get().parse(this, template.toList())
+fun String.parseMiniMessage() = MiniMessage.get().parse(this)!!
+infix fun String.templated(string: String) = Template.of(this, string)
+infix fun String.templated(component: Component) = Template.of(this, component)
+operator fun Component.plus(other: Component) = append(other)
 
+// Other
 fun generateModifiedStacktrace(e: Exception, locale: TMLocale) = buildComponent {
-    // Builds header
-    listOf(
-        locale.stacktraceLine1,
-        locale.stacktraceLine2.replace("%exception%", e.javaClass.simpleName),
-        locale.stacktraceLine3.replace("%message%", e.message ?: "?"),
-        locale.stacktraceLine4,
-    )
-        .forEach { text { formattedContent(it) } }
+    // Builds Header
+    append(locale.stacktraceLine1.parseMiniMessage())
+    append(locale.stacktraceLine2.parseMiniMessage("Exception" templated e.javaClass.simpleName))
+    append(locale.stacktraceLine3.parseMiniMessage("Message" templated (e.message ?: "?")))
+    append(locale.stacktraceLine4.parseMiniMessage())
 
     // Adds stacktrace entries
-    e.stackTrace
-        .filter { it.className.startsWith("com.github.hoshikurama.ticketmanager") }
+    e.stackTrace.filter { it.className.startsWith("com.github.hoshikurama.ticketmanager") }
         .map {
-            locale.stacktraceEntry
-                .replace("%method%", it.methodName)
-                .replace("%file%", it.fileName ?: "?")
-                .replace("%line%", "${it.lineNumber}")
+            locale.stacktraceEntry.parseMiniMessage(
+                "Method" templated it.methodName,
+                "File" templated (it.fileName ?: "?"),
+                "Line" templated "${it.lineNumber}"
+            )
         }
-        .forEach { text { formattedContent(it) } }
+        .forEach(this::append)
 }
 
 fun pushErrors(
@@ -97,7 +117,6 @@ fun pushErrors(
     instanceState: InstancePluginState,
     exception: Exception,
     consoleErrorMessage: (TMLocale) -> String,
-
 ) {
     // Logs error
     platform.pushErrorToConsole(consoleErrorMessage(instanceState.localeHandler.consoleLocale))

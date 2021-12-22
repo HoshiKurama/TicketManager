@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager
 
 const val metricsKey = 11033
-const val pluginVersion = "6.1.3"
+const val pluginVersion = "7.0.0"
 
 /*
 Things to do when updating version:

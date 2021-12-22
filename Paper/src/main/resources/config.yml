@@ -1,7 +1,7 @@
 ##############################################
 ##############################################
 #       TicketManager Config File
-#             Version 6.1.3
+#             Version 7.0.0
 ##############################################
 ##############################################
 #
@@ -163,9 +163,14 @@ Discord_Notify_On_Priority_Change: true
 #                   Other
 # ###########################################
 #
-# Colour Code: Colour code used to add simple colour customization.
-# Must be in the form "&<colour code>".   eg: &3, &6, &b, etc
-# DO NOT USE ANY COLOUR CODES OTHER THAN COLOUR!
+# Colour Code:
+# Provides simple colour customization for the theme of the
+# plugin. The following formats are supported:
+#     - Literals for default colours ('red' or 'white')
+#     - Integers (1551768)
+#     - Hex codes. (#17AD98)
+#     - Legacy colour codes with '&' (&3)
+# Refer to Kyori MiniMessage for more information!
 Colour_Code: '&3'
 #
 # Allow Unread Ticket Updates: When users other than the creator
@@ -181,3 +186,16 @@ Allow_Unread_Ticket_Updates: true
 # TicketManager is installed during startup or reloads.
 # Values: true, false
 Allow_UpdateChecking: true
+#
+# Enable Advanced Visual Control: By default, TicketManager uses its own
+# formatting for visual information. However, users can instruct TicketManager to
+# create external locale files and use these instead. This allows end users to customize
+# virtually all visual components of the plugin. Missing files will be regenerated when
+# this mode is enabled. Missing components will simply default to the internal version.
+# To understand the formatting, please refer to Kyori MiniMessage documentation.
+#
+# NOTE: Please do NOT use this to add new languages. Adding new languages is not possible
+# for end users, and it is much more beneficial to offer translations for all other
+# users by submitting your work!
+# Values: true, false
+Enable_Advanced_Visual_Control: false

@@ -1,6 +1,5 @@
 package com.github.hoshikurama.ticketmanager.platform
 
-
 import com.github.hoshikurama.ticketmanager.LocaleHandler
 import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicket

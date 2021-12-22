@@ -7,6 +7,9 @@ plugins {
 repositories {
     mavenCentral()
     maven { url = uri("https://jitpack.io") }
+    maven(url = "https://oss.sonatype.org/content/repositories/snapshots/") {
+        name = "sonatype-oss-snapshots"
+    }
 }
 
 dependencies {
@@ -18,10 +21,9 @@ dependencies {
     implementation("com.github.HoshiKurama:KyoriComponentDSL:1.1.0")
     implementation("net.kyori:adventure-api:4.9.3")
     implementation("net.kyori:adventure-extra-kotlin:4.9.3")
-    implementation("net.kyori:adventure-text-serializer-legacy:4.9.3")
+    implementation("net.kyori:adventure-text-minimessage:4.1.0-SNAPSHOT")
     implementation("org.yaml:snakeyaml:1.29")
     implementation("joda-time:joda-time:2.10.13")
     implementation("dev.kord:kord-core:0.7.4")
     implementation("com.google.code.gson:gson:2.8.9")
-    implementation("com.beust:klaxon:5.5")
 }

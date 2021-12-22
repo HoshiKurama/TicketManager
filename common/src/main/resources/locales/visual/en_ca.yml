@@ -1,0 +1,207 @@
+# ========================================
+#      TicketManager Visual Formats
+# ========================================
+# This file contains formatting for virtually all visual
+# outputs in TicketManager. Before continuing, please note:
+#
+#   1: This file uses the Kyori MiniMessage format.
+#      Proper usage is in the Adventure API documentation.
+#
+#   2:  Take note of each sectional header. They will tell
+#       you where formatting is allowed/prohibited.
+#
+#   3: Templates refer to where TM replacements occur. They
+#      may be removed, but they may not be altered or added.
+#      Templates are stated next to or below each entry.
+#
+#   4:  Placeholders refer to values that get directly inlined
+#       before any message parsing occurs. These can be found
+#       between %% symbols. There are three placeholders that
+#       may be used anywhere in this file (where formatting is
+#       allowed). These are:
+#           - %TMHeader% -> TM Uniform Header
+#           - %nl%       -> New line
+#           - %CC%       -> Themed colour code from config
+#       These will be processed in said order. Thus, it
+#       is acceptable to use %nl% and %CC% inside the uniform
+#       header.
+#
+# All internal locale files would not be possible without the
+# users who donated their time to provide high-quality translations.
+# All users have my full gratitude and are listed on the front TM page
+# on GitHub.
+#
+Uniform_Header: '<%CC%>[TicketManager] '
+#
+# ========================================
+#    Ticket Descriptions / Page Buttons
+# ========================================
+#
+# Priority (No Formatting):
+Priority_Lowest: 'LOWEST'
+Priority_Low: 'LOW'
+Priority_Normal: 'NORMAL'
+Priority_High: 'HIGH'
+Priority_Highest: 'HIGHEST'
+# Colours (Accepts formatting)
+PriorityColour_Lowest: 'dark_blue'
+PriorityColour_Low: 'blue'
+PriorityColour_Normal: 'yellow'
+PriorityColour_High: 'red'
+PriorityColour_Highest: 'dark_red'
+#
+# Status (No Formatting):
+Status_Open: 'OPEN'
+Status_Closed: 'CLOSED'
+# Colours (Accepts formatting):
+StatusColour_Open: 'green'
+StatusColour_Closed: 'red'
+#
+# Time words (the space is intentional) (No Formatting):
+Time_Seconds: ' seconds'
+Time_Minutes: ' minutes'
+Time_Hours: ' hours'
+Time_Days: ' days'
+Time_Weeks: ' weeks'
+Time_Years: ' years'
+#
+# Clickable Text (No Formatting):
+Click_ViewTicket: 'Click to view this ticket'
+Click_Teleport: 'Click to teleport to this location'
+Click_NextPage: 'Click to move forward a page'
+Click_BackPage: 'Click to move back a page'
+Click_GitHub_Wiki: 'Click to go to the wiki!'
+#
+# Page words (Accepts Formatting):
+Page_ActiveNext: '<white>[Next]'
+Page_InactiveNext: '<dark_gray>[Next]'
+Page_ActiveBack: '<white>[Back]'
+Page_InactiveBack: '<dark_gray>[Back]'
+Page_Format: '<Back_Button><dark_gray>...............<dark_aqua>(<Cur_Page> of <Max_Pages>)<dark_gray>...............<Next_Button>'  # Templates: <Back_Button> <Cur_Page> <Max_Pages> <Next_Button>
+#
+#
+# ========================================
+#                 Messages
+# ========================================
+#
+# Warnings (Accepts Formatting):
+Warning_Header: '<red>[TicketManager] '
+Warning_Locked: '%Header%Commands are currently locked! Please try again later'
+Warning_NoPermission: '%Header%You do not have permission to perform this command!'
+Warning_InvalidID: '%Header%Please enter a valid ticket ID!'
+Warning_NAN: '%Header%Please enter a valid number!'
+Warning_NoConfig: '%Header%Config file not found! New file generated.'
+Warning_InvalidCommand: '%Header%No such command exists or number of arguments is incorrect!'
+Warning_PriorityOutOfBounds: '%Header%Priority must be between 1 and 5!'
+Warning_Under_Cooldown: '%Header%You need to wait a bit before trying to modify or create another ticket!'
+Warning_TicketAlreadyClosed: '%Header%This ticket is already closed!'
+Warning_TicketAlreadyOpen: '%Header%This ticket is already open!'
+Warning_InvalidDBType: '%Header%Invalid database type!'
+Warning_ConvertToSameDBType: '%Header%Unable to convert database to type already in use!'
+Warning_UnexpectedError: '%Header%Unexpected error has occurred!'
+Warning_LongTaskDuringReload: '%Header%Long-standing task detected during reload attempt. Forcefully ending all other tasks!'
+Warning_InvalidConfig: '%Header%<Count> config values defaulted! Please check console for more information'                   # Templates: <Count>
+Warning_InternalError: '%Header%An internal error has occurred! Please check console for details'
+#
+# Discord Notifications (No Formatting):
+Discord_OnAssign: '%user% assigned ticket #%num%'
+Discord_OnClose: '%user% closed ticket #%num%'
+Discord_OnCloseAll: '%user% mass-closed tickets'
+Discord_OnComment: '%user% commented on ticket #%num%'
+Discord_OnCreate: '%user% created ticket #%num%'
+Discord_OnReopen: '%user% reopened ticket #%num%'
+Discord_OnPriorityChange: '%user% changed priority of ticket #%num%'
+#
+#
+# ========================================
+#       Informational Output Formats
+# ========================================
+#
+# View and Deep View Format (Accepts Formatting):
+ViewFormat_Header: '<bold>%TMHeader%<#F3F3F3> Viewing Ticket <ID></bold>'                     # Templates: <ID>
+ViewFormat_Sep1: '%nl%<dark_gray>================<%CC%>Info<dark_gray>================='
+ViewFormat_InfoCreator: '%nl%<bold><%CC%>Creator:</bold> <#F3F3F3><Creator>   '               # Templates: <Creator>
+ViewFormat_InfoAssignedTo: '<bold><%CC%>Assigned To:</bold> <#F3F3F3><Assignment>'            # Templates: <Assignment>
+ViewFormat_InfoPriority: '%nl%<bold><%CC%>Priority:</bold> <%PCC%><Priority>   '              # Templates: <Priority>     Placeholders: %PCC%
+ViewFormat_InfoStatus: '<bold><%CC%>Status:</bold> <%SCC%><Status>'                           # Templates: <Status>       Placeholders: %SCC%
+ViewFormat_InfoLocation: '%nl%<bold><%CC%>Location:</bold> <#F3F3F3><Location>'               # Templates: <Location>
+ViewFormat_Sep2: '%nl%<dark_gray>===============<%CC%>Actions<dark_gray>==============='
+ViewFormat_Comment: '%nl%<bold><%CC%>[<User>]</bold> <#F3F3F3><Comment>'                                   # Templates: <User> <Comment>
+ViewFormat_DeepComment: '%nl%<bold><%CC%>[<User>]</bold> <#F3F3F3><Comment>  <dark_gray>~<Time> ago'       # Templates: <User> <Comment> <Time>
+ViewFormat_DeepReopen: '%nl%<gray><bold>[<User>]</bold> Reopened  <dark_gray>~<Time> ago'                  # Templates: <User> <Time>
+ViewFormat_DeepClose: '%nl%<gray><bold>[<User>]</bold> Closed  <dark_gray>~<Time> ago'                     # Templates: <User> <Time>
+ViewFormat_DeepMassClose: '%nl%<gray><bold>[<User>]</bold> Mass-Closed  <dark_gray>~<Time> ago'            # Templates: <User> <Time>
+ViewFormat_DeepAssigned: '%nl%<gray><bold>[<User>]</bold> Assignment <dark_gray>-> <%CC%><Assignment>  <dark_gray>~<Time> ago'      # Templates: <User> <Assignment> <Time>
+ViewFormat_DeepSetPriority: '%nl%<gray><bold>[<User>]</bold> Priority <dark_gray>-> <%PCC%><Priority>  <dark_gray>~<Time> ago'      # Templates: <User> <Priority> <Time>   Placeholders: %PCC%
+#
+# List Format (Accepts Formatting):
+ListFormat_Header: '<%CC%>[TicketManager]<#F3F3F3> Viewing All Open Tickets:'
+ListFormat_AssignedHeader: '%nl%<%CC%>[TicketManager]<#F3F3F3> Viewing Open Tickets Assigned to You:'
+ListFormat_UnassignedHeader: '%nl%<%CC%>[TicketManager]<#F3F3F3> Viewing Unassigned Open Tickets:'
+ListFormat_Entry: '%nl%<%PCC%>[<ID>] <dark_gray>[<%CC%><Creator> <dark_gray>-> <%CC%><Assignment><dark_gray>]<#F3F3F3> <Comment>'   # Templates: <ID> <Creator> <Assignment> <Comment>  Placeholders: %PCC%
+ListFormat_FormattingSize: '12' # INTEGER ONLY
+ListFormat_MaxLineSize: '58' # INTEGER ONLY
+#
+# SearchFormat (Accepts Formatting):
+SearchFormat_Querying: '%TMHeader%<#F3F3F3> Querying data... Please be patient!'
+SearchFormat_Header: '%TMHeader%<#F3F3F3> Search query returned <%CC%><Size><#F3F3F3> results:'       # Templates: <Size>
+SearchFormat_Entry: '%nl%<%PCC%>[<ID>] <%SCC%>[<Status>] <gray>[<%CC%><Creator> <gray>-> <%CC%><Assignment><gray>] [<%CC%>World: <World>]%nl%    <%CC%>~<Time> ago: <#F3F3F3><Comment>'
+# Templates: <ID> <Status> <Creator> <Assignment> <World> <Time> <Comment>    Placeholders: %PCC% %SCC%
+SearchFormat_FormattingSize: '11' # INTEGER ONLY #TODO
+SearchFormat_MaxLineSize: '58' # INTEGER ONLY #TODO
+#
+# History Format (Accepts Formatting):
+History_Header: '%TMHeader% <Name><#F3F3F3> has <%CC%><Count> <#F3F3F3>tickets:'          # Templates: <Name> <Count>
+History_Entry: '%nl%<%CC%>[<ID>] <%SCC%>[<STATUS>] <#F3F3F3><Comment>'                    # Templates: <ID> <STATUS> <Comment>  Placeholders: %SCC%
+History_FormattingSize: '6' # INTEGER ONLY
+History_MaxLineSize: '80' # INTEGER ONLY
+#
+# Help Format (Accepts Formatting):
+Help_Header: '<#F3F3F3>===<gray>====<dark_gray>===<%CC%>TicketManager Commands<dark_gray>===<gray>====<#F3F3F3>==='
+Help_Line1: '%nl%<%CC%>Argument Types<#F3F3F3>:<%CC%>   <#F3F3F3><Required> <gray>[Optional]'
+Help_Line2: '%nl%<%CC%>Silent Format<#F3F3F3>:<%CC%>     /ticket s<#F3F3F3>.<%CC%><Command>'
+Help_Line3: '%nl%<%CC%>Silenceable: <#F3F3F3>[<red>✕<#F3F3F3>|<green>✓<#F3F3F3>]'
+Help_Sep: '%nl%<gray>========================================='
+#
+# Modified Stacktrace (Accepts Formatting):
+Stacktrace_Line1: '%nl%%nl%%nl%<dark_red>[TicketManager] WARNING! An unexpected error has occurred!'
+Stacktrace_Line2: '%nl%<red>     Exception:    <gray><Exception>'                  # Templates: <Exception>
+Stacktrace_Line3: '%nl%<red>     Information:  <gray><Message>'                    # Templates: <Message>
+Stacktrace_Line4: '%nl%<dark_red>=-=-=-=-=-=-=Modified Stacktrace:=-=-=-=-=-=-='
+Stacktrace_Entry: '%nl%<red>          <Method> (<File>:<Line>)'                    # Templates: <Method> <File> <Line>
+#
+#
+# ========================================
+#             Notifications
+# ========================================
+#
+# Information (Accepts Formatting):
+Info_ReloadInitiated: '%TMHeader%<#F3F3F3><User><%CC%> has initiated a plugin restart! Plugin locked and waiting for ongoing tasks to complete...'      # Templates: <User>
+Info_Reload_TasksDone: '%TMHeader%All other tasks complete! Reloading now...'
+Info_ReloadSuccess: '%TMHeader%<%CC%>Reload<green> successful<%CC%>!'
+Info_ReloadFailure: '%TMHeader%<%CC%>Reload<red> failure<%CC%>!'
+Info_DBConversionInit: '%TMHeader%<%CC%>Database conversion from <gray><FromDB><%CC%> to <gray><ToDB><%CC%>! Plugin locked!'                            # Templates: <FromDB> <ToDB>
+Info_DBConversionSuccess: '%TMHeader%<%CC%>Database conversion complete! Plugin unlocked! Change config and reload plugin to use new database type.'
+#
+# Ticket Notifications (Accepts Formatting):
+Notify_UnreadUpdate_Single: '%TMHeader%Ticket <gray><Num><%CC%> has an update! Type <gray>/ticket view <Num><%CC%> to clear notification.'                          # Templates <Num>
+Notify_UnreadUpdate_Multi: '%TMHeader%Tickets <gray><Num><%CC%> have updates! Type <gray>/ticket view <ID><%CC%> for all updated tickets to clear notifications.'   # Templates <Num>
+Notify_OpenAssigned: '%TMHeader%<gray><Open> <%CC%>tickets open (<gray><Assigned><%CC%> assigned to you)'                                 # Templates <Open> <Assigned>
+Notify_MassCloseSuccess: '%TMHeader%Mass-close from <gray><Lower><%CC%> to <gray><Upper><%CC%> sent!'                                     # Templates: <Lower> <Upper>
+Notify_TicketAssignSuccess: '%TMHeader%Ticket <gray>#<ID><%CC%> assigned to:<gray> <Assigned><%CC%>!'                                     # Templates: <ID> <Assigned>
+Notify_TicketCloseSuccess: '%TMHeader%Ticket <gray>#<ID><%CC%> closed!'                                                                   # Templates: <ID>
+Notify_TicketCloseWithCommentSuccess: '%TMHeader%Ticket <gray>#<ID><%CC%> closed with a comment!'                                         # Templates: <ID>
+Notify_TicketCreationSuccessful: '%TMHeader%Ticket <gray>#<ID><%CC%> created!'                                                            # Templates: <ID>
+Notify_TicketCommentSuccessful: '%TMHeader%Ticket <gray>#<ID><%CC%> commented on!'                                                        # Templates: <ID>
+Notify_TicketReopenSuccess: '%TMHeader%Ticket <gray>#<ID><%CC%> re-opened!'                                                               # Templates: <ID>
+Notify_TicketSetPrioritySuccess: '%TMHeader%Ticket <gray>#<ID><%CC%> priority changed!'                                                   # Templates: <ID>
+Notify_Event_TicketAssign: '%TMHeader%<gray><User><%CC%> assigned ticket <gray>#<ID><%CC%> to <gray><Assigned><%CC%>.'                    # Templates: <User> <ID> <Assigned>
+Notify_Event_TicketClose: '%TMHeader%<gray><User><%CC%> closed ticket <gray>#<ID><%CC%>.'                                                 # Templates: <User> <ID>
+Notify_Event_TicketCloseWithComment: '%TMHeader%<gray><User><%CC%> closed ticket <gray>#<ID><%CC%> with a comment:%nl%<gray><Message>'    # Templates: <User> <ID> <Message>
+Notify_Event_MassClose: '%TMHeader%<gray><User><%CC%> is mass-closing tickets from <gray>#<Lower><%CC%> to <gray>#<Upper><%CC%>.'         # Templates: <User> <Lower> <Upper>
+Notify_Event_TicketComment: '%TMHeader%<gray><User><%CC%> commented on ticket <gray>#<ID><%CC%>:<gray>%nl%<Message>'                      # Templates: <User> <ID> <Message>
+Notify_Event_TicketCreation: '%TMHeader%<gray><User><%CC%> created ticket <gray>#<ID><%CC%>:<gray>%nl%<Message>'                          # Templates: <User> <ID> <Message>
+Notify_Event_TicketReopen: '%TMHeader%<gray><User><%CC%> reopened ticket <gray>#<ID><%CC%>.'                                              # Templates: <User> <ID>
+Notify_Event_SetPriority: '%TMHeader%<gray><User><%CC%> set ticket <gray>#<ID><%CC%> to priority <%PCC%><Priority><%CC%>.'                # Templates: <User> <ID> <Priority>    Placeholders: %PCC%
+Notify_Event_TicketModification: '%TMHeader%Ticket <gray>#<ID><%CC%> has been updated! Type <gray>/ticket view <Num><%CC%> to view this ticket.'             # Templates: <ID>
+Notify_Event_PluginUpdate: '%TMHeader%TicketManager has an update!%nl%  <%CC%>Current Version: <gray><Current>%nl%  <%CC%>Latest Version: <gray><Latest>'    # Templates: <Current> <Latest>

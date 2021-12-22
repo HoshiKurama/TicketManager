@@ -1,6 +1,5 @@
 package com.github.hoshikurama.ticketmanager.database
 
-import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
 import com.github.hoshikurama.ticketmanager.ticket.FullTicket
 import java.util.*
@@ -39,7 +38,7 @@ interface Database {
     suspend fun countOpenTicketsAssignedTo(assignment: String, unfixedGroupAssignment: List<String>): Int
 
     // Searching
-    suspend fun searchDatabase(locale: TMLocale, constraints: SearchConstraint, page: Int, pageSize: Int): Result<FullTicket>
+    suspend fun searchDatabase(constraints: SearchConstraint, page: Int, pageSize: Int): Result<FullTicket>
 
     // Other stuff I can't name right now
     suspend fun getTicketIDsWithUpdates(): List<Int>

@@ -3,6 +3,7 @@ package com.github.hoshikurama.ticketmanager.paper
 import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.LocaleHandler
 import com.github.hoshikurama.ticketmanager.TMLocale
+import com.github.hoshikurama.ticketmanager.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.platform.Console
 import com.github.hoshikurama.ticketmanager.platform.Player
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
@@ -26,8 +27,7 @@ class PaperPlayer(
     }
 
     override fun sendMessage(msg: String) {
-        text { formattedContent(msg) }
-            .run(::sendMessage)
+        msg.parseMiniMessage().run(::sendMessage)
     }
 
     override fun sendMessage(component: Component) {

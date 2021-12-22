@@ -1,6 +1,5 @@
 package com.github.hoshikurama.ticketmanager.database.impl
 
-import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.database.Database
 import com.github.hoshikurama.ticketmanager.database.DatabaseBuilders
 import com.github.hoshikurama.ticketmanager.database.Result
@@ -72,7 +71,7 @@ class Memory(
         }
     }
 
-    suspend fun ticketCopies() = mapMutex.read.withLock { ticketMap.values.toList() }
+    private suspend fun ticketCopies() = mapMutex.read.withLock { ticketMap.values.toList() }
 
     override suspend fun setAssignment(ticketID: Int, assignment: String?) {
         mapMutex.write.withLock {
@@ -205,7 +204,6 @@ class Memory(
     }
 
     override suspend fun searchDatabase(
-        locale: TMLocale,
         constraints: SearchConstraint,
         page: Int,
         pageSize: Int

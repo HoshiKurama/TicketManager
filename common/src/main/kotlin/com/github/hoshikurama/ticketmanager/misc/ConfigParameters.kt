@@ -29,4 +29,5 @@ data class ConfigParameters(
     val DiscordChannelID: Long?,
     val printModifiedStacktrace: Boolean?,
     val printFullStacktrace: Boolean?,
+    val enableAdvancedVisualControl: Boolean?,
 )

@@ -34,7 +34,7 @@ dependencies {
 }
 
 tasks {
-    named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+    shadowJar {
         archiveBaseName.set("TicketManager-Spigot")
 
         from(project.files("KyoriAdventureBukkitAddition.jar"))

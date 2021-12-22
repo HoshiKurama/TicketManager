@@ -2,7 +2,8 @@ package com.github.hoshikurama.ticketmanager.platform
 
 import com.github.hoshikurama.ticketmanager.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.misc.toColouredAdventure
+import com.github.hoshikurama.ticketmanager.misc.parseMiniMessage
+import com.github.hoshikurama.ticketmanager.misc.templated
 import com.github.hoshikurama.ticketmanager.pluginVersion
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -21,11 +22,10 @@ abstract class PlayerJoinEvent(
                 val newerVersion = instanceState.pluginUpdateChecker.latestVersionOrNull ?: return@launch // Only present if newer version is available and plugin can check
                 if (!player.has("ticketmanager.notify.pluginUpdate")) return@launch
 
-                player.locale.notifyPluginUpdate
-                    .replace("%current%", pluginVersion)
-                    .replace("%latest%", newerVersion)
-                    .run(::toColouredAdventure)
-                    .run(player::sendMessage)
+                player.locale.notifyPluginUpdate.parseMiniMessage(
+                    "Current" templated pluginVersion,
+                    "Latest" templated newerVersion,
+                ).run(player::sendMessage)
             }
         }
 
@@ -38,8 +38,7 @@ abstract class PlayerJoinEvent(
             val template = if (ids.size == 1) player.locale.notifyUnreadUpdateSingle else player.locale.notifyUnreadUpdateMulti
             val tickets = ids.joinToString(", ")
 
-            template.replace("%num%", tickets)
-                .run(player::sendMessage)
+            template.parseMiniMessage("Num" templated tickets).run(player::sendMessage)
         }
 
         // View Open-Count and Assigned-Count Tickets
@@ -49,10 +48,10 @@ abstract class PlayerJoinEvent(
             val assigned = instanceState.database.countOpenTicketsAssignedTo(player.name, player.permissionGroups)
 
             if (open != 0)
-                player.locale.notifyOpenAssigned
-                    .replaceFirst("%open%", open.toString())
-                    .replaceFirst("%assigned%", assigned.toString())
-                    .run(player::sendMessage)
+                player.locale.notifyOpenAssigned.parseMiniMessage(
+                    "Open" templated open.toString(),
+                    "Assigned" templated assigned.toString()
+                ).run(player::sendMessage)
         }
     }
 }

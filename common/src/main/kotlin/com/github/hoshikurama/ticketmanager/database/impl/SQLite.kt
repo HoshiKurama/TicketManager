@@ -1,6 +1,5 @@
 package com.github.hoshikurama.ticketmanager.database.impl
 
-import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.database.Database
 import com.github.hoshikurama.ticketmanager.database.DatabaseBuilders
 import com.github.hoshikurama.ticketmanager.database.Result
@@ -187,7 +186,6 @@ class SQLite(absoluteDataFolderPath: String) : Database {
     }
 
     override suspend fun searchDatabase(
-        locale: TMLocale,
         constraints: SearchConstraint,
         page: Int,
         pageSize: Int

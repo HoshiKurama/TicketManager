@@ -26,11 +26,14 @@ dependencies {
     implementation("com.github.shynixn.mccoroutine:mccoroutine-bukkit-api:1.5.0")
     implementation("com.github.shynixn.mccoroutine:mccoroutine-bukkit-core:1.5.0")
     implementation(project(":common"))
+    implementation(files("MiniMessageAddition.jar"))
 }
 
 tasks {
     shadowJar {
         archiveBaseName.set("TicketManager-Paper")
+
+        from(project.files("MiniMessageAddition.jar"))
 
         dependencies {
             include(dependency("com.github.HoshiKurama:KyoriComponentDSL:1.1.0"))

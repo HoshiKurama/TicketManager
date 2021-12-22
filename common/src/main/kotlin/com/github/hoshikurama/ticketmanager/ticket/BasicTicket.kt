@@ -24,17 +24,17 @@ interface BasicTicket {
     }
 
     @Serializable
-    enum class Priority(val level: Byte, val colourCode: String) {
-        LOWEST(1, "&1"),
-        LOW(2, "&9"),
-        NORMAL(3, "&e"),
-        HIGH(4, "&c"),
-        HIGHEST(5, "&4");
+    enum class Priority(val level: Byte) {
+        LOWEST(1),
+        LOW(2),
+        NORMAL(3),
+        HIGH(4),
+        HIGHEST(5),
     }
 
     @Serializable
-    enum class Status(val colourCode: String) {
-        OPEN("&a"), CLOSED("&c")
+    enum class Status {
+        OPEN, CLOSED
     }
 }
 

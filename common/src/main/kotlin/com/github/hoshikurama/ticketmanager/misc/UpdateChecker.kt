@@ -1,6 +1,5 @@
 package com.github.hoshikurama.ticketmanager.misc
 
-import com.beust.klaxon.Klaxon
 import com.github.hoshikurama.ticketmanager.pluginVersion
 import java.net.URL
 
@@ -27,20 +26,16 @@ class UpdateChecker(val canCheck: Boolean) {
 
     private fun getLatestVersion(): String? {
         return try {
+            val regex = "\"name\":\"[^,]*".toRegex()
+
             URL("https://api.github.com/repos/HoshiKurama/TicketManager/tags")
                 .openStream()
-                .let { Klaxon().parseArray<Release>(it) }
-                ?.get(0)?.name
+                .bufferedReader()
+                .readText()
+                .let(regex::find)!!
+                .value
+                .substring(8) // "x.y.z"
+                .replace("\"","")
         } catch (e: Exception) { null }
     }
 }
-
-data class Release(
-    val name: String,
-    val zipball_url: String,
-    val tarball_url: String,
-    val commit: CommitInformation,
-    val node_id: String,
-)
-
-data class CommitInformation(val sha: String, val url: String)
