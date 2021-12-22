@@ -144,7 +144,7 @@ ListFormat_MaxLineSize: '52' # INTEGER ONLY
 # SearchFormat (Accepts Formatting):
 SearchFormat_Querying: '%nl%%TMHeader% <#F3F3F3>Frage Daten ab... Habe etwas geduld!'
 SearchFormat_Header: '%TMHeader% <#F3F3F3>Daten wurden abgefragt <%CC%><Size><#F3F3F3> Ergebnis:'       # Templates: <Size>
-SearchFormat_Entry: '%nl%<%PCC%>[<ID>] <%SCC%>[<Status>] <dark_gray>[<%CC%><Creator> <dark_gray>-> <%CC%><Assignment><dark_gray>] [<%CC%>World: <World>]%nl%    <%CC%>vor ~<Time>: <#F3F3F3><Comment>'
+SearchFormat_Entry: '%nl%<%PCC%>[<ID>] <%SCC%>[<Status>] <dark_gray>[<%CC%><Creator> <dark_gray>-> <%CC%><Assignment><dark_gray>] [<%CC%>World: <World><dark_gray>]%nl%    <%CC%>vor ~<Time>: <#F3F3F3><Comment>'
 # Templates: <ID> <Status> <Creator> <Assignment> <World> <Time> <Comment>    Placeholders: %PCC% %SCC%
 SearchFormat_FormattingSize: '12' # INTEGER ONLY
 SearchFormat_MaxLineSize: '52'    # INTEGER ONLY
