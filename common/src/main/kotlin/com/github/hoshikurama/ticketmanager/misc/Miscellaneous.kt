@@ -14,7 +14,7 @@ import java.time.Instant
 typealias FullTicketPredicate = (FullTicket) -> Boolean
 
 
-val supportedLocales = listOf("en_ca")
+val supportedLocales = listOf("de_de", "en_ca", "en_uk", "en_us")
 
 fun byteToPriority(byte: Byte) = when (byte.toInt()) {
     1 -> BasicTicket.Priority.LOWEST
