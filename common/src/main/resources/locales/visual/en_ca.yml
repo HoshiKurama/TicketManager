@@ -118,7 +118,7 @@ Discord_OnPriorityChange: '%user% changed priority of ticket #%num%'
 # ========================================
 #
 # View and Deep View Format (Accepts Formatting):
-ViewFormat_Header: '<bold>%TMHeader%<#F3F3F3> Viewing Ticket <ID></bold>'                     # Templates: <ID>
+ViewFormat_Header: '%nl%<bold>%TMHeader%<#F3F3F3> Viewing Ticket <ID></bold>'                     # Templates: <ID>
 ViewFormat_Sep1: '%nl%<dark_gray>================<%CC%>Info<dark_gray>================='
 ViewFormat_InfoCreator: '%nl%<bold><%CC%>Creator:</bold> <#F3F3F3><Creator>   '               # Templates: <Creator>
 ViewFormat_InfoAssignedTo: '<bold><%CC%>Assigned To:</bold> <#F3F3F3><Assignment>'            # Templates: <Assignment>
@@ -135,36 +135,36 @@ ViewFormat_DeepAssigned: '%nl%<gray><bold>[<User>]</bold> Assignment <dark_gray>
 ViewFormat_DeepSetPriority: '%nl%<gray><bold>[<User>]</bold> Priority <dark_gray>-> <%PCC%><Priority>  <dark_gray>~<Time> ago'      # Templates: <User> <Priority> <Time>   Placeholders: %PCC%
 #
 # List Format (Accepts Formatting):
-ListFormat_Header: '<%CC%>[TicketManager]<#F3F3F3> Viewing All Open Tickets:'
+ListFormat_Header: '%nl%<%CC%>[TicketManager]<#F3F3F3> Viewing All Open Tickets:'
 ListFormat_AssignedHeader: '%nl%<%CC%>[TicketManager]<#F3F3F3> Viewing Open Tickets Assigned to You:'
 ListFormat_UnassignedHeader: '%nl%<%CC%>[TicketManager]<#F3F3F3> Viewing Unassigned Open Tickets:'
 ListFormat_Entry: '%nl%<%PCC%>[<ID>] <dark_gray>[<%CC%><Creator> <dark_gray>-> <%CC%><Assignment><dark_gray>]<#F3F3F3> <Comment>'   # Templates: <ID> <Creator> <Assignment> <Comment>  Placeholders: %PCC%
-ListFormat_FormattingSize: '12' # INTEGER ONLY
-ListFormat_MaxLineSize: '58' # INTEGER ONLY
+ListFormat_FormattingSize: '10' # INTEGER ONLY
+ListFormat_MaxLineSize: '52' # INTEGER ONLY
 #
 # SearchFormat (Accepts Formatting):
-SearchFormat_Querying: '%TMHeader%<#F3F3F3> Querying data... Please be patient!'
+SearchFormat_Querying: '%nl%%TMHeader%<#F3F3F3> Querying data... Please be patient!'
 SearchFormat_Header: '%TMHeader%<#F3F3F3> Search query returned <%CC%><Size><#F3F3F3> results:'       # Templates: <Size>
-SearchFormat_Entry: '%nl%<%PCC%>[<ID>] <%SCC%>[<Status>] <gray>[<%CC%><Creator> <gray>-> <%CC%><Assignment><gray>] [<%CC%>World: <World>]%nl%    <%CC%>~<Time> ago: <#F3F3F3><Comment>'
+SearchFormat_Entry: '%nl%<%PCC%>[<ID>] <%SCC%>[<Status>] <dark_gray>[<%CC%><Creator> <dark_gray>-> <%CC%><Assignment><dark_gray>] [<%CC%>World: <World>]%nl%    <%CC%>~<Time> ago: <#F3F3F3><Comment>'
 # Templates: <ID> <Status> <Creator> <Assignment> <World> <Time> <Comment>    Placeholders: %PCC% %SCC%
-SearchFormat_FormattingSize: '11' # INTEGER ONLY #TODO
-SearchFormat_MaxLineSize: '58' # INTEGER ONLY #TODO
+SearchFormat_FormattingSize: '12' # INTEGER ONLY
+SearchFormat_MaxLineSize: '52'    # INTEGER ONLY
 #
 # History Format (Accepts Formatting):
-History_Header: '%TMHeader% <Name><#F3F3F3> has <%CC%><Count> <#F3F3F3>tickets:'          # Templates: <Name> <Count>
+History_Header: '%nl%%TMHeader% <Name><#F3F3F3> has <%CC%><Count> <#F3F3F3>tickets:'          # Templates: <Name> <Count>
 History_Entry: '%nl%<%CC%>[<ID>] <%SCC%>[<STATUS>] <#F3F3F3><Comment>'                    # Templates: <ID> <STATUS> <Comment>  Placeholders: %SCC%
 History_FormattingSize: '6' # INTEGER ONLY
-History_MaxLineSize: '80' # INTEGER ONLY
+History_MaxLineSize: '52' # INTEGER ONLY
 #
 # Help Format (Accepts Formatting):
-Help_Header: '<#F3F3F3>===<gray>====<dark_gray>===<%CC%>TicketManager Commands<dark_gray>===<gray>====<#F3F3F3>==='
+Help_Header: '%nl%<#F3F3F3>===<gray>====<dark_gray>===<%CC%>TicketManager Commands<dark_gray>===<gray>====<#F3F3F3>==='
 Help_Line1: '%nl%<%CC%>Argument Types<#F3F3F3>:<%CC%>   <#F3F3F3><Required> <gray>[Optional]'
 Help_Line2: '%nl%<%CC%>Silent Format<#F3F3F3>:<%CC%>     /ticket s<#F3F3F3>.<%CC%><Command>'
 Help_Line3: '%nl%<%CC%>Silenceable: <#F3F3F3>[<red>✕<#F3F3F3>|<green>✓<#F3F3F3>]'
 Help_Sep: '%nl%<gray>========================================='
 #
 # Modified Stacktrace (Accepts Formatting):
-Stacktrace_Line1: '%nl%%nl%%nl%<dark_red>[TicketManager] WARNING! An unexpected error has occurred!'
+Stacktrace_Line1: '%nl%<dark_red>[TicketManager] WARNING! An unexpected error has occurred!'
 Stacktrace_Line2: '%nl%<red>     Exception:    <gray><Exception>'                  # Templates: <Exception>
 Stacktrace_Line3: '%nl%<red>     Information:  <gray><Message>'                    # Templates: <Message>
 Stacktrace_Line4: '%nl%<dark_red>=-=-=-=-=-=-=Modified Stacktrace:=-=-=-=-=-=-='
