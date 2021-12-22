@@ -103,6 +103,7 @@ class TMPluginSpigotImpl(
                 DiscordChannelID = getLong("Discord_Channel_ID"),
                 printModifiedStacktrace = getBoolean("Print_Modified_Stacktrace"),
                 printFullStacktrace = getBoolean("Print_Full_Stacktrace"),
+                enableAdvancedVisualControl = getBoolean("Enable_Advanced_Visual_Control"),
             )
         }
     }

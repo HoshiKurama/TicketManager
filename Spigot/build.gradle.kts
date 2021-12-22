@@ -24,7 +24,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.5.2")
     implementation("com.github.HoshiKurama:KyoriComponentDSL:1.1.0")
     implementation("net.kyori:adventure-extra-kotlin:4.9.3")
-    implementation("net.kyori:adventure-platform-bukkit:4.0.0")
+    implementation("net.kyori:adventure-platform-bukkit:4.0.1")
     implementation("joda-time:joda-time:2.10.13")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
     implementation("com.github.shynixn.mccoroutine:mccoroutine-bukkit-api:1.5.0")
