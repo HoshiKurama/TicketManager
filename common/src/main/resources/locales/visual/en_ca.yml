@@ -162,6 +162,11 @@ Help_Line1: '%nl%<%CC%>Argument Types<#F3F3F3>:<%CC%>   <#F3F3F3><Required> <gra
 Help_Line2: '%nl%<%CC%>Silent Format<#F3F3F3>:<%CC%>     /ticket s<#F3F3F3>.<%CC%><Command>'
 Help_Line3: '%nl%<%CC%>Silenceable: <#F3F3F3>[<red>✕<#F3F3F3>|<green>✓<#F3F3F3>]'
 Help_Sep: '%nl%<gray>========================================='
+Help_HasSilence: '<green>[✓]'
+Help_LackSilence: '<red>[✕]'
+Help_RequiredParam: '<#F3F3F3><%Param%>'
+Help_OptionalParam: '<gray>[%Param%]'
+Help_Entry: '%nl%<Silenceable> <%CC%>/<Command> <Params>'  # Template: <Silenceable> <Command> <Params>
 #
 # Modified Stacktrace (Accepts Formatting):
 Stacktrace_Line1: '%nl%<dark_red>[TicketManager] WARNING! An unexpected error has occurred!'

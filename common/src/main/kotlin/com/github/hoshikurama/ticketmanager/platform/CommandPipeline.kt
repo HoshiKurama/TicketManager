@@ -698,65 +698,181 @@ abstract class CommandPipeline(
     private fun help(
         sender: Sender,
     ) {
-
-        sender.sendMessage("Sorry! This is a work in progress") //todo wtf should I do with this part
-
-
-
-
-        /*
         val hasSilentPerm = sender.has("ticketmanager.commandArg.silence")
-        val cc = instanceState.localeHandler.mainColourCode
-        val locale = sender.locale
 
-        val component = buildComponent {
-            text { formattedContent(locale.helpHeader) }
-            text { formattedContent(locale.helpLine1) }
+        open class CommandArg(val content: String)
+        class RequiredArg(content: String): CommandArg(content)
+        class OptionalArg(content: String): CommandArg(content)
+        class Command(val silenceable: Boolean, val command: String, val arguments: List<CommandArg>, val permissions: List<String>)
 
-            if (hasSilentPerm) {
-                text { formattedContent(locale.helpLine2) }
-                text { formattedContent(locale.helpLine3) }
-            }
-            text { formattedContent(locale.helpSep) }
+        buildComponent {
 
-            locale.run {
-                listOf( // Triple(silence-able, format, permissions)
-                    Triple(true, "$commandWordAssign &f<$parameterID> <$parameterAssignment...>", listOf("ticketmanager.command.assign")),
-                    Triple(true, "$commandWordClaim &f<$parameterID>", listOf("ticketmanager.command.claim")),
-                    Triple(true, "$commandWordClose &f<$parameterID> &7[$parameterComment...]", listOf("ticketmanager.command.close.all", "ticketmanager.command.close.own")),
-                    Triple(true, "$commandWordCloseAll &f<$parameterLowerID> <$parameterUpperID>", listOf("ticketmanager.command.closeAll")),
-                    Triple(true, "$commandWordComment &f<$parameterID> <$parameterComment...>", listOf("ticketmanager.command.comment.all", "ticketmanager.command.comment.own")),
-                    Triple(false, "$commandWordConvertDB &f<$parameterTargetDB>", listOf("ticketmanager.command.convertDatabase")),
-                    Triple(false, "$commandWordCreate &f<$parameterComment...>", listOf("ticketmanager.command.create")),
-                    Triple(false, commandWordHelp, listOf("ticketmanager.command.help")),
-                    Triple(false, "$commandWordHistory &7[$parameterUser] [$parameterPage]", listOf("ticketmanager.command.history.all", "ticketmanager.command.history.own")),
-                    Triple(false, "$commandWordList &7[$parameterPage]", listOf("ticketmanager.command.list")),
-                    Triple(false, "$commandWordListAssigned &7[$parameterPage]", listOf("ticketmanager.command.list")),
-                    Triple(false, "$commandWordListUnassigned &7[$parameterPage]", listOf("ticketmanager.command.list")),
-                    Triple(false, commandWordReload, listOf("ticketmanager.command.reload")),
-                    Triple(true, "$commandWordReopen &f<$parameterID>", listOf("ticketmanager.command.reopen")),
-                    Triple(false, "$commandWordSearch &f<$parameterConstraints...>", listOf("ticketmanager.command.search")),
-                    Triple(true, "$commandWordSetPriority &f<$parameterID> <$parameterLevel>", listOf("ticketmanager.command.setPriority")),
-                    Triple(false, "$commandWordTeleport &f<$parameterID>", listOf("ticketmanager.command.teleport")),
-                    Triple(true, "$commandWordUnassign &f<$parameterID>", listOf("ticketmanager.command.assign")),
-                    Triple(false, "$commandWordView &f<$parameterID>", listOf("ticketmanager.command.view.all", "ticketmanager.command.view.own")),
-                    Triple(false, "$commandWordDeepView &f<$parameterID>", listOf("ticketmanager.command.viewdeep.all", "ticketmanager.command.viewdeep.own"))
+            sender.locale.run {
+                // Builds header
+                append(helpHeader.parseMiniMessage())
+                append(helpLine1.parseMiniMessage())
+                if (hasSilentPerm)
+                    listOf(helpLine2, helpLine3)
+                        .map(String::parseMiniMessage)
+                        .forEach(this@buildComponent::append)
+                append(helpSep.parseMiniMessage())
+
+                // Builds entries
+                listOf(
+                    Command(
+                        silenceable = true,
+                        command = commandWordAssign,
+                        arguments = listOf(RequiredArg(parameterID), RequiredArg("$parameterAssignment...")),
+                        permissions = listOf("ticketmanager.command.assign"),
+                    ),
+                    Command(
+                        silenceable = true,
+                        command = commandWordClaim,
+                        arguments = listOf(RequiredArg(parameterID)),
+                        permissions = listOf("ticketmanager.command.claim"),
+                    ),
+                    Command(
+                        silenceable = true,
+                        command = commandWordClose,
+                        arguments = listOf(RequiredArg(parameterID), OptionalArg("$parameterComment...")),
+                        permissions = listOf("ticketmanager.command.close.all", "ticketmanager.command.close.own"),
+                    ),
+                    Command(
+                        silenceable = true,
+                        command = commandWordCloseAll,
+                        arguments = listOf(RequiredArg(parameterLowerID), RequiredArg(parameterUpperID)),
+                        permissions = listOf("ticketmanager.command.closeAll"),
+                    ),
+                    Command(
+                        silenceable = true,
+                        command = commandWordComment,
+                        arguments = listOf(RequiredArg(parameterID), RequiredArg("$parameterComment...")),
+                        permissions = listOf("ticketmanager.command.comment.all", "ticketmanager.command.comment.own"),
+                    ),
+                    Command(
+                        silenceable = false,
+                        command = commandWordConvertDB,
+                        arguments = listOf(RequiredArg(parameterTargetDB)),
+                        permissions = listOf("ticketmanager.command.convertDatabase"),
+                    ),
+                    Command(
+                        silenceable = false,
+                        command = commandWordCreate,
+                        arguments = listOf(RequiredArg("$parameterComment...")),
+                        permissions = listOf("ticketmanager.command.create"),
+                    ),
+                    Command(
+                        silenceable = false,
+                        command = commandWordHelp,
+                        arguments = listOf(),
+                        permissions = listOf("ticketmanager.command.help"),
+                    ),
+                    Command(
+                        silenceable = false,
+                        command = commandWordHistory,
+                        arguments = listOf(OptionalArg(parameterUser), OptionalArg(parameterPage)),
+                        permissions = listOf("ticketmanager.command.history.all", "ticketmanager.command.history.own"),
+                    ),
+                    Command(
+                        silenceable = false,
+                        command = commandWordList,
+                        arguments = listOf(OptionalArg(parameterPage)),
+                        permissions = listOf("ticketmanager.command.list"),
+                    ),
+                    Command(
+                        silenceable = false,
+                        command = commandWordListAssigned,
+                        arguments = listOf(OptionalArg(parameterPage)),
+                        permissions = listOf("ticketmanager.command.list"),
+                    ),
+                    Command(
+                        silenceable = false,
+                        command = commandWordListUnassigned,
+                        arguments = listOf(OptionalArg(parameterPage)),
+                        permissions = listOf("ticketmanager.command.list"),
+                    ),
+                    Command(
+                        silenceable = false,
+                        command = commandWordReload,
+                        arguments = listOf(),
+                        permissions = listOf("ticketmanager.command.reload"),
+                    ),
+                    Command(
+                        silenceable = true,
+                        command = commandWordReopen,
+                        arguments = listOf(RequiredArg(parameterID)),
+                        permissions = listOf("ticketmanager.command.reopen"),
+                    ),
+                    Command(
+                        silenceable = false,
+                        command = commandWordSearch,
+                        arguments = listOf(RequiredArg("$parameterConstraints...")),
+                        permissions = listOf("ticketmanager.command.search"),
+                    ),
+                    Command(
+                        silenceable = true,
+                        command = commandWordSetPriority,
+                        arguments = listOf(RequiredArg(parameterID), RequiredArg(parameterLevel)),
+                        permissions = listOf("ticketmanager.command.setPriority"),
+                    ),
+                    Command(
+                        silenceable = false,
+                        command = commandWordTeleport,
+                        arguments = listOf(RequiredArg(parameterID)),
+                        permissions = listOf("ticketmanager.command.teleport"),
+                    ),
+                    Command(
+                        silenceable = true,
+                        command = commandWordUnassign,
+                        arguments = listOf(RequiredArg(parameterID)),
+                        permissions = listOf("ticketmanager.command.assign"),
+                    ),
+                    Command(
+                        silenceable = true,
+                        command = commandWordView,
+                        arguments = listOf(RequiredArg(parameterID)),
+                        permissions = listOf("ticketmanager.command.view.all", "ticketmanager.command.view.own"),
+                    ),
+                    Command(
+                        silenceable = false,
+                        command = commandWordDeepView,
+                        arguments = listOf(RequiredArg(parameterID)),
+                        permissions = listOf("ticketmanager.command.viewdeep.all", "ticketmanager.command.viewdeep.own"),
+                    ),
                 )
-            }
-                .filter { it.third.any(sender::has) }
-                .run { this + Triple(false, locale.commandWordVersion, "NA") }
-                .map {
-                    val commandString = "$cc/${locale.commandBase} ${it.second}"
-                    if (hasSilentPerm)
-                        if (it.first) "\n&a[✓] $commandString"
-                        else "\n&c[✕] $commandString"
-                    else "\n$commandString"
-                }
-                .forEach { text { formattedContent(it) } }
-        }
+                    .filter { it.permissions.any(sender::has) }
+                    .map { Command(it.silenceable, "${sender.locale.commandBase} ${it.command}", it.arguments, it.permissions) }
+                    .map { command ->
 
-        sender.sendMessage(component)
-         */
+                        // Builds params into one Component
+                        val argsComponent = command.arguments
+                            .mapNotNull { arg ->
+                                when (arg) {
+                                    is RequiredArg -> helpRequiredParam.replace("%Param%", arg.content)
+                                    is OptionalArg -> helpOptionalParam.replace("%Param%", arg.content)
+                                    else -> null
+                                }
+                            }
+                            .joinToString(" ")
+                            .parseMiniMessage()
+
+                        val silenceableComponent =
+                            if (hasSilentPerm)
+                                if (command.silenceable) helpHasSilence.parseMiniMessage()
+                                else helpLackSilence.parseMiniMessage()
+                            else Component.text("")
+
+                        helpEntry.parseMiniMessage(
+                            "Silenceable" templated silenceableComponent,
+                            "Command" templated command.command,
+                            "Params" templated argsComponent,
+                        )
+                    }
+                    .reduce(Component::append)
+                    .let(this@buildComponent::append)
+            }
+        }
+            .run(sender::sendMessage)
     }
 
     // /ticket history [User] [Page]
@@ -991,12 +1107,7 @@ abstract class CommandPipeline(
         }
 
         // Results calculation and destructuring
-        val (results, pageCount, resultCount, returnedPage) = instanceState.database.searchDatabase(
-            constraints,
-            attemptedPage,
-            9
-        )
-        //val fixMSGLength = { t: FullTicket -> t.actions[0].message!!.run { if (length > 25) "${substring(0,21)}..." else this } } //TODO UHH
+        val (results, pageCount, resultCount, returnedPage) = instanceState.database.searchDatabase(constraints, attemptedPage, 9)
 
         val sentComponent = buildComponent {
             // Initial header
