@@ -78,5 +78,8 @@ private fun <T> Optional<T>.unwrapOptionalOrNull() = if (isPresent) get() else n
 @Suppress("UNUSED", "UNCHECKED_CAST") // I'm so sorry... I have no clue how to put this into the class
 fun <T: Any> TypeSafeStream<T?>.filterNotNull() = TypeSafeStream(stream.filter { it != null } as Stream<T>)
 
+@Suppress("UNUSED", "UNCHECKED_CAST") // I'm so sorry... I have no clue how to put this into the class
+fun <T, R: Any> TypeSafeStream<T>.mapNotNull(transform: (T) -> R?) = TypeSafeStream(stream.map(transform).filter { it != null } as Stream<R>)
+
 @Suppress("UNUSED", "UNCHECKED_CAST")
 inline fun <reified I, T> TypeSafeStream<T>.filterIsInstance() = TypeSafeStream(stream.filter { it is I } as Stream<I>)
