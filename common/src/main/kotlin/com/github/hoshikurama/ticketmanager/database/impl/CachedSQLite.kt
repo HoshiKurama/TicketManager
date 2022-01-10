@@ -205,16 +205,19 @@ class CachedSQLite(
         // Writes to ticketMap
         val changes = (lowerBound..upperBound).asSequence()
             .asParallelStream()
-            .map { ticketMap[it] }
-            .filterNotNull()
+            .mapNotNull { ticketMap[it] }
             .filter { it.status == BasicTicket.Status.OPEN }
             .toList()
+            .apply {
+                mapMutex.read.unlock()
+                mapMutex.write.lock()
+            }
             .onEach {
                 val action = FullTicket.Action(FullTicket.Action.Type.MASS_CLOSE, actor, timestamp = curTime)
                 ticketMap[it.id] = FullTicket(it.id, it.creatorUUID, it.location, it.priority, BasicTicket.Status.CLOSED, it.assignedTo, it.creatorStatusUpdate, it.actions + action)
             }
 
-        mapMutex.read.unlock()
+        mapMutex.write.unlock()
 
         // SQL stuff
         sqlWriteQueue.send { session ->

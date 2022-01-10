@@ -173,17 +173,20 @@ class Memory(
 
     override suspend fun massCloseTickets(lowerBound: Int, upperBound: Int, actor: UUID?) {
         val curTime = Instant.now().epochSecond
-        mapMutex.write.lock()
+        mapMutex.read.lock()
 
         (lowerBound..upperBound).asSequence()
             .asParallelStream()
-            .map { ticketMap[it] }
-            .filter { it != null  }
-            .filter { it!!.status == BasicTicket.Status.OPEN }
+            .mapNotNull { ticketMap[it] }
+            .filter { it.status == BasicTicket.Status.OPEN }
             .toList()
+            .apply {
+                mapMutex.read.unlock()
+                mapMutex.write.lock()
+            }
             .forEach {
                 val action = FullTicket.Action(FullTicket.Action.Type.MASS_CLOSE, actor, timestamp = curTime)
-                ticketMap[it!!.id] = FullTicket(it.id, it.creatorUUID, it.location, it.priority, BasicTicket.Status.CLOSED, it.assignedTo, it.creatorStatusUpdate, it.actions + action)
+                ticketMap[it.id] = FullTicket(it.id, it.creatorUUID, it.location, it.priority, BasicTicket.Status.CLOSED, it.assignedTo, it.creatorStatusUpdate, it.actions + action)
             }
         mapMutex.write.unlock()
     }
