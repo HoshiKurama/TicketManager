@@ -1,5 +1,5 @@
 plugins {
-    kotlin("plugin.serialization") version "1.6.0"
+    kotlin("plugin.serialization") version "1.6.10"
     kotlin("jvm")
     java
 }
@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.10")
     implementation("mysql:mysql-connector-java:8.0.25")
     implementation("org.xerial:sqlite-jdbc:3.36.0.2")
     implementation("com.github.jasync-sql:jasync-mysql:2.0.4")

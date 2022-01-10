@@ -20,8 +20,8 @@ repositories {
 
 dependencies {
     compileOnly("org.spigotmc:spigot-api:1.18-R0.1-SNAPSHOT")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.5.2")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.10")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.0")
     implementation("com.github.HoshiKurama:KyoriComponentDSL:1.1.0")
     implementation("net.kyori:adventure-extra-kotlin:4.9.3")
     implementation("net.kyori:adventure-platform-bukkit:4.0.1")
