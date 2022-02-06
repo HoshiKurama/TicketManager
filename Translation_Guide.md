@@ -1,4 +1,4 @@
-
+# Note: THIS DOCUMENT IS NOW OUT OF DATE AND WILL BE UPDATED EVENTUALLY
 # Locale Guide
 Thank you so much for helping to translate TicketManager! Before you begin, please read all of the information below.
 
