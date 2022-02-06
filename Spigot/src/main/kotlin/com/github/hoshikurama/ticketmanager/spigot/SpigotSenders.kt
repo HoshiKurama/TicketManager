@@ -1,13 +1,11 @@
 package com.github.hoshikurama.ticketmanager.spigot
 
-import com.github.hoshikurama.componentDSL.formattedContent
 import com.github.hoshikurama.ticketmanager.LocaleHandler
 import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.platform.Console
 import com.github.hoshikurama.ticketmanager.platform.Player
 import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
-import net.kyori.adventure.extra.kotlin.text
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
 import net.milkbowl.vault.permission.Permission
@@ -44,9 +42,9 @@ class SpigotConsole(
     private val adventure: BukkitAudiences,
     locale: TMLocale,
 ): Console(locale) {
+
     override fun sendMessage(msg: String) {
-        text { formattedContent(msg) }
-            .run(::sendMessage)
+        msg.parseMiniMessage().run(::sendMessage)
     }
 
     override fun sendMessage(component: Component) {
