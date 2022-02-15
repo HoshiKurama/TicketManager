@@ -159,7 +159,6 @@ class Discord(
     private fun EmbedBuilder.buildBasicEmbed() {
         color = Color(23,173,152)
         title = "TicketManager"
-        thumbnail { url = "https://www.spigotmc.org/data/resource_icons/91/91178.jpg?1623276923" }
     }
 
     suspend fun login() = kord.login()
