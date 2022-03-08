@@ -1,53 +1,21 @@
 package com.github.hoshikurama.ticketmanager
 
-import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
-import com.github.hoshikurama.ticketmanager.ticket.toLocaledWord
-import dev.kord.common.Color
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.Kord
-import dev.kord.rest.builder.message.EmbedBuilder
-import kotlinx.coroutines.CoroutineDispatcher
+import com.github.hoshikurama.ticketmanager.ticket.Ticket
+import discord4j.common.util.Snowflake
+import discord4j.core.DiscordClient
+import discord4j.core.spec.EmbedCreateFields
+import discord4j.core.spec.EmbedCreateSpec
+import discord4j.discordjson.json.MessageData
+import discord4j.rest.util.Color
+import reactor.core.publisher.Mono
 
-class Discord(
+
+class Discord private constructor(
     val state: DiscordState,
     private val channelSnowflake: Snowflake,
     private val locale: TMLocale,
-    private val kord: Kord,
-
-    ) {
-
-    companion object {
-        suspend fun create(
-            notifyOnAssign: Boolean,
-            notifyOnClose: Boolean,
-            notifyOnCloseAll: Boolean,
-            notifyOnComment: Boolean,
-            notifyOnCreate: Boolean,
-            notifyOnReopen: Boolean,
-            notifyOnPriorityChange: Boolean,
-            token: String,
-            channelID: Long,
-            locale: TMLocale,
-            asyncDispatcher: CoroutineDispatcher,
-        ): Discord {
-            val state = DiscordState(
-                notifyOnAssign,
-                notifyOnClose,
-                notifyOnCloseAll,
-                notifyOnComment,
-                notifyOnCreate,
-                notifyOnReopen,
-                notifyOnPriorityChange,
-            )
-            val channelSnowflake = Snowflake(channelID)
-
-            val kord = Kord(token) {
-                defaultDispatcher = asyncDispatcher
-            }
-
-            return Discord(state, channelSnowflake, locale, kord)
-        }
-    }
+    private val client: DiscordClient,
+) {
 
     class DiscordState(
         val notifyOnAssign: Boolean,
@@ -59,110 +27,141 @@ class Discord(
         val notifyOnPriorityChange: Boolean,
     )
 
-    suspend fun assignUpdate(user: String, ticketID: String, assignment: String?) {
+    companion object {
+        fun create(
+            notifyOnAssign: Boolean,
+            notifyOnClose: Boolean,
+            notifyOnCloseAll: Boolean,
+            notifyOnComment: Boolean,
+            notifyOnCreate: Boolean,
+            notifyOnReopen: Boolean,
+            notifyOnPriorityChange: Boolean,
+            token: String,
+            channelID: Long,
+            locale: TMLocale,
+        ): Discord {
+            val state = DiscordState(
+                notifyOnAssign,
+                notifyOnClose,
+                notifyOnCloseAll,
+                notifyOnComment,
+                notifyOnCreate,
+                notifyOnReopen,
+                notifyOnPriorityChange,
+            )
+            val channelSnowflake = Snowflake.of(channelID)
+            return Discord(state, channelSnowflake, locale, DiscordClient.create(token))
+        }
+    }
+
+    private inline fun createEmbedMessage(buildFunc: EmbedCreateSpec.Builder.() -> EmbedCreateSpec.Builder): Mono<MessageData> {
+        return client.getChannelById(channelSnowflake)
+            .createMessage(
+                EmbedCreateSpec.builder()
+                    .color(Color.of(23, 173, 152))
+                    .title("TicketManager")
+                    .buildFunc()
+                    .build()
+                    .asRequest()
+            )
+    }
+
+    fun assignUpdate(user: String, ticketID: String, assignment: String?) {
         val fixedAssignment = assignment ?: locale.miscNobody
 
-        kord.rest.channel.createMessage(channelSnowflake) {
-            embed {
-                buildBasicEmbed()
-                field {
-                    name = locale.discordOnAssign
+        createEmbedMessage {
+            addField(
+                EmbedCreateFields.Field.of(
+                    locale.discordOnAssign
                         .replace("%user%", user)
-                        .replace("%num%", ticketID)
-                    value = fixedAssignment
-                }
-            }
-        }
+                        .replace("%num%", ticketID),
+                    fixedAssignment,
+                    false
+                )
+            )
+        }.subscribe()
     }
 
-    suspend fun closeUpdate(user: String, ticketID: String, comment: String? = null) {
-        kord.rest.channel.createMessage(channelSnowflake) {
-            embed {
-                buildBasicEmbed()
-                field {
-                    name = locale.discordOnClose
+    fun closeUpdate(user: String, ticketID: String, comment: String? = null) {
+        createEmbedMessage {
+            addField(
+                EmbedCreateFields.Field.of(
+                    locale.discordOnClose
                         .replace("%user%", user)
-                        .replace("%num%", ticketID)
-                    comment?.also { value = it }
-                }
-            }
-        }
+                        .replace("%num%", ticketID),
+                    comment ?: "",
+                    false,
+                )
+            )
+        }.subscribe()
     }
 
-    suspend fun closeAllUpdate(user: String, lower: String, upper: String) {
-        kord.rest.channel.createMessage(channelSnowflake) {
-            embed {
-                buildBasicEmbed()
-                field {
-                    name = locale.discordOnCloseAll.replace("%user%", user)
-                    value = "#$lower - #$upper"
-                }
-            }
-        }
+    fun closeAllUpdate(user: String, lower: String, upper: String) {
+        createEmbedMessage {
+            addField(
+                EmbedCreateFields.Field.of(
+                    locale.discordOnCloseAll.replace("%user%", user),
+                    "#$lower - #$upper",
+                    false
+                )
+            )
+        }.subscribe()
     }
 
-    suspend fun commentUpdate(user: String, ticketID: String, comment: String) {
-        kord.rest.channel.createMessage(channelSnowflake) {
-            embed {
-                buildBasicEmbed()
-                field {
-                    name = locale.discordOnComment
+    fun commentUpdate(user: String, ticketID: String, comment: String) {
+        createEmbedMessage {
+            addField(
+                EmbedCreateFields.Field.of(
+                    locale.discordOnComment
                         .replace("%user%", user)
-                        .replace("%num%", ticketID)
-                    value = comment
-                }
-            }
-        }
+                        .replace("%num%", ticketID),
+                    comment,
+                    false,
+                )
+            )
+        }.subscribe()
     }
 
-    suspend fun createUpdate(user: String, ticketID: String, comment: String) {
-        kord.rest.channel.createMessage(channelSnowflake) {
-            embed {
-                buildBasicEmbed()
-                field {
-                    name = locale.discordOnCreate
+    fun createUpdate(user: String, ticketID: String, comment: String) {
+        createEmbedMessage {
+            addField(
+                EmbedCreateFields.Field.of(
+                    locale.discordOnCreate
                         .replace("%user%", user)
-                        .replace("%num%", ticketID)
-                    value = comment
-                }
-            }
-        }
+                        .replace("%num%", ticketID),
+                    comment,
+                    false,
+                )
+            )
+        }.subscribe()
     }
 
-    suspend fun reopenUpdate(user: String, ticketID: String) {
-        kord.rest.channel.createMessage(channelSnowflake) {
-            embed {
-                buildBasicEmbed()
-                field {
-                    name = locale.discordOnReopen
+    fun reopenUpdate(user: String, ticketID: String) {
+        createEmbedMessage {
+            addField(
+                EmbedCreateFields.Field.of(
+                    locale.discordOnReopen
                         .replace("%user%", user)
-                        .replace("%num%", ticketID)
-                }
-            }
-        }
+                        .replace("%num%", ticketID),
+                    "",
+                    false,
+                )
+            )
+        }.subscribe()
     }
 
-    suspend fun priorityChangeUpdate(user: String, ticketID: String, priority: BasicTicket.Priority) {
-        kord.rest.channel.createMessage(channelSnowflake) {
-            embed {
-                buildBasicEmbed()
-                field {
-                    name = locale.discordOnPriorityChange
+    fun priorityChangeUpdate(user: String, ticketID: String, priority: Ticket.Priority) {
+        createEmbedMessage {
+            addField(
+                EmbedCreateFields.Field.of(
+                    locale.discordOnPriorityChange
                         .replace("%user%", user)
-                        .replace("%num%", ticketID)
-                    value = priority.toLocaledWord(locale)
-                }
-            }
-        }
+                        .replace("%num%", ticketID),
+                    priority.toLocaledWord(locale),
+                    false
+                )
+            )
+        }.subscribe()
     }
-
-    private fun EmbedBuilder.buildBasicEmbed() {
-        color = Color(23,173,152)
-        title = "TicketManager"
-    }
-
-    suspend fun login() = kord.login()
-
-    suspend fun shutdown() = kord.shutdown()
 }
 

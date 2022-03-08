@@ -4,6 +4,7 @@ import com.github.hoshikurama.ticketmanager.misc.TypeSafeStream.Companion.asType
 import com.github.hoshikurama.ticketmanager.misc.supportedLocales
 import org.yaml.snakeyaml.Yaml
 import java.nio.file.Paths
+import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.inputStream
 
 class TMLocale(
@@ -317,9 +318,9 @@ class TMLocale(
                 commandWordSetPriority = core["Command_SetPriority"]!!,
                 commandWordSilentSetPriority = core["Command_SilentSetPriority"]!!,
                 commandWordTeleport = core["Command_Teleport"]!!,
-                commandWordVersion = core["Command_Unassign"]!!,
-                commandWordUnassign = core["Command_SilentUnassign"]!!,
-                commandWordSilentUnassign = core["Command_Version"]!!,
+                commandWordVersion = core["Command_Version"]!!,
+                commandWordUnassign = core["Command_Unassign"]!!,
+                commandWordSilentUnassign = core["Command_SilentUnassign"]!!,
                 commandWordView = core["Command_View"]!!,
                 commandWordDeepView = core["Command_DeepView"]!!,
                 commandWordReload = core["Command_Reload"]!!,
@@ -486,6 +487,7 @@ class TMLocale(
             )
         }
 
+        @OptIn(ExperimentalPathApi::class)
         fun buildLocaleFromExternal(localeID: String, rootFileLocation: String, colour: String, internalVersion: TMLocale): TMLocale {
             val visuals: Map<String, String> = try {
                 Paths.get("$rootFileLocation/locales/$localeID.yml")
@@ -589,8 +591,8 @@ class TMLocale(
                 timeDays = visuals["Time_Days"] ?: internalVersion.timeDays,
                 timeWeeks = visuals["Time_Weeks"] ?: internalVersion.timeWeeks,
                 timeYears = visuals["Time_Years"] ?: internalVersion.timeYears,
-                clickTeleport = visuals["Click_ViewTicket"] ?: internalVersion.clickTeleport,
-                clickViewTicket = visuals["Click_Teleport"] ?: internalVersion.clickViewTicket,
+                clickTeleport = visuals["Click_Teleport"] ?: internalVersion.clickTeleport,
+                clickViewTicket = visuals["Click_ViewTicket"] ?: internalVersion.clickViewTicket,
                 clickNextPage = visuals["Click_NextPage"] ?: internalVersion.clickNextPage,
                 clickBackPage = visuals["Click_BackPage"] ?: internalVersion.clickBackPage,
                 clickWiki = visuals["Click_GitHub_Wiki"] ?: internalVersion.clickWiki,

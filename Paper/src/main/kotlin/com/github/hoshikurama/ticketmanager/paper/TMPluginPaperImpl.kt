@@ -3,25 +3,18 @@ package com.github.hoshikurama.ticketmanager.paper
 import com.github.hoshikurama.ticketmanager.TMPlugin
 import com.github.hoshikurama.ticketmanager.metricsKey
 import com.github.hoshikurama.ticketmanager.misc.ConfigParameters
-import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
-import com.github.shynixn.mccoroutine.registerSuspendingEvents
-import com.github.shynixn.mccoroutine.setSuspendingExecutor
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import net.milkbowl.vault.permission.Permission
 import org.bukkit.Bukkit
+import org.bukkit.command.CommandExecutor
 import org.bukkit.event.Listener
+import org.yaml.snakeyaml.Yaml
 import java.io.File
+
 
 class TMPluginPaperImpl(
     private val paperPlugin: PaperPlugin,
     private val perms: Permission,
-    mainDispatcher: CoroutineDispatcher,
-    asyncDispatcher: CoroutineDispatcher,
 ) : TMPlugin(
-    mainDispatcher = mainDispatcher,
-    asyncDispatcher = asyncDispatcher,
     platformFunctions = PaperFunctions(perms),
     buildPipeline = { platform,instance,global -> PaperCommandExecutor(platform, instance, global, perms) },
     buildTabComplete = { platform, instance -> PaperTabComplete(platform, instance, perms) },
@@ -29,24 +22,28 @@ class TMPluginPaperImpl(
 )  {
     private lateinit var metrics: Metrics
 
+    private val enableVelocity = false
+    /*
+    private val test1 = Path.of(paperPlugin.dataFolder.path).parent.toAbsolutePath().also(::println)
+
+    private val enableVelocity = "${Path.of(paperPlugin.dataFolder.path).parent.parent.toAbsolutePath()}${FileSystems.getDefault().separator}paper.yml"
+        .run(::loadYMLFrom)["velocity-support.enabled"]!!
+        .toBoolean()
+        TODO TWO PARENTS CAUSES ISSUE, BUT NOT ONE??
+     */
+
     override fun performSyncBefore() {
         // Launch Metrics
         metrics = Metrics(paperPlugin, metricsKey)
         metrics.addCustomChart(
             Metrics.SingleLineChart("tickets_made") {
-                runBlocking {
-                    val ticketCount = globalPluginState.ticketCountMetrics.get()
-                    globalPluginState.ticketCountMetrics.set(0)
-                    ticketCount
-                }
+                globalPluginState.ticketCountMetrics.getAndSet(0)
             }
         )
         metrics.addCustomChart(
             Metrics.SimplePie("database_type") {
-                runBlocking {
-                    while (globalPluginState.pluginLocked.get()) delay(100L)
-                    instancePluginState.database.type.name
-                }
+                try { instancePluginState.database.type.name }
+                catch (e: Exception) { "ERROR" }
             }
         )
 
@@ -100,7 +97,8 @@ class TMPluginPaperImpl(
                 DiscordChannelID = getLong("Discord_Channel_ID"),
                 printModifiedStacktrace = getBoolean("Print_Modified_Stacktrace"),
                 printFullStacktrace = getBoolean("Print_Full_Stacktrace"),
-                enableAdvancedVisualControl = getBoolean("Enable_Advanced_Visual_Control")
+                enableAdvancedVisualControl = getBoolean("Enable_Advanced_Visual_Control"),
+                enableVelocity = getBoolean("Enable_Velocity") && enableVelocity
             )
         }
     }
@@ -108,14 +106,16 @@ class TMPluginPaperImpl(
     override fun registerProcesses() {
         // Register Commands
         instancePluginState.localeHandler.getCommandBases().forEach {
-            paperPlugin.getCommand(it)?.setSuspendingExecutor(commandPipeline as SuspendingCommandExecutor)
+            paperPlugin.getCommand(it)?.setExecutor(commandPipeline as CommandExecutor)
             // Remember to register any keyword in plugin.yml
         }
         // Registers Tab Completion
         paperPlugin.server.pluginManager.registerEvents(tabComplete as Listener, paperPlugin)
 
         // Registers player join event
-        paperPlugin.server.pluginManager.registerSuspendingEvents(joinEvent as Listener, paperPlugin)
+        paperPlugin.server.pluginManager.registerEvents(joinEvent as Listener, paperPlugin)
+
+        // Register Velocity listeners if necessary
     }
 
     override fun unregisterProcesses() {
@@ -125,4 +125,10 @@ class TMPluginPaperImpl(
         //Bukkit.getCommandMap().knownCommands
        /* Until Kotlin supports top-level property reflection, I cannot unregister anything other than tab complete */
     }
+
+
+    private fun loadYMLFrom(location: String): Map<String, String> =
+        this::class.java.classLoader
+            .getResourceAsStream(location)
+            .let { Yaml().load(it) }
 }

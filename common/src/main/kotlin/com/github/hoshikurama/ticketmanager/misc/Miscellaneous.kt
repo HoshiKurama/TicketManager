@@ -1,41 +1,42 @@
 package com.github.hoshikurama.ticketmanager.misc
 
-import com.github.hoshikurama.componentDSL.buildComponent
 import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.misc.kyoriComponentDSL.buildComponent
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
-import com.github.hoshikurama.ticketmanager.ticket.FullTicket
+import com.github.hoshikurama.ticketmanager.ticket.Ticket
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
-import net.kyori.adventure.text.minimessage.Template
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
-typealias FullTicketPredicate = (FullTicket) -> Boolean
+typealias TicketPredicate = (Ticket) -> Boolean
 
 
 val supportedLocales = listOf("de_de", "en_ca", "en_uk", "en_us")
 
 fun byteToPriority(byte: Byte) = when (byte.toInt()) {
-    1 -> BasicTicket.Priority.LOWEST
-    2 -> BasicTicket.Priority.LOW
-    3 -> BasicTicket.Priority.NORMAL
-    4 -> BasicTicket.Priority.HIGH
-    5 -> BasicTicket.Priority.HIGHEST
-    else -> BasicTicket.Priority.NORMAL
+    1 -> Ticket.Priority.LOWEST
+    2 -> Ticket.Priority.LOW
+    3 -> Ticket.Priority.NORMAL
+    4 -> Ticket.Priority.HIGH
+    5 -> Ticket.Priority.HIGHEST
+    else -> Ticket.Priority.NORMAL
 }
 
-fun priorityToHexColour(priority: BasicTicket.Priority, locale: TMLocale) = when (priority) {
-    BasicTicket.Priority.LOWEST -> locale.priorityColourLowestHex
-    BasicTicket.Priority.LOW -> locale.priorityColourLowHex
-    BasicTicket.Priority.NORMAL -> locale.priorityColourNormalHex
-    BasicTicket.Priority.HIGH -> locale.priorityColourHighHex
-    BasicTicket.Priority.HIGHEST -> locale.priorityColourHighestHex
+fun priorityToHexColour(priority: Ticket.Priority, locale: TMLocale) = when (priority) {
+    Ticket.Priority.LOWEST -> locale.priorityColourLowestHex
+    Ticket.Priority.LOW -> locale.priorityColourLowHex
+    Ticket.Priority.NORMAL -> locale.priorityColourNormalHex
+    Ticket.Priority.HIGH -> locale.priorityColourHighHex
+    Ticket.Priority.HIGHEST -> locale.priorityColourHighestHex
 }
 
-fun statusToHexColour(status: BasicTicket.Status, locale: TMLocale) = when (status) {
-    BasicTicket.Status.OPEN -> locale.statusColourOpenHex
-    BasicTicket.Status.CLOSED -> locale.statusColourClosedHex
+fun statusToHexColour(status: Ticket.Status, locale: TMLocale) = when (status) {
+    Ticket.Status.OPEN -> locale.statusColourOpenHex
+    Ticket.Status.CLOSED -> locale.statusColourClosedHex
 }
 
 fun Long.toLargestRelativeTime(locale: TMLocale): String {
@@ -83,33 +84,38 @@ fun relTimeToEpochSecond(relTime: String, locale: TMLocale): Long {
     return Instant.now().epochSecond - seconds
 }
 
-fun stringToStatusOrNull(str: String) = tryOrNull { BasicTicket.Status.valueOf(str) }
+fun stringToStatusOrNull(str: String) = tryOrNull { Ticket.Status.valueOf(str) }
 
 // MiniMessage helper functions
-fun String.parseMiniMessage(vararg template: Template) = MiniMessage.get().parse(this, template.toList())
-fun String.parseMiniMessage() = MiniMessage.get().parse(this)!!
-infix fun String.templated(string: String) = Template.of(this, string)
-infix fun String.templated(component: Component) = Template.of(this, component)
+fun String.parseMiniMessage(vararg template: TagResolver) = MiniMessage.miniMessage().deserialize(this, *template)
+fun String.parseMiniMessage() = MiniMessage.miniMessage().deserialize(this)
+infix fun String.templated(string: String) = Placeholder.parsed(this, string)
+infix fun String.templated(component: Component) = Placeholder.component(this, component)
 operator fun Component.plus(other: Component) = append(other)
 
 // Other
 fun generateModifiedStacktrace(e: Exception, locale: TMLocale) = buildComponent {
     // Builds Header
     append(locale.stacktraceLine1.parseMiniMessage())
-    append(locale.stacktraceLine2.parseMiniMessage("Exception" templated e.javaClass.simpleName))
-    append(locale.stacktraceLine3.parseMiniMessage("Message" templated (e.message ?: "?")))
+    append(locale.stacktraceLine2.parseMiniMessage("exception" templated e.javaClass.simpleName))
+    append(locale.stacktraceLine3.parseMiniMessage("message" templated (e.message ?: "?")))
     append(locale.stacktraceLine4.parseMiniMessage())
 
     // Adds stacktrace entries
-    e.stackTrace.filter { it.className.startsWith("com.github.hoshikurama.ticketmanager") }
+    e.stackTrace.filter { it.className.contains("com.github.hoshikurama.ticketmanager") }
         .map {
             locale.stacktraceEntry.parseMiniMessage(
-                "Method" templated it.methodName,
-                "File" templated (it.fileName ?: "?"),
-                "Line" templated "${it.lineNumber}"
+                "method" templated it.methodName,
+                "file" templated (it.fileName ?: "?"),
+                "line" templated "${it.lineNumber}"
             )
         }
         .forEach(this::append)
+}
+
+fun <T> List<CompletableFuture<T>>.flatten(): CompletableFuture<List<T>> {
+    return CompletableFuture.allOf(*this.toTypedArray())
+        .thenApplyAsync { this.map { it.join() } }
 }
 
 fun pushErrors(
@@ -128,9 +134,9 @@ fun pushErrors(
     if (instanceState.printModifiedStacktrace)
         platform.getConsoleAudience().sendMessage(generateModifiedStacktrace(exception, instanceState.localeHandler.consoleLocale))
 
-
     // Pushes other messages to other players
-    val onlinePlayers = platform.getOnlinePlayers(instanceState.localeHandler)
+    val onlinePlayers = platform.getPlayersOnAllServers(instanceState.localeHandler)
+
     onlinePlayers.asParallelStream()
         .filter { it.has("ticketmanager.notify.error.stacktrace") }
         .forEach { generateModifiedStacktrace(exception, it.locale).run(it::sendMessage) }

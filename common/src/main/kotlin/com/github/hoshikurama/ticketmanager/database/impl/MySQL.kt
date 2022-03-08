@@ -1,5 +1,7 @@
 package com.github.hoshikurama.ticketmanager.database.impl
 
+/*
+
 import com.github.hoshikurama.ticketmanager.database.Database
 import com.github.hoshikurama.ticketmanager.database.DatabaseBuilders
 import com.github.hoshikurama.ticketmanager.database.Result
@@ -504,3 +506,4 @@ V2 to V4
        onComplete()
    }
     */
+ */

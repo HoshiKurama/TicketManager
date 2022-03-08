@@ -3,7 +3,6 @@ package com.github.hoshikurama.ticketmanager.paper
 import com.github.hoshikurama.ticketmanager.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.platform.PlayerJoinEvent
-import kotlinx.coroutines.coroutineScope
 import net.milkbowl.vault.permission.Permission
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -15,8 +14,8 @@ class PaperJoinEvent(
 ) : PlayerJoinEvent(globalState, instanceState), Listener {
 
     @EventHandler
-    suspend fun onPlayerJoinEvent(event: org.bukkit.event.player.PlayerJoinEvent) = coroutineScope {
+    fun onPlayerJoinEvent(event: org.bukkit.event.player.PlayerJoinEvent) {
         val player = PaperPlayer(event.player, perms, instanceState.localeHandler)
-        whenPlayerJoins(player)
+        super.whenPlayerJoins(player)
     }
 }

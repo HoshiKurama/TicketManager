@@ -1,4 +1,5 @@
 package com.github.hoshikurama.ticketmanager.database.impl
+/*
 
 import com.github.hoshikurama.ticketmanager.database.Database
 import com.github.hoshikurama.ticketmanager.database.DatabaseBuilders
@@ -350,3 +351,4 @@ class Memory(
         }
     }
 }
+ */

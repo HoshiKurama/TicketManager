@@ -1,7 +1,7 @@
 ##############################################
 ##############################################
 #       TicketManager Config File
-#             Version 7.0.1
+#             Version 8.0.0
 ##############################################
 ##############################################
 #
@@ -48,6 +48,16 @@ Use_Cooldowns: false
 # modify a ticket. This applies to ALL users without the override permission if
 # cool-downs are enabled.
 Cooldown_Time: 0
+#
+# ##########################################
+#              Proxy Support
+# ##########################################
+#
+# Enable Velocity: Tells TicketManager to configure itself
+# for operation with the Velocity proxy. Note: This is NOT for Bungeecord
+# or Waterfall. This also only works with Paper servers.
+# Values: true, false
+Enable_Velocity: false
 #
 # ##########################################
 #           Database Settings:

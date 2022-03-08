@@ -4,5 +4,6 @@ include(
     "common",
     "Paper",
     "Spigot",
-    "Sponge"
+    "Sponge",
+    "Velocity"
 )

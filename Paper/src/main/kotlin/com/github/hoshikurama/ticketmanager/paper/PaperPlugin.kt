@@ -1,12 +1,9 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.shynixn.mccoroutine.SuspendingJavaPlugin
-import com.github.shynixn.mccoroutine.asyncDispatcher
-import com.github.shynixn.mccoroutine.minecraftDispatcher
-import kotlinx.coroutines.CoroutineDispatcher
 import net.milkbowl.vault.permission.Permission
+import org.bukkit.plugin.java.JavaPlugin
 
-class PaperPlugin : SuspendingJavaPlugin() {
+class PaperPlugin : JavaPlugin() {
 
     private lateinit var tmPlugin: TMPluginPaperImpl
     private lateinit var perms: Permission
@@ -17,11 +14,12 @@ class PaperPlugin : SuspendingJavaPlugin() {
             ?.let { perms = it }
             ?: pluginLoader.disablePlugin(this)
 
-        tmPlugin = TMPluginPaperImpl(this, perms, minecraftDispatcher as CoroutineDispatcher, asyncDispatcher as CoroutineDispatcher)
+        // Other stuff
+        tmPlugin = TMPluginPaperImpl(this, perms)
         tmPlugin.enableTicketManager()
     }
 
-    override suspend fun onDisableAsync() {
-        tmPlugin.disablePluginAsync()
+    override fun onDisable() {
+        tmPlugin.disablePlugin()
     }
 }

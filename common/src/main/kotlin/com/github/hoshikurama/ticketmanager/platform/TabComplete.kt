@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.platform
 
-import com.github.hoshikurama.ticketmanager.database.Database
+import com.github.hoshikurama.ticketmanager.database.AsyncDatabase
 
 abstract class TabComplete(private val platform: PlatformFunctions) {
 
@@ -190,8 +190,8 @@ abstract class TabComplete(private val platform: PlatformFunctions) {
                 commandWordConvertDB -> when { // /ticket convertDatabase <Target Database>
                     !perms.hasConvertDB -> listOf("")
                     args.size == 2 ->
-                        Database.Type.values()
-                            .map(Database.Type::name)
+                        AsyncDatabase.Type.values()
+                            .map(AsyncDatabase.Type::name)
                             .filter { it.startsWith(args[1]) }
                     else -> listOf("")
                 }

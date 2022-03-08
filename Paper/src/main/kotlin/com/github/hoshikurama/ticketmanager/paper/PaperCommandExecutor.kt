@@ -2,12 +2,12 @@ package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.platform.CommandPipeline
+import com.github.hoshikurama.ticketmanager.pipeline.PurePipeline
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.platform.Sender
-import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
 import net.milkbowl.vault.permission.Permission
 import org.bukkit.command.Command
+import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 
 class PaperCommandExecutor(
@@ -15,9 +15,9 @@ class PaperCommandExecutor(
     instanceState: InstancePluginState,
     globalState: GlobalPluginState,
     private val perms: Permission,
-) : SuspendingCommandExecutor, CommandPipeline(platform, instanceState, globalState) {
+) : CommandExecutor, PurePipeline(platform, instanceState, globalState) {
 
-    override suspend fun onCommand(
+    override fun onCommand(
         sender: CommandSender,
         command: Command,
         label: String,
@@ -28,6 +28,7 @@ class PaperCommandExecutor(
             if (sender is org.bukkit.entity.Player) PaperPlayer(sender, perms, localeHandler)
             else PaperConsole(localeHandler.consoleLocale)
 
-        return super.execute(agnosticSender, args.toList())
+        super.execute(agnosticSender, args.toList())
+        return false
     }
 }

@@ -1,13 +1,10 @@
 package com.github.hoshikurama.ticketmanager.data
 
-import com.github.hoshikurama.ticketmanager.misc.MutexControlled
-import kotlinx.coroutines.CoroutineDispatcher
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
-class GlobalPluginState(
-    val asyncDispatcher: CoroutineDispatcher,
-    val mainDispatcher: CoroutineDispatcher,
-) {
-    val jobCount = MutexControlled(0)
-    val pluginLocked = MutexControlled(true)
-    val ticketCountMetrics = MutexControlled(0)
+class GlobalPluginState {
+    val jobCount = AtomicInteger(0)
+    val pluginLocked = AtomicBoolean(true)
+    val ticketCountMetrics = AtomicInteger(0)
 }

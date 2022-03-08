@@ -99,7 +99,7 @@ Warning_InvalidDBType: '%Header% Ungültiger Datenbanktyp!'
 Warning_ConvertToSameDBType: '%Header% Kann die Datenbank nicht in den bereits genutzten Typ umwandeln!'
 Warning_UnexpectedError: '%Header% Ein unerwarteter Fehler ist aufgetreten!'
 Warning_LongTaskDuringReload: '%Header% Beim neuladen wurde eine Aufgabe gefunden die zu lange braucht. Alle anderen Aufgaben werden zwangsmäßig beendet!'
-Warning_InvalidConfig: '%Header% Es wurden <Count> Konfigurationseinträge zurückgesetzt! Bitte überprüfe die Konsole für mehr Informationen.'                # Templates: <Count>
+Warning_InvalidConfig: '%Header% Es wurden <count> Konfigurationseinträge zurückgesetzt! Bitte überprüfe die Konsole für mehr Informationen.'                # Templates: <count>
 Warning_InternalError: '%Header% Ein Interner Fehler ist aufgetreten! Bitte überprüfe die Konsole für mehr Informationen.'
 #
 # Discord Notifications
@@ -117,48 +117,48 @@ Discord_OnPriorityChange: '%user% hat die Priorität von Ticket #%num% geändert
 # ========================================
 #
 # View and Deep View Format (Accepts Formatting):
-ViewFormat_Header: '%nl%<bold>%TMHeader% <#F3F3F3>Zeige Ticket <ID>:</bold>'                  # Templates: <ID>
+ViewFormat_Header: '%nl%<bold>%TMHeader% <#F3F3F3>Zeige Ticket <id>:</bold>'                  # Templates: <id>
 ViewFormat_Sep1: '%nl%<dark_gray>================<%CC%>Info<dark_gray>================='
-ViewFormat_InfoCreator: '%nl%<bold><%CC%>Ersteller:</bold> <#F3F3F3><Creator>   '             # Templates: <Creator>
-ViewFormat_InfoAssignedTo: '<bold><%CC%>Zugewiesen:</bold> <#F3F3F3><Assignment>'             # Templates: <Assignment>
-ViewFormat_InfoPriority: '%nl%<bold><%CC%>Priorität:</bold> <%PCC%><Priority>   '             # Templates: <Priority>     Placeholders: %PCC%
-ViewFormat_InfoStatus: '<bold><%CC%>Status:</bold> <%SCC%><Status>'                           # Templates: <Status>       Placeholders: %SCC%
-ViewFormat_InfoLocation: '%nl%<bold><%CC%>Koordinaten:</bold> <#F3F3F3><Location>'            # Templates: <Location>
+ViewFormat_InfoCreator: '%nl%<bold><%CC%>Ersteller:</bold> <#F3F3F3><creator>   '             # Templates: <creator>
+ViewFormat_InfoAssignedTo: '<bold><%CC%>Zugewiesen:</bold> <#F3F3F3><assignment>'             # Templates: <assignment>
+ViewFormat_InfoPriority: '%nl%<bold><%CC%>Priorität:</bold> <%PCC%><priority>   '             # Templates: <priority>     Placeholders: %PCC%
+ViewFormat_InfoStatus: '<bold><%CC%>Status:</bold> <%SCC%><status>'                           # Templates: <status>       Placeholders: %SCC%
+ViewFormat_InfoLocation: '%nl%<bold><%CC%>Koordinaten:</bold> <#F3F3F3><location>'            # Templates: <location>
 ViewFormat_Sep2: '%nl%<dark_gray>===============<%CC%>Aktionen<dark_gray>==============='
-ViewFormat_Comment: '%nl%<bold><%CC%>[<User>]</bold> <#F3F3F3><Comment>'                                   # Templates: <User> <Comment>
-ViewFormat_DeepComment: '%nl%<bold><%CC%>[<User>]</bold> <#F3F3F3><Comment>  <dark_gray>vor ~<Time>'       # Templates: <User> <Comment> <Time>
-ViewFormat_DeepReopen: '%nl%<gray><bold>[<User>]</bold> Erneut geöffnet  <dark_gray>vor ~<Time>'           # Templates: <User> <Time>
-ViewFormat_DeepClose: '%nl%<gray><bold>[<User>]</bold> Geschlossen  <dark_gray>vor ~<Time>'                # Templates: <User> <Time>
-ViewFormat_DeepMassClose: '%nl%<gray><bold>[<User>]</bold> Massen geschlossen  <dark_gray>vor ~<Time>'     # Templates: <User> <Time>
-ViewFormat_DeepAssigned: '%nl%<gray><bold>[<User>]</bold> Zugewiesen <dark_gray>-> <%CC%><Assignment>  <dark_gray>vor ~<Time>'        # Templates: <User> <Assignment> <Time>
-ViewFormat_DeepSetPriority: '%nl%<gray><bold>[<User>]</bold> Priorität <dark_gray>-> <%PCC%><Priority>  <dark_gray>vor ~<Time>'       # Templates: <User> <Priority> <Time>   Placeholders: %PCC%
+ViewFormat_Comment: '%nl%<bold><%CC%>[<user>]</bold> <#F3F3F3><comment>'                                   # Templates: <user> <comment>
+ViewFormat_DeepComment: '%nl%<bold><%CC%>[<user>]</bold> <#F3F3F3><comment>  <dark_gray>vor ~<time>'       # Templates: <user> <comment> <time>
+ViewFormat_DeepReopen: '%nl%<gray><bold>[<user>]</bold> Erneut geöffnet  <dark_gray>vor ~<time>'           # Templates: <user> <time>
+ViewFormat_DeepClose: '%nl%<gray><bold>[<user>]</bold> Geschlossen  <dark_gray>vor ~<time>'                # Templates: <user> <time>
+ViewFormat_DeepMassClose: '%nl%<gray><bold>[<user>]</bold> Massen geschlossen  <dark_gray>vor ~<time>'     # Templates: <user> <time>
+ViewFormat_DeepAssigned: '%nl%<gray><bold>[<user>]</bold> Zugewiesen <dark_gray>-> <%CC%><assignment>  <dark_gray>vor ~<time>'        # Templates: <user> <assignment> <time>
+ViewFormat_DeepSetPriority: '%nl%<gray><bold>[<user>]</bold> Priorität <dark_gray>-> <%PCC%><priority>  <dark_gray>vor ~<time>'       # Templates: <user> <priority> <time>   Placeholders: %PCC%
 #
 # List Format (Accepts Formatting):
 ListFormat_Header: '%nl%%TMHeader% <#F3F3F3>Zeige alle offenen Tickets:'
 ListFormat_AssignedHeader: '%nl%%TMHeader% <#F3F3F3>Zeige alle offenen, dir zugewiesenen Tickets:'
 ListFormat_UnassignedHeader: '%nl%%TMHeader% <#F3F3F3>Zeige alle offenen, nicht zugewiesenen Tickets:'
-ListFormat_Entry: '%nl%<%PCC%>[<ID>] <dark_gray>[<%CC%><Creator> <dark_gray>-> <%CC%><Assignment><dark_gray>]<#F3F3F3> <Comment>'   # Templates: <ID> <Creator> <Assignment> <Comment>  Placeholders: %PCC%
+ListFormat_Entry: '%nl%<%PCC%>[<id>] <dark_gray>[<%CC%><creator> <dark_gray>-> <%CC%><assignment><dark_gray>]<#F3F3F3> <comment>'   # Templates: <id> <creator> <assignment> <comment>  Placeholders: %PCC%
 ListFormat_FormattingSize: '10' # INTEGER ONLY
 ListFormat_MaxLineSize: '52' # INTEGER ONLY
 #
 # SearchFormat (Accepts Formatting):
 SearchFormat_Querying: '%nl%%TMHeader% <#F3F3F3>Frage Daten ab... Habe etwas geduld!'
-SearchFormat_Header: '%TMHeader% <#F3F3F3>Daten wurden abgefragt <%CC%><Size><#F3F3F3> Ergebnis:'       # Templates: <Size>
-SearchFormat_Entry: '%nl%<%PCC%>[<ID>] <%SCC%>[<Status>] <dark_gray>[<%CC%><Creator> <dark_gray>-> <%CC%><Assignment><dark_gray>] [<%CC%>World: <World><dark_gray>]%nl%    <%CC%>vor ~<Time>: <#F3F3F3><Comment>'
-# Templates: <ID> <Status> <Creator> <Assignment> <World> <Time> <Comment>    Placeholders: %PCC% %SCC%
+SearchFormat_Header: '%TMHeader% <#F3F3F3>Daten wurden abgefragt <%CC%><size><#F3F3F3> Ergebnis:'       # Templates: <size>
+SearchFormat_Entry: '%nl%<%PCC%>[<id>] <%SCC%>[<status>] <dark_gray>[<%CC%><creator> <dark_gray>-> <%CC%><assignment><dark_gray>] [<%CC%>World: <world><dark_gray>]%nl%    <%CC%>vor ~<time>: <#F3F3F3><comment>'
+# Templates: <id> <status> <creator> <assignment> <world> <time> <comment>    Placeholders: %PCC% %SCC%
 SearchFormat_FormattingSize: '12' # INTEGER ONLY
 SearchFormat_MaxLineSize: '52'    # INTEGER ONLY
 #
 # History Format (Accepts Formatting):
-History_Header: '%nl%%TMHeader% <Name><#F3F3F3> hat <%CC%><Count> <#F3F3F3>Tickets:'          # Templates: <Name> <Count>
-History_Entry: '%nl%<%CC%>[<ID>] <%SCC%>[<STATUS>] <#F3F3F3><Comment>'                    # Templates: <ID> <STATUS> <Comment>  Placeholders: %SCC%
+History_Header: '%nl%%TMHeader% <Name><#F3F3F3> hat <%CC%><count> <#F3F3F3>Tickets:'          # Templates: <Name> <count>
+History_Entry: '%nl%<%CC%>[<id>] <%SCC%>[<status>] <#F3F3F3><comment>'                    # Templates: <id> <status> <comment>  Placeholders: %SCC%
 History_FormattingSize: '6' # INTEGER ONLY
 History_MaxLineSize: '52'   # INTEGER ONLY
 #
 # Help Format (Accepts Formatting):
 Help_Header: '%nl%<#F3F3F3>===<gray>====<dark_gray>===<%CC%>TicketManager Befehle<dark_gray>===<gray>====<#F3F3F3>==='
 Help_Line1: '%nl%<%CC%>Argumenttypen<#F3F3F3>:<%CC%>   <#F3F3F3><Benötigt> <gray>[Optional]'
-Help_Line2: '%nl%<%CC%>Stille Bearbeitung<#F3F3F3>:<%CC%>     /ticket s<#F3F3F3>.<%CC%><Command>'
+Help_Line2: '%nl%<%CC%>Stille Bearbeitung<#F3F3F3>:<%CC%>     /ticket s<#F3F3F3>.<%CC%><command>'
 
 Help_Line3: '%nl%<%CC%>Stummschaltbar: <#F3F3F3>[<red>✕<#F3F3F3>|<green>✓<#F3F3F3>]'
 Help_Sep: '%nl%<gray>========================================='
@@ -166,14 +166,14 @@ Help_HasSilence: '<green>[✓]'
 Help_LackSilence: '<red>[✕]'
 Help_RequiredParam: '<#F3F3F3><%Param%>'
 Help_OptionalParam: '<gray>[%Param%]'
-Help_Entry: '%nl%<Silenceable> <%CC%>/<Command> <Params>'  # Template: <Silenceable> <Command> <Params>
+Help_Entry: '%nl%<silenceable> <%CC%>/<command> <params>'  # Template: <silenceable> <command> <params>
 #
 # Modified Stacktrace (Accepts Formatting):
 Stacktrace_Line1: '%nl%<dark_red>[TicketManager] WARNUNG! Ein unerwarteter Fehler ist aufgetreten!'
-Stacktrace_Line2: '%nl%<red>     Fehler:    <gray><Exception>'                       # Templates: <Exception>
-Stacktrace_Line3: '%nl%<red>     Informationen:  <gray><Message>'                    # Templates: <Message>
+Stacktrace_Line2: '%nl%<red>     Fehler:    <gray><exception>'                       # Templates: <exception>
+Stacktrace_Line3: '%nl%<red>     Informationen:  <gray><message>'                    # Templates: <message>
 Stacktrace_Line4: '%nl%<dark_red>=-=-=-=-=-=-=Modified Stacktrace:=-=-=-=-=-=-='
-Stacktrace_Entry: '%nl%<red>          <Method> (<File>:<Line>)'                      # Templates: <Method> <File> <Line>
+Stacktrace_Entry: '%nl%<red>          <method> (<file>:<line>)'                      # Templates: <method> <file> <line>
 #
 #
 # ========================================
@@ -181,32 +181,32 @@ Stacktrace_Entry: '%nl%<red>          <Method> (<File>:<Line>)'                 
 # ========================================
 #
 # Information (Accepts Formatting):
-Info_ReloadInitiated: '%TMHeader% <#F3F3F3><User> <%CC%>hat ein neuladen des Plugins eingeleitet! Plugin wurde gesperrt und wartet auf laufende Aufgaben...'      # Templates: <User>
+Info_ReloadInitiated: '%TMHeader% <#F3F3F3><user> <%CC%>hat ein neuladen des Plugins eingeleitet! Plugin wurde gesperrt und wartet auf laufende Aufgaben...'      # Templates: <user>
 Info_Reload_TasksDone: '%TMHeader% Alle Aufgaben abgeschlossen! Wird neu geladen...'
 Info_ReloadSuccess: '%TMHeader% <green>Erfolgreich <%CC%>neu geladen!'
 Info_ReloadFailure: '%TMHeader% Neuladen <red>fehlgeschlagen<%CC%>!'
-Info_DBConversionInit: '%TMHeader% Datenbank wird von <gray><FromDB> <%CC%>zu <gray><ToDB> <%CC%>konvertiert! Plugin gesperrt!'
+Info_DBConversionInit: '%TMHeader% Datenbank wird von <gray><fromdb> <%CC%>zu <gray><todb> <%CC%>konvertiert! Plugin gesperrt!'
 Info_DBConversionSuccess: '%TMHeader% Datenbank wurde konvertiert! Plugin entsperrt! Ändere die Konfiguration zum neuen Datenbanktyp und lade das Plugin neu.'
 #
 # Ticket Notifications (Accepts Formatting):
-Notify_UnreadUpdate_Single: '%TMHeader% Ticket <gray><Num> <%CC%>hat ein Update! Nutze <gray>/ticket view <Num> <%CC%>um die Benachrichtigungen zu löschen.'                          # Templates <Num>
-Notify_UnreadUpdate_Multi: '%TMHeader% Tickets <gray><Num> <%CC%>haben Updates! Nutze <gray>/ticket view <ID> <%CC%>um alle Benachrichtigungen von Tickets mit Updates zu löschen.'   # Templates <Num>
-Notify_OpenAssigned: '%TMHeader% <gray><Open> <%CC%>Tickets offen (<gray><Assigned> <%CC%>sind dir zugewiesenen)'                                  # Templates <Open> <Assigned>
-Notify_MassCloseSuccess: '%TMHeader% Massenschließung von <gray><Lower> <%CC%>zu <gray><Upper> <%CC%>ausgeführt!'                                  # Templates: <Lower> <Upper>
-Notify_TicketAssignSuccess: '%TMHeader% Ticket <gray>#<ID> <%CC%>wurde <gray><Assigned> <%CC%>zugewiesen!'                                         # Templates: <ID> <Assigned>
-Notify_TicketCloseSuccess: '%TMHeader% Ticket <gray>#<ID> <%CC%>wurde geschlossen!'                                                                # Templates: <ID>
-Notify_TicketCloseWithCommentSuccess: '%TMHeader% Ticket <gray>#<ID> <%CC%>mit Kommentar geschlossen!'                                             # Templates: <ID>
-Notify_TicketCreationSuccessful: '%TMHeader% Ticket <gray>#<ID> <%CC%>wurde erstellt!'                                                             # Templates: <ID>
-Notify_TicketCommentSuccessful: '%TMHeader% Auf Ticket <gray>#<ID> <%CC%>kommentiert!'                                                             # Templates: <ID>
-Notify_TicketReopenSuccess: '%TMHeader% Ticket <gray>#<ID> <%CC%>wurde erneut geöffnet!'                                                           # Templates: <ID>
-Notify_TicketSetPrioritySuccess: '%TMHeader% Priorität von Ticket <gray>#<ID> <%CC%>geändert!'                                                     # Templates: <ID>
-Notify_Event_TicketAssign: '%TMHeader% <gray><User> <%CC%>wieß Ticket <gray>#<ID> <Assigned> <%CC%>zu.'                                            # Templates: <User> <ID> <Assigned>
-Notify_Event_TicketClose: '%TMHeader% <gray><User> <%CC%>hat Ticket <gray>#<ID> <%CC%>geschlossen.'                                                # Templates: <User> <ID>
-Notify_Event_TicketCloseWithComment: '%TMHeader% <gray><User> <%CC%>hat Ticket <gray>#<ID> <%CC%>mit Kommentar geschlossen:%nl%<gray><Message>'    # Templates: <User> <ID> <Message>
-Notify_Event_MassClose: '%TMHeader% <gray><User><%CC%> schließt mehrere Tickets von <gray>#<Lower> <%CC%>bis <gray>#<Upper><%CC%>.'                # Templates: <User> <Lower> <Upper>
-Notify_Event_TicketComment: '%TMHeader% <gray><User> <%CC%>Kommentierte auf dem Ticket <gray>#<ID><%CC%>:%nl%<gray><Message>'                      # Templates: <User> <ID> <Message>
-Notify_Event_TicketCreation: '%TMHeader% <gray><User> <%CC%>hat Ticket <gray>#<ID> <%CC%>erstellt:%nl%<gray><Message>'                             # Templates: <User> <ID> <Message>
-Notify_Event_TicketReopen: '%TMHeader% <gray><User> <%CC%>hat das Ticket <gray>#<ID> <%CC%>erneut geöffnet.'                                       # Templates: <User> <ID>
-Notify_Event_SetPriority: '%TMHeader% <gray><User> <%CC%>hat die Ticket <gray>#<ID> <%CC%>Priorität zu <%PCC%><Priority> <%CC%>geändert.'          # Templates: <User> <ID> <Priority>    Placeholders: %PCC%
-Notify_Event_TicketModification: '%TMHeader% Ticket <gray>#<ID> <%CC%> wurde geupdated! Nutze <gray>/ticket view <ID> <%CC%>um das Ticket anzusehen.'            # Templates: <ID>
-Notify_Event_PluginUpdate: '%TMHeader% Es ist ein Update verfügbar!%nl%  <%CC%>Aktuelle Version: <gray><Current>%nl%  <%CC%>Neueste Version: <gray><Latest>'     # Templates: <Current> <Latest>
+Notify_UnreadUpdate_Single: '%TMHeader% Ticket <gray><num> <%CC%>hat ein Update! Nutze <gray>/ticket view <num> <%CC%>um die Benachrichtigungen zu löschen.'                          # Templates <num>
+Notify_UnreadUpdate_Multi: '%TMHeader% Tickets <gray><num> <%CC%>haben Updates! Nutze <gray>/ticket view <id> <%CC%>um alle Benachrichtigungen von Tickets mit Updates zu löschen.'   # Templates <num>
+Notify_OpenAssigned: '%TMHeader% <gray><open> <%CC%>Tickets offen (<gray><assigned> <%CC%>sind dir zugewiesenen)'                                  # Templates <open> <assigned>
+Notify_MassCloseSuccess: '%TMHeader% Massenschließung von <gray><lower> <%CC%>zu <gray><upper> <%CC%>ausgeführt!'                                  # Templates: <lower> <upper>
+Notify_TicketAssignSuccess: '%TMHeader% Ticket <gray>#<id> <%CC%>wurde <gray><assigned> <%CC%>zugewiesen!'                                         # Templates: <id> <assigned>
+Notify_TicketCloseSuccess: '%TMHeader% Ticket <gray>#<id> <%CC%>wurde geschlossen!'                                                                # Templates: <id>
+Notify_TicketCloseWithCommentSuccess: '%TMHeader% Ticket <gray>#<id> <%CC%>mit Kommentar geschlossen!'                                             # Templates: <id>
+Notify_TicketCreationSuccessful: '%TMHeader% Ticket <gray>#<id> <%CC%>wurde erstellt!'                                                             # Templates: <id>
+Notify_TicketCommentSuccessful: '%TMHeader% Auf Ticket <gray>#<id> <%CC%>kommentiert!'                                                             # Templates: <id>
+Notify_TicketReopenSuccess: '%TMHeader% Ticket <gray>#<id> <%CC%>wurde erneut geöffnet!'                                                           # Templates: <id>
+Notify_TicketSetPrioritySuccess: '%TMHeader% Priorität von Ticket <gray>#<id> <%CC%>geändert!'                                                     # Templates: <id>
+Notify_Event_TicketAssign: '%TMHeader% <gray><user> <%CC%>wieß Ticket <gray>#<id> <assigned> <%CC%>zu.'                                            # Templates: <user> <id> <assigned>
+Notify_Event_TicketClose: '%TMHeader% <gray><user> <%CC%>hat Ticket <gray>#<id> <%CC%>geschlossen.'                                                # Templates: <user> <id>
+Notify_Event_TicketCloseWithComment: '%TMHeader% <gray><user> <%CC%>hat Ticket <gray>#<id> <%CC%>mit Kommentar geschlossen:%nl%<gray><message>'    # Templates: <user> <id> <message>
+Notify_Event_MassClose: '%TMHeader% <gray><user><%CC%> schließt mehrere Tickets von <gray>#<lower> <%CC%>bis <gray>#<upper><%CC%>.'                # Templates: <user> <lower> <upper>
+Notify_Event_TicketComment: '%TMHeader% <gray><user> <%CC%>Kommentierte auf dem Ticket <gray>#<id><%CC%>:%nl%<gray><message>'                      # Templates: <user> <id> <message>
+Notify_Event_TicketCreation: '%TMHeader% <gray><user> <%CC%>hat Ticket <gray>#<id> <%CC%>erstellt:%nl%<gray><message>'                             # Templates: <user> <id> <message>
+Notify_Event_TicketReopen: '%TMHeader% <gray><user> <%CC%>hat das Ticket <gray>#<id> <%CC%>erneut geöffnet.'                                       # Templates: <user> <id>
+Notify_Event_SetPriority: '%TMHeader% <gray><user> <%CC%>hat die Ticket <gray>#<id> <%CC%>Priorität zu <%PCC%><priority> <%CC%>geändert.'          # Templates: <user> <id> <priority>    Placeholders: %PCC%
+Notify_Event_TicketModification: '%TMHeader% Ticket <gray>#<id> <%CC%> wurde geupdated! Nutze <gray>/ticket view <id> <%CC%>um das Ticket anzusehen.'            # Templates: <id>
+Notify_Event_PluginUpdate: '%TMHeader% Es ist ein Update verfügbar!%nl%  <%CC%>Aktuelle Version: <gray><current>%nl%  <%CC%>Neueste Version: <gray><latest>'     # Templates: <current> <latest>

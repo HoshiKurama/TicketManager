@@ -1,6 +1,7 @@
-@file:Suppress("DuplicatedCode")
-
 package com.github.hoshikurama.ticketmanager.database.impl
+
+/*
+@file:Suppress("DuplicatedCode")
 
 import com.github.hoshikurama.ticketmanager.database.Database
 import com.github.hoshikurama.ticketmanager.database.DatabaseBuilders
@@ -469,3 +470,4 @@ class CachedSQLite(
         }
     }
 }
+ */

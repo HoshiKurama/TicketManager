@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.platform
 
 import com.github.hoshikurama.ticketmanager.TMLocale
-import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
+import com.github.hoshikurama.ticketmanager.ticket.Ticket
 import net.kyori.adventure.text.Component
 import java.util.*
 
@@ -14,6 +14,7 @@ sealed class Sender(
     abstract fun has(permission: String): Boolean
 
     fun toUUIDOrNull() = if (this is Player) uniqueID else null
+    abstract fun getLocAsTicketLoc(): Ticket.TicketLocation
 }
 
 abstract class Player(
@@ -21,10 +22,9 @@ abstract class Player(
     val permissionGroups: List<String>,
     name: String,
     locale: TMLocale
-) : Sender(name, locale) {
-    abstract fun getTicketLocFromCurLoc(): BasicTicket.TicketLocation
-}
+) : Sender(name, locale)
 
 abstract class Console(locale: TMLocale) : Sender(locale.consoleName, locale) {
-    override fun has(permission: String) = true
+    override fun has(permission: String): Boolean = true
+    abstract fun getServerName(): String
 }

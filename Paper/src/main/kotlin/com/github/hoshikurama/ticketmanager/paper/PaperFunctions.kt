@@ -5,7 +5,7 @@ import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.platform.Player
 import com.github.hoshikurama.ticketmanager.platform.Sender
-import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
+import com.github.hoshikurama.ticketmanager.ticket.Ticket
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
 import net.milkbowl.vault.permission.Permission
@@ -32,7 +32,7 @@ class PaperFunctions(private val perms: Permission) : PlatformFunctions {
         return Bukkit.getPlayer(uuid)?.run { PaperPlayer(this, perms, localeHandler) }
     }
 
-    override fun getOnlinePlayers(localeHandler: LocaleHandler): List<Player> {
+    override fun getPlayersOnAllServers(localeHandler: LocaleHandler): List<Player> {
         return Bukkit.getOnlinePlayers().map { PaperPlayer(it, perms, localeHandler) }
     }
 
@@ -49,12 +49,12 @@ class PaperFunctions(private val perms: Permission) : PlatformFunctions {
         return uuid.run(Bukkit::getOfflinePlayer).name ?: "UUID"
     }
 
-    override fun teleportToTicketLocation(player: Player, loc: BasicTicket.TicketLocation) {
-        val world = Bukkit.getWorld(loc.world)
+    override fun teleportToTicketLocation(player: Player, loc: Ticket.TicketLocation) {
+        val world = Bukkit.getWorld(loc.world!!)
         val paperPlayer = player as PaperPlayer
-
+        //TODO THROWING CALLING SYNC METHOD ASYNCLY
         world?.run {
-            val location = Location(this, loc.x.toDouble(), loc.y.toDouble(), loc.z.toDouble())
+            val location = Location(this, loc.x!!.toDouble(), loc.y!!.toDouble(), loc.z!!.toDouble())
             paperPlayer.pPlayer.teleport(location)
         }
     }

@@ -1,5 +1,5 @@
 name: TicketManager
-version: 7.0.1
+version: 8.0.0
 main: com.github.hoshikurama.ticketmanager.paper.PaperPlugin
 api-version: 1.18
 authors: [HoshiKurama]
@@ -7,16 +7,13 @@ depend: [Vault]
 libraries:
   - org.jetbrains.kotlin:kotlin-stdlib:1.6.10
   - mysql:mysql-connector-java:8.0.25
-  - org.xerial:sqlite-jdbc:3.36.0.2
-  - com.github.jasync-sql:jasync-mysql:2.0.4
-  - com.github.seratch:kotliquery:1.6.0
-  - org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.0
-  - net.kyori:adventure-extra-kotlin:4.9.3
+  - org.xerial:sqlite-jdbc:3.36.0.3
+  - com.github.jasync-sql:jasync-mysql:2.0.6
+  - com.github.seratch:kotliquery:1.6.3
+  - net.kyori:adventure-extra-kotlin:4.10.0
   - joda-time:joda-time:2.10.13
-  - com.github.shynixn.mccoroutine:mccoroutine-bukkit-api:1.5.0
-  - com.github.shynixn.mccoroutine:mccoroutine-bukkit-core:1.5.0
-  - dev.kord:kord-core:0.7.4
-  - com.google.code.gson:gson:2.8.9
+  - dev.kord:kord-core:0.8.0-M10
+  - net.kyori:adventure-text-minimessage:4.10.0
 commands:
   ticket:
     description: Base for all TicketManager commands

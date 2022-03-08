@@ -2,7 +2,7 @@ package com.github.hoshikurama.ticketmanager.platform
 
 import com.github.hoshikurama.ticketmanager.LocaleHandler
 import com.github.hoshikurama.ticketmanager.TMLocale
-import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
+import com.github.hoshikurama.ticketmanager.ticket.Ticket
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
 import java.util.*
@@ -10,11 +10,11 @@ import java.util.*
 interface PlatformFunctions {
     fun massNotify(localeHandler: LocaleHandler, permission: String, localeMsg: (TMLocale) -> Component)
     fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): Player?
-    fun getOnlinePlayers(localeHandler: LocaleHandler): List<Player>
+    fun getPlayersOnAllServers(localeHandler: LocaleHandler): List<Player>
     fun stripColour(msg: String):  String
     fun offlinePlayerNameToUUIDOrNull(name: String): UUID?
     fun nameFromUUID(uuid: UUID): String
-    fun teleportToTicketLocation(player: Player, loc: BasicTicket.TicketLocation)
+    fun teleportToTicketLocation(player: Player, loc: Ticket.TicketLocation)
 
     // Console Messages
     fun getConsoleAudience(): Audience
