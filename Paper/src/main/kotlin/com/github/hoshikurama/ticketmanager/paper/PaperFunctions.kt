@@ -13,10 +13,14 @@ import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.OfflinePlayer
+import org.bukkit.plugin.Plugin
 import java.util.*
 import java.util.logging.Level
 
-class PaperFunctions(private val perms: Permission) : PlatformFunctions {
+class PaperFunctions(
+    private val perms: Permission,
+    private val plugin: Plugin,
+) : PlatformFunctions {
 
     override fun massNotify(localeHandler: LocaleHandler, permission: String, localeMsg: (TMLocale) -> Component) {
         Bukkit.getConsoleSender().sendMessage(localeMsg(localeHandler.consoleLocale))
@@ -52,10 +56,10 @@ class PaperFunctions(private val perms: Permission) : PlatformFunctions {
     override fun teleportToTicketLocation(player: Player, loc: Ticket.TicketLocation) {
         val world = Bukkit.getWorld(loc.world!!)
         val paperPlayer = player as PaperPlayer
-        //TODO THROWING CALLING SYNC METHOD ASYNCLY
+
         world?.run {
             val location = Location(this, loc.x!!.toDouble(), loc.y!!.toDouble(), loc.z!!.toDouble())
-            paperPlayer.pPlayer.teleport(location)
+            Bukkit.getScheduler().runTask(plugin, Runnable { paperPlayer.pPlayer.teleport(location) })
         }
     }
 

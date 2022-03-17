@@ -5,7 +5,7 @@ import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.platform.Player
 import com.github.hoshikurama.ticketmanager.platform.Sender
-import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
+import com.github.hoshikurama.ticketmanager.ticket.Ticket
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
@@ -20,6 +20,7 @@ import java.util.logging.Level
 class SpigotFunctions(
     private val perms: Permission,
     private val adventure: BukkitAudiences,
+    private val plugin: SpigotPlugin,
 ): PlatformFunctions {
 
     override fun massNotify(localeHandler: LocaleHandler, permission: String, localeMsg: (TMLocale) -> Component) {
@@ -35,7 +36,7 @@ class SpigotFunctions(
         return Bukkit.getPlayer(uuid)?.run { SpigotPlayer(this, perms, adventure, localeHandler) }
     }
 
-    override fun getOnlinePlayers(localeHandler: LocaleHandler): List<Player> {
+    override fun getPlayersOnAllServers(localeHandler: LocaleHandler): List<Player> {
         return Bukkit.getOnlinePlayers().map { SpigotPlayer(it, perms, adventure, localeHandler) }
     }
 
@@ -52,13 +53,13 @@ class SpigotFunctions(
         return uuid.run(Bukkit::getOfflinePlayer).name ?: "UUID"
     }
 
-    override fun teleportToTicketLocation(player: Player, loc: BasicTicket.TicketLocation) {
-        val world = Bukkit.getWorld(loc.world)
+    override fun teleportToTicketLocation(player: Player, loc: Ticket.TicketLocation) {
+        val world = Bukkit.getWorld(loc.world!!)
         val spigotPlayer = player as SpigotPlayer
 
         world?.run {
-            val location = Location(this, loc.x.toDouble(), loc.y.toDouble(), loc.z.toDouble())
-            spigotPlayer.sPlayer.teleport(location)
+            val location = Location(this, loc.x!!.toDouble(), loc.y!!.toDouble(), loc.z!!.toDouble())
+            Bukkit.getScheduler().runTask(plugin, Runnable { spigotPlayer.sPlayer.teleport(location) })
         }
     }
 

@@ -26,5 +26,5 @@ abstract class Player(
 
 abstract class Console(locale: TMLocale) : Sender(locale.consoleName, locale) {
     override fun has(permission: String): Boolean = true
-    abstract fun getServerName(): String
+    abstract fun getServerName(): String?
 }

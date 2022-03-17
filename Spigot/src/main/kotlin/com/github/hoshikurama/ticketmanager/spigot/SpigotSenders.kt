@@ -5,7 +5,7 @@ import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.platform.Console
 import com.github.hoshikurama.ticketmanager.platform.Player
-import com.github.hoshikurama.ticketmanager.ticket.BasicTicket
+import com.github.hoshikurama.ticketmanager.ticket.Ticket
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
 import net.milkbowl.vault.permission.Permission
@@ -21,8 +21,8 @@ class SpigotPlayer(
     name = sPlayer.name,
     locale = localeHandler.getOrDefault(sPlayer.locale),
 ) {
-    override fun getTicketLocFromCurLoc(): BasicTicket.TicketLocation {
-        return sPlayer.location.run { BasicTicket.TicketLocation(world!!.name, blockX, blockY, blockZ) }
+    override fun getLocAsTicketLoc(): Ticket.TicketLocation {
+        return sPlayer.location.run { Ticket.TicketLocation(null, world?.name, blockX, blockY, blockZ) }
     }
 
     override fun sendMessage(msg: String) {
@@ -42,6 +42,7 @@ class SpigotConsole(
     private val adventure: BukkitAudiences,
     locale: TMLocale,
 ): Console(locale) {
+    override fun getServerName(): String? = null
 
     override fun sendMessage(msg: String) {
         msg.parseMiniMessage().run(::sendMessage)
@@ -49,5 +50,9 @@ class SpigotConsole(
 
     override fun sendMessage(component: Component) {
         adventure.console().sendMessage(component)
+    }
+
+    override fun getLocAsTicketLoc(): Ticket.TicketLocation {
+        return Ticket.TicketLocation(null, null, null, null, null)
     }
 }

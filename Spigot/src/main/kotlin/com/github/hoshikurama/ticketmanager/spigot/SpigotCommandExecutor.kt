@@ -2,12 +2,12 @@ package com.github.hoshikurama.ticketmanager.spigot
 
 import com.github.hoshikurama.ticketmanager.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.platform.CommandPipeline
+import com.github.hoshikurama.ticketmanager.pipeline.PurePipeline
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
-import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.milkbowl.vault.permission.Permission
 import org.bukkit.command.Command
+import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 
 class SpigotCommandExecutor(
@@ -16,9 +16,9 @@ class SpigotCommandExecutor(
     globalState: GlobalPluginState,
     private val perms: Permission,
     private val adventure: BukkitAudiences,
-) : CommandPipeline(platform, instanceState, globalState), SuspendingCommandExecutor {
+) : CommandExecutor, PurePipeline(platform, instanceState, globalState) {
 
-    override suspend fun onCommand(
+    override fun onCommand(
         sender: CommandSender,
         command: Command,
         label: String,
@@ -29,6 +29,7 @@ class SpigotCommandExecutor(
             if (sender is org.bukkit.entity.Player) SpigotPlayer(sender, perms, adventure, localeHandler)
             else SpigotConsole(adventure, localeHandler.consoleLocale)
 
-        return super.execute(tmSender, args.toList())
+        super.execute(tmSender, args.toList())
+        return false
     }
 }

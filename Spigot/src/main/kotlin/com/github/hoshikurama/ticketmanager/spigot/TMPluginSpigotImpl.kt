@@ -3,15 +3,10 @@ package com.github.hoshikurama.ticketmanager.spigot
 import com.github.hoshikurama.ticketmanager.TMPlugin
 import com.github.hoshikurama.ticketmanager.metricsKey
 import com.github.hoshikurama.ticketmanager.misc.ConfigParameters
-import com.github.shynixn.mccoroutine.SuspendingCommandExecutor
-import com.github.shynixn.mccoroutine.registerSuspendingEvents
-import com.github.shynixn.mccoroutine.setSuspendingExecutor
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.milkbowl.vault.permission.Permission
 import org.bukkit.Bukkit
+import org.bukkit.command.CommandExecutor
 import org.bukkit.command.TabCompleter
 import org.bukkit.event.Listener
 import java.io.File
@@ -20,15 +15,11 @@ class TMPluginSpigotImpl(
     private val spigotPlugin: SpigotPlugin,
     private val perms: Permission,
     private val adventure: BukkitAudiences,
-    mainDispatcher: CoroutineDispatcher,
-    asyncDispatcher: CoroutineDispatcher,
 ) : TMPlugin(
-    mainDispatcher = mainDispatcher,
-    asyncDispatcher = asyncDispatcher,
-    platformFunctions = SpigotFunctions(perms, adventure),
+    platformFunctions = SpigotFunctions(perms, adventure, spigotPlugin),
     buildPipeline = { platform,instance,global -> SpigotCommandExecutor(platform, instance, global, perms, adventure) },
     buildTabComplete = { platform, instance -> SpigotTabComplete(platform, instance, perms, adventure) },
-    buildJoinEvent = { global, instance -> SpigotJoinEvent(global, instance, perms, adventure) },
+    buildJoinEvent = { global, instance, platform -> SpigotJoinEvent(global, instance, platform, perms, adventure) },
 ) {
     private lateinit var metrics: Metrics
 
@@ -37,19 +28,14 @@ class TMPluginSpigotImpl(
         metrics = Metrics(spigotPlugin, metricsKey)
         metrics.addCustomChart(
             Metrics.SingleLineChart("tickets_made") {
-                runBlocking {
-                    val ticketCount = globalPluginState.ticketCountMetrics.get()
-                    globalPluginState.ticketCountMetrics.set(0)
-                    ticketCount
-                }
+                val ticketCount = globalPluginState.ticketCountMetrics.get()
+                globalPluginState.ticketCountMetrics.set(0)
+                ticketCount
             }
         )
         metrics.addCustomChart(
             Metrics.SimplePie("database_type") {
-                runBlocking {
-                    while (globalPluginState.pluginLocked.get()) delay(100L)
-                    instancePluginState.database.type.name
-                }
+                instancePluginState.database.type.name
             }
         )
 
@@ -104,19 +90,20 @@ class TMPluginSpigotImpl(
                 printModifiedStacktrace = getBoolean("Print_Modified_Stacktrace"),
                 printFullStacktrace = getBoolean("Print_Full_Stacktrace"),
                 enableAdvancedVisualControl = getBoolean("Enable_Advanced_Visual_Control"),
+                enableVelocity = false,
             )
         }
     }
 
     override fun registerProcesses() {
         instancePluginState.localeHandler.getCommandBases().forEach {
-            spigotPlugin.getCommand(it)?.setSuspendingExecutor(commandPipeline as SuspendingCommandExecutor)
+            spigotPlugin.getCommand(it)?.setExecutor(commandPipeline as CommandExecutor)
             spigotPlugin.getCommand(it)?.tabCompleter = tabComplete as TabCompleter
             // Remember to register any keyword in plugin.yml
         }
 
         // Registers play join event
-        spigotPlugin.server.pluginManager.registerSuspendingEvents(joinEvent as Listener, spigotPlugin)
+        spigotPlugin.server.pluginManager.registerEvents(joinEvent as Listener, spigotPlugin)
     }
 
     override fun unregisterProcesses() {

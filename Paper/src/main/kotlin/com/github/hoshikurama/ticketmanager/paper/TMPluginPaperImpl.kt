@@ -7,7 +7,6 @@ import net.milkbowl.vault.permission.Permission
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandExecutor
 import org.bukkit.event.Listener
-import org.yaml.snakeyaml.Yaml
 import java.io.File
 
 
@@ -15,10 +14,10 @@ class TMPluginPaperImpl(
     private val paperPlugin: PaperPlugin,
     private val perms: Permission,
 ) : TMPlugin(
-    platformFunctions = PaperFunctions(perms),
+    platformFunctions = PaperFunctions(perms, paperPlugin),
     buildPipeline = { platform,instance,global -> PaperCommandExecutor(platform, instance, global, perms) },
     buildTabComplete = { platform, instance -> PaperTabComplete(platform, instance, perms) },
-    buildJoinEvent = { global, instance -> PaperJoinEvent(global, instance, perms) },
+    buildJoinEvent = { global, instance, platform -> PaperJoinEvent(global, instance, platform, perms) },
 )  {
     private lateinit var metrics: Metrics
 
@@ -127,8 +126,10 @@ class TMPluginPaperImpl(
     }
 
 
+    /*
     private fun loadYMLFrom(location: String): Map<String, String> =
         this::class.java.classLoader
             .getResourceAsStream(location)
             .let { Yaml().load(it) }
+     */
 }

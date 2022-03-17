@@ -1,13 +1,10 @@
 package com.github.hoshikurama.ticketmanager.spigot
 
-import com.github.shynixn.mccoroutine.SuspendingJavaPlugin
-import com.github.shynixn.mccoroutine.asyncDispatcher
-import com.github.shynixn.mccoroutine.minecraftDispatcher
-import kotlinx.coroutines.CoroutineDispatcher
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.milkbowl.vault.permission.Permission
+import org.bukkit.plugin.java.JavaPlugin
 
-class SpigotPlugin : SuspendingJavaPlugin() {
+class SpigotPlugin : JavaPlugin() {
     private lateinit var tmPlugin: TMPluginSpigotImpl
     private lateinit var perms: Permission
     private lateinit var adventure: BukkitAudiences
@@ -25,14 +22,12 @@ class SpigotPlugin : SuspendingJavaPlugin() {
             spigotPlugin = this,
             perms = perms,
             adventure = adventure,
-            mainDispatcher = minecraftDispatcher as CoroutineDispatcher,
-            asyncDispatcher = asyncDispatcher as CoroutineDispatcher,
         )
         tmPlugin.enableTicketManager()
     }
 
-    override suspend fun onDisableAsync() {
-        tmPlugin.disablePluginAsync()
+    override fun onDisable() {
+        tmPlugin.disablePlugin()
         adventure.close()
     }
 }

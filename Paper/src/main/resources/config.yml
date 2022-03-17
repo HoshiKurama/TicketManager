@@ -50,12 +50,12 @@ Use_Cooldowns: false
 Cooldown_Time: 0
 #
 # ##########################################
-#              Proxy Support
+#        Proxy Support (COMING SOON)
 # ##########################################
 #
 # Enable Velocity: Tells TicketManager to configure itself
 # for operation with the Velocity proxy. Note: This is NOT for Bungeecord
-# or Waterfall. This also only works with Paper servers.
+# or Waterfall. This only works with Paper servers.
 # Values: true, false
 Enable_Velocity: false
 #
@@ -64,11 +64,11 @@ Enable_Velocity: false
 # ##########################################
 #
 # Database mode: Type of database used. Internally defaults
-# to Cached_SQLite if invalid value is used. Information only needs
+# to Cached_H2 if invalid value is used. Information only needs
 # to be filled out for the desired database type.
 #
-#                 SQLite:
-# Stores information in the SQLite file in the TicketManager folder.
+#                  H2:
+# Stores information in the H2 file in the TicketManager folder.
 # Pros: + No setup.
 #       + No external database needed.
 #       + Faster than MySQL for search and history command.
@@ -77,7 +77,7 @@ Enable_Velocity: false
 #
 #                 MySQL:
 # Stores information in a database that may or may not be on the server.
-# Pros: + Can handle more traffic than SQLite.
+# Pros: + Can handle more traffic than H2.
 #       + Can be separate from server storage.
 # Cons: - Must have MySQL database.
 #       - Search and history commands slower.
@@ -92,14 +92,14 @@ Enable_Velocity: false
 #         the last backup being lost.
 #
 #                Cached SQL:
-# Blend between the Memory and SQLite option. Data is loaded from SQLite into
-# the Memory model, and all changes reflect in the SQLite file.
+# Blend between the Memory and H2 option. Data is loaded from H2 into
+# the Memory model, and all changes reflect in the H2 file.
 # Pros: + Extreme speed of the Memory mode
-#       + Reliability of the SQLite mode
+#       + Reliability of the H2 mode
 # Cons: - Possibly slower database initialization
 #
-# Values: 'MYSQL','SQLITE','MEMORY', 'CACHED_SQLITE'
-Database_Mode: 'CACHED_SQLITE'
+# Values: 'MYSQL', 'H2', 'MEMORY', 'CACHED_H2'
+Database_Mode: 'CACHED_H2'
 #
 # ######################
 #    MySQL Database

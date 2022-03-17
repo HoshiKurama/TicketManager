@@ -21,7 +21,7 @@ class SpigotTabComplete(
         command: Command,
         alias: String,
         args: Array<out String>
-    ): MutableList<String>? {
+    ): MutableList<String> {
         val tmSender =
             if (sender is org.bukkit.entity.Player) SpigotPlayer(sender, perms, adventure, instanceState.localeHandler)
             else SpigotConsole(adventure, instanceState.localeHandler.consoleLocale)

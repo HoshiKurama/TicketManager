@@ -40,7 +40,7 @@ class PaperPlayer(
 class PaperConsole(
     locale: TMLocale
 ) : Console(locale) {
-    override fun getServerName(): String = ""
+    override fun getServerName(): String? = null
 
     override fun sendMessage(msg: String) {
         msg.parseMiniMessage().run(::sendMessage)
