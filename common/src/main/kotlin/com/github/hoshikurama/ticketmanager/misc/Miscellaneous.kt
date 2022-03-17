@@ -130,7 +130,6 @@ fun <T> List<CompletableFuture<T>>.flatten(): CompletableFuture<List<T>> {
     return CompletableFuture.allOf(*this.toTypedArray())
         .thenApplyAsync { this.map { it.join() } }
 }
-
  */
 
 fun pushErrors(
