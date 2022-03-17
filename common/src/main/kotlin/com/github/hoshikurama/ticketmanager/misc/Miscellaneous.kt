@@ -4,13 +4,16 @@ import com.github.hoshikurama.ticketmanager.TMLocale
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.misc.kyoriComponentDSL.buildComponent
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.ticket.Console
+import com.github.hoshikurama.ticketmanager.ticket.Creator
 import com.github.hoshikurama.ticketmanager.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.ticket.User
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
+import java.util.*
 
 typealias TicketPredicate = (Ticket) -> Boolean
 
@@ -113,10 +116,22 @@ fun generateModifiedStacktrace(e: Exception, locale: TMLocale) = buildComponent 
         .forEach(this::append)
 }
 
+fun mapToCreatorOrNull(string: String): Creator? {
+    val sep = string.split(".")
+    return when (sep[0]) {
+        "USER" -> User(UUID.fromString(sep[1]))
+        "CONSOLE" -> Console
+        else -> null
+    }
+}
+
+/*
 fun <T> List<CompletableFuture<T>>.flatten(): CompletableFuture<List<T>> {
     return CompletableFuture.allOf(*this.toTypedArray())
         .thenApplyAsync { this.map { it.join() } }
 }
+
+ */
 
 fun pushErrors(
     platform: PlatformFunctions,

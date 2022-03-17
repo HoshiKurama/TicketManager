@@ -3,6 +3,7 @@ package com.github.hoshikurama.ticketmanager.platform
 import com.github.hoshikurama.ticketmanager.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.misc.parseMiniMessage
+import com.github.hoshikurama.ticketmanager.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.misc.templated
 import com.github.hoshikurama.ticketmanager.pluginVersion
 import com.github.hoshikurama.ticketmanager.ticket.User
@@ -10,6 +11,7 @@ import java.util.concurrent.CompletableFuture
 
 abstract class PlayerJoinEvent(
     private val globalPluginState: GlobalPluginState,
+    private val platformFunctions: PlatformFunctions,
     protected val instanceState: InstancePluginState,
 ) {
 
@@ -17,7 +19,6 @@ abstract class PlayerJoinEvent(
         if (globalPluginState.pluginLocked.get()) return
 
         CompletableFuture.runAsync {
-
             // Plugin Update Checking
             kotlin.run {
                 if (instanceState.pluginUpdateChecker.canCheck) {
@@ -56,13 +57,18 @@ abstract class PlayerJoinEvent(
                     val open = openCF.join()
                     val assigned = assignedCF.join()
 
-                    if (open != 0)
+                    if (open != 0L)
                         player.locale.notifyOpenAssigned.parseMiniMessage(
                             "open" templated open.toString(),
                             "assigned" templated assigned.toString()
                         ).run(player::sendMessage)
                 }
             }
+        }.exceptionallyAsync {
+            (it as? Exception)?.let { e ->
+                pushErrors(platformFunctions, instanceState, e) { "An error occurred when a player joined!" } //TODO: LOCALIZE THIS MESSAGE IN 8.1
+            }
+            null
         }
     }
 }

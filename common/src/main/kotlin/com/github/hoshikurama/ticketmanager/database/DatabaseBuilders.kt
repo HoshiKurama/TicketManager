@@ -1,34 +1,13 @@
 package com.github.hoshikurama.ticketmanager.database
 
-import com.github.hoshikurama.ticketmanager.database.impl.AsyncMemory
-import com.github.hoshikurama.ticketmanager.database.impl.AsyncMySQL
+import com.github.hoshikurama.ticketmanager.database.impl.CachedH2
+import com.github.hoshikurama.ticketmanager.database.impl.H2
+import com.github.hoshikurama.ticketmanager.database.impl.Memory
+import com.github.hoshikurama.ticketmanager.database.impl.MySQL
 
 interface DatabaseBuilder {
     fun build(): AsyncDatabase
 }
-
-/*
-class MemoryBuilder(
-    private val pathToFolder: String,
-    private val backupFrequency: Long,
-) : DatabaseBuilder {
-    override suspend fun build() = Memory(pathToFolder, backupFrequency)
-}
-
-class SQLiteBuilder(private val pathToFolder: String) : DatabaseBuilder {
-    override suspend fun build() = SQLite(pathToFolder)
-}
-
-class CachedSQLiteBuilder(
-    private val pathToFolder: String,
-    private val dispatcher: CoroutineDispatcher,
-) : DatabaseBuilder {
-    override suspend fun build() = CachedSQLite(pathToFolder, dispatcher)
-}
-
-class DatabaseBuilders(val memoryBuilder: MemoryBuilder, val sqLiteBuilder: SQLiteBuilder, val mySQLBuilder: MySQLBuilder, val cachedSQLiteBuilder: CachedSQLiteBuilder)
-
- */
 
 class MySQLBuilder(
     private val host: String,
@@ -37,14 +16,31 @@ class MySQLBuilder(
     private val username: String,
     private val password: String,
 ) : DatabaseBuilder {
-    override fun build() = AsyncMySQL(host, port, databaseName, username, password)
+    override fun build() = MySQL(host, port, databaseName, username, password)
 }
 
 class MemoryBuilder(
     private val pathToFolder: String,
     private val backupFrequency: Long,
 ) : DatabaseBuilder {
-    override fun build() = AsyncMemory(pathToFolder, backupFrequency)
+    override fun build() = Memory(pathToFolder, backupFrequency)
 }
 
-class DatabaseBuilders(val mySQLBuilder: MySQLBuilder, val memoryBuilder: MemoryBuilder)
+class CachedH2Builder(
+    private val absoluteFolderPath: String
+) : DatabaseBuilder {
+    override fun build() = CachedH2(absoluteFolderPath)
+}
+
+class H2Builder(
+    private val absoluteFolderPath: String
+) : DatabaseBuilder {
+    override fun build() = H2(absoluteFolderPath)
+}
+
+class DatabaseBuilders(
+    val mySQLBuilder: MySQLBuilder,
+    val memoryBuilder: MemoryBuilder,
+    val cachedH2Builder: CachedH2Builder,
+    val h2Builder: H2Builder,
+)

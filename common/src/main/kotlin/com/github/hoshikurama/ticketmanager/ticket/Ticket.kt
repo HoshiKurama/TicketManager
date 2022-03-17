@@ -5,7 +5,7 @@ import java.time.Instant
 import java.util.*
 
 class Ticket(
-    val id: Int = -1,                               // Ticket ID 1+... -1 placeholder during ticket creation
+    val id: Long = -1L,                             // Ticket ID 1+... -1 placeholder during ticket creation
     val creator: Creator,
     val priority: Priority = Priority.NORMAL,       // Priority 1-5 or Lowest to Highest
     val status: Status = Status.OPEN,               // Status OPEN or CLOSED

@@ -3,12 +3,7 @@ package com.github.hoshikurama.ticketmanager
 import com.github.hoshikurama.ticketmanager.data.Cooldown
 import com.github.hoshikurama.ticketmanager.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.database.AsyncDatabase
-import com.github.hoshikurama.ticketmanager.database.DatabaseBuilders
-import com.github.hoshikurama.ticketmanager.database.MemoryBuilder
-import com.github.hoshikurama.ticketmanager.database.MySQLBuilder
-import com.github.hoshikurama.ticketmanager.database.impl.AsyncMemory
-import com.github.hoshikurama.ticketmanager.database.impl.AsyncMySQL
+import com.github.hoshikurama.ticketmanager.database.*
 import com.github.hoshikurama.ticketmanager.misc.*
 import com.github.hoshikurama.ticketmanager.pipeline.Pipeline
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
@@ -24,7 +19,7 @@ import kotlin.io.path.exists
 
 abstract class TMPlugin(
     private val platformFunctions: PlatformFunctions,
-    private val buildJoinEvent: (GlobalPluginState, InstancePluginState) -> PlayerJoinEvent,
+    private val buildJoinEvent: (GlobalPluginState, InstancePluginState, PlatformFunctions) -> PlayerJoinEvent,
     private val buildTabComplete: (PlatformFunctions, InstancePluginState) -> TabComplete,
     private val buildPipeline: (PlatformFunctions, InstancePluginState, GlobalPluginState) -> Pipeline,
 ) {
@@ -175,28 +170,29 @@ abstract class TMPlugin(
                         val backupFrequency = c.memoryFrequency ?: 600L.addToErrors("Memory_Backup_Frequency", Long::toString)
                         MemoryBuilder(c.pluginFolderPath, backupFrequency)
                     },
-                    /*
-                    sqLiteBuilder = SQLiteBuilder(c.pluginFolderPath),
-                    cachedSQLiteBuilder = CachedSQLiteBuilder(c.pluginFolderPath, globalPluginState.asyncDispatcher),
-                     */
+                    cachedH2Builder = CachedH2Builder(c.pluginFolderPath),
+                    h2Builder = H2Builder(c.pluginFolderPath)
                 )
 
                 // Builds Database object
                 val database = kotlin.run {
                     val type =
                         try { AsyncDatabase.Type.valueOf(c.dbTypeAsStr!!.uppercase()) }
-                        catch (e: Exception) { AsyncDatabase.Type.CACHED_SQLITE.addToErrors("Database_Mode", AsyncDatabase.Type::name) }
+                        catch (e: Exception) { AsyncDatabase.Type.CACHED_H2.addToErrors("Database_Mode", AsyncDatabase.Type::name) }
 
                     try {
                         when (type) {
-                            AsyncDatabase.Type.MEMORY -> databaseBuilders.memoryBuilder.build().apply(AsyncMemory::initializeDatabase)
-                            AsyncDatabase.Type.MYSQL -> databaseBuilders.mySQLBuilder.build().apply(AsyncMySQL::initializeDatabase)
-                            AsyncDatabase.Type.SQLITE -> TODO()
-                            AsyncDatabase.Type.CACHED_SQLITE -> TODO()
+                            AsyncDatabase.Type.MEMORY -> databaseBuilders.memoryBuilder
+                            AsyncDatabase.Type.MYSQL -> databaseBuilders.mySQLBuilder
+                            AsyncDatabase.Type.CACHED_H2 -> databaseBuilders.cachedH2Builder
+                            AsyncDatabase.Type.H2 -> databaseBuilders.h2Builder
                         }
+                            .run(DatabaseBuilder::build)
+                            .apply(AsyncDatabase::initializeDatabase)
+
                     } catch (e: Exception) {
                         errorsToPushOnLocalization.add { pushErrors(platformFunctions, instancePluginState, e, TMLocale::consoleErrorBadDatabase) }
-                        databaseBuilders.mySQLBuilder.build().apply { initializeDatabase() }//databaseBuilders.cachedSQLiteBuilder.build().apply { initializeDatabase() }
+                        databaseBuilders.cachedH2Builder.build().apply { initializeDatabase() }
                     }
                 }
 
@@ -240,7 +236,7 @@ abstract class TMPlugin(
                 instancePluginState = InstancePluginState(database, cooldowns, discord, databaseBuilders, localeHandler, allowUnreadTicketUpdates, updateChecker, printModifiedStacktrace, printFullStacktrace)
                 tabComplete = buildTabComplete(platformFunctions, instancePluginState)
                 commandPipeline = buildPipeline(platformFunctions, instancePluginState, globalPluginState)
-                joinEvent = buildJoinEvent(globalPluginState, instancePluginState)
+                joinEvent = buildJoinEvent(globalPluginState, instancePluginState, platformFunctions)
 
                 // Print warnings
                 CompletableFuture.runAsync {

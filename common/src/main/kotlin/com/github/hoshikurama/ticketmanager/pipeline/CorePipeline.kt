@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-typealias ConsoleObject = com.github.hoshikurama.ticketmanager.ticket.Console
+typealias ConsoleObject = Console
 typealias ConsoleSender = com.github.hoshikurama.ticketmanager.platform.Console
 typealias ResultDB = com.github.hoshikurama.ticketmanager.database.Result
 
@@ -36,7 +36,7 @@ class CorePipeline(
     val instanceState: InstancePluginState,
     private val globalState: GlobalPluginState,
 ) {
-    val nullTicketLocation = Ticket.TicketLocation(null, null, null, null, null)
+    private val nullTicketLocation = Ticket.TicketLocation(null, null, null, null, null)
 
     fun executeLogic(sender: Sender, args: List<String>): CompletableFuture<out NotifyParams?> {
 
@@ -94,7 +94,7 @@ class CorePipeline(
             senderLocale.commandWordView,
             senderLocale.commandWordDeepView ->
                 args.getOrNull(1)
-                    ?.toIntOrNull()
+                    ?.toLongOrNull()
                     ?.let { instanceState.database.getTicketOrNullAsync(it) } ?: CompletableFuture.completedFuture(null)
             else -> CompletableFuture.completedFuture(Ticket(creator = Dummy))
         }
@@ -489,8 +489,8 @@ class CorePipeline(
         silent: Boolean,
         ticket: Ticket
     ): CompletableFuture<NotifyParams> {
-        val lowerBound = args[1].toInt()
-        val upperBound = args[2].toInt()
+        val lowerBound = args[1].toLong()
+        val upperBound = args[2].toLong()
 
         CompletableFuture.runAsync { instanceState.database.massCloseTickets(lowerBound, upperBound, sender.toCreator(), nullTicketLocation) }
 
@@ -569,9 +569,7 @@ class CorePipeline(
 
     // /ticket convertdatabase <Target Database>
     private fun convertDatabase(args: List<String>) {
-        /*
-        TODO FINISH
-        val type = args[1].run(Database.Type::valueOf)
+        val type = args[1].run(AsyncDatabase.Type::valueOf)
 
         instanceState.database.migrateDatabase(
             to = type,
@@ -596,7 +594,6 @@ class CorePipeline(
                 pushErrors(platform, instanceState, it, TMLocale::consoleErrorDBConversion)
             }
         )
-         */
     }
 
     // /ticket create <Message…>

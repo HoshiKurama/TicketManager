@@ -76,7 +76,7 @@ Page_ActiveNext: '<white>[Next]'
 Page_InactiveNext: '<dark_gray>[Next]'
 Page_ActiveBack: '<white>[Back]'
 Page_InactiveBack: '<dark_gray>[Back]'
-Page_Format: '<Back_Button><dark_gray>...............<dark_aqua>(<Cur_Page> of <Max_Pages>)<dark_gray>...............<Next_Button>'  # Templates: <Back_Button> <Cur_Page> <Max_Pages> <Next_Button>
+Page_Format: '<back_button><dark_gray>...............<dark_aqua>(<cur_page> of <max_pages>)<dark_gray>...............<next_button>'  # Templates: <back_button> <cur_page> <max_pages> <next_button>
 #
 #
 # ========================================
@@ -157,13 +157,13 @@ History_MaxLineSize: '52'   # INTEGER ONLY
 #
 # Help Format (Accepts Formatting):
 Help_Header: '%nl%<#F3F3F3>===<gray>====<dark_gray>===<%CC%>TicketManager Commands<dark_gray>===<gray>====<#F3F3F3>==='
-Help_Line1: '%nl%<%CC%>Argument Types<#F3F3F3>:<%CC%>   <#F3F3F3><Required> <gray>[Optional]'
+Help_Line1: '%nl%<%CC%>Argument Types<#F3F3F3>:<%CC%>   <#F3F3F3>\<Required> <gray>[Optional]'
 Help_Line2: '%nl%<%CC%>Silent Format<#F3F3F3>:<%CC%>     /ticket s<#F3F3F3>.<%CC%><command>'
 Help_Line3: '%nl%<%CC%>Silenceable: <#F3F3F3>[<red>✕<#F3F3F3>|<green>✓<#F3F3F3>]'
 Help_Sep: '%nl%<gray>========================================='
 Help_HasSilence: '<green>[✓]'
 Help_LackSilence: '<red>[✕]'
-Help_RequiredParam: '<#F3F3F3><%Param%>'
+Help_RequiredParam: '<#F3F3F3>\<%Param%>'
 Help_OptionalParam: '<gray>[%Param%]'
 Help_Entry: '%nl%<silenceable> <%CC%>/<command> <params>'  # Template: <silenceable> <command> <params>
 #
