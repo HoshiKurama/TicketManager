@@ -98,22 +98,25 @@ operator fun Component.plus(other: Component) = append(other)
 
 // Other
 fun generateModifiedStacktrace(e: Exception, locale: TMLocale) = buildComponent {
+    val cause = e.cause
+
     // Builds Header
     append(locale.stacktraceLine1.parseMiniMessage())
-    append(locale.stacktraceLine2.parseMiniMessage("exception" templated e.javaClass.simpleName))
-    append(locale.stacktraceLine3.parseMiniMessage("message" templated (e.message ?: "?")))
+    append(locale.stacktraceLine2.parseMiniMessage("exception" templated (cause?.javaClass?.simpleName ?: "???")))
+    append(locale.stacktraceLine3.parseMiniMessage("message" templated (cause?.message ?: "?")))
     append(locale.stacktraceLine4.parseMiniMessage())
 
     // Adds stacktrace entries
-    e.stackTrace.filter { it.className.contains("com.github.hoshikurama.ticketmanager") }
-        .map {
+    cause?.stackTrace
+        ?.filter { it.className.contains("com.github.hoshikurama.ticketmanager") }
+        ?.map {
             locale.stacktraceEntry.parseMiniMessage(
                 "method" templated it.methodName,
                 "file" templated (it.fileName ?: "?"),
                 "line" templated "${it.lineNumber}"
             )
         }
-        .forEach(this::append)
+        ?.forEach(this::append)
 }
 
 fun mapToCreatorOrNull(string: String): Creator? {
