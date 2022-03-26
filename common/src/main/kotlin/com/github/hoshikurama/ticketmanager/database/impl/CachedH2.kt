@@ -48,7 +48,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = Ticket(t.id, t.creator, t.priority, t.status, assignment, t.creatorStatusUpdate, t.actions)
 
-        sendQuery { update(queryOf("UPDATE \"TicketManager_V8_Tickets\" SET ASSIGNED_TO = ? WHERE ID = ?;", assignment)) }
+        sendQuery { update(queryOf("UPDATE \"TicketManager_V8_Tickets\" SET ASSIGNED_TO = ? WHERE ID = ?;", assignment, ticketID)) }
     }
 
     override fun setCreatorStatusUpdate(ticketID: Long, status: Boolean) {
