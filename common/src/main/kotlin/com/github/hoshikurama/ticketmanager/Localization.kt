@@ -722,9 +722,10 @@ class LocaleHandler(
                 .map { (k,v) -> if (enableAVC) k to TMLocale.buildLocaleFromExternal(k, rootFolderLocation, mainColourCode, v) else k to v }
                 .toList()
                 .toMap()
+            val lowercasePreferred = preferredLocale.lowercase()
 
-            val activeTypes = if (forceLocale) mapOf() else allLocales
-            val fallback = activeTypes.getOrDefault(preferredLocale.lowercase(), allLocales["en_ca"]!!)
+            val activeTypes = if (forceLocale) mapOf(lowercasePreferred to allLocales.getOrDefault(lowercasePreferred, allLocales["en_ca"]!!)) else allLocales
+            val fallback = activeTypes.getOrDefault(lowercasePreferred, allLocales["en_ca"]!!)
             val consoleLocale = activeTypes.getOrDefault(console_Locale.lowercase(), fallback)
 
             return LocaleHandler(activeTypes, fallback, consoleLocale)
