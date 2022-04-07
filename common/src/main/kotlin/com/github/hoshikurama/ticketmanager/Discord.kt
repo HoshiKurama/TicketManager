@@ -89,7 +89,7 @@ class Discord private constructor(
                     locale.discordOnClose
                         .replace("%user%", user)
                         .replace("%num%", ticketID),
-                    comment ?: "",
+                    comment ?: " ",
                     false,
                 )
             )
