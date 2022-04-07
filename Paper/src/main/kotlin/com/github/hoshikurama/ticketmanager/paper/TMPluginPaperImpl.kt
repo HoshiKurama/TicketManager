@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.paper
 
+import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent
 import com.github.hoshikurama.ticketmanager.TMPlugin
 import com.github.hoshikurama.ticketmanager.metricsKey
 import com.github.hoshikurama.ticketmanager.misc.ConfigParameters
@@ -7,6 +8,7 @@ import net.milkbowl.vault.permission.Permission
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandExecutor
 import org.bukkit.event.Listener
+import org.bukkit.event.player.PlayerJoinEvent
 import java.io.File
 
 
@@ -121,8 +123,9 @@ class TMPluginPaperImpl(
         // Removes current task timers
         paperPlugin.server.scheduler.cancelTasks(paperPlugin)
 
-        //Bukkit.getCommandMap().knownCommands
-       /* Until Kotlin supports top-level property reflection, I cannot unregister anything other than tab complete */
+        // Unregisters events
+        AsyncTabCompleteEvent.getHandlerList().unregister(paperPlugin)
+        PlayerJoinEvent.getHandlerList().unregister(paperPlugin)
     }
 
 

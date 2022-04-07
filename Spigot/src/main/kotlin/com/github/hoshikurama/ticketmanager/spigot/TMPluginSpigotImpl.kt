@@ -9,6 +9,8 @@ import org.bukkit.Bukkit
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.TabCompleter
 import org.bukkit.event.Listener
+import org.bukkit.event.player.PlayerJoinEvent
+import org.bukkit.event.server.TabCompleteEvent
 import java.io.File
 
 class TMPluginSpigotImpl(
@@ -110,6 +112,8 @@ class TMPluginSpigotImpl(
         // Removes current task timers
         spigotPlugin.server.scheduler.cancelTasks(spigotPlugin)
 
-        // Note: Not able to unregister anything else since I lack any way to access the mcCoroutine variable
+        // Unregisters listeners
+        TabCompleteEvent.getHandlerList().unregister(spigotPlugin)
+        PlayerJoinEvent.getHandlerList().unregister(spigotPlugin)
     }
 }

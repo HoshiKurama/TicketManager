@@ -79,7 +79,7 @@ abstract class TMPlugin(
 
                         template.parseMiniMessage("num" templated tickets).run(it::sendMessage)
                     }
-                        .exceptionallyAsync { e -> pushScheduledMessage(e as Exception) } //TODO WATCH FOR THIS
+                        .exceptionallyAsync { e -> pushScheduledMessage(e as Exception) }
                 }
         }
 
