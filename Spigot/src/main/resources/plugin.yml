@@ -1,15 +1,15 @@
 name: TicketManager
-version: 8.0.2
+version: 8.0.3
 main: com.github.hoshikurama.ticketmanager.spigot.SpigotPlugin
 api-version: 1.18
 authors: [HoshiKurama]
 depend: [Vault]
 libraries:
-  - org.jetbrains.kotlin:kotlin-stdlib:1.6.10
+  - org.jetbrains.kotlin:kotlin-stdlib:1.6.20
   - mysql:mysql-connector-java:8.0.28
   - com.github.jasync-sql:jasync-mysql:2.0.6
-  - com.github.seratch:kotliquery:1.6.3
-  - joda-time:joda-time:2.10.13
+  - com.github.seratch:kotliquery:1.7.0
+  - joda-time:joda-time:2.10.14
   - com.discord4j:discord4j-core:3.2.2
   - com.google.code.gson:gson:2.9.0
   - net.kyori:adventure-text-minimessage:4.10.0

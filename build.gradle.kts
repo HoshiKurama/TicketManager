@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-   kotlin("jvm") version "1.6.10"
+   kotlin("jvm") version "1.6.20"
    java
 }
 
@@ -10,12 +10,12 @@ repositories {
 }
 
 dependencies {
-   implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.10")
+   implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.20")
 }
 
 subprojects {
    group = "com.github.hoshikurama"
-   version = "8.0.2"
+   version = "8.0.3"
 
    tasks.withType<KotlinCompile> {
       kotlinOptions.jvmTarget = "17"
