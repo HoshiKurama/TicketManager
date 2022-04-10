@@ -18,10 +18,10 @@ repositories {
 
 dependencies {
     compileOnly("org.spigotmc:spigot-api:1.18-R0.1-SNAPSHOT")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.10")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.20")
     implementation("net.kyori:adventure-extra-kotlin:4.10.1")
     implementation("net.kyori:adventure-platform-bukkit:4.1.0")
-    implementation("joda-time:joda-time:2.10.13")
+    implementation("joda-time:joda-time:2.10.14")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
     implementation(project(":common"))
     //implementation(files("KyoriAdventureBukkitAddition.jar"))
