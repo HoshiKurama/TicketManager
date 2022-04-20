@@ -14,8 +14,9 @@ class PaperPlayer(
     internal val pPlayer: org.bukkit.entity.Player,
     private val perms: Permission,
     localeHandler: LocaleHandler,
-    private val serverName: String,
+    serverName: String?,
 ) : Player(
+    serverName = serverName,
     uniqueID = pPlayer.uniqueId,
     permissionGroups = perms.getPlayerGroups(pPlayer).toList(),
     name = pPlayer.name,
@@ -40,9 +41,8 @@ class PaperPlayer(
 
 class PaperConsole(
     locale: TMLocale,
-    private val serverName: String,
-) : Console(locale) {
-    override fun getServerName(): String? = null
+    serverName: String?,
+) : Console(locale, serverName) {
 
     override fun sendMessage(msg: String) {
         msg.parseMiniMessage().run(::sendMessage)

@@ -14,7 +14,8 @@ interface PlatformFunctions {
     fun stripColour(msg: String):  String
     fun offlinePlayerNameToUUIDOrNull(name: String): UUID?
     fun nameFromUUID(uuid: UUID): String
-    fun teleportToTicketLocation(player: Player, loc: Ticket.TicketLocation)
+    fun teleportToTicketLocSameServer(player: Player, loc: Ticket.TicketLocation)
+    fun teleportToTicketLocDiffServer(player: Player, loc: Ticket.TicketLocation)
     fun relayMessageToProxy(encodedMessage: ByteArray)
 
     // Console Messages

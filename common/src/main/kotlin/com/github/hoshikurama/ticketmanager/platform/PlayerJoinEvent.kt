@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture
 
 abstract class PlayerJoinEvent(
     protected val globalPluginState: GlobalPluginState,
-    private val platformFunctions: PlatformFunctions,
+    protected val platformFunctions: PlatformFunctions,
     protected val instanceState: InstancePluginState,
 ) {
 

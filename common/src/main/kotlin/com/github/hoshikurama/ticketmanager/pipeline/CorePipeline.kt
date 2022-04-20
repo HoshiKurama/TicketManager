@@ -1117,9 +1117,15 @@ class CorePipeline(
         sender: Sender,
         ticket: Ticket,
     ) {
-        if (sender is Player && ticket.actions[0].location.world != null) {
-            platform.teleportToTicketLocation(sender, ticket.actions[0].location)
-        }
+        val location = ticket.actions[0].location
+        if (sender !is Player || location.world == null) return
+        // Sender is player and location exists...
+
+        if (location.server == instanceState.velocityServerName)
+            platform.teleportToTicketLocSameServer(sender, location)
+        else if (location.server != null)
+            platform.teleportToTicketLocDiffServer(sender, location)
+        // Else don't teleport
     }
 
     // /ticket unassign <ID>

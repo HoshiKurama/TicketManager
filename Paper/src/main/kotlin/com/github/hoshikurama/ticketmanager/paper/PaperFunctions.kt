@@ -2,6 +2,7 @@ package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.LocaleHandler
 import com.github.hoshikurama.ticketmanager.TMLocale
+import com.github.hoshikurama.ticketmanager.misc.encodeRequestTP
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.platform.Player
 import com.github.hoshikurama.ticketmanager.platform.Sender
@@ -20,7 +21,7 @@ import java.util.logging.Level
 class PaperFunctions(
     private val perms: Permission,
     private val plugin: Plugin,
-    private val serverName: String,
+    private val serverName: String?,
 ) : PlatformFunctions {
 
     override fun massNotify(localeHandler: LocaleHandler, permission: String, localeMsg: (TMLocale) -> Component) {
@@ -54,7 +55,7 @@ class PaperFunctions(
         return uuid.run(Bukkit::getOfflinePlayer).name ?: "UUID"
     }
 
-    override fun teleportToTicketLocation(player: Player, loc: Ticket.TicketLocation) {
+    override fun teleportToTicketLocSameServer(player: Player, loc: Ticket.TicketLocation) {
         val world = Bukkit.getWorld(loc.world!!)
         val paperPlayer = player as PaperPlayer
 
@@ -62,6 +63,10 @@ class PaperFunctions(
             val location = Location(this, loc.x!!.toDouble(), loc.y!!.toDouble(), loc.z!!.toDouble())
             Bukkit.getScheduler().runTask(plugin, Runnable { paperPlayer.pPlayer.teleport(location) })
         }
+    }
+
+    override fun teleportToTicketLocDiffServer(player: Player, loc: Ticket.TicketLocation) {
+        plugin.server.sendPluginMessage(plugin, "ticketmanager:server_to_proxy_tp", encodeRequestTP(player, loc))
     }
 
     override fun relayMessageToProxy(encodedMessage: ByteArray) {

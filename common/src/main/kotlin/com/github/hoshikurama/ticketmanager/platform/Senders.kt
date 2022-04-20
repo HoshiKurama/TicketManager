@@ -7,7 +7,8 @@ import java.util.*
 
 sealed class Sender(
     val name: String,
-    val locale: TMLocale
+    val locale: TMLocale,
+    val serverName: String?,
 ) {
     abstract fun sendMessage(msg: String)
     abstract fun sendMessage(component: Component)
@@ -21,10 +22,10 @@ abstract class Player(
     val uniqueID: UUID,
     val permissionGroups: List<String>,
     name: String,
-    locale: TMLocale
-) : Sender(name, locale)
+    locale: TMLocale,
+    serverName: String?,
+) : Sender(name, locale, serverName)
 
-abstract class Console(locale: TMLocale) : Sender(locale.consoleName, locale) {
+abstract class Console(locale: TMLocale, serverName: String?) : Sender(locale.consoleName, locale, serverName) {
     override fun has(permission: String): Boolean = true
-    abstract fun getServerName(): String?
 }

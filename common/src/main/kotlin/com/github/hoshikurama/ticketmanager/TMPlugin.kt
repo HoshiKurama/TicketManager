@@ -18,7 +18,7 @@ import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.exists
 
 abstract class TMPlugin(
-    private val buildPlatformFunctions: (String) -> PlatformFunctions,
+    private val buildPlatformFunctions: (String?) -> PlatformFunctions,
     private val buildJoinEvent: (GlobalPluginState, InstancePluginState, PlatformFunctions) -> PlayerJoinEvent,
     private val buildTabComplete: (PlatformFunctions, InstancePluginState) -> TabComplete,
     private val buildPipeline: (PlatformFunctions, InstancePluginState, GlobalPluginState) -> Pipeline,
@@ -149,7 +149,8 @@ abstract class TMPlugin(
 
                 // Proxy Stuff
                 val enableVelocity = c.enableVelocity ?: false.addToErrors("Enable_Velocity", Boolean::toString)
-                val serverName = c.velocityServerName ?: "Default".addToErrors("Velocity_Server_Name") { it }
+
+                val serverName = c.velocityServerName.let { if (it == null) null.addToErrors("Velocity_Server_Name") { "null" } else it.takeIf(String::isNotBlank) }
                 platformFunctions = buildPlatformFunctions(serverName)
 
 

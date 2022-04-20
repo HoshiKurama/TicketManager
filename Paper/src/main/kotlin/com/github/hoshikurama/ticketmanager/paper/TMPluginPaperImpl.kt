@@ -114,6 +114,8 @@ class TMPluginPaperImpl(
             proxy = VelocityProxy(platformFunctions, instancePluginState)
             paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, "ticketmanager:inform_proxy")
             paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, "ticketmanager:relayed_message", proxy!!)
+            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, "ticketmanager:proxy_to_server_tp", proxy!!)
+            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, "ticketmanager:server_to_proxy_tp")
         }
     }
 

@@ -19,5 +19,5 @@ class InstancePluginState(
     val printFullStacktrace: Boolean,
 
     val enableVelocity: Boolean,
-    val velocityServerName: String,
+    val velocityServerName: String?,
 )

@@ -61,7 +61,7 @@ Enable_Velocity: false
 #
 # Server Name: Instructs TicketManager what the server name is.
 # THIS MUST MATCH THE NAME GIVEN IN THE VELOCITY FILE!
-Velocity_Server_Name: '_'
+Velocity_Server_Name: ''
 #
 # ##########################################
 #           Database Settings:

@@ -1,6 +1,7 @@
 package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.misc.decodeRequestTP
 import com.github.hoshikurama.ticketmanager.pipeline.Notification
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.randServerIdentifier
@@ -16,35 +17,44 @@ class VelocityProxy(
 ): PluginMessageListener {
 
     override fun onPluginMessageReceived(channel: String, player: Player, message: ByteArray) {
-        if (!channel.equals("ticketmanager:relayed_message", ignoreCase = true)) return
 
-        @Suppress("UnstableApiUsage")
-        val input = ByteStreams.newDataInput(message)
+        when (channel) {
 
-        // Filters out same server
-        if (input.readUTF().run(UUID::fromString).equals(randServerIdentifier)) return
+            "ticketmanager:relayed_message" -> {
+                @Suppress("UnstableApiUsage")
+                val input = ByteStreams.newDataInput(message)
 
-        val notification = when (input.readUTF().run(Notification.MessageType::valueOf)) {
-            Notification.MessageType.ASSIGN -> Notification.Assign.fromByteArray(input)
-            Notification.MessageType.CLOSEWITHCOMMENT -> Notification.CloseWithComment.fromByteArray(input)
-            Notification.MessageType.CLOSEWITHOUTCOMMENT -> Notification.CloseWithoutComment.fromByteArray(input)
-            Notification.MessageType.MASSCLOSE -> Notification.MassClose.fromByteArray(input)
-            Notification.MessageType.COMMENT -> Notification.Comment.fromByteArray(input)
-            Notification.MessageType.CREATE -> Notification.Create.fromByteArray(input)
-            Notification.MessageType.REOPEN -> Notification.Reopen.fromByteArray(input)
-            Notification.MessageType.SETPRIORITY -> Notification.SetPriority.fromByteArray(input)
-        }
+                // Filters out same server
+                if (input.readUTF().run(UUID::fromString).equals(randServerIdentifier)) return
 
-        notification.run {
-            if (sendCreatorMSG && creator is User) {
-                val creatorPlayer = platform.buildPlayer((creator as User).uuid, instanceState.localeHandler)
+                val notification = when (input.readUTF().run(Notification.MessageType::valueOf)) {
+                    Notification.MessageType.ASSIGN -> Notification.Assign.fromByteArray(input)
+                    Notification.MessageType.CLOSEWITHCOMMENT -> Notification.CloseWithComment.fromByteArray(input)
+                    Notification.MessageType.CLOSEWITHOUTCOMMENT -> Notification.CloseWithoutComment.fromByteArray(input)
+                    Notification.MessageType.MASSCLOSE -> Notification.MassClose.fromByteArray(input)
+                    Notification.MessageType.COMMENT -> Notification.Comment.fromByteArray(input)
+                    Notification.MessageType.CREATE -> Notification.Create.fromByteArray(input)
+                    Notification.MessageType.REOPEN -> Notification.Reopen.fromByteArray(input)
+                    Notification.MessageType.SETPRIORITY -> Notification.SetPriority.fromByteArray(input)
+                }
 
-                if (creatorPlayer != null && creatorPlayer.has(creatorAlertPerm) && !creatorPlayer.has(massNotifyPerm))
-                    generateCreatorMSG(creatorPlayer.locale).run(creatorPlayer::sendMessage)
+                notification.run {
+                    if (sendCreatorMSG && creator is User) {
+                        val creatorPlayer = platform.buildPlayer((creator as User).uuid, instanceState.localeHandler)
+
+                        if (creatorPlayer != null && creatorPlayer.has(creatorAlertPerm) && !creatorPlayer.has(massNotifyPerm))
+                            generateCreatorMSG(creatorPlayer.locale).run(creatorPlayer::sendMessage)
+                    }
+
+                    if (sendMassNotify) {
+                        platform.massNotify(instanceState.localeHandler, massNotifyPerm, generateMassNotify)
+                    }
+                }
             }
 
-            if (sendMassNotify) {
-                platform.massNotify(instanceState.localeHandler, massNotifyPerm, generateMassNotify)
+            "ticketmanager:proxy_to_server_tp" -> {
+                val (uuid, location) = decodeRequestTP(message)
+                proxyJoinMap[uuid.toString()] = location
             }
         }
     }
