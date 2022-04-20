@@ -1,5 +1,5 @@
 name: TicketManager
-version: 8.0.3
+version: 8.1.0
 main: com.github.hoshikurama.ticketmanager.spigot.SpigotPlugin
 api-version: 1.18
 authors: [HoshiKurama]
@@ -114,17 +114,26 @@ permissions:
   ticketmanager.notify.error.stacktrace:
     description: See modified stacktrace on errors
     default: false
-    ticketmanager.notify.error.message:
-      description: See when errors occur
-      default: false
+  ticketmanager.notify.error.message:
+    description: See when errors occur
+    default: false
+  ticketmanager.notify.change.assign:
+    description: Creator sees when user assigned their ticket
+    default: false
   ticketmanager.notify.change.comment:
     description: Creator sees when user comments on their ticket
     default: false
   ticketmanager.notify.change.close:
     description: Creator sees when user closes their ticket
     default: false
+  ticketmanager.notify.change.massClose:
+    description: Creator sees when user mass-closes their ticket
+    default: false
   ticketmanager.notify.change.reopen:
     description: Creator sees when user reopens their ticket
+    default: false
+  ticketmanager.notify.change.priority:
+    description: Creator sees when user changes their ticket priority
     default: false
   ticketmanager.notify.massNotify.assign:
     description: See ticket assignment events
@@ -175,9 +184,12 @@ permissions:
   ticketmanager.notify.change.*:
     description: Wildcard for all status changes on own ticket
     children:
+      ticketmanager.notify.change.assign: true
       ticketmanager.notify.change.comment: true
       ticketmanager.notify.change.close: true
+      ticketmanager.notify.change.massclose: true
       ticketmanager.notify.change.reopen: true
+      ticketmanager.notify.change.priority: true
     default: false
   ticketmanager.massNotify.*:
     description: Wildcard for all mass notifications (except errors and plugin info)

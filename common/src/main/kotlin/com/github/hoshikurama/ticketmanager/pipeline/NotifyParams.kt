@@ -10,12 +10,6 @@ import com.google.common.io.ByteArrayDataInput
 import com.google.common.io.ByteArrayDataOutput
 import com.google.common.io.ByteStreams
 import net.kyori.adventure.text.Component
-/* TODO
-Changes:
-    - Messages now use the individual's locale instead of the sender's locale (opposed to some previously)
-    - Rewrote Notifications systems for compatibility with proxies
-    - (I'm so sorry) Tickets now record action locations correctly
- */
 
 sealed class Notification {
     abstract val sendCreatorMSG: Boolean
@@ -68,7 +62,7 @@ sealed class Notification {
         private val argAssignedIsNobody: Boolean
     ) : Notification() {
 
-        override val creatorAlertPerm = "ticketmanager.notify.change.assign" //TODO REGISTER IN PLUGINS
+        override val creatorAlertPerm = "ticketmanager.notify.change.assign"
         override val massNotifyPerm = "ticketmanager.notify.massNotify.assign"
 
         override val generateCreatorMSG = { locale: TMLocale -> locale.notifyTicketModificationEvent.parseMiniMessage("id" templated argID) }
@@ -250,7 +244,7 @@ sealed class Notification {
         private val argUserIsConsole: Boolean,
     ) : Notification() {
 
-        override val creatorAlertPerm = "ticketmanager.notify.change.massClose" //TODO REGISTER IN PLUGINS
+        override val creatorAlertPerm = "ticketmanager.notify.change.massClose"
         override val massNotifyPerm = "ticketmanager.notify.massNotify.massClose"
 
         override val generateCreatorMSG = { locale: TMLocale -> locale.notifyTicketModificationEvent.parseMiniMessage("id" templated "???") }
@@ -483,7 +477,7 @@ sealed class Notification {
         private val argUserIsConsole: Boolean,
     ) : Notification() {
 
-        override val creatorAlertPerm = "ticketmanager.notify.change.priority" //TODO Register with Plugins
+        override val creatorAlertPerm = "ticketmanager.notify.change.priority"
         override val massNotifyPerm = "ticketmanager.notify.massNotify.priority"
 
         override val generateCreatorMSG = { locale: TMLocale -> locale.notifyTicketModificationEvent.parseMiniMessage("id" templated argID) }
