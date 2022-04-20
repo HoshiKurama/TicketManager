@@ -6,6 +6,7 @@ import com.github.hoshikurama.ticketmanager.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.platform.Sender
+import com.github.hoshikurama.ticketmanager.ticket.User
 import java.util.concurrent.CompletableFuture
 
 abstract class PurePipeline(
@@ -18,18 +19,22 @@ abstract class PurePipeline(
     override fun execute(sender: Sender, args: List<String>) {
         CompletableFuture.supplyAsync { corePipeline.executeLogic(sender, args) }
             .thenComposeAsync { it }
-            .thenApplyAsync { params ->
-                params?.run {
+            .thenApplyAsync { notification ->
+                notification?.run {
+
                     if (sendSenderMSG)
-                        senderLambda!!(sender.locale)
-                            .run(sender::sendMessage)
+                        generateSenderMSG(sender.locale).run(sender::sendMessage)
 
-                    if (sendCreatorMSG)
-                        creator?.let { creatorLambda!!(it.locale) }
-                            ?.run(creator::sendMessage)
+                    if (sendCreatorMSG && creator is User) {
+                        val creatorPlayer = platform.buildPlayer((creator as User).uuid, instanceState.localeHandler)
 
-                    if (sendMassNotifyMSG)
-                        platform.massNotify(instanceState.localeHandler, massNotifyPerm, massNotifyLambda!!)
+                        if (creatorPlayer != null && creatorPlayer.has(creatorAlertPerm) && !creatorPlayer.has(massNotifyPerm))
+                            generateCreatorMSG(creatorPlayer.locale).run(creatorPlayer::sendMessage)
+                    }
+
+                    if (sendMassNotify) {
+                        platform.massNotify(instanceState.localeHandler, massNotifyPerm, generateMassNotify)
+                    }
                 }
             }
             .exceptionallyAsync {

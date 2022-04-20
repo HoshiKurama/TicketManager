@@ -1,7 +1,11 @@
 package com.github.hoshikurama.ticketmanager
 
+import java.util.*
+
 const val metricsKey = 11033
-const val pluginVersion = "8.0.3"
+const val pluginVersion = "8.1.0"
+
+val randServerIdentifier: UUID = UUID.randomUUID() // For proxies
 
 /*
 Things to do when updating version:
@@ -9,4 +13,5 @@ Things to do when updating version:
 2. Update each config.yml
 3. Update each plugin.yml
 4. Update root build.gradle.kts
+5. Update Velocity version velocity-plugin.json
  */

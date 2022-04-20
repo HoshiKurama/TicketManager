@@ -18,7 +18,7 @@ class TMPluginSpigotImpl(
     private val perms: Permission,
     private val adventure: BukkitAudiences,
 ) : TMPlugin(
-    platformFunctions = SpigotFunctions(perms, adventure, spigotPlugin),
+    buildPlatformFunctions = { SpigotFunctions(perms, adventure, spigotPlugin) },
     buildPipeline = { platform,instance,global -> SpigotCommandExecutor(platform, instance, global, perms, adventure) },
     buildTabComplete = { platform, instance -> SpigotTabComplete(platform, instance, perms, adventure) },
     buildJoinEvent = { global, instance, platform -> SpigotJoinEvent(global, instance, platform, perms, adventure) },
@@ -93,6 +93,7 @@ class TMPluginSpigotImpl(
                 printFullStacktrace = getBoolean("Print_Full_Stacktrace"),
                 enableAdvancedVisualControl = getBoolean("Enable_Advanced_Visual_Control"),
                 enableVelocity = false,
+                velocityServerName = "-"
             )
         }
     }

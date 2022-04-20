@@ -17,4 +17,7 @@ class InstancePluginState(
     val pluginUpdateChecker: UpdateChecker,
     val printModifiedStacktrace: Boolean,
     val printFullStacktrace: Boolean,
+
+    val enableVelocity: Boolean,
+    val velocityServerName: String,
 )

@@ -36,7 +36,7 @@ class SpigotFunctions(
         return Bukkit.getPlayer(uuid)?.run { SpigotPlayer(this, perms, adventure, localeHandler) }
     }
 
-    override fun getPlayersOnAllServers(localeHandler: LocaleHandler): List<Player> {
+    override fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<Player> {
         return Bukkit.getOnlinePlayers().map { SpigotPlayer(it, perms, adventure, localeHandler) }
     }
 
@@ -61,6 +61,10 @@ class SpigotFunctions(
             val location = Location(this, loc.x!!.toDouble(), loc.y!!.toDouble(), loc.z!!.toDouble())
             Bukkit.getScheduler().runTask(plugin, Runnable { spigotPlayer.sPlayer.teleport(location) })
         }
+    }
+
+    override fun relayMessageToProxy(encodedMessage: ByteArray) {
+        throw Exception("Proxy Support ")
     }
 
     override fun getConsoleAudience(): Audience {

@@ -10,11 +10,12 @@ import java.util.*
 interface PlatformFunctions {
     fun massNotify(localeHandler: LocaleHandler, permission: String, localeMsg: (TMLocale) -> Component)
     fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): Player?
-    fun getPlayersOnAllServers(localeHandler: LocaleHandler): List<Player>
+    fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<Player>
     fun stripColour(msg: String):  String
     fun offlinePlayerNameToUUIDOrNull(name: String): UUID?
     fun nameFromUUID(uuid: UUID): String
     fun teleportToTicketLocation(player: Player, loc: Ticket.TicketLocation)
+    fun relayMessageToProxy(encodedMessage: ByteArray)
 
     // Console Messages
     fun getConsoleAudience(): Audience

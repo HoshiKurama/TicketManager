@@ -18,7 +18,7 @@ import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.exists
 
 abstract class TMPlugin(
-    private val platformFunctions: PlatformFunctions,
+    private val buildPlatformFunctions: (String) -> PlatformFunctions,
     private val buildJoinEvent: (GlobalPluginState, InstancePluginState, PlatformFunctions) -> PlayerJoinEvent,
     private val buildTabComplete: (PlatformFunctions, InstancePluginState) -> TabComplete,
     private val buildPipeline: (PlatformFunctions, InstancePluginState, GlobalPluginState) -> Pipeline,
@@ -26,6 +26,7 @@ abstract class TMPlugin(
     protected val globalPluginState = GlobalPluginState()
 
     protected lateinit var instancePluginState: InstancePluginState private set
+    protected lateinit var platformFunctions: PlatformFunctions private set
     protected lateinit var tabComplete: TabComplete private set
     protected lateinit var joinEvent: PlayerJoinEvent private set
     protected lateinit var commandPipeline: Pipeline private set
@@ -66,7 +67,7 @@ abstract class TMPlugin(
         CompletableFuture.runAsync {
             if (!instancePluginState.allowUnreadTicketUpdates) return@runAsync
 
-            platformFunctions.getPlayersOnAllServers(instancePluginState.localeHandler)
+            platformFunctions.getAllOnlinePlayers(instancePluginState.localeHandler)
                 .filter { it.has("ticketmanager.notify.unreadUpdates.scheduled") }
                 .forEach {
                     instancePluginState.database.getTicketIDsWithUpdatesForAsync(User(it.uniqueID)).thenAcceptAsync { ids ->
@@ -85,7 +86,7 @@ abstract class TMPlugin(
 
         // Open and Assigned Notify
         instancePluginState.database.getOpenTicketsAsync(1, 0).thenApplyAsync { (openTickets, _, openCount,_) ->
-            platformFunctions.getPlayersOnAllServers(instancePluginState.localeHandler)
+            platformFunctions.getAllOnlinePlayers(instancePluginState.localeHandler)
                 .filter { it.has("ticketmanager.notify.openTickets.scheduled") }
                 .forEach { p ->
                     val groups = p.permissionGroups.map { "::$it" }
@@ -145,6 +146,12 @@ abstract class TMPlugin(
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+
+                // Proxy Stuff
+                val enableVelocity = c.enableVelocity ?: false.addToErrors("Enable_Velocity", Boolean::toString)
+                val serverName = c.velocityServerName ?: "Default".addToErrors("Velocity_Server_Name") { it }
+                platformFunctions = buildPlatformFunctions(serverName)
+
 
                 // Builds LocaleHandler object
                 val localeHandler = kotlin.run {
@@ -233,7 +240,7 @@ abstract class TMPlugin(
                 val printFullStacktrace = c.printFullStacktrace ?: false.addToErrors("Print_Full_Stacktrace", Boolean::toString)
 
                 // Builds and assigns final objects
-                instancePluginState = InstancePluginState(database, cooldowns, discord, databaseBuilders, localeHandler, allowUnreadTicketUpdates, updateChecker, printModifiedStacktrace, printFullStacktrace)
+                instancePluginState = InstancePluginState(database, cooldowns, discord, databaseBuilders, localeHandler, allowUnreadTicketUpdates, updateChecker, printModifiedStacktrace, printFullStacktrace, enableVelocity, serverName)
                 tabComplete = buildTabComplete(platformFunctions, instancePluginState)
                 commandPipeline = buildPipeline(platformFunctions, instancePluginState, globalPluginState)
                 joinEvent = buildJoinEvent(globalPluginState, instancePluginState, platformFunctions)

@@ -16,22 +16,14 @@ class TMPluginPaperImpl(
     private val paperPlugin: PaperPlugin,
     private val perms: Permission,
 ) : TMPlugin(
-    platformFunctions = PaperFunctions(perms, paperPlugin),
-    buildPipeline = { platform,instance,global -> PaperCommandExecutor(platform, instance, global, perms) },
+    buildPlatformFunctions = { PaperFunctions(perms, paperPlugin, it) },
+    buildPipeline = { platform, instance, global -> PaperCommandExecutor(platform, instance, global, perms) },
     buildTabComplete = { platform, instance -> PaperTabComplete(platform, instance, perms) },
     buildJoinEvent = { global, instance, platform -> PaperJoinEvent(global, instance, platform, perms) },
 )  {
     private lateinit var metrics: Metrics
 
-    private val enableVelocity = false
-    /*
-    private val test1 = Path.of(paperPlugin.dataFolder.path).parent.toAbsolutePath().also(::println)
-
-    private val enableVelocity = "${Path.of(paperPlugin.dataFolder.path).parent.parent.toAbsolutePath()}${FileSystems.getDefault().separator}paper.yml"
-        .run(::loadYMLFrom)["velocity-support.enabled"]!!
-        .toBoolean()
-        TODO TWO PARENTS CAUSES ISSUE, BUT NOT ONE??
-     */
+    private var proxy: VelocityProxy? = null
 
     override fun performSyncBefore() {
         // Launch Metrics
@@ -99,7 +91,8 @@ class TMPluginPaperImpl(
                 printModifiedStacktrace = getBoolean("Print_Modified_Stacktrace"),
                 printFullStacktrace = getBoolean("Print_Full_Stacktrace"),
                 enableAdvancedVisualControl = getBoolean("Enable_Advanced_Visual_Control"),
-                enableVelocity = getBoolean("Enable_Velocity") && enableVelocity
+                enableVelocity = getBoolean("Enable_Velocity"),
+                velocityServerName = getString("Velocity_Server_Name"),
             )
         }
     }
@@ -117,6 +110,11 @@ class TMPluginPaperImpl(
         paperPlugin.server.pluginManager.registerEvents(joinEvent as Listener, paperPlugin)
 
         // Register Velocity listeners if necessary
+        if (instancePluginState.enableVelocity) {
+            proxy = VelocityProxy(platformFunctions, instancePluginState)
+            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, "ticketmanager:inform_proxy")
+            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, "ticketmanager:relayed_message", proxy!!)
+        }
     }
 
     override fun unregisterProcesses() {
@@ -126,13 +124,9 @@ class TMPluginPaperImpl(
         // Unregisters events
         AsyncTabCompleteEvent.getHandlerList().unregister(paperPlugin)
         PlayerJoinEvent.getHandlerList().unregister(paperPlugin)
+
+        // Unregister proxy events
+        paperPlugin.server.messenger.unregisterIncomingPluginChannel(paperPlugin)
+        paperPlugin.server.messenger.unregisterOutgoingPluginChannel(paperPlugin)
     }
-
-
-    /*
-    private fun loadYMLFrom(location: String): Map<String, String> =
-        this::class.java.classLoader
-            .getResourceAsStream(location)
-            .let { Yaml().load(it) }
-     */
 }

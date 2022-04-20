@@ -10,7 +10,7 @@ import com.github.hoshikurama.ticketmanager.ticket.User
 import java.util.concurrent.CompletableFuture
 
 abstract class PlayerJoinEvent(
-    private val globalPluginState: GlobalPluginState,
+    protected val globalPluginState: GlobalPluginState,
     private val platformFunctions: PlatformFunctions,
     protected val instanceState: InstancePluginState,
 ) {

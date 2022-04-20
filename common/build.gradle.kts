@@ -22,5 +22,6 @@ dependencies {
     implementation("com.discord4j:discord4j-core:3.2.2")
     implementation("com.google.code.gson:gson:2.9.0")
     implementation("com.h2database:h2:2.1.210")
+    implementation("com.google.guava:guava:31.1-jre")
 
 }

@@ -36,26 +36,23 @@ class CorePipeline(
     val instanceState: InstancePluginState,
     private val globalState: GlobalPluginState,
 ) {
-    private val nullTicketLocation = Ticket.TicketLocation(null, null, null, null, null)
-
-    fun executeLogic(sender: Sender, args: List<String>): CompletableFuture<out NotifyParams?> {
-
+    fun executeLogic(sender: Sender, args: List<String>): CompletableFuture<out Notification?> {
 
         if (args.isEmpty()) {
             sender.sendMessage(sender.locale.warningsInvalidCommand)
-            return CompletableFuture.completedFuture<NotifyParams?>(null)
+            return CompletableFuture.completedFuture<Notification?>(null)
         }
 
         if (globalState.pluginLocked.get()
         ) {
             sender.sendMessage(sender.locale.warningsLocked)
-            return CompletableFuture.completedFuture<NotifyParams?>(null)
+            return CompletableFuture.completedFuture<Notification?>(null)
         }
 
         return getTicketOrDummyTicketOrNullAsync(args, sender.locale)
             .thenComposeAsync { ticket ->
 
-                // I'm so sorry future me for writing it this way. Type inference was being terrible
+                // I'm so sorry future me for writing it this way. Type inference was being terrible (Future Me: I have no clue what you're talking about, but thank you anyways)
                 if (ticket == null)
                     sender.sendMessage(sender.locale.warningsInvalidID)
 
@@ -66,7 +63,7 @@ class CorePipeline(
 
                 if (hasPermission && isValidCommand && notUnderCooldown)
                     executeCommand(sender, args, ticket!!)
-                else CompletableFuture.completedFuture<NotifyParams?>(null)
+                else CompletableFuture.completedFuture<Notification?>(null)
             }
     }
 
@@ -270,8 +267,8 @@ class CorePipeline(
         sender: Sender,
         args: List<String>,
         ticket: Ticket,
-    ): CompletableFuture<out NotifyParams?> {
-        val nullFuture: CompletableFuture<out NotifyParams?> = CompletableFuture.completedFuture(null)
+    ): CompletableFuture<out Notification?> {
+        val nullFuture: CompletableFuture<out Notification?> = CompletableFuture.completedFuture(null)
 
         return sender.locale.run {
             when (args[0]) {
@@ -318,14 +315,18 @@ class CorePipeline(
         assignmentID: String,
         dbAssignment: String?,
         ticket: Ticket,
-    ): CompletableFuture<NotifyParams> {
+    ): CompletableFuture<Notification> {
         val shownAssignment = dbAssignment ?: sender.locale.miscNobody
+
+        // Determines the assignment type
+        val assignmentIsConsole = sender.locale.consoleName == dbAssignment
+        val assignmentIsNobody = dbAssignment == null || sender.locale.miscNobody == dbAssignment
 
         CompletableFuture.runAsync { instanceState.database.setAssignment(ticket.id, dbAssignment) }
         CompletableFuture.runAsync {
             instanceState.database.insertAction(
                 id = ticket.id,
-                action = Ticket.Action(Ticket.Action.Type.ASSIGN, sender.toCreator(), nullTicketLocation, dbAssignment)
+                action = Ticket.Action(Ticket.Action.Type.ASSIGN, sender.toCreator(), sender.getLocAsTicketLoc(), dbAssignment)
             )
         }
 
@@ -334,28 +335,18 @@ class CorePipeline(
                 instanceState.discord.assignUpdate(sender.name, assignmentID, shownAssignment)
             }
 
-
-        return NotifyParams(
+        return Notification.Assign.build(
             silent = silent,
-            sender = sender,
             ticket = ticket,
-            senderLambda = {
-                it.notifyTicketAssignSuccess.parseMiniMessage(
-                    "id" templated assignmentID,
-                    "assigned" templated shownAssignment
-                )
-            },
-            massNotifyLambda = {
-                it.notifyTicketAssignEvent.parseMiniMessage(
-                    "user" templated sender.name,
-                    "id" templated assignmentID,
-                    "assigned" templated shownAssignment,
-                )
-            },
-            creatorLambda = null,
-            creatorAlertPerm = "ticketmanager.notify.change.assign",
-            massNotifyPerm = "ticketmanager.notify.massNotify.assign"
-        ).let { CompletableFuture.completedFuture(it) }
+            sender = sender,
+            argID = assignmentID,
+            argAssigned = shownAssignment,
+            argUser = sender.name,
+            argAssignedIsConsole = assignmentIsConsole,
+            argAssignedIsNobody = assignmentIsNobody,
+            argUserIsConsole = sender is ConsoleSender,
+        )
+            .let { CompletableFuture.completedFuture(it) }
     }
 
     // /ticket assign <ID> <Assignment>
@@ -364,7 +355,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<NotifyParams> {
+    ): CompletableFuture<Notification> {
         val sqlAssignment = args.subList(2, args.size).joinToString(" ")
         return allAssignVariations(sender, silent, args[1], sqlAssignment, ticket)
     }
@@ -375,7 +366,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<NotifyParams> {
+    ): CompletableFuture<Notification> {
         return allAssignVariations(sender, silent, args[1], sender.name, ticket)
     }
 
@@ -385,7 +376,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<NotifyParams> {
+    ): CompletableFuture<Notification> {
 
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
@@ -400,7 +391,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<NotifyParams> {
+    ): CompletableFuture<Notification> {
 
         val message = args.subList(2, args.size)
             .joinToString(" ")
@@ -420,26 +411,19 @@ class CorePipeline(
             }.thenRunAsync {
                 insertAction(
                     id = ticket.id,
-                    action = Ticket.Action(Ticket.Action.Type.CLOSE, sender.toCreator(), nullTicketLocation)
+                    action = Ticket.Action(Ticket.Action.Type.CLOSE, sender.toCreator(), sender.getLocAsTicketLoc())
                 )
             }.thenRunAsync { instanceState.database.setStatus(ticket.id, Ticket.Status.CLOSED) }
         }
 
-        return NotifyParams(
+        return Notification.CloseWithComment.build(
             silent = silent,
-            sender = sender,
             ticket = ticket,
-            senderLambda = { it.notifyTicketCloseWCommentSuccess.parseMiniMessage("id" templated args[1]) },
-            creatorLambda = { it.notifyTicketModificationEvent.parseMiniMessage("id" templated args[1]) },
-            massNotifyLambda = {
-                it.notifyTicketCloseWCommentEvent.parseMiniMessage(
-                    "user" templated sender.name,
-                    "id" templated args[1],
-                    "message" templated message,
-                )
-            },
-            massNotifyPerm = "ticketmanager.notify.massNotify.close",
-            creatorAlertPerm = "ticketmanager.notify.change.close"
+            sender = sender,
+            argID = args[1],
+            argUser = sender.name,
+            argMessage = message,
+            argUserIsConsole = sender is ConsoleSender
         )
             .let { CompletableFuture.completedFuture(it) }
     }
@@ -449,12 +433,12 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<NotifyParams> {
+    ): CompletableFuture<Notification> {
 
         CompletableFuture.runAsync {
             instanceState.database.insertAction(
                 id = ticket.id,
-                action = Ticket.Action(Ticket.Action.Type.CLOSE, sender.toCreator(), nullTicketLocation)
+                action = Ticket.Action(Ticket.Action.Type.CLOSE, sender.toCreator(), sender.getLocAsTicketLoc())
             )
             instanceState.database.setStatus(ticket.id, Ticket.Status.CLOSED)
         }
@@ -464,20 +448,13 @@ class CorePipeline(
                 instanceState.discord.closeUpdate(sender.name, ticket.id.toString())
             }
 
-        return NotifyParams(
+        return Notification.CloseWithoutComment.build(
             silent = silent,
-            sender = sender,
             ticket = ticket,
-            creatorLambda = { it.notifyTicketModificationEvent.parseMiniMessage("id" templated args[1]) },
-            senderLambda = { it.notifyTicketCloseSuccess.parseMiniMessage("id" templated args[1]) },
-            massNotifyLambda = {
-                it.notifyTicketCloseEvent.parseMiniMessage(
-                    "user" templated sender.name,
-                    "id" templated args[1],
-                )
-            },
-            massNotifyPerm = "ticketmanager.notify.massNotify.close",
-            creatorAlertPerm = "ticketmanager.notify.change.close"
+            sender = sender,
+            argID = args[1],
+            argUser = sender.name,
+            argUserIsConsole = sender is ConsoleSender
         )
             .let { CompletableFuture.completedFuture(it) }
     }
@@ -488,37 +465,26 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket
-    ): CompletableFuture<NotifyParams> {
+    ): CompletableFuture<Notification> {
         val lowerBound = args[1].toLong()
         val upperBound = args[2].toLong()
 
-        CompletableFuture.runAsync { instanceState.database.massCloseTickets(lowerBound, upperBound, sender.toCreator(), nullTicketLocation) }
+        CompletableFuture.runAsync { instanceState.database.massCloseTickets(lowerBound, upperBound, sender.toCreator(), sender.getLocAsTicketLoc()) }
 
         if (!silent && instanceState.discord?.state?.notifyOnCloseAll == true)
             CompletableFuture.runAsync {
                 instanceState.discord.closeAllUpdate(sender.name, "$lowerBound", "$upperBound")
             }
 
-        return NotifyParams(
+
+        return Notification.MassClose.build(
             silent = silent,
-            sender = sender,
             ticket = ticket,
-            creatorLambda = null,
-            senderLambda = {
-                it.notifyTicketMassCloseSuccess.parseMiniMessage(
-                    "lower" templated args[1],
-                    "upper" templated args[2],
-                )
-            },
-            massNotifyLambda = {
-                it.notifyTicketMassCloseEvent.parseMiniMessage(
-                    "user" templated sender.name,
-                    "lower" templated args[1],
-                    "upper" templated args[2],
-                )
-            },
-            massNotifyPerm = "ticketmanager.notify.massNotify.massClose",
-            creatorAlertPerm = "ticketmanager.notify.change.massClose"
+            sender = sender,
+            argLower = args[1],
+            argUpper = args[2],
+            argUser = sender.name,
+            argUserIsConsole = sender is ConsoleSender,
         )
             .let { CompletableFuture.completedFuture(it) }
     }
@@ -529,7 +495,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<NotifyParams> {
+    ): CompletableFuture<Notification> {
         val message = args.subList(2, args.size)
             .joinToString(" ")
             .let(platform::stripColour)
@@ -548,21 +514,14 @@ class CorePipeline(
         if (!silent && instanceState.discord?.state?.notifyOnComment == true)
             CompletableFuture.runAsync { instanceState.discord.commentUpdate(sender.name, ticket.id.toString(), message) }
 
-        return NotifyParams(
+        return Notification.Comment.build(
             silent = silent,
-            sender = sender,
             ticket = ticket,
-            creatorLambda = { it.notifyTicketModificationEvent.parseMiniMessage("id" templated args[1]) },
-            senderLambda = { it.notifyTicketCommentSuccess.parseMiniMessage("id" templated args[1]) },
-            massNotifyLambda = {
-                it.notifyTicketCommentEvent.parseMiniMessage(
-                    "user" templated sender.name,
-                    "id" templated args[1],
-                    "message" templated message,
-                )
-            },
-            massNotifyPerm = "ticketmanager.notify.massNotify.comment",
-            creatorAlertPerm = "ticketmanager.notify.change.comment"
+            sender = sender,
+            argID = args[1],
+            argUser = sender.name,
+            argMessage = message,
+            argUserIsConsole = sender is ConsoleSender
         )
             .let { CompletableFuture.completedFuture(it) }
     }
@@ -600,7 +559,7 @@ class CorePipeline(
     private fun create(
         sender: Sender,
         args: List<String>,
-    ): CompletableFuture<NotifyParams> {
+    ): CompletableFuture<Notification> {
         val message = args.subList(1, args.size)
             .joinToString(" ")
             .let(platform::stripColour)
@@ -618,21 +577,14 @@ class CorePipeline(
                 if (instanceState.discord?.state?.notifyOnCreate == true)
                     CompletableFuture.runAsync { instanceState.discord.createUpdate(sender.name, id.toString(), message) }
 
-                NotifyParams(
+                Notification.Create.build(
                     silent = false,
+                    ticket = ticket,
                     sender = sender,
-                    ticket= ticket,
-                    creatorLambda = null,
-                    senderLambda = { it.notifyTicketCreationSuccess.parseMiniMessage("id" templated id.toString()) },
-                    massNotifyLambda = {
-                        it.notifyTicketCreationEvent.parseMiniMessage(
-                            "user" templated sender.name,
-                            "id" templated id.toString(),
-                            "message" templated message
-                        )
-                    },
-                    creatorAlertPerm = "ticketmanager.NO NODE",
-                    massNotifyPerm = "ticketmanager.notify.massNotify.create",
+                    argID = id.toString(),
+                    argUser = sender.name,
+                    argMessage = message,
+                    argUserIsConsole = sender is ConsoleSender
                 )
             }
     }
@@ -1008,8 +960,8 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<NotifyParams> {
-        val action = Ticket.Action(Ticket.Action.Type.REOPEN, sender.toCreator(), nullTicketLocation)
+    ): CompletableFuture<Notification> {
+        val action = Ticket.Action(Ticket.Action.Type.REOPEN, sender.toCreator(), sender.getLocAsTicketLoc())
 
         // Updates user status if needed
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
@@ -1025,20 +977,13 @@ class CorePipeline(
         if (!silent && instanceState.discord?.state?.notifyOnReopen == true)
             CompletableFuture.runAsync { instanceState.discord.reopenUpdate(sender.name, ticket.id.toString()) }
 
-        return NotifyParams(
+        return Notification.Reopen.build(
             silent = silent,
-            sender = sender,
             ticket = ticket,
-            creatorLambda = { it.notifyTicketModificationEvent.parseMiniMessage("id" templated args[1]) },
-            senderLambda = { it.notifyTicketReopenSuccess.parseMiniMessage("id" templated args[1]) },
-            massNotifyLambda = {
-                it.notifyTicketReopenEvent.parseMiniMessage(
-                    "user" templated sender.name,
-                    "id" templated args[1],
-                )
-            },
-            creatorAlertPerm = "ticketmanager.notify.change.reopen",
-            massNotifyPerm = "ticketmanager.notify.massNotify.reopen",
+            sender = sender,
+            argID = args[1],
+            argUser = sender.name,
+            argUserIsConsole = sender is ConsoleSender
         )
             .let { CompletableFuture.completedFuture(it) }
     }
@@ -1140,14 +1085,14 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<NotifyParams> {
+    ): CompletableFuture<Notification> {
 
         val newPriority = byteToPriority(args[2].toByte())
 
         CompletableFuture.runAsync {
             instanceState.database.insertAction(
                 id = ticket.id,
-                action = Ticket.Action(Ticket.Action.Type.SET_PRIORITY, sender.toCreator(), nullTicketLocation, args[2])
+                action = Ticket.Action(Ticket.Action.Type.SET_PRIORITY, sender.toCreator(), sender.getLocAsTicketLoc(), args[2])
             )
             instanceState.database.setPriority(ticket.id, newPriority)
         }
@@ -1156,23 +1101,14 @@ class CorePipeline(
             CompletableFuture.runAsync { instanceState.discord.priorityChangeUpdate(sender.name, ticket.id.toString(), newPriority) }
 
         return CompletableFuture.completedFuture(
-            NotifyParams(
+            Notification.SetPriority.build(
                 silent = silent,
-                sender = sender,
                 ticket = ticket,
-                creatorLambda = null,
-                senderLambda = { it.notifyTicketSetPrioritySuccess.parseMiniMessage("id" templated args[1]) },
-                massNotifyLambda = {
-                    it.notifyTicketSetPriorityEvent
-                        .replace("%PCC%", priorityToHexColour(newPriority, sender.locale))
-                        .parseMiniMessage(
-                            "user" templated sender.name,
-                            "id" templated args[1],
-                            "priority" templated newPriority.toLocaledWord(sender.locale),
-                        )
-                },
-                creatorAlertPerm = "ticketmanager.notify.change.priority",
-                massNotifyPerm =  "ticketmanager.notify.massNotify.priority"
+                sender = sender,
+                argUser = sender.name,
+                argID = args[1],
+                argPriority = newPriority,
+                argUserIsConsole = sender is ConsoleSender
             )
         )
     }
@@ -1192,7 +1128,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<NotifyParams> {
+    ): CompletableFuture<Notification> {
         return allAssignVariations(sender, silent, args[1], null, ticket)
     }
 
@@ -1410,7 +1346,7 @@ class CorePipeline(
             .parseMiniMessage("status" templated ticket.status.toLocaledWord(locale))
             .let(this::append)
 
-        locale.viewLocation.parseMiniMessage("location" templated ticket.actions[0].location.toString())
+        locale.viewLocation.parseMiniMessage("location" templated ticket.actions[0].location.toString().let { if (!instanceState.enableVelocity) it.split(" ").drop(1).joinToString(" ") else it })
             .let {
                 if (ticket.actions[0].location.world != null)
                     it.hoverEvent(showText(Component.text(locale.clickTeleport)))
@@ -1420,31 +1356,6 @@ class CorePipeline(
             .let(this::append)
 
         append(locale.viewSep2.parseMiniMessage())
-    }
-
-    inner class NotifyParams(
-        val silent: Boolean,
-        val ticket: Ticket,
-        val sender: Sender,
-        val creatorAlertPerm: String,
-        val massNotifyPerm: String,
-        val senderLambda: ((TMLocale) -> Component)?,
-        val creatorLambda: ((TMLocale) -> Component)?,
-        val massNotifyLambda: ((TMLocale) -> Component)?,
-    ) {
-        val sendMassNotifyMSG: Boolean = !silent && massNotifyLambda != null
-        val sendSenderMSG: Boolean = (!sender.has(massNotifyPerm) || silent) && senderLambda != null
-
-        val creator: Player? = ticket.creator.run {
-            if (this is User) platform.buildPlayer(uuid, instanceState.localeHandler)
-            else null
-        }
-        val sendCreatorMSG: Boolean = sender.toCreator() != ticket.creator
-                && ticket.creator != ConsoleObject
-                && !silent
-                && creatorLambda != null
-                && creator != null
-                && creator.has(creatorAlertPerm) && !creator.has(massNotifyPerm)
     }
 }
 

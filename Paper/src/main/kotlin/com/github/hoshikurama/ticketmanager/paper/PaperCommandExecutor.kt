@@ -2,6 +2,8 @@ package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.pipeline.HybridPipeline
+import com.github.hoshikurama.ticketmanager.pipeline.Pipeline
 import com.github.hoshikurama.ticketmanager.pipeline.PurePipeline
 import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.platform.Sender
@@ -11,12 +13,19 @@ import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 
 class PaperCommandExecutor(
-    platform: PlatformFunctions,
-    instanceState: InstancePluginState,
-    globalState: GlobalPluginState,
+    private val platform: PlatformFunctions,
+    private val instanceState: InstancePluginState,
+    private val globalState: GlobalPluginState,
     private val perms: Permission,
-) : CommandExecutor, PurePipeline(platform, instanceState, globalState) {
+) : CommandExecutor, Pipeline {
 
+    private val purePipeline: PurePipeline = object : PurePipeline(platform, instanceState, globalState) {}
+    private val hybridPipeline: HybridPipeline = object : HybridPipeline(platform, instanceState, globalState) {}
+
+    override fun execute(sender: Sender, args: List<String>) {
+        if (instanceState.enableVelocity) hybridPipeline.execute(sender, args)
+        else purePipeline.execute(sender, args)
+    }
     override fun onCommand(
         sender: CommandSender,
         command: Command,
@@ -25,10 +34,10 @@ class PaperCommandExecutor(
     ): Boolean {
         val localeHandler = instanceState.localeHandler
         val agnosticSender: Sender =
-            if (sender is org.bukkit.entity.Player) PaperPlayer(sender, perms, localeHandler)
-            else PaperConsole(localeHandler.consoleLocale)
+            if (sender is org.bukkit.entity.Player) PaperPlayer(sender, perms, localeHandler, instanceState.velocityServerName)
+            else PaperConsole(localeHandler.consoleLocale, instanceState.velocityServerName)
 
-        super.execute(agnosticSender, args.toList())
+        execute(agnosticSender, args.toList())
         return false
     }
 }

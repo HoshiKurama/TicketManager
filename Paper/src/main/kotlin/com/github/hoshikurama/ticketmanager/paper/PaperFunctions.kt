@@ -20,6 +20,7 @@ import java.util.logging.Level
 class PaperFunctions(
     private val perms: Permission,
     private val plugin: Plugin,
+    private val serverName: String,
 ) : PlatformFunctions {
 
     override fun massNotify(localeHandler: LocaleHandler, permission: String, localeMsg: (TMLocale) -> Component) {
@@ -33,11 +34,11 @@ class PaperFunctions(
     }
 
     override fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): Player? {
-        return Bukkit.getPlayer(uuid)?.run { PaperPlayer(this, perms, localeHandler) }
+        return Bukkit.getPlayer(uuid)?.run { PaperPlayer(this, perms, localeHandler, serverName) }
     }
 
-    override fun getPlayersOnAllServers(localeHandler: LocaleHandler): List<Player> {
-        return Bukkit.getOnlinePlayers().map { PaperPlayer(it, perms, localeHandler) }
+    override fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<Player> {
+        return Bukkit.getOnlinePlayers().map { PaperPlayer(it, perms, localeHandler, serverName) }
     }
 
     override fun stripColour(msg: String): String {
@@ -61,6 +62,10 @@ class PaperFunctions(
             val location = Location(this, loc.x!!.toDouble(), loc.y!!.toDouble(), loc.z!!.toDouble())
             Bukkit.getScheduler().runTask(plugin, Runnable { paperPlayer.pPlayer.teleport(location) })
         }
+    }
+
+    override fun relayMessageToProxy(encodedMessage: ByteArray) {
+        plugin.server.sendPluginMessage(plugin, "ticketmanager:inform_proxy", encodedMessage)
     }
 
     override fun getConsoleAudience(): Audience {

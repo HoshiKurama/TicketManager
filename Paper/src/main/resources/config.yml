@@ -1,7 +1,7 @@
 ##############################################
 ##############################################
 #       TicketManager Config File
-#             Version 8.0.3
+#             Version 8.1.0
 ##############################################
 ##############################################
 #
@@ -58,6 +58,10 @@ Cooldown_Time: 0
 # or Waterfall. This only works with Paper servers.
 # Values: true, false
 Enable_Velocity: false
+#
+# Server Name: Instructs TicketManager what the server name is.
+# THIS MUST MATCH THE NAME GIVEN IN THE VELOCITY FILE!
+Velocity_Server_Name: '_'
 #
 # ##########################################
 #           Database Settings:

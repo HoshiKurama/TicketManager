@@ -13,7 +13,8 @@ import org.bukkit.Bukkit
 class PaperPlayer(
     internal val pPlayer: org.bukkit.entity.Player,
     private val perms: Permission,
-    localeHandler: LocaleHandler
+    localeHandler: LocaleHandler,
+    private val serverName: String,
 ) : Player(
     uniqueID = pPlayer.uniqueId,
     permissionGroups = perms.getPlayerGroups(pPlayer).toList(),
@@ -21,7 +22,7 @@ class PaperPlayer(
     locale = localeHandler.getOrDefault(pPlayer.locale().toString()),
 ) {
     override fun getLocAsTicketLoc(): Ticket.TicketLocation {
-       return pPlayer.location.run { Ticket.TicketLocation(null, world.name, blockX, blockY, blockZ) }
+       return pPlayer.location.run { Ticket.TicketLocation(serverName, world.name, blockX, blockY, blockZ) }
     }
 
     override fun sendMessage(msg: String) {
@@ -38,7 +39,8 @@ class PaperPlayer(
 }
 
 class PaperConsole(
-    locale: TMLocale
+    locale: TMLocale,
+    private val serverName: String,
 ) : Console(locale) {
     override fun getServerName(): String? = null
 
@@ -51,6 +53,6 @@ class PaperConsole(
     }
 
     override fun getLocAsTicketLoc(): Ticket.TicketLocation {
-        return Ticket.TicketLocation(null, null, null, null, null)
+        return Ticket.TicketLocation(serverName, null, null, null, null)
     }
 }

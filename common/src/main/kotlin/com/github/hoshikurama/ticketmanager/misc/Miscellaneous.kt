@@ -152,7 +152,7 @@ fun pushErrors(
         platform.getConsoleAudience().sendMessage(generateModifiedStacktrace(exception, instanceState.localeHandler.consoleLocale))
 
     // Pushes other messages to other players
-    val onlinePlayers = platform.getPlayersOnAllServers(instanceState.localeHandler)
+    val onlinePlayers = platform.getAllOnlinePlayers(instanceState.localeHandler)
 
     onlinePlayers.asParallelStream()
         .filter { it.has("ticketmanager.notify.error.stacktrace") }

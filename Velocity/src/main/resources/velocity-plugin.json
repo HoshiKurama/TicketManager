@@ -1,0 +1,9 @@
+{
+  "id": "ticketmanager",
+  "name": "TicketManager",
+  "version": "8.1.0",
+  "description": "Advanced Ticket Management Solution",
+  "authors": ["HoshiKurama"],
+  "dependencies": [],
+  "main": "com.github.hoshikurama.ticketmanager.velocity.TMPluginVelocityImpl"
+}
