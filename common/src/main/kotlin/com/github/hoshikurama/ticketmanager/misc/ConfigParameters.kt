@@ -30,6 +30,6 @@ data class ConfigParameters(
     val printModifiedStacktrace: Boolean?,
     val printFullStacktrace: Boolean?,
     val enableAdvancedVisualControl: Boolean?,
-    val enableVelocity: Boolean?,
-    val velocityServerName: String?,
+    val enableProxyMode: Boolean?,
+    val proxyServerName: String?,
 )

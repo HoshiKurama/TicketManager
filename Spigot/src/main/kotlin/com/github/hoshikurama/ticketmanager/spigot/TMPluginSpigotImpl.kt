@@ -92,8 +92,8 @@ class TMPluginSpigotImpl(
                 printModifiedStacktrace = getBoolean("Print_Modified_Stacktrace"),
                 printFullStacktrace = getBoolean("Print_Full_Stacktrace"),
                 enableAdvancedVisualControl = getBoolean("Enable_Advanced_Visual_Control"),
-                enableVelocity = false,
-                velocityServerName = "-"
+                enableProxyMode = false,
+                proxyServerName = ""
             )
         }
     }

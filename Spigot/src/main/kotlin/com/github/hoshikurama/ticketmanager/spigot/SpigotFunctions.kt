@@ -53,7 +53,7 @@ class SpigotFunctions(
         return uuid.run(Bukkit::getOfflinePlayer).name ?: "UUID"
     }
 
-    override fun teleportToTicketLocation(player: Player, loc: Ticket.TicketLocation) {
+    override fun teleportToTicketLocSameServer(player: Player, loc: Ticket.TicketLocation) {
         val world = Bukkit.getWorld(loc.world!!)
         val spigotPlayer = player as SpigotPlayer
 
@@ -63,8 +63,12 @@ class SpigotFunctions(
         }
     }
 
+    override fun teleportToTicketLocDiffServer(player: Player, loc: Ticket.TicketLocation) {
+        throw Exception("Proxies with Spigot NOT Supported! Please use Paper for Proxy Support")
+    }
+
     override fun relayMessageToProxy(encodedMessage: ByteArray) {
-        throw Exception("Proxy Support ")
+        throw Exception("Proxies with Spigot NOT Supported! Please use Paper for Proxy Support")
     }
 
     override fun getConsoleAudience(): Audience {

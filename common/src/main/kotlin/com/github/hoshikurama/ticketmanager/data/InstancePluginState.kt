@@ -18,6 +18,6 @@ class InstancePluginState(
     val printModifiedStacktrace: Boolean,
     val printFullStacktrace: Boolean,
 
-    val enableVelocity: Boolean,
-    val velocityServerName: String?,
+    val enableProxyMode: Boolean,
+    val proxyServerName: String?,
 )

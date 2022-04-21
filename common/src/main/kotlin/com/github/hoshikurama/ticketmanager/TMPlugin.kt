@@ -148,9 +148,9 @@ abstract class TMPlugin(
                 }
 
                 // Proxy Stuff
-                val enableVelocity = c.enableVelocity ?: false.addToErrors("Enable_Velocity", Boolean::toString)
+                val enableVelocity = c.enableProxyMode ?: false.addToErrors("Enable_Velocity", Boolean::toString)
 
-                val serverName = c.velocityServerName.let { if (it == null) null.addToErrors("Velocity_Server_Name") { "null" } else it.takeIf(String::isNotBlank) }
+                val serverName = c.proxyServerName.let { if (it == null) null.addToErrors("Velocity_Server_Name") { "null" } else it.takeIf(String::isNotBlank) }
                 platformFunctions = buildPlatformFunctions(serverName)
 
 

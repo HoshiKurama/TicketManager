@@ -23,7 +23,7 @@ class PaperCommandExecutor(
     private val hybridPipeline: HybridPipeline = object : HybridPipeline(platform, instanceState, globalState) {}
 
     override fun execute(sender: Sender, args: List<String>) {
-        if (instanceState.enableVelocity) hybridPipeline.execute(sender, args)
+        if (instanceState.enableProxyMode) hybridPipeline.execute(sender, args)
         else purePipeline.execute(sender, args)
     }
     override fun onCommand(
@@ -34,8 +34,8 @@ class PaperCommandExecutor(
     ): Boolean {
         val localeHandler = instanceState.localeHandler
         val agnosticSender: Sender =
-            if (sender is org.bukkit.entity.Player) PaperPlayer(sender, perms, localeHandler, instanceState.velocityServerName)
-            else PaperConsole(localeHandler.consoleLocale, instanceState.velocityServerName)
+            if (sender is org.bukkit.entity.Player) PaperPlayer(sender, perms, localeHandler, instanceState.proxyServerName)
+            else PaperConsole(localeHandler.consoleLocale, instanceState.proxyServerName)
 
         execute(agnosticSender, args.toList())
         return false

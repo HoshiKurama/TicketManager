@@ -28,8 +28,8 @@ class PaperTabComplete(
             val sender = event.sender
             val localeHandler = instanceState.localeHandler
             val tmSender: Sender =
-                if (sender is org.bukkit.entity.Player) PaperPlayer(sender, perms, localeHandler, instanceState.velocityServerName)
-                else PaperConsole(localeHandler.consoleLocale, instanceState.velocityServerName)
+                if (sender is org.bukkit.entity.Player) PaperPlayer(sender, perms, localeHandler, instanceState.proxyServerName)
+                else PaperConsole(localeHandler.consoleLocale, instanceState.proxyServerName)
 
             event.completions = getReturnedTabs(tmSender, args)
         }

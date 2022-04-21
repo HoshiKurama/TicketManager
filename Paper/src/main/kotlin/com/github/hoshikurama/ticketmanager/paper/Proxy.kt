@@ -11,7 +11,7 @@ import org.bukkit.entity.Player
 import org.bukkit.plugin.messaging.PluginMessageListener
 import java.util.*
 
-class VelocityProxy(
+class Proxy(
     private val platform: PlatformFunctions,
     private val instanceState: InstancePluginState
 ): PluginMessageListener {

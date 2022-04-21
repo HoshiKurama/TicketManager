@@ -1121,7 +1121,7 @@ class CorePipeline(
         if (sender !is Player || location.world == null) return
         // Sender is player and location exists...
 
-        if (location.server == instanceState.velocityServerName)
+        if (location.server == instanceState.proxyServerName)
             platform.teleportToTicketLocSameServer(sender, location)
         else if (location.server != null)
             platform.teleportToTicketLocDiffServer(sender, location)
@@ -1352,7 +1352,7 @@ class CorePipeline(
             .parseMiniMessage("status" templated ticket.status.toLocaledWord(locale))
             .let(this::append)
 
-        locale.viewLocation.parseMiniMessage("location" templated ticket.actions[0].location.toString().let { if (!instanceState.enableVelocity) it.split(" ").drop(1).joinToString(" ") else it })
+        locale.viewLocation.parseMiniMessage("location" templated ticket.actions[0].location.toString().let { if (!instanceState.enableProxyMode) it.split(" ").drop(1).joinToString(" ") else it })
             .let {
                 if (ticket.actions[0].location.world != null)
                     it.hoverEvent(showText(Component.text(locale.clickTeleport)))

@@ -6,6 +6,7 @@ import com.google.inject.Inject
 import com.velocitypowered.api.event.Subscribe
 import com.velocitypowered.api.event.connection.PluginMessageEvent
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent
 import com.velocitypowered.api.plugin.Plugin
 import com.velocitypowered.api.proxy.ProxyServer
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier
@@ -27,16 +28,16 @@ class TMPluginVelocityImpl @Inject constructor(private val server: ProxyServer) 
 
     @Subscribe
     fun onProxyInitialization(event: ProxyInitializeEvent) {
-        server.channelRegistrar.register(incomingMessage)
-        server.channelRegistrar.register(outgoingMessage)
+        server.channelRegistrar.register(incomingMessage, outgoingMessage, serverToProxyTeleport, proxyToServerTeleport)
+    }
 
-        server.channelRegistrar.register(serverToProxyTeleport)
-        server.channelRegistrar.register(proxyToServerTeleport)
+    @Subscribe
+    fun onProxyShutdown(event: ProxyShutdownEvent) {
+        server.channelRegistrar.unregister(incomingMessage, outgoingMessage, serverToProxyTeleport, proxyToServerTeleport)
     }
 
     @Subscribe
     fun onMessage(event: PluginMessageEvent) {
-
         when (event.identifier) {
 
             incomingMessage ->

@@ -2,6 +2,7 @@
 ##############################################
 #       TicketManager Config File
 #             Version 8.1.0
+#             Paper Edition
 ##############################################
 ##############################################
 #
@@ -50,18 +51,25 @@ Use_Cooldowns: false
 Cooldown_Time: 0
 #
 # ##########################################
-#        Proxy Support (COMING SOON)
+#             Proxy Settings
 # ##########################################
 #
-# Enable Velocity: Tells TicketManager to configure itself
-# for operation with the Velocity proxy. Note: This is NOT for Bungeecord
-# or Waterfall. This only works with Paper servers.
-# Values: true, false
-Enable_Velocity: false
+# TicketManager supports two proxies: Velocity and Waterfall. Bungeecord support is NOT
+# guaranteed, and issues involving the proxy will be ignored. Velocity is recommended.
+#
+# Proxy mode instructs the plugin to broadcast notifications to all servers in the
+# network and allows teleportation to tickets on other servers in the network. Note that
+# at least 1 user must be on a particular server to teleport to it or see notifications
+# (this is a proxy limitation).
+#
+# Proxy mode does not alter existing functionality, and the plugin will continue to work
+# if no proxy is connected despite being enabled.
+#
+Enable_Proxy: false
 #
 # Server Name: Instructs TicketManager what the server name is.
-# THIS MUST MATCH THE NAME GIVEN IN THE VELOCITY FILE!
-Velocity_Server_Name: ''
+# THIS MUST MATCH THE NAME GIVEN IN THE PROXY FILE!
+Proxy_Server_Name: ''
 #
 # ##########################################
 #           Database Settings:

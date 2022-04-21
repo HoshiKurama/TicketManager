@@ -21,7 +21,7 @@ class PaperJoinEvent(
 
     @EventHandler
     fun onPlayerJoinEvent(event: org.bukkit.event.player.PlayerJoinEvent) {
-        val player = PaperPlayer(event.player, perms, instanceState.localeHandler, instanceState.velocityServerName)
+        val player = PaperPlayer(event.player, perms, instanceState.localeHandler, instanceState.proxyServerName)
         super.whenPlayerJoins(player)
 
         val uuidString = event.player.uniqueId.toString()

@@ -5,5 +5,6 @@ include(
     "Paper",
     "Spigot",
     "Sponge",
-    "Velocity"
+    "Velocity",
+    "Waterfall"
 )

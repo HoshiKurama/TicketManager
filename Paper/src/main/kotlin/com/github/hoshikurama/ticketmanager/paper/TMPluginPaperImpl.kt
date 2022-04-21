@@ -23,7 +23,7 @@ class TMPluginPaperImpl(
 )  {
     private lateinit var metrics: Metrics
 
-    private var proxy: VelocityProxy? = null
+    private var proxy: Proxy? = null
 
     override fun performSyncBefore() {
         // Launch Metrics
@@ -91,8 +91,8 @@ class TMPluginPaperImpl(
                 printModifiedStacktrace = getBoolean("Print_Modified_Stacktrace"),
                 printFullStacktrace = getBoolean("Print_Full_Stacktrace"),
                 enableAdvancedVisualControl = getBoolean("Enable_Advanced_Visual_Control"),
-                enableVelocity = getBoolean("Enable_Velocity"),
-                velocityServerName = getString("Velocity_Server_Name"),
+                enableProxyMode = getBoolean("Enable_Proxy"),
+                proxyServerName = getString("Proxy_Server_Name"),
             )
         }
     }
@@ -110,8 +110,8 @@ class TMPluginPaperImpl(
         paperPlugin.server.pluginManager.registerEvents(joinEvent as Listener, paperPlugin)
 
         // Register Velocity listeners if necessary
-        if (instancePluginState.enableVelocity) {
-            proxy = VelocityProxy(platformFunctions, instancePluginState)
+        if (instancePluginState.enableProxyMode) {
+            proxy = Proxy(platformFunctions, instancePluginState)
             paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, "ticketmanager:inform_proxy")
             paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, "ticketmanager:relayed_message", proxy!!)
             paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, "ticketmanager:proxy_to_server_tp", proxy!!)
