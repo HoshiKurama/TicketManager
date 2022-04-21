@@ -135,7 +135,6 @@ class CorePipeline(
                 commandWordSearch -> has("ticketmanager.command.search")
                 commandWordSetPriority -> has("ticketmanager.command.setPriority")
                 commandWordSilentSetPriority -> hasWithSilent("ticketmanager.command.setPriority")
-                commandWordTeleport -> has("ticketmanager.command.teleport")
                 commandWordView -> hasDuality("ticketmanager.command.view")
                 commandWordDeepView -> hasDuality("ticketmanager.command.viewdeep")
                 commandWordConvertDB -> has("ticketmanager.command.convertDatabase")
@@ -149,6 +148,10 @@ class CorePipeline(
                             else perm
                         }
                 }
+                commandWordTeleport ->
+                    if (ticket.actions[0].location.server == instanceState.proxyServerName)
+                        has("ticketmanager.command.teleport")
+                    else has("ticketmanager.command.proxyteleport")
                 else -> true
             }
         }
