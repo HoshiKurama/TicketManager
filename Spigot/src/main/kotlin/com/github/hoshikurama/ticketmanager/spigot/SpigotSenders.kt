@@ -20,6 +20,7 @@ class SpigotPlayer(
     permissionGroups = perms.getPlayerGroups(sPlayer).toList(),
     name = sPlayer.name,
     locale = localeHandler.getOrDefault(sPlayer.locale),
+    serverName = null,
 ) {
     override fun getLocAsTicketLoc(): Ticket.TicketLocation {
         return sPlayer.location.run { Ticket.TicketLocation(null, world?.name, blockX, blockY, blockZ) }
@@ -41,8 +42,7 @@ class SpigotPlayer(
 class SpigotConsole(
     private val adventure: BukkitAudiences,
     locale: TMLocale,
-): Console(locale) {
-    override fun getServerName(): String? = null
+): Console(locale, null) {
 
     override fun sendMessage(msg: String) {
         msg.parseMiniMessage().run(::sendMessage)
