@@ -1355,7 +1355,15 @@ class CorePipeline(
             .parseMiniMessage("status" templated ticket.status.toLocaledWord(locale))
             .let(this::append)
 
-        locale.viewLocation.parseMiniMessage("location" templated ticket.actions[0].location.toString().let { if (!instanceState.enableProxyMode) it.split(" ").drop(1).joinToString(" ") else it })
+        val locationString = ticket.actions[0].location.let {
+            if (!instanceState.enableProxyMode && it.server != null)
+                it.toString()
+                    .split(" ")
+                    .drop(1)
+                    .joinToString(" ")
+            else it.toString()
+        }
+        locale.viewLocation.parseMiniMessage("location" templated locationString)
             .let {
                 if (ticket.actions[0].location.world != null)
                     it.hoverEvent(showText(Component.text(locale.clickTeleport)))
