@@ -72,9 +72,6 @@ permissions:
   ticketmanager.command.teleport:
     description: Teleport to any ticket
     default: false
-  ticketmanager.command.proxyteleport:
-    description: Teleport to tickets across an entire proxy network
-    default: false
   ticketmanager.command.view.all:
     description: View any ticket
     default: false
@@ -179,7 +176,6 @@ permissions:
       ticketmanager.command.search: true
       ticketmanager.command.setPriority: true
       ticketmanager.command.teleport: true
-      ticketmanager.command.proxyteleport: true
       ticketmanager.command.view.all: true
       ticketmanager.command.view.own: true
       ticketmanager.command.viewdeep.all: true
