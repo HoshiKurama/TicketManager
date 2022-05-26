@@ -163,7 +163,7 @@ Help_Line3: '%nl%<%CC%>Silenceable: <#F3F3F3>[<red>✕<#F3F3F3>|<green>✓<#F3F3
 Help_Sep: '%nl%<gray>========================================='
 Help_HasSilence: '<green>[✓]'
 Help_LackSilence: '<red>[✕]'
-Help_RequiredParam: '<#F3F3F3>‹%Param%\›'
+Help_RequiredParam: '<#F3F3F3>‹%Param%›'
 Help_OptionalParam: '<gray>[%Param%]'
 Help_Entry: '%nl%<silenceable> <%CC%>/<command> <params>'  # Template: <silenceable> <command> <params>
 #
