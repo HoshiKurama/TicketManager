@@ -129,6 +129,7 @@ class TMPluginSpigotImpl(
             if (index != entries.lastIndex)
                 writer.newLine()
         }
+        writer.close()
     }
 
     override fun registerProcesses() {
