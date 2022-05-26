@@ -3,7 +3,7 @@ package com.github.hoshikurama.ticketmanager
 import java.util.*
 
 const val metricsKey = 11033
-const val pluginVersion = "8.1.0"
+const val pluginVersion = "8.2.0"
 
 val randServerIdentifier: UUID = UUID.randomUUID() // For proxies
 
