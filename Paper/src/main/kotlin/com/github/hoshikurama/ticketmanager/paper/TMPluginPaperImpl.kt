@@ -128,6 +128,7 @@ class TMPluginPaperImpl(
             if (index != entries.lastIndex)
                 writer.newLine()
         }
+        writer.close()
     }
 
     override fun registerProcesses() {
