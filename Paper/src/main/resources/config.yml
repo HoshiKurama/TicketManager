@@ -1,223 +1,297 @@
-##############################################
-##############################################
-#       TicketManager Config File
-#             Version 8.1.0
-#             Paper Edition
-##############################################
-##############################################
-#
-# Plugin Proudly Made by: HoshiKurama
-#
-# All permissions and commands can
-# be found on the GitHub wiki page.
-# https://github.com/HoshiKurama/TicketManager
-#
-# ##########################################
-#                 Locale:
-# ##########################################
-#
-# Force Locale: Forces specific language to be used for commands and responses.
-# Values: true, false
-Force_Locale: false
-#
-# Preferred Locale: Locale to use when player locale is not found. Using a non-supported
-# locale will cause TicketManager to internally default to Canadian English.
-# Values:
-#   'en_CA' = Canadian English
-#   'en_US' = US English
-#   'en_UK' = UK English
-#   'de_DE' = German
-Preferred_Locale: 'en_CA'
-#
-# Console Locale: Locale Console will use. Using a non-supported locale will cause
-# TicketManager to internally default to Preferred_Locale. When discord support is
-# enabled, discord locale uses this value.
-# Values: Same as in Preferred_Locale
+# ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
+# ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
+#                                              TicketManager Config File                                              #
+#                                                     Version 8.2.0                                                   #
+#                                                     Paper Edition                                                   #
+# ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
+# ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
+#   Information:                                                                                                      #
+#       • Plugin Proudly Made By: HoshiKurama.                                                                        #
+#       • Plugin details such as permissions and commands are documented on the wiki:                                 #
+#         https://github.com/HoshiKurama/TicketManager.                                                               #
+#                                                                                                                     #
+# ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
+# ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#                                                Localization Settings                                                #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #                                                                                                   #
+#   TicketManager supports real-time localization on a per-client basis. Minecraft clients using a supported          #
+#   language can                                                                                                      #
+#       • See translated messages                                                                                     #
+#       • Use translated commands                                                                                     #
+#       • Receive translated tab-completions.                                                                         #
+#                                                                                                                     #
+#   Exceptions for localizations are                                                                                  #
+#       • Player names                                                                                                #
+#       • Ticket comments.                                                                                            #
+#                                                                                                                     #
+#                                              Supported Localizations:                                               #
+#                                     ╔═══════════╤══════════════════════════════╗                                    #
+#                                     ║   Value   │           Language           ║                                    #
+#                                     ╠═══════════╪══════════════════════════════╣                                    #
+#                                     ║  'de_DE'  │ German                       ║                                    #
+#                                     ║  'en_CA'  │ Canadian English             ║                                    #
+#                                     ║  'en_UK'  │ UK English                   ║                                    #
+#                                     ║  'en_US'  │ US English                   ║                                    #
+#                                     ╚═══════════╧══════════════════════════════╝                                    #
+#                                                                                                                     #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Force_Locale: false                                                                                                   #
+#   Force TicketManager to use one language only. This effectively disables real-time localization.                   #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Preferred_Locale: 'en_CA'                                                                                             #
+#   Fallback locale used when the client locale is not found. This value internally defaults to Canadian English      #
+#   for invalid localizations.                                                                                        #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Console_Locale: 'en_CA'
-#
-# ##########################################
-#                 Cooldown:
-# ##########################################
-#
-# Use Cool-down: Determine if cool-downs should be applied to ticket commands
-# that create or modify a ticket. Cool-downs apply to ALL users without the
-# override permission.
-# Values: true, false
+#   Locale both Console and Discord Bot (if enabled) will attempt to use. This value internally defaults to           #
+#   Preferred_Value for invalid localizations.                                                                        #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#                                            Time-Based Cool-down Settings                                            #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#   Time-based cool-downs prevent users from spamming tickets within a short timespan. They are applied to:           #
+#       • Ticket creations (create)                                                                                   #
+#       • Ticket modifications (comment, setpriority, close, etc).                                                    #
+#                                                                                                                     #
+#    Cool-downs apply to ALL users without the override permission.                                                   #
+#                                                                                                                     #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Use_Cooldowns: false
-#
-# Ticket Modification Cool-down: Time in seconds before a user is able to create or
-# modify a ticket. This applies to ALL users without the override permission if
-# cool-downs are enabled.
+#   Enable or disable time-based cool-downs.                                                                          #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Cooldown_Time: 0
-#
-# ##########################################
-#             Proxy Settings
-# ##########################################
-#
-# TicketManager supports two proxies: Velocity and Waterfall. Bungeecord support is NOT
-# guaranteed, and issues involving the proxy will be ignored. Velocity is recommended.
-#
-# Proxy mode instructs the plugin to broadcast notifications to all servers in the
-# network and allows teleportation to tickets on other servers in the network. Note that
-# at least 1 user must be on a particular server to teleport to it or see notifications
-# (this is a proxy limitation).
-#
-# Proxy mode does not alter existing functionality, and the plugin will continue to work
-# if no proxy is connected despite being enabled.
-#
+#   Time in seconds (must be an integer) between allowed ticket interactions.                                         #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#                                                    Proxy Settings                                                   #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#   Proxy mode offers two benefits:                                                                                   #
+#       • Notification broadcasting across all servers                                                                #
+#       • Teleporting to tickets on any connected servers.                                                            #
+#                                                                                                                     #
+#   Please note that the target server must and have at least 1 player online to function.                            #
+#                                                                                                                     #
+#   TicketManager officially supports:                                                                                #
+#       • Velocity (Recommended)                                                                                      #
+#       • Waterfall                                                                                                   #
+#   Compatibility with Bungeecord is not tested, and issues with the proxy will be ignored.                           #
+#                                                                                                                     #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Enable_Proxy: false
-#
-# Server Name: Instructs TicketManager what the server name is.
-# THIS MUST MATCH THE NAME GIVEN IN THE PROXY FILE!
+#   Enable or disable proxy mode.                                                                                     #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Proxy_Server_Name: ''
-#
-# ##########################################
-#           Database Settings:
-# ##########################################
-#
-# Database mode: Type of database used. Internally defaults
-# to Cached_H2 if invalid value is used. Information only needs
-# to be filled out for the desired database type.
-#
-#                  H2:
-# Stores information in the H2 file in the TicketManager folder.
-# Pros: + No setup.
-#       + No external database needed.
-#       + Faster than MySQL for search and history command.
-# Cons: - Stores data in TicketManager folder.
-#       - Easier to overwhelm than Memory or MySQL.
-#
-#                 MySQL:
-# Stores information in a database that may or may not be on the server.
-# Pros: + Can handle more traffic than H2.
-#       + Can be separate from server storage.
-# Cons: - Must have MySQL database.
-#       - Search and history commands slower.
-#
-#                 Memory:
-# Memory refers to TicketManager's custom solution for running the entire
-# database in RAM. Data is backed up throughout normal server operations or
-# on server shutdowns. It is then loaded back into RAM on startup.
-# Pros: + Incredibly responsive
-#       + Incredibly fast queries
-# Cons: - Any power loss or server crash will result in all data beyond
-#         the last backup being lost.
-#
-#                Cached SQL:
-# Blend between the Memory and H2 option. Data is loaded from H2 into
-# the Memory model, and all changes reflect in the H2 file.
-# Pros: + Extreme speed of the Memory mode
-#       + Reliability of the H2 mode
-# Cons: - Possibly slower database initialization
-#
-# Values: 'MYSQL', 'H2', 'MEMORY', 'CACHED_H2'
+#   Server name given in your proxy file.                                                                             #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#                                                  Database Settings                                                  #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#   TicketManager has multiple modes storing current and past tickets. These are (with config values):                #
+#       • Cached H2   ('CACHED_H2')                                                                                   #
+#       • H2          ('H2')                                                                                          #
+#       • Memory      ('MEMORY')                                                                                      #
+#       • MySQL       ('MYSQL').                                                                                      #
+#                                                                                                                     #
+#   If an error occurs during database initialization, TicketManager defaults to Cached H2. Information only needs    #
+#   to be inputted for the anticipated database mode.                                                                 #
+#                                                                                                                     #
+#   Note: While Memory and Cached H2 technically use more RAM than the other options, tickets are quite small.        #
+#   Consequently, it takes thousands to tens of thousands of tickets before RAM usage becomes meaningful.             #
+#                                                                                                                     #
 Database_Mode: 'CACHED_H2'
-#
-# ######################
-#    MySQL Database
-# ######################
+#   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄    #
+#                                           Cached H2  (No Config Settings)                                           #
+#                                                                                                                     #
+#   Cached H2 is Memory mode with a backing H2 database.                                                              #
+#       ╔══════════════════════════════════════════════════╤══════════════════════════════════════════════════╗       #                                                                                                    #
+#       ║                       Pros                       │                       Cons                       ║       #
+#       ╠══════════════════════════════════════════════════╪══════════════════════════════════════════════════╣       #
+#       ║  Speed of Memory with reliability of H2          │  Uses more memory than MySQL                     ║       #
+#       ╚══════════════════════════════════════════════════╧══════════════════════════════════════════════════╝       #
+#                                                                                                                     #
+#   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄    #
+#                                               H2  (No Config Settings)                                              #
+#                                                                                                                     #
+#   H2 stores data in an H2 file in the TicketManager plugin folder on the server.                                    #
+#       ╔══════════════════════════════════════════════════╤══════════════════════════════════════════════════╗       #                                                                                                    #
+#       ║                       Pros                       │                       Cons                       ║       #
+#       ╠══════════════════════════════════════════════════╪══════════════════════════════════════════════════╣       #
+#       ║  No external database (unlike MySQL)             │  Generally less throughput than MySQL or Memory  ║       #
+#       ╟──────────────────────────────────────────────────┼──────────────────────────────────────────────────╢       #
+#       ║  Second fastest search command times             │  Stores ticket data on the server storage        ║       #
+#       ╚══════════════════════════════════════════════════╧══════════════════════════════════════════════════╝       #
+#                                                                                                                     #
+#   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄    #
+#                                             MySQL  (Has Config Settings)                                            #
+#                                                                                                                     #
+#   MySQL stores data in a database which may or may not be the same computer as your Minecraft server.               #
+#       ╔══════════════════════════════════════════════════╤══════════════════════════════════════════════════╗       #                                                                                                    #
+#       ║                       Pros                       │                       Cons                       ║       #
+#       ╠══════════════════════════════════════════════════╪══════════════════════════════════════════════════╣       #
+#       ║  Able to handle more traffic than H2             │  Requires MySQL database                         ║       #
+#       ╟──────────────────────────────────────────────────┼──────────────────────────────────────────────────╢       #
+#       ║  Database can be offloaded to another server     │  Generally slower than other options             ║       #
+#       ╚══════════════════════════════════════════════════╧══════════════════════════════════════════════════╝       #
+#                                                                                                                     #
 MySQL_Port: ''
 MySQL_Host: ''
 MySQL_DBName: ''
 MySQL_Username: ''
 MySQL_Password: ''
-#
-# ######################
-#   Memory as Database
-# ######################
-# Time in seconds between database backups being made
+#   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄    #
+#                                            Memory  (Has Config Settings)                                            #
+#                                                                                                                     #
+#   Memory runs your entire database in RAM. Data is backed up throughout normal server operations and on server      #
+#   shutdowns. It is then reloaded into memory on the next startup.                                                   #
+#       ╔══════════════════════════════════════════════════╤══════════════════════════════════════════════════╗       #                                                                                                    #
+#       ║                       Pros                       │                       Cons                       ║       #
+#       ╠══════════════════════════════════════════════════╪══════════════════════════════════════════════════╣       #
+#       ║  Extremely responsive and fast queries           │  Any power loss or server crash will result in   ║       #
+#       ║                                                  │  all data beyond the last backup being lost      ║       #
+#       ╚══════════════════════════════════════════════════╧══════════════════════════════════════════════════╝       #
+#                                                                                                                     #
 Memory_Backup_Frequency: 600
+#   Time in seconds between database backups                                                                          #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#                                               Error Printing Settings                                               #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#   TicketManager can output unexpected errors to Console. Please note that the following settings are for Console    #
+#   only. Players wishing to modify their experience should use permission nodes.                                     #
 #
-# ###########################################
-#              Error Printing
-# ###########################################
+#   TicketManager can output errors in two ways:
+#       • Modified Stacktrace
+#       • Full Stacktrace.
 #
-# The following setting determine how TicketManager displays unexpected error.
-# These values do not affect error in-game. Please use permission nodes for that
-# instead. These values only affect the way error messages appear in Console.
-#
-# Print Modified Stacktrace: Prints a modified stacktrace only containing where
-# errors occurred in TicketManager's code. Useful for quickly deciding where the issue
-# lies, but not always enough to determine where the issue lies.
-# Values: true, false
+#   The modified stacktrace is custom and only prints where code went wrong in TicketManager's code itself. This is   #
+#   especially useful for quickly determining a problem's location. It is also more readable for users not familiar   #
+#   with the standard stacktrace.                                                                                     #
+#                                                                                                                     #
+#   The full stacktrace is the standard stacktrace provided by Java. It contains more information than the modified   #
+#   stacktrace but is more difficult to read.                                                                         #
+#                                                                                                                     #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Print_Modified_Stacktrace: true
-#
-# Print Full Stacktrace: Prints a full stacktrace containing all much more info
-# than the modified stacktrace. Contains more information, but harder to sort through.
-# Values: true, false
+#   Enable or disable the modified stacktrace in Console.                                                             #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Print_Full_Stacktrace: false
-#
-# ###########################################
-#             Discord Settings
-# ###########################################
-#
-# Discord Bot: On ticket updates of your choosing, TicketManager
-# is able to send a notification to a text channel in your Discord server.
-# This is NOT plug and play. You will be required to generate the
-# bot token yourself and tell the bot where to send these messages.
-# Instructions are provided on the TicketManager wiki on GitHub.
-# Values: true, false
+#   Enable or disable the standard stacktrace in Console.                                                             #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#                                                 Discord Bot Settings                                                #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#   TicketManager has the ability to send ticket modification and creation notifications to a channel in your         #
+#   Discord server.                                                                                                   #
+#                                                                                                                     #
+#   Please note that you must generate your own bot token and provide a channel ID for the desired channel. The       #
+#   wiki provides step-by-step instructions, but the information may or may not be outdated.                          #
+#                                                                                                                     #
+#   TicketManager does not send notifications when users perform a command silently.                                  #
+#                                                                                                                     #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Use_Discord_Bot: false
-#
-# Bot Token: Token generated by user for the Discord bot.
+#   Enable or disable the Discord bot.                                                                                #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Bot_Token: ''
-#
-# Channel ID: Text Channel ID for the text channel the bot should
-# send messages to. MUST be inputted as a numeric value.
+#   Generated Discord bot token.                                                                                      #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Channel_ID: -1
-#
-# ######################
-#     Discord Flags
-# ######################
-# The following flags are used to determine when TicketManager
-# will send a notification to Discord (if enabled). Does not
-# fire for silent commands.
-# Values: true, false
+#   Text Channel ID of the channel the bot should send messages to.                                                   #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Assign: true
+# Send notification when tickets assignments/un-assignments occur.                                                    #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Close: true
+# Send notification when a ticket is closed.                                                                          #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Close_All: true
+# Send notification when tickets are mass-closed.                                                                     #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Comment: true
+# Send notification when a ticket receives a comment.                                                                 #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Create: true
+# Send notification when a ticket is created.                                                                         #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Reopen: true
+# Send notification when a ticket is re-opened.                                                                       #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Priority_Change: true
-#
-# ###########################################
-#                   Other
-# ###########################################
-#
-# Colour Code:
-# Provides simple colour customization for the theme of the
-# plugin. The following formats are supported:
-#     - Literals for default colours ('red' or 'white')
-#     - Integers (1551768)
-#     - Hex codes. (#17AD98)
-#     - Legacy colour codes with '&' (&3)
-# Refer to Kyori MiniMessage for more information!
+# Send notification when a ticket's priority is changed.                                                              #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#                                                 Chat Format Settings                                                #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
 Colour_Code: '&3'
-#
-# Allow Unread Ticket Updates: When users other than the creator
-# make ticket changes, the creator can optionally be alerted at
-# regular intervals or on login which tickets have a status change.
-# This is NOT the same alert one immediately receives on ticket
-# status change. Setting value to 'false' prevents TicketManager
-# from flagging a ticket as unread.
-# Values: true, false
-Allow_Unread_Ticket_Updates: true
-#
-# Allow Update Checking: Server can check that the latest version of
-# TicketManager is installed during startup or reloads.
-# Values: true, false
-Allow_UpdateChecking: true
-#
-# Enable Advanced Visual Control: By default, TicketManager uses its own
-# formatting for visual information. However, users can instruct TicketManager to
-# create external locale files and use these instead. This allows end users to customize
-# virtually all visual components of the plugin. Missing files will be regenerated when
-# this mode is enabled. Missing components will simply default to the internal version.
-# To understand the formatting, please refer to Kyori MiniMessage documentation.
-#
-# NOTE: Please do NOT use this to add new languages. Adding new languages is not possible
-# for end users, and it is much more beneficial to offer translations for all other
-# users by submitting your work!
-# Values: true, false
+#   TicketManager provides a means to change its theme colours and supports multiple formats:                         #
+#       • Colour Literals ('red', 'white', etc)                                                                       #
+#       • Hex Codes ('#17ad98')                                                                                       #
+#       • Integers ('1551768')                                                                                        #
+#       • Legacy Colour Codes ('&3', '&c', etc).                                                                      #
+#                                                                                                                     #
+#   Please refer to Kyori MiniMessage for more information.                                                           #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Enable_Advanced_Visual_Control: false
+#   TicketManager provides a means for end-users to safely configure plugin visuals. When enabled, the plugin will    #
+#   read from and use the visual localization files inside the TicketManager plugin folder. To understand the         #
+#   formatting, please refer to Kyori MiniMessage documentation.                                                      #
+#                                                                                                                     #
+#   Two notable safely precautions occur when enabled:                                                                #
+#       • Missing files re-generate                                                                                   #
+#       • Missing components default to the internal version.                                                         #
+#                                                                                                                     #
+#   Note: If interested in translating TicketManager to your language, please consider contacting HoshiKurama to      #
+#   discuss creating an official translation file!                                                                    #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#                                                   Update Settings                                                   #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+Allow_Unread_Ticket_Updates: true
+# Alert ticket creators at regular intervals or on login that they have a status change on a ticket. This is NOT      #
+# the same alert that users receive immediately for the same thing. Setting this value to 'false' prevents the        #
+# plugin from flagging a ticket as unread.                                                                            #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Allow_UpdateChecking: true
+# Allow the server to check for newer version of TicketManager.                                                       #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
