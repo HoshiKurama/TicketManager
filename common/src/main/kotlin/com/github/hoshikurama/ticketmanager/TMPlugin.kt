@@ -45,6 +45,11 @@ abstract class TMPlugin(
     abstract fun reloadConfig()
     abstract fun readConfig(): ConfigParameters
 
+    // Config update functions
+    abstract fun loadInternalConfig(): List<String>
+    abstract fun loadPlayerConfig(): List<String>
+    abstract fun writeNewConfig(entries: List<String>)
+
     // Registration Related Functions
     abstract fun registerProcesses()
     abstract fun unregisterProcesses()
@@ -123,12 +128,30 @@ abstract class TMPlugin(
             }
             reloadConfig()
 
-
             // Builds associated objects from config
             readConfig().let { c ->
                 // List of errors
                 val errors = mutableListOf<Pair<String, String>>()
                 fun <T> T.addToErrors(location: String, toString: (T) -> String): T = this.also { errors.add(location to toString(it)) }
+
+
+                // Updates config file if requested
+                if (c.autoUpdateConfig ?: true.addToErrors("Auto_Update_Config", Boolean::toString)) {
+                    val isComment: (String) -> Boolean = { it.startsWith("#") }
+                    val getKey: (String) -> String = { it.split(":")[0] }
+
+                    val externalConfig = loadPlayerConfig() //NOTE: This will not work with future Sponge support
+                    val externalIdentifiers = externalConfig
+                        .filterNot(isComment)
+                        .map(getKey)
+
+                    loadInternalConfig().map { str ->
+                            if (!isComment(str) && getKey(str) in externalIdentifiers)
+                                externalConfig.first { it.startsWith(getKey(str))}
+                            else str
+                        }
+                        .run(::writeNewConfig)
+                }
 
                 // Generates Advanced Visual Control files
                 try {

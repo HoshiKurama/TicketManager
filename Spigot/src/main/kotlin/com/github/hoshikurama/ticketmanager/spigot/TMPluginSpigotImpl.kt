@@ -11,7 +11,10 @@ import org.bukkit.command.TabCompleter
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.server.TabCompleteEvent
+import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
+import java.io.InputStream
+import java.io.InputStreamReader
 
 class TMPluginSpigotImpl(
     private val spigotPlugin: SpigotPlugin,
@@ -93,8 +96,38 @@ class TMPluginSpigotImpl(
                 printFullStacktrace = getBoolean("Print_Full_Stacktrace"),
                 enableAdvancedVisualControl = getBoolean("Enable_Advanced_Visual_Control"),
                 enableProxyMode = false,
-                proxyServerName = ""
+                proxyServerName = "",
+                autoUpdateConfig = getBoolean("Auto_Update_Config"),
             )
+        }
+    }
+
+    override fun loadInternalConfig(): List<String> {
+        return this::class.java.classLoader
+            .getResourceAsStream("config.yml")
+            .let(InputStream::reader)
+            .let(InputStreamReader::readLines)
+    }
+
+    override fun loadPlayerConfig(): List<String> {
+        return JavaPlugin::class.java.getDeclaredField("configFile")
+            .apply { isAccessible = true }
+            .run { get(spigotPlugin) as File }
+            .bufferedReader()
+            .readLines()
+    }
+
+    override fun writeNewConfig(entries: List<String>) {
+        val writer = JavaPlugin::class.java.getDeclaredField("configFile")
+            .apply { isAccessible = true }
+            .run { get(spigotPlugin) as File }
+            .bufferedWriter()
+
+        entries.forEachIndexed { index, str ->
+            writer.write(str)
+
+            if (index != entries.lastIndex)
+                writer.newLine()
         }
     }
 

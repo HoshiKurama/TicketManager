@@ -32,4 +32,5 @@ data class ConfigParameters(
     val enableAdvancedVisualControl: Boolean?,
     val enableProxyMode: Boolean?,
     val proxyServerName: String?,
+    val autoUpdateConfig: Boolean?,
 )

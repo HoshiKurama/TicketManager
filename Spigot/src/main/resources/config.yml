@@ -269,3 +269,6 @@ Allow_Unread_Ticket_Updates: true
 Allow_UpdateChecking: true
 # Allow the server to check for newer version of TicketManager.                                                       #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Auto_Update_Config: true
+# Allow this config file to automatically update and transfer existing config settings.                               #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
