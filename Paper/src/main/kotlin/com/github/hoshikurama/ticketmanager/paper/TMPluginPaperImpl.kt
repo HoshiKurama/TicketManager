@@ -5,6 +5,9 @@ import com.github.hoshikurama.ticketmanager.TMPlugin
 import com.github.hoshikurama.ticketmanager.metricsKey
 import com.github.hoshikurama.ticketmanager.misc.ConfigParameters
 import net.milkbowl.vault.permission.Permission
+import org.bstats.bukkit.Metrics
+import org.bstats.charts.SimplePie
+import org.bstats.charts.SingleLineChart
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandExecutor
 import org.bukkit.event.Listener
@@ -32,18 +35,18 @@ class TMPluginPaperImpl(
         // Launch Metrics
         metrics = Metrics(paperPlugin, metricsKey)
         metrics.addCustomChart(
-            Metrics.SingleLineChart("tickets_made") {
+            SingleLineChart("tickets_made") {
                 globalPluginState.ticketCountMetrics.getAndSet(0)
             }
         )
         metrics.addCustomChart(
-            Metrics.SimplePie("database_type") {
+            SimplePie("database_type") {
                 try { instancePluginState.database.type.name }
                 catch (e: Exception) { "ERROR" }
             }
         )
 
-        metrics.addCustomChart(Metrics.SimplePie("plugin_platform") { "Paper" })
+        metrics.addCustomChart(SimplePie("plugin_platform") { "Paper" })
     }
 
     override fun performAsyncTaskTimer(action: () -> Unit) {
@@ -104,8 +107,8 @@ class TMPluginPaperImpl(
     override fun loadInternalConfig(): List<String> {
         return this::class.java.classLoader
             .getResourceAsStream("config.yml")
-            .let(InputStream::reader)
-            .let(InputStreamReader::readLines)
+            ?.let(InputStream::reader)
+            ?.let(InputStreamReader::readLines) ?: emptyList()
     }
 
     override fun loadPlayerConfig(): List<String> {
