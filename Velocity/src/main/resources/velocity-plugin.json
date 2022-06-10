@@ -1,7 +1,7 @@
 {
   "id": "ticketmanager",
   "name": "TicketManager",
-  "version": "8.2.0",
+  "version": "1.1",
   "description": "Advanced Ticket Management Solution",
   "authors": ["HoshiKurama"],
   "dependencies": [],
