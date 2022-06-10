@@ -1,5 +1,5 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "7.1.0"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
     kotlin("jvm")
     java
     application
@@ -17,7 +17,7 @@ repositories {
 dependencies {
     implementation(project(":common"))
     compileOnly("io.github.waterfallmc:waterfall-api:1.18-R0.1-SNAPSHOT")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.0")
 }
 
 tasks {
@@ -25,7 +25,7 @@ tasks {
         archiveBaseName.set("TicketManager-WaterfallBridge")
 
         dependencies {
-            include(dependency("org.jetbrains.kotlin:kotlin-stdlib:1.6.20"))
+            include(dependency("org.jetbrains.kotlin:kotlin-stdlib:1.7.0"))
         }
     }
 }

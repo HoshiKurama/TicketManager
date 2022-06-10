@@ -1,5 +1,5 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "7.1.0"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
     kotlin("jvm")
     java
     application
@@ -21,7 +21,7 @@ repositories {
 dependencies {
     implementation(project(":common"))
     compileOnly("com.velocitypowered:velocity-api:3.0.1")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.0")
     annotationProcessor("com.velocitypowered:velocity-api:3.0.1")
 }
 
@@ -30,7 +30,7 @@ tasks {
         archiveBaseName.set("TicketManager-VelocityBridge")
 
         dependencies {
-            include(dependency("org.jetbrains.kotlin:kotlin-stdlib:1.6.20"))
+            include(dependency("org.jetbrains.kotlin:kotlin-stdlib:1.7.0"))
         }
     }
 }

@@ -1,5 +1,5 @@
 plugins {
-    kotlin("plugin.serialization") version "1.6.20"
+    kotlin("plugin.serialization") version "1.7.0"
     kotlin("jvm")
     java
 }
@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.0")
     implementation("mysql:mysql-connector-java:8.0.29")
     implementation("com.github.jasync-sql:jasync-mysql:2.0.6")
     implementation("com.github.seratch:kotliquery:1.7.0")
@@ -23,5 +23,4 @@ dependencies {
     implementation("com.google.code.gson:gson:2.9.0")
     implementation("com.h2database:h2:2.1.212")
     implementation("com.google.guava:guava:31.1-jre")
-
 }
