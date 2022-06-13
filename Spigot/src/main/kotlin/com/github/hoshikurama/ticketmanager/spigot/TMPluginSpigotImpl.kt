@@ -51,7 +51,7 @@ class TMPluginSpigotImpl(
     }
 
     override fun performAsyncTaskTimer(action: () -> Unit) {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(spigotPlugin, { action() }, 120, 12000)
+        Bukkit.getScheduler().runTaskTimerAsynchronously(spigotPlugin, Runnable { action() }, 120, 12000)
     }
 
     override fun configExists(): Boolean {
@@ -137,7 +137,7 @@ class TMPluginSpigotImpl(
 
     override fun registerProcesses() {
         instancePluginState.localeHandler.getCommandBases().forEach {
-            spigotPlugin.getCommand(it)?.executor = commandPipeline as CommandExecutor
+            spigotPlugin.getCommand(it)?.setExecutor(commandPipeline as CommandExecutor)
             spigotPlugin.getCommand(it)?.tabCompleter = tabComplete as TabCompleter
             // Remember to register any keyword in plugin.yml
         }

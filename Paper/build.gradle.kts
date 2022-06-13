@@ -18,7 +18,7 @@ repositories {
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.19-R0.1-SNAPSHOT")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.0")
-    implementation("net.kyori:adventure-extra-kotlin:4.10.1")
+    implementation("net.kyori:adventure-extra-kotlin:4.11.0")
     implementation("joda-time:joda-time:2.10.14")
     implementation("org.bstats:bstats-bukkit:3.0.0")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")

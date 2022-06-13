@@ -7,14 +7,14 @@ depend: [Vault]
 libraries:
   - org.jetbrains.kotlin:kotlin-stdlib:1.7.0
   - mysql:mysql-connector-java:8.0.29
-  - com.github.jasync-sql:jasync-mysql:2.0.6
-  - com.github.seratch:kotliquery:1.7.0
+  - com.github.jasync-sql:jasync-mysql:2.0.8
+  - com.github.seratch:kotliquery:1.8.0
   - joda-time:joda-time:2.10.14
   - com.discord4j:discord4j-core:3.2.2
   - com.google.code.gson:gson:2.9.0
-  - net.kyori:adventure-text-minimessage:4.10.1
+  - net.kyori:adventure-text-minimessage:4.11.0
   - net.kyori:adventure-platform-bukkit:4.1.0
-  - net.kyori:adventure-extra-kotlin:4.10.1
+  - net.kyori:adventure-extra-kotlin:4.11.0
   - com.discord4j:discord4j-core:3.2.2
   - com.h2database:h2:2.1.212
 commands:
