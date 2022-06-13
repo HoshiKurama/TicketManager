@@ -14,7 +14,6 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
-import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.exists
 
 abstract class TMPlugin(
@@ -111,7 +110,6 @@ abstract class TMPlugin(
         instancePluginState.database.closeDatabase()
     }
 
-    @OptIn(ExperimentalPathApi::class)
     fun initializeData() {
         CompletableFuture.runAsync {
             globalPluginState.pluginLocked.set(true)
@@ -259,7 +257,7 @@ abstract class TMPlugin(
 
                 // Other config items
                 val allowUnreadTicketUpdates = c.allowUnreadTicketUpdates ?: true.addToErrors("Allow_Unread_Ticket_Updates", Boolean::toString)
-                val updateChecker = UpdateChecker(canCheck = c.checkForPluginUpdates ?: true.addToErrors("Allow_UpdateChecking", Boolean::toString))
+                val updateChecker = UpdateChecker(canCheck = c.checkForPluginUpdates ?: true.addToErrors("Allow_UpdateChecking", Boolean::toString), UpdateChecker.Location.MAIN)
                 val printModifiedStacktrace = c.printModifiedStacktrace ?: true.addToErrors("Print_Modified_Stacktrace", Boolean::toString)
                 val printFullStacktrace = c.printFullStacktrace ?: false.addToErrors("Print_Full_Stacktrace", Boolean::toString)
 
@@ -300,8 +298,6 @@ abstract class TMPlugin(
                         )
                         .run(platformFunctions.getConsoleAudience()::sendMessage)
             }
-
-            // pushErrors(platformFunctions, instancePluginState, e, TMLocale::consoleErrorBadDiscord) For discord
 
             // Registers itself
             registerProcesses()

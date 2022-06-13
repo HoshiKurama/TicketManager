@@ -3,7 +3,7 @@ package com.github.hoshikurama.ticketmanager.misc
 import com.github.hoshikurama.ticketmanager.pluginVersion
 import java.net.URL
 
-class UpdateChecker(val canCheck: Boolean) {
+class UpdateChecker(val canCheck: Boolean, private val location: Location) {
     val latestVersionOrNull = kotlin.run {
         if (!canCheck) return@run null
 
@@ -24,11 +24,16 @@ class UpdateChecker(val canCheck: Boolean) {
         return@run null
     }
 
+    enum class Location(val address: String) {
+        MAIN("https://api.github.com/repos/HoshiKurama/TicketManager/tags"),
+        BRIDGE("https://api.github.com/repos/HoshiKurama/TicketManager-Bridge-Releases/tags"),
+    }
+
     private fun getLatestVersion(): String? {
         return try {
             val regex = "\"name\":\"[^,]*".toRegex()
 
-            URL("https://api.github.com/repos/HoshiKurama/TicketManager/tags")
+            URL(location.address)
                 .openStream()
                 .bufferedReader()
                 .readText()
