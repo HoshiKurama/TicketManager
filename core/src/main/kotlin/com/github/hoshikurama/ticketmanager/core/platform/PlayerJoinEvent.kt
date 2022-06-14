@@ -22,7 +22,7 @@ abstract class PlayerJoinEvent(
             // Plugin Update Checking
             kotlin.run {
                 if (instanceState.pluginUpdateChecker.canCheck) {
-                    val newerVersion = instanceState.pluginUpdateChecker.latestVersionOrNull ?: return@run // Only present if newer version is available and plugin can check
+                    val newerVersion = instanceState.pluginUpdateChecker.latestVersionIfNotLatest ?: return@run // Only present if newer version is available and plugin can check
                     if (!player.has("ticketmanager.notify.pluginUpdate")) return@run
 
                     player.locale.notifyPluginUpdate.parseMiniMessage(

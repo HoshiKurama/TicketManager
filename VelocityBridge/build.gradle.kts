@@ -18,12 +18,13 @@ repositories {
     }
 }
 
+// Link to repo: https://nexus.velocitypowered.com/#browse/search=keyword%3Dvelocitypowered
 dependencies {
-    implementation(project(":core"))
     implementation(project(":common"))
-    compileOnly("com.velocitypowered:velocity-api:3.0.1")
+    compileOnly("com.velocitypowered:velocity-api:3.1.0")
+    annotationProcessor("com.velocitypowered:velocity-api:3.1.0")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.0")
-    annotationProcessor("com.velocitypowered:velocity-api:3.0.1")
+    implementation("org.bstats:bstats-velocity:3.0.0")
 }
 
 tasks {
@@ -33,6 +34,10 @@ tasks {
         dependencies {
             include(dependency("org.jetbrains.kotlin:kotlin-stdlib:1.7.0"))
             include(project(":common"))
+            include(dependency("org.bstats:bstats-base:3.0.0"))
+            include(dependency("org.bstats:bstats-velocity:3.0.0"))
         }
+
+        relocate("org.bstats", "com.github.hoshikurama.ticketmanager.bstats")
     }
 }

@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.paper
 
 import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent
-import com.github.hoshikurama.ticketmanager.common.mainMetricsKey
+import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
 import com.github.hoshikurama.ticketmanager.core.TMPlugin
 import com.github.hoshikurama.ticketmanager.core.misc.ConfigParameters
 import net.milkbowl.vault.permission.Permission
@@ -40,7 +40,7 @@ class TMPluginPaperImpl(
 
     override fun performSyncBefore() {
         // Launch Metrics
-        metrics = Metrics(paperPlugin, mainMetricsKey)
+        metrics = Metrics(paperPlugin, bukkitMetricsKey)
         metrics.addCustomChart(
             SingleLineChart("tickets_made") {
                 globalPluginState.ticketCountMetrics.getAndSet(0)

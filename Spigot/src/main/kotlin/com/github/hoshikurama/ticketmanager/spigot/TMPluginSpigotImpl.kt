@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.spigot
 
-import com.github.hoshikurama.ticketmanager.common.mainMetricsKey
+import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
 import com.github.hoshikurama.ticketmanager.core.TMPlugin
 import com.github.hoshikurama.ticketmanager.core.misc.ConfigParameters
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
@@ -33,7 +33,7 @@ class TMPluginSpigotImpl(
 
     override fun performSyncBefore() {
         // Launch Metrics
-        metrics = Metrics(spigotPlugin, mainMetricsKey)
+        metrics = Metrics(spigotPlugin, bukkitMetricsKey)
         metrics.addCustomChart(
             SingleLineChart("tickets_made") {
                 val ticketCount = globalPluginState.ticketCountMetrics.get()

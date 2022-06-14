@@ -15,9 +15,10 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":core"))
-    compileOnly("io.github.waterfallmc:waterfall-api:1.18-R0.1-SNAPSHOT")
+    implementation(project(":common"))
+    compileOnly("io.github.waterfallmc:waterfall-api:1.19-R0.1-SNAPSHOT")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.0")
+    implementation("org.bstats:bstats-bungeecord:3.0.0")
 }
 
 tasks {
@@ -26,6 +27,9 @@ tasks {
 
         dependencies {
             include(dependency("org.jetbrains.kotlin:kotlin-stdlib:1.7.0"))
+            include(project(":common"))
+            include(dependency("org.bstats:bstats-bungeecord:3.0.0"))
+            include(dependency("org.bstats:bstats-base:3.0.0"))
         }
     }
 }

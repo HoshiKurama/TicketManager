@@ -2,11 +2,12 @@ package com.github.hoshikurama.ticketmanager.common
 
 import java.util.*
 
-const val mainMetricsKey = 11033
 const val mainPluginVersion = "8.2.2"
-
-const val bridgeMetricsKey = 1
 const val bridgePluginVersion = "1.1"
+
+const val bukkitMetricsKey = 11033
+const val velocityBridgeKey = 15470
+const val waterfallBridgeKey = 15473
 
 val randServerIdentifier: UUID = UUID.randomUUID() // For proxies
 

@@ -292,11 +292,11 @@ abstract class TMPlugin(
 
             // Places update is available into Console
             instancePluginState.run {
-                if (pluginUpdateChecker.run { canCheck && latestVersionOrNull != null })
+                if (pluginUpdateChecker.run { canCheck && latestVersionIfNotLatest != null })
                     localeHandler.consoleLocale.notifyPluginUpdate
                         .parseMiniMessage(
                             "current" templated mainPluginVersion,
-                            "latest" templated pluginUpdateChecker.latestVersionOrNull!!
+                            "latest" templated pluginUpdateChecker.latestVersionIfNotLatest!!
                         )
                         .run(platformFunctions.getConsoleAudience()::sendMessage)
             }
