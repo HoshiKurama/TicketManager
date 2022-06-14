@@ -1,10 +1,10 @@
 package com.github.hoshikurama.ticketmanager.paper
 
 import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent
-import com.github.hoshikurama.ticketmanager.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.platform.Sender
-import com.github.hoshikurama.ticketmanager.platform.TabComplete
+import com.github.hoshikurama.ticketmanager.core.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.core.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.core.platform.Sender
+import com.github.hoshikurama.ticketmanager.core.platform.TabComplete
 
 import net.milkbowl.vault.permission.Permission
 import org.bukkit.event.EventHandler

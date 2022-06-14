@@ -1,10 +1,11 @@
 rootProject.name = "TicketManager"
 
 include(
+    "core",
     "common",
     "Paper",
     "Spigot",
     "Sponge",
-    "Velocity",
+    "VelocityBridge",
     "Waterfall"
 )

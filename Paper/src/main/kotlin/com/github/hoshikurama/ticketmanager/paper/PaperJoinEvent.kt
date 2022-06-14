@@ -1,10 +1,10 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.data.GlobalPluginState
-import com.github.hoshikurama.ticketmanager.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.platform.PlayerJoinEvent
-import com.github.hoshikurama.ticketmanager.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.core.data.GlobalPluginState
+import com.github.hoshikurama.ticketmanager.core.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.core.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.core.platform.PlayerJoinEvent
+import com.github.hoshikurama.ticketmanager.core.ticket.Ticket
 import net.milkbowl.vault.permission.Permission
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener

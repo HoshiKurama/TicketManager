@@ -1,12 +1,12 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.data.GlobalPluginState
-import com.github.hoshikurama.ticketmanager.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.pipeline.HybridPipeline
-import com.github.hoshikurama.ticketmanager.pipeline.Pipeline
-import com.github.hoshikurama.ticketmanager.pipeline.PurePipeline
-import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.platform.Sender
+import com.github.hoshikurama.ticketmanager.core.data.GlobalPluginState
+import com.github.hoshikurama.ticketmanager.core.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.core.pipeline.HybridPipeline
+import com.github.hoshikurama.ticketmanager.core.pipeline.Pipeline
+import com.github.hoshikurama.ticketmanager.core.pipeline.PurePipeline
+import com.github.hoshikurama.ticketmanager.core.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.core.platform.Sender
 import net.milkbowl.vault.permission.Permission
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
@@ -34,8 +34,16 @@ class PaperCommandExecutor(
     ): Boolean {
         val localeHandler = instanceState.localeHandler
         val agnosticSender: Sender =
-            if (sender is org.bukkit.entity.Player) PaperPlayer(sender, perms, localeHandler, instanceState.proxyServerName)
-            else PaperConsole(localeHandler.consoleLocale, instanceState.proxyServerName)
+            if (sender is org.bukkit.entity.Player) PaperPlayer(
+                sender,
+                perms,
+                localeHandler,
+                instanceState.proxyServerName
+            )
+            else PaperConsole(
+                localeHandler.consoleLocale,
+                instanceState.proxyServerName
+            )
 
         execute(agnosticSender, args.toList())
         return false

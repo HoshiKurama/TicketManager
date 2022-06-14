@@ -1,12 +1,12 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.LocaleHandler
-import com.github.hoshikurama.ticketmanager.TMLocale
-import com.github.hoshikurama.ticketmanager.misc.encodeRequestTP
-import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.platform.Player
-import com.github.hoshikurama.ticketmanager.platform.Sender
-import com.github.hoshikurama.ticketmanager.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.core.LocaleHandler
+import com.github.hoshikurama.ticketmanager.core.TMLocale
+import com.github.hoshikurama.ticketmanager.core.misc.encodeRequestTP
+import com.github.hoshikurama.ticketmanager.core.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.core.platform.Player
+import com.github.hoshikurama.ticketmanager.core.platform.Sender
+import com.github.hoshikurama.ticketmanager.core.ticket.Ticket
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
 import net.milkbowl.vault.permission.Permission

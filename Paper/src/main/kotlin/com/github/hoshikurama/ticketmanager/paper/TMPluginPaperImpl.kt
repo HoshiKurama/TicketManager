@@ -1,9 +1,9 @@
 package com.github.hoshikurama.ticketmanager.paper
 
 import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent
-import com.github.hoshikurama.ticketmanager.TMPlugin
-import com.github.hoshikurama.ticketmanager.metricsKey
-import com.github.hoshikurama.ticketmanager.misc.ConfigParameters
+import com.github.hoshikurama.ticketmanager.common.mainMetricsKey
+import com.github.hoshikurama.ticketmanager.core.TMPlugin
+import com.github.hoshikurama.ticketmanager.core.misc.ConfigParameters
 import net.milkbowl.vault.permission.Permission
 import org.bstats.bukkit.Metrics
 import org.bstats.charts.SimplePie
@@ -23,7 +23,14 @@ class TMPluginPaperImpl(
     private val perms: Permission,
 ) : TMPlugin(
     buildPlatformFunctions = { PaperFunctions(perms, paperPlugin, it) },
-    buildPipeline = { platform, instance, global -> PaperCommandExecutor(platform, instance, global, perms) },
+    buildPipeline = { platform, instance, global ->
+        PaperCommandExecutor(
+            platform,
+            instance,
+            global,
+            perms
+        )
+    },
     buildTabComplete = { platform, instance -> PaperTabComplete(platform, instance, perms) },
     buildJoinEvent = { global, instance, platform -> PaperJoinEvent(global, instance, platform, perms) },
 )  {
@@ -33,7 +40,7 @@ class TMPluginPaperImpl(
 
     override fun performSyncBefore() {
         // Launch Metrics
-        metrics = Metrics(paperPlugin, metricsKey)
+        metrics = Metrics(paperPlugin, mainMetricsKey)
         metrics.addCustomChart(
             SingleLineChart("tickets_made") {
                 globalPluginState.ticketCountMetrics.getAndSet(0)

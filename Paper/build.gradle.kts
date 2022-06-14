@@ -22,6 +22,7 @@ dependencies {
     implementation("joda-time:joda-time:2.10.14")
     implementation("org.bstats:bstats-bukkit:3.0.0")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
+    implementation(project(":core"))
     implementation(project(":common"))
 }
 
@@ -30,6 +31,7 @@ tasks {
         archiveBaseName.set("TicketManager-Paper")
 
         dependencies {
+            include(project(":core"))
             include(project(":common"))
             include(dependency("org.bstats:bstats-bukkit:3.0.0"))
             include(dependency("org.bstats:bstats-base:3.0.0"))

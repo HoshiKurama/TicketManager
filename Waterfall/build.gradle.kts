@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":common"))
+    implementation(project(":core"))
     compileOnly("io.github.waterfallmc:waterfall-api:1.18-R0.1-SNAPSHOT")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.0")
 }

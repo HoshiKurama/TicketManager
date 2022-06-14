@@ -1,11 +1,11 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.misc.decodeRequestTP
-import com.github.hoshikurama.ticketmanager.pipeline.Notification
-import com.github.hoshikurama.ticketmanager.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.randServerIdentifier
-import com.github.hoshikurama.ticketmanager.ticket.User
+import com.github.hoshikurama.ticketmanager.common.randServerIdentifier
+import com.github.hoshikurama.ticketmanager.core.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.core.misc.decodeRequestTP
+import com.github.hoshikurama.ticketmanager.core.pipeline.Notification
+import com.github.hoshikurama.ticketmanager.core.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.core.ticket.User
 import com.google.common.io.ByteStreams
 import org.bukkit.entity.Player
 import org.bukkit.plugin.messaging.PluginMessageListener
