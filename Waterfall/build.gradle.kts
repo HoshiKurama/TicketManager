@@ -31,5 +31,7 @@ tasks {
             include(dependency("org.bstats:bstats-bungeecord:3.0.0"))
             include(dependency("org.bstats:bstats-base:3.0.0"))
         }
+
+        relocate("org.bstats", "com.github.hoshikurama.ticketmanager.bstats")
     }
 }
