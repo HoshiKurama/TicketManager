@@ -17,9 +17,9 @@ repositories {
 
 dependencies {
     compileOnly("org.spigotmc:spigot-api:1.19-R0.1-SNAPSHOT")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.10")
     implementation("net.kyori:adventure-extra-kotlin:4.11.0")
-    implementation("net.kyori:adventure-platform-bukkit:4.1.0")
+    implementation("net.kyori:adventure-platform-bukkit:4.1.1")
     implementation("joda-time:joda-time:2.10.14")
     implementation("org.bstats:bstats-bukkit:3.0.0")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")

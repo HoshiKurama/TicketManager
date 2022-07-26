@@ -1,6 +1,6 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "7.1.2"
-    kotlin("plugin.serialization") version "1.7.0"
+    kotlin("plugin.serialization") version "1.7.10"
     kotlin("jvm")
     java
     application
@@ -17,7 +17,7 @@ repositories {
 
 dependencies {
     implementation(project(":common"))
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.10")
     implementation("mysql:mysql-connector-java:8.0.29")
     implementation("com.github.jasync-sql:jasync-mysql:2.0.8")
     implementation("com.github.seratch:kotliquery:1.8.0")
