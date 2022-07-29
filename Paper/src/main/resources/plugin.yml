@@ -1,5 +1,5 @@
 name: TicketManager
-version: 8.2.2
+version: 8.3.0
 main: com.github.hoshikurama.ticketmanager.paper.PaperPlugin
 api-version: 1.18
 authors: [HoshiKurama]
@@ -110,6 +110,9 @@ permissions:
   ticketmanager.notify.pluginUpdate:
     description: Get notified of plugin update on login
     default: false
+  ticketmanager.notify.proxyUpdate:
+    description: Get notified of proxy update on login
+    default: false
   ticketmanager.notify.error.stacktrace:
     description: See modified stacktrace on errors
     default: false
@@ -215,6 +218,7 @@ permissions:
       ticketmanager.massNotify.*: true
       ticketmanager.notify.change.*: true
       ticketmanager.notify.pluginUpdate: true
+      ticketmanager.notify.proxyUpdate: true
     default: false
   ticketmanager.*:
     description: Wildcard for all TicketManager permissions

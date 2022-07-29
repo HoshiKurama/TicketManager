@@ -26,3 +26,9 @@
 /VelocityBridge/build/
 /Sponge/.gradle/
 /Sponge/build/
+/Paper/src/main/java/
+/core/src/main/java/
+/common/src/main/java/
+/commonproxybridge/src/main/java/
+/VelocityBridge/src/main/java/
+/Waterfall/src/main/java/

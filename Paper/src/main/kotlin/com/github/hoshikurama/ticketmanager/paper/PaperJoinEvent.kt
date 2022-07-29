@@ -6,6 +6,7 @@ import com.github.hoshikurama.ticketmanager.core.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.core.platform.PlayerJoinEvent
 import com.github.hoshikurama.ticketmanager.core.ticket.Ticket
 import net.milkbowl.vault.permission.Permission
+import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import java.util.concurrent.ConcurrentHashMap
@@ -22,7 +23,9 @@ class PaperJoinEvent(
     @EventHandler
     fun onPlayerJoinEvent(event: org.bukkit.event.player.PlayerJoinEvent) {
         val player = PaperPlayer(event.player, perms, instanceState.localeHandler, instanceState.proxyServerName)
-        super.whenPlayerJoins(player)
+        val serverCount = Bukkit.getServer().onlinePlayers.size
+
+        super.whenPlayerJoins(player, serverCount)
 
         val uuidString = event.player.uniqueId.toString()
         if (proxyJoinMap.containsKey(uuidString)) {

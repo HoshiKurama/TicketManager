@@ -38,12 +38,10 @@ class CorePipeline(
 ) {
     fun executeLogic(sender: Sender, args: List<String>): CompletableFuture<out Notification?> {
 
-        if (args.isEmpty()) {
+        if (args.isEmpty())
             return executeLogic(sender, listOf(sender.locale.commandWordHelp))
-        }
 
-        if (globalState.pluginLocked.get()
-        ) {
+        if (globalState.pluginLocked.get()) {
             sender.sendMessage(sender.locale.warningsLocked)
             return CompletableFuture.completedFuture<Notification?>(null)
         }

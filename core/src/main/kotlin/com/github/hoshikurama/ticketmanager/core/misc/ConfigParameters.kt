@@ -33,4 +33,7 @@ data class ConfigParameters(
     val enableProxyMode: Boolean?,
     val proxyServerName: String?,
     val autoUpdateConfig: Boolean?,
+    val allowProxyUpdateChecks: Boolean?,
+    val proxyUpdateFrequency: Long?,
+    val pluginUpdateFrequency: Long?,
 )

@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.core.platform
 
+import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
 import com.github.hoshikurama.ticketmanager.core.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.core.data.InstancePluginState
@@ -10,24 +11,47 @@ import com.github.hoshikurama.ticketmanager.core.ticket.User
 import java.util.concurrent.CompletableFuture
 
 abstract class PlayerJoinEvent(
-    protected val globalPluginState: GlobalPluginState,
+    private val globalPluginState: GlobalPluginState,
     protected val platformFunctions: PlatformFunctions,
     protected val instanceState: InstancePluginState,
 ) {
 
-    fun whenPlayerJoins(player: Player) {
+    fun whenPlayerJoins(player: Player, serverCount: Int) {
         if (globalPluginState.pluginLocked.get()) return
 
         CompletableFuture.runAsync {
+
             // Plugin Update Checking
             kotlin.run {
-                if (instanceState.pluginUpdateChecker.canCheck) {
-                    val newerVersion = instanceState.pluginUpdateChecker.latestVersionIfNotLatest ?: return@run // Only present if newer version is available and plugin can check
+                if (instanceState.pluginUpdate.get().canCheck) {
+                    val newerVersion = instanceState.pluginUpdate.get().latestVersionIfNotLatest ?: return@run // Only present if newer version is available and plugin can check
                     if (!player.has("ticketmanager.notify.pluginUpdate")) return@run
 
                     player.locale.notifyPluginUpdate.parseMiniMessage(
                         "current" templated mainPluginVersion,
                         "latest" templated newerVersion,
+                    ).run(player::sendMessage)
+                }
+            }
+
+            // Proxy update message
+            kotlin.run {
+                if (player.has("ticketmanager.notify.proxyUpdate")
+                    && instanceState.enableProxyMode
+                    && instanceState.allowProxyUpdatePings
+                    && instanceState.proxyServerName != null
+                    && instanceState.cachedProxyUpdate.get() != null
+                ) {
+                    // Helps with startup...
+                    if (serverCount <= 1) {
+                        val message = ProxyUpdate.encodeProxyMsg(instanceState.proxyServerName)
+                        platformFunctions.relayMessageToProxy("ticketmanager:s2p_proxy_update", message)
+                    }
+
+                    val (curVer, latestVer) = instanceState.cachedProxyUpdate.get()!!
+                    player.locale.notifyProxyUpdate.parseMiniMessage(
+                        "current" templated curVer,
+                        "latest" templated latestVer,
                     ).run(player::sendMessage)
                 }
             }
@@ -66,7 +90,7 @@ abstract class PlayerJoinEvent(
             }
         }.exceptionallyAsync {
             (it as? Exception)?.let { e ->
-                pushErrors(platformFunctions, instanceState, e) { "An error occurred when a player joined!" } //TODO: LOCALIZE THIS MESSAGE IN 8.1
+                pushErrors(platformFunctions, instanceState, e) { "An error occurred when a player joined!" } //TODO: LOCALIZE THIS EVENTUALLY
             }
             null
         }

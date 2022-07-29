@@ -20,6 +20,6 @@ class SpigotJoinEvent(
     @EventHandler
     fun onPlayerJoinEvent(event: org.bukkit.event.player.PlayerJoinEvent) {
         val player = SpigotPlayer(event.player, perms, adventure, instanceState.localeHandler)
-        whenPlayerJoins(player)
+        whenPlayerJoins(player, 0)
     }
 }

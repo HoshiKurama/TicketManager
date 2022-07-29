@@ -207,5 +207,6 @@ Notify_Event_TicketComment: '%TMHeader% <gray><user> <%CC%>commented on ticket <
 Notify_Event_TicketCreation: '%TMHeader% <gray><user> <%CC%>created ticket <gray>#<id><%CC%>:%nl%<gray><message>'                          # Templates: <user> <id> <message>
 Notify_Event_TicketReopen: '%TMHeader% <gray><user> <%CC%>reopened ticket <gray>#<id><%CC%>.'                                              # Templates: <user> <id>
 Notify_Event_SetPriority: '%TMHeader% <gray><user> <%CC%>set ticket <gray>#<id> <%CC%>to priority <%PCC%><priority><%CC%>.'                # Templates: <user> <id> <priority>    Placeholders: %PCC%
-Notify_Event_TicketModification: '%TMHeader% Ticket <gray>#<id> <%CC%>has been updated! Type <gray>/ticket view <id> <%CC%>to view this ticket.'              # Templates: <id>
-Notify_Event_PluginUpdate: '%TMHeader% TicketManager has an update!%nl%  <%CC%>Current Version: <gray><current>%nl%  <%CC%>Latest Version: <gray><latest>'    # Templates: <current> <latest>
+Notify_Event_TicketModification: '%TMHeader% Ticket <gray>#<id> <%CC%>has been updated! Type <gray>/ticket view <id> <%CC%>to view this ticket.'                    # Templates: <id>
+Notify_Event_PluginUpdate: '%TMHeader% TicketManager has an update!%nl%  <%CC%>Current Version: <gray><current>%nl%  <%CC%>Latest Version: <gray><latest>'          # Templates: <current> <latest>
+Notify_Event_ProxyUpdate: '%TMHeader% TicketManager Proxy has an update!%nl%  <%CC%>Current Version: <gray><current>%nl%  <%CC%>Latest Version: <gray><latest>'     # Templates: <current> <latest>

@@ -16,7 +16,7 @@ interface PlatformFunctions {
     fun nameFromUUID(uuid: UUID): String
     fun teleportToTicketLocSameServer(player: Player, loc: Ticket.TicketLocation)
     fun teleportToTicketLocDiffServer(player: Player, loc: Ticket.TicketLocation)
-    fun relayMessageToProxy(encodedMessage: ByteArray)
+    fun relayMessageToProxy(channel: String, encodedMessage: ByteArray)
 
     // Console Messages
     fun getConsoleAudience(): Audience

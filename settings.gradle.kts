@@ -7,5 +7,7 @@ include(
     "Spigot",
     "Sponge",
     "VelocityBridge",
-    "Waterfall"
+    "Waterfall",
+    "coreproxybridge",
 )
+include("commonproxybridge")

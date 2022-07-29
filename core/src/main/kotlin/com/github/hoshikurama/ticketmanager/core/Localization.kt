@@ -4,7 +4,6 @@ import com.github.hoshikurama.ticketmanager.core.misc.TypeSafeStream.Companion.a
 import com.github.hoshikurama.ticketmanager.core.misc.supportedLocales
 import org.yaml.snakeyaml.Yaml
 import java.nio.file.Paths
-import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.inputStream
 
 class TMLocale(
@@ -240,6 +239,7 @@ class TMLocale(
     val notifyTicketSetPrioritySuccess: String,
     val notifyTicketSetPriorityEvent: String,
     val notifyPluginUpdate: String,
+    val notifyProxyUpdate: String,
 ) {
     companion object {
         private fun loadYMLFrom(location: String): Map<String, String> =
@@ -253,7 +253,7 @@ class TMLocale(
             ?.replace("%CC%", miniMessageToHex(cc))
 
         private fun miniMessageToHex(str: String): String {
-            val isHexCode = { s: String -> "^#([a-fA-F0-9]{6})\$".toRegex().matches(s) }
+            val isHexCode = "^#([a-fA-F\\d]{6})\$".toRegex()::matches
 
             if (isHexCode(str)) return str
             str.toIntOrNull()?.let(Integer::toHexString)?.let { "#$it" }?.let { if (isHexCode(it)) return it }
@@ -484,10 +484,10 @@ class TMLocale(
                 notifyTicketSetPrioritySuccess = readAndPrime("Notify_TicketSetPrioritySuccess")!!,
                 notifyTicketSetPriorityEvent = readAndPrime("Notify_Event_SetPriority")!!,
                 notifyPluginUpdate = readAndPrime("Notify_Event_PluginUpdate")!!,
+                notifyProxyUpdate = readAndPrime("Notify_Event_ProxyUpdate")!!,
             )
         }
 
-        @OptIn(ExperimentalPathApi::class)
         fun buildLocaleFromExternal(localeID: String, rootFileLocation: String, colour: String, internalVersion: TMLocale): TMLocale {
             val visuals: Map<String, String> = try {
                 Paths.get("$rootFileLocation/locales/$localeID.yml")
@@ -696,6 +696,7 @@ class TMLocale(
                 notifyTicketSetPrioritySuccess = readAndPrime("Notify_TicketSetPrioritySuccess") ?: internalVersion.notifyTicketSetPrioritySuccess,
                 notifyTicketSetPriorityEvent = readAndPrime("Notify_Event_SetPriority") ?: internalVersion.notifyTicketSetPriorityEvent,
                 notifyPluginUpdate = readAndPrime("Notify_Event_PluginUpdate") ?: internalVersion.notifyPluginUpdate,
+                notifyProxyUpdate = readAndPrime("Notify_Event_ProxyUpdate") ?: internalVersion.notifyProxyUpdate,
             )
         }
     }

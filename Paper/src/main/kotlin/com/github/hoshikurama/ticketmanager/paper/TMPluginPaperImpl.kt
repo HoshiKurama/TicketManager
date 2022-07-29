@@ -16,6 +16,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.util.concurrent.TimeUnit
 
 
 class TMPluginPaperImpl(
@@ -56,8 +57,8 @@ class TMPluginPaperImpl(
         metrics.addCustomChart(SimplePie("plugin_platform") { "Paper" })
     }
 
-    override fun performAsyncTaskTimer(action: () -> Unit) {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(paperPlugin, Runnable { action() }, 120, 12000)
+    override fun performAsyncTaskTimer(frequency: Long, duration: TimeUnit, action: () -> Unit) {
+        Bukkit.getScheduler().runTaskTimerAsynchronously(paperPlugin, Runnable { action() }, 0, duration.toSeconds(frequency) * 20L)
     }
 
     override fun configExists(): Boolean {
@@ -107,6 +108,9 @@ class TMPluginPaperImpl(
                 enableProxyMode = getBoolean("Enable_Proxy"),
                 proxyServerName = getString("Proxy_Server_Name"),
                 autoUpdateConfig = getBoolean("Auto_Update_Config"),
+                allowProxyUpdateChecks = getBoolean("Allow_Proxy_UpdateChecking"),
+                proxyUpdateFrequency = getLong("Proxy_Update_Check_Frequency"),
+                pluginUpdateFrequency = getLong("Plugin_Update_Check_Frequency"),
             )
         }
     }
@@ -158,8 +162,10 @@ class TMPluginPaperImpl(
             proxy = Proxy(platformFunctions, instancePluginState)
             paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, "ticketmanager:inform_proxy")
             paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, "ticketmanager:relayed_message", proxy!!)
-            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, "ticketmanager:proxy_to_server_tp", proxy!!)
             paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, "ticketmanager:server_to_proxy_tp")
+            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, "ticketmanager:proxy_to_server_tp", proxy!!)
+            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, "ticketmanager:s2p_proxy_update")
+            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, "ticketmanager:p2s_proxy_update", proxy!!)
         }
     }
 

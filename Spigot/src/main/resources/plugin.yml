@@ -1,5 +1,5 @@
 name: TicketManager
-version: 8.2.2
+version: 8.3.0
 main: com.github.hoshikurama.ticketmanager.spigot.SpigotPlugin
 api-version: 1.18
 authors: [HoshiKurama]

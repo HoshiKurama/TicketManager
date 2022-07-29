@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.paper
 
+import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.randServerIdentifier
 import com.github.hoshikurama.ticketmanager.core.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.core.misc.decodeRequestTP
@@ -17,7 +18,6 @@ class Proxy(
 ): PluginMessageListener {
 
     override fun onPluginMessageReceived(channel: String, player: Player, message: ByteArray) {
-
         when (channel) {
 
             "ticketmanager:relayed_message" -> {
@@ -46,15 +46,19 @@ class Proxy(
                             generateCreatorMSG(creatorPlayer.locale).run(creatorPlayer::sendMessage)
                     }
 
-                    if (sendMassNotify) {
+                    if (sendMassNotify)
                         platform.massNotify(instanceState.localeHandler, massNotifyPerm, generateMassNotify)
-                    }
                 }
             }
 
             "ticketmanager:proxy_to_server_tp" -> {
                 val (uuid, location) = decodeRequestTP(message)
                 proxyJoinMap[uuid.toString()] = location
+            }
+
+            "ticketmanager:p2s_proxy_update" -> {
+                val (curVer, latestVer) = ProxyUpdate.decodeServerMsg(message)
+                instanceState.cachedProxyUpdate.set(curVer to latestVer)
             }
         }
     }

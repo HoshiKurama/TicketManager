@@ -1,7 +1,7 @@
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
 #                                              TicketManager Config File                                              #
-#                                                     Version 8.2.2                                                   #
+#                                                     Version 8.3.0                                                   #
 #                                                     Paper Edition                                                   #
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
@@ -98,6 +98,12 @@ Enable_Proxy: false
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Proxy_Server_Name: ''
 #   Server name given in your proxy file.                                                                             #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Allow_Proxy_UpdateChecking: true
+#   Allow the server to check for new proxy versions.                                                                 #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Proxy_Update_Check_Frequency: 1
+#   Time in hours between proxy update checking.                                                                      #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 #                                                                                                                     #
 #                                                                                                                     #
@@ -230,25 +236,25 @@ Discord_Channel_ID: -1
 #   Text Channel ID of the channel the bot should send messages to.                                                   #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Assign: true
-# Send notification when tickets assignments/un-assignments occur.                                                    #
+#   Send notification when tickets assignments/un-assignments occur.                                                  #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Close: true
-# Send notification when a ticket is closed.                                                                          #
+#   Send notification when a ticket is closed.                                                                        #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Close_All: true
-# Send notification when tickets are mass-closed.                                                                     #
+#   Send notification when tickets are mass-closed.                                                                   #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Comment: true
-# Send notification when a ticket receives a comment.                                                                 #
+#   Send notification when a ticket receives a comment.                                                               #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Create: true
-# Send notification when a ticket is created.                                                                         #
+#   Send notification when a ticket is created.                                                                       #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Reopen: true
-# Send notification when a ticket is re-opened.                                                                       #
+#   Send notification when a ticket is re-opened.                                                                     #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Notify_On_Priority_Change: true
-# Send notification when a ticket's priority is changed.                                                              #
+#   Send notification when a ticket's priority is changed.                                                            #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 #                                                                                                                     #
 #                                                                                                                     #
@@ -285,16 +291,19 @@ Enable_Advanced_Visual_Control: false
 #                                                                                                                     #
 #                                                                                                                     #
 #   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
-#                                                   Update Settings                                                   #
+#                                               Plugin Update Settings                                                #
 #   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
 Allow_Unread_Ticket_Updates: true
-# Alert ticket creators at regular intervals or on login that they have a status change on a ticket. This is NOT      #
-# the same alert that users receive immediately for the same thing. Setting this value to 'false' prevents the        #
-# plugin from flagging a ticket as unread.                                                                            #
+#   Alert ticket creators at regular intervals or on login that they have a status change on a ticket. This is NOT    #
+#   the same alert that users receive immediately for the same thing. Setting this value to 'false' prevents the      #
+#   plugin from flagging a ticket as unread.                                                                          #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Allow_UpdateChecking: true
-# Allow the server to check for newer version of TicketManager.                                                       #
+#   Allow the server to check for newer version of TicketManager.                                                     #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Plugin_Update_Check_Frequency: 1
+#   Time in hours between update checks for the plugin.                                                               #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Auto_Update_Config: true
-# Allow this config file to automatically update and transfer existing config settings.                               #
+#   Allow this config file to automatically update and transfer existing config settings.                             #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #

@@ -69,8 +69,8 @@ class PaperFunctions(
         plugin.server.sendPluginMessage(plugin, "ticketmanager:server_to_proxy_tp", encodeRequestTP(player, loc))
     }
 
-    override fun relayMessageToProxy(encodedMessage: ByteArray) {
-        plugin.server.sendPluginMessage(plugin, "ticketmanager:inform_proxy", encodedMessage)
+    override fun relayMessageToProxy(channel: String, encodedMessage: ByteArray) {
+        plugin.server.sendPluginMessage(plugin, channel, encodedMessage)
     }
 
     override fun getConsoleAudience(): Audience {

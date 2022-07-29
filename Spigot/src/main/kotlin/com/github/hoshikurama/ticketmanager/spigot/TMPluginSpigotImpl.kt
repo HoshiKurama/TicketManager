@@ -18,6 +18,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.util.concurrent.TimeUnit
 
 class TMPluginSpigotImpl(
     private val spigotPlugin: SpigotPlugin,
@@ -50,8 +51,8 @@ class TMPluginSpigotImpl(
         metrics.addCustomChart(SimplePie("plugin_platform") { "Spigot" })
     }
 
-    override fun performAsyncTaskTimer(action: () -> Unit) {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(spigotPlugin, Runnable { action() }, 120, 12000)
+    override fun performAsyncTaskTimer(frequency: Long, duration: TimeUnit, action: () -> Unit) {
+        Bukkit.getScheduler().runTaskTimerAsynchronously(spigotPlugin, Runnable { action() }, 0, duration.toSeconds(frequency) * 20L)
     }
 
     override fun configExists(): Boolean {
@@ -101,6 +102,9 @@ class TMPluginSpigotImpl(
                 enableProxyMode = false,
                 proxyServerName = "",
                 autoUpdateConfig = getBoolean("Auto_Update_Config"),
+                allowProxyUpdateChecks = false,
+                proxyUpdateFrequency = 0,
+                pluginUpdateFrequency = getLong("Plugin_Update_Check_Frequency")
             )
         }
     }

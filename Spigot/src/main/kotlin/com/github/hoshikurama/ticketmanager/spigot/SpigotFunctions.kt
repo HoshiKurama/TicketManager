@@ -67,7 +67,7 @@ class SpigotFunctions(
         throw Exception("Proxies with Spigot NOT Supported! Please use Paper for Proxy Support")
     }
 
-    override fun relayMessageToProxy(encodedMessage: ByteArray) {
+    override fun relayMessageToProxy(channel: String, encodedMessage: ByteArray) {
         throw Exception("Proxies with Spigot NOT Supported! Please use Paper for Proxy Support")
     }
 

@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.core
 
+import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.UpdateChecker
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
 import com.github.hoshikurama.ticketmanager.core.data.Cooldown
@@ -16,6 +17,8 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.io.path.exists
 
 abstract class TMPlugin(
@@ -38,7 +41,7 @@ abstract class TMPlugin(
     }
 
     abstract fun performSyncBefore()
-    abstract fun performAsyncTaskTimer(action: () -> Unit)
+    abstract fun performAsyncTaskTimer(frequency: Long, duration: TimeUnit, action: () -> Unit)
 
     // Config Functions
     abstract fun configExists(): Boolean
@@ -61,7 +64,18 @@ abstract class TMPlugin(
         performSyncBefore()
         activeInstance = this
         CompletableFuture.runAsync(::initializeData) // Also registers
-        performAsyncTaskTimer { CompletableFuture.runAsync(::periodicTasks) }
+        performAsyncTaskTimer(10, TimeUnit.MINUTES, ::periodicTasks)
+    }
+
+    private fun updatePluginUpdateChecker() {
+        val newChecker = UpdateChecker(true, UpdateChecker.Location.MAIN)
+        instancePluginState.pluginUpdate.set(newChecker)
+    }
+
+    private fun updateProxyUpdateChecker() {
+        // ASSUMES PROXY SERVER NAME IS NOT NULL AND CAN CHECK FOR UPDATES
+        val message = ProxyUpdate.encodeProxyMsg(instancePluginState.proxyServerName!!)
+        platformFunctions.relayMessageToProxy("ticketmanager:s2p_proxy_update", message)
     }
 
     private fun periodicTasks() {
@@ -137,20 +151,7 @@ abstract class TMPlugin(
 
                 // Updates config file if requested
                 if (c.autoUpdateConfig ?: true.addToErrors("Auto_Update_Config", Boolean::toString)) {
-                    val isComment: (String) -> Boolean = { it.startsWith("#") }
-                    val getKey: (String) -> String = { it.split(":")[0] }
-
-                    val externalConfig = loadPlayerConfig() //NOTE: This will not work with future Sponge support
-                    val externalIdentifiers = externalConfig
-                        .filterNot(isComment)
-                        .map(getKey)
-
-                    loadInternalConfig().map { str ->
-                            if (!isComment(str) && getKey(str) in externalIdentifiers)
-                                externalConfig.first { it.startsWith(getKey(str))}
-                            else str
-                        }
-                        .run(::writeNewConfig)
+                    com.github.hoshikurama.ticketmanager.common.updateConfig(::loadPlayerConfig, ::loadInternalConfig, ::writeNewConfig)
                 }
 
                 // Generates Advanced Visual Control files
@@ -171,11 +172,13 @@ abstract class TMPlugin(
                 }
 
                 // Proxy Stuff
-                val enableVelocity = c.enableProxyMode ?: false.addToErrors("Enable_Velocity", Boolean::toString)
+                val enableProxyMode = c.enableProxyMode ?: false.addToErrors("Enable_Proxy", Boolean::toString)
+                val serverName = c.proxyServerName.let { if (it == null) null.addToErrors("Proxy_Server_Name") { "null" } else it.takeIf(String::isNotBlank) }
+                val allowProxyUpdatePings = c.allowProxyUpdateChecks ?: true.addToErrors("Allow_Proxy_UpdateChecking", Boolean::toString)
+                val proxyUpdateFreq = c.proxyUpdateFrequency ?: 1L.addToErrors("Proxy_Update_Check_Frequency", Long::toString)
 
-                val serverName = c.proxyServerName.let { if (it == null) null.addToErrors("Velocity_Server_Name") { "null" } else it.takeIf(String::isNotBlank) }
+                // Generate platform functions
                 platformFunctions = buildPlatformFunctions(serverName)
-
 
                 // Builds LocaleHandler object
                 val localeHandler = kotlin.run {
@@ -262,12 +265,29 @@ abstract class TMPlugin(
                 val updateChecker = UpdateChecker(canCheck = c.checkForPluginUpdates ?: true.addToErrors("Allow_UpdateChecking", Boolean::toString), UpdateChecker.Location.MAIN)
                 val printModifiedStacktrace = c.printModifiedStacktrace ?: true.addToErrors("Print_Modified_Stacktrace", Boolean::toString)
                 val printFullStacktrace = c.printFullStacktrace ?: false.addToErrors("Print_Full_Stacktrace", Boolean::toString)
+                val pluginUpdateFreq = c.pluginUpdateFrequency ?: 1L.addToErrors("Plugin_Update_Check_Frequency", Long::toString)
 
                 // Builds and assigns final objects
-                instancePluginState = InstancePluginState(database, cooldowns, discord, databaseBuilders, localeHandler, allowUnreadTicketUpdates, updateChecker, printModifiedStacktrace, printFullStacktrace, enableVelocity, serverName)
+                instancePluginState = InstancePluginState(
+                    database = database,
+                    cooldowns = cooldowns,
+                    discord = discord,
+                    databaseBuilders = databaseBuilders,
+                    localeHandler = localeHandler,
+                    pluginUpdate = AtomicReference(updateChecker),
+                    allowUnreadTicketUpdates = allowUnreadTicketUpdates,
+                    printModifiedStacktrace = printModifiedStacktrace,
+                    printFullStacktrace = printFullStacktrace,
+                    pluginUpdateFreq = pluginUpdateFreq,
+                    enableProxyMode = enableProxyMode,
+                    proxyServerName = serverName,
+                    allowProxyUpdatePings = allowProxyUpdatePings,
+                    cachedProxyUpdate = AtomicReference(),
+                )
                 tabComplete = buildTabComplete(platformFunctions, instancePluginState)
                 commandPipeline = buildPipeline(platformFunctions, instancePluginState, globalPluginState)
                 joinEvent = buildJoinEvent(globalPluginState, instancePluginState, platformFunctions)
+                registerProcesses()
 
                 // Print warnings
                 CompletableFuture.runAsync {
@@ -290,21 +310,27 @@ abstract class TMPlugin(
                 }
             }
 
-            // Places update is available into Console
+            // Additional startup procedures
             instancePluginState.run {
-                if (pluginUpdateChecker.run { canCheck && latestVersionIfNotLatest != null })
-                    localeHandler.consoleLocale.notifyPluginUpdate
-                        .parseMiniMessage(
-                            "current" templated mainPluginVersion,
-                            "latest" templated pluginUpdateChecker.latestVersionIfNotLatest!!
-                        )
-                        .run(platformFunctions.getConsoleAudience()::sendMessage)
+
+                // Place update is available into Console
+                if (pluginUpdate.get().canCheck && pluginUpdate.get().latestVersionIfNotLatest != null) {
+                    localeHandler.consoleLocale.notifyPluginUpdate.parseMiniMessage(
+                        "current" templated mainPluginVersion,
+                        "latest" templated pluginUpdate.get().latestVersionIfNotLatest!!
+                    ).run(platformFunctions.getConsoleAudience()::sendMessage)
+                }
+
+                // Launch plugin update checking
+                if (pluginUpdate.get().canCheck)
+                    performAsyncTaskTimer(pluginUpdateFreq, TimeUnit.HOURS, ::updatePluginUpdateChecker)
+
+                // Proxy update checking...
+                if (proxyServerName != null && allowProxyUpdatePings && enableProxyMode) {
+                    updateProxyUpdateChecker()                                                                  // Perform initial proxy update check
+                    performAsyncTaskTimer(pluginUpdateFreq, TimeUnit.HOURS, ::updateProxyUpdateChecker)         // Launch proxy update checking
+                }
             }
-
-            // pushErrors(platformFunctions, instancePluginState, e, TMLocale::consoleErrorBadDiscord) For discord
-
-            // Registers itself
-            registerProcesses()
 
             globalPluginState.pluginLocked.set(false)
         }.exceptionallyAsync { it.printStackTrace(); null; }

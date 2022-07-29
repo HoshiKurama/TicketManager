@@ -208,4 +208,5 @@ Notify_Event_TicketCreation: '%TMHeader% <gray><user> <%CC%>hat Ticket <gray>#<i
 Notify_Event_TicketReopen: '%TMHeader% <gray><user> <%CC%>hat das Ticket <gray>#<id> <%CC%>erneut geöffnet.'                                       # Templates: <user> <id>
 Notify_Event_SetPriority: '%TMHeader% <gray><user> <%CC%>hat die Ticket <gray>#<id> <%CC%>Priorität zu <%PCC%><priority> <%CC%>geändert.'          # Templates: <user> <id> <priority>    Placeholders: %PCC%
 Notify_Event_TicketModification: '%TMHeader% Ticket <gray>#<id> <%CC%> wurde geupdated! Nutze <gray>/ticket view <id> <%CC%>um das Ticket anzusehen.'            # Templates: <id>
-Notify_Event_PluginUpdate: '%TMHeader% Es ist ein Update verfügbar!%nl%  <%CC%>Aktuelle Version: <gray><current>%nl%  <%CC%>Neueste Version: <gray><latest>'     # Templates: <current> <latest>
+Notify_Event_PluginUpdate: '%TMHeader% Es ist ein Update verfügbar!%nl%  <%CC%>Aktuelle Version: <gray><current>%nl%  <%CC%>Neueste Version: <gray><latest>'        # Templates: <current> <latest>
+Notify_Event_ProxyUpdate: '%TMHeader% Es ist ein Proxy-Update verfügbar!%nl%  <%CC%>Aktuelle Version: <gray><current>%nl%  <%CC%>Neueste Version: <gray><latest>'        # Templates: <current> <latest>
