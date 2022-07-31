@@ -1,18 +1,18 @@
-package com.github.hoshikurama.ticketmanager.core
+package com.github.hoshikurama.ticketmanager.commonse
 
 import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.UpdateChecker
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
-import com.github.hoshikurama.ticketmanager.core.data.Cooldown
-import com.github.hoshikurama.ticketmanager.core.data.GlobalPluginState
-import com.github.hoshikurama.ticketmanager.core.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.core.database.*
-import com.github.hoshikurama.ticketmanager.core.misc.*
-import com.github.hoshikurama.ticketmanager.core.pipeline.Pipeline
-import com.github.hoshikurama.ticketmanager.core.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.core.platform.PlayerJoinEvent
-import com.github.hoshikurama.ticketmanager.core.platform.TabComplete
-import com.github.hoshikurama.ticketmanager.core.ticket.User
+import com.github.hoshikurama.ticketmanager.commonse.data.Cooldown
+import com.github.hoshikurama.ticketmanager.commonse.data.GlobalPluginState
+import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.commonse.database.*
+import com.github.hoshikurama.ticketmanager.commonse.misc.*
+import com.github.hoshikurama.ticketmanager.commonse.pipeline.Pipeline
+import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
+import com.github.hoshikurama.ticketmanager.commonse.platform.TabComplete
+import com.github.hoshikurama.ticketmanager.commonse.ticket.User
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -187,7 +187,14 @@ abstract class TMPlugin(
                     val consoleLocale = c.localeHandlerConsoleLocale ?: "en_ca".addToErrors("Console_Locale") { it }
                     val forceLocale = c.localeHandlerForceLocale ?: false.addToErrors("Force_Locale", Boolean::toString)
                     val enableAdvancedVisualControl = c.enableAdvancedVisualControl ?: false.addToErrors("Enable_Advanced_Visual_Control", Boolean::toString)
-                    LocaleHandler.buildLocales(colourCode, preferredLocale.lowercase(), consoleLocale.lowercase(), forceLocale, c.pluginFolderPath, enableAdvancedVisualControl)
+                    LocaleHandler.buildLocales(
+                        colourCode,
+                        preferredLocale.lowercase(),
+                        consoleLocale.lowercase(),
+                        forceLocale,
+                        c.pluginFolderPath,
+                        enableAdvancedVisualControl
+                    )
                 }
 
                 // Builds DatabaseBuilders object
@@ -278,7 +285,6 @@ abstract class TMPlugin(
                     allowUnreadTicketUpdates = allowUnreadTicketUpdates,
                     printModifiedStacktrace = printModifiedStacktrace,
                     printFullStacktrace = printFullStacktrace,
-                    pluginUpdateFreq = pluginUpdateFreq,
                     enableProxyMode = enableProxyMode,
                     proxyServerName = serverName,
                     allowProxyUpdatePings = allowProxyUpdatePings,
@@ -308,27 +314,27 @@ abstract class TMPlugin(
 
                     platformFunctions.pushInfoToConsole(instancePluginState.localeHandler.consoleLocale.consoleInitializationComplete)
                 }
-            }
 
-            // Additional startup procedures
-            instancePluginState.run {
+                // Additional startup procedures
+                instancePluginState.run {
 
-                // Place update is available into Console
-                if (pluginUpdate.get().canCheck && pluginUpdate.get().latestVersionIfNotLatest != null) {
-                    localeHandler.consoleLocale.notifyPluginUpdate.parseMiniMessage(
-                        "current" templated mainPluginVersion,
-                        "latest" templated pluginUpdate.get().latestVersionIfNotLatest!!
-                    ).run(platformFunctions.getConsoleAudience()::sendMessage)
-                }
+                    // Place update is available into Console
+                    if (pluginUpdate.get().canCheck && pluginUpdate.get().latestVersionIfNotLatest != null) {
+                        localeHandler.consoleLocale.notifyPluginUpdate.parseMiniMessage(
+                            "current" templated mainPluginVersion,
+                            "latest" templated pluginUpdate.get().latestVersionIfNotLatest!!
+                        ).run(platformFunctions.getConsoleAudience()::sendMessage)
+                    }
 
-                // Launch plugin update checking
-                if (pluginUpdate.get().canCheck)
-                    performAsyncTaskTimer(pluginUpdateFreq, TimeUnit.HOURS, ::updatePluginUpdateChecker)
+                    // Launch plugin update checking
+                    if (pluginUpdate.get().canCheck)
+                        performAsyncTaskTimer(pluginUpdateFreq, TimeUnit.HOURS, ::updatePluginUpdateChecker)
 
-                // Proxy update checking...
-                if (proxyServerName != null && allowProxyUpdatePings && enableProxyMode) {
-                    updateProxyUpdateChecker()                                                                  // Perform initial proxy update check
-                    performAsyncTaskTimer(pluginUpdateFreq, TimeUnit.HOURS, ::updateProxyUpdateChecker)         // Launch proxy update checking
+                    // Proxy update checking...
+                    if (proxyServerName != null && allowProxyUpdatePings && enableProxyMode) {
+                        updateProxyUpdateChecker()                                                                  // Perform initial proxy update check
+                        performAsyncTaskTimer(proxyUpdateFreq, TimeUnit.HOURS, ::updateProxyUpdateChecker)          // Launch proxy update checking
+                    }
                 }
             }
 
