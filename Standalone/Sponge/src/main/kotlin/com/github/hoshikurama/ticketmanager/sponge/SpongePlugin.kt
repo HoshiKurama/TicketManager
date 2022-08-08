@@ -1,8 +1,8 @@
 package com.github.hoshikurama.ticketmanager.sponge
 
-import org.spongepowered.plugin.builtin.jvm.Plugin
 
-@Plugin("ticketmanager")
+
+//@Plugin("ticketmanager")
 class SpongePlugin {
 //ConfigDir annotation, either with sharedRoot set to false
 }
