@@ -1,5 +1,6 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("com.github.ben-manes.versions") version "0.42.0" // https://github.com/ben-manes/gradle-versions-plugin
     kotlin("plugin.serialization") version "1.7.10"
     kotlin("jvm")
     java
@@ -18,7 +19,7 @@ repositories {
 dependencies {
     implementation(project(":common"))
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.10")
-    implementation("mysql:mysql-connector-java:8.0.29")
+    implementation("mysql:mysql-connector-java:8.0.30")
     implementation("com.github.jasync-sql:jasync-mysql:2.0.8")
     implementation("com.github.seratch:kotliquery:1.8.0")
     implementation("net.kyori:adventure-api:4.11.0")
@@ -27,8 +28,8 @@ dependencies {
     implementation("org.yaml:snakeyaml:1.30")
     implementation("joda-time:joda-time:2.10.14")
     implementation("com.discord4j:discord4j-core:3.2.2")
-    implementation("com.google.code.gson:gson:2.9.0")
-    implementation("com.h2database:h2:2.1.212")
+    implementation("com.google.code.gson:gson:2.9.1")
+    implementation("com.h2database:h2:2.1.214")
     implementation("com.google.guava:guava:31.1-jre")
 }
 

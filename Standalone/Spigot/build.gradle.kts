@@ -1,5 +1,6 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("com.github.ben-manes.versions") version "0.42.0" // https://github.com/ben-manes/gradle-versions-plugin
     kotlin("jvm")
     java
     application
@@ -22,7 +23,7 @@ dependencies {
     implementation("net.kyori:adventure-platform-bukkit:4.1.1")
     implementation("joda-time:joda-time:2.10.14")
     implementation("org.bstats:bstats-bukkit:3.0.0")
-    compileOnly("com.github.MilkBowl:VaultAPI:1.7")
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7.1")
     implementation(project(":Standalone:commonSE"))
     implementation(project(":common"))
 }

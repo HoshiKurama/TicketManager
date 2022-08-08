@@ -1,27 +1,27 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-   kotlin("jvm") version "1.7.10"
-   java
+    kotlin("jvm") version "1.7.10"
+    java
 }
 
 repositories {
-   mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-   implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.10")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.10")
 }
 
 subprojects {
-   group = "com.github.hoshikurama"
-   version = "8.3.0"
+    group = "com.github.hoshikurama"
+    version = "8.3.1"
 
-   tasks.withType<KotlinCompile> {
-      kotlinOptions.jvmTarget = "17"
-   }
+    tasks.withType<KotlinCompile> {
+        kotlinOptions.jvmTarget = "17"
+    }
 
-   tasks.withType<KotlinCompile>().configureEach {
-      kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
-   }
+    tasks.withType<KotlinCompile>().configureEach {
+        kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+    }
 }
