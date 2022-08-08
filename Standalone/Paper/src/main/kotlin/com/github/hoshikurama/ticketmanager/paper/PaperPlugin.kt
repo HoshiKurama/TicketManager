@@ -1,4 +1,4 @@
-package com.github.hoshikurama.paper
+package com.github.hoshikurama.ticketmanager.paper
 
 import net.milkbowl.vault.permission.Permission
 import org.bukkit.plugin.java.JavaPlugin

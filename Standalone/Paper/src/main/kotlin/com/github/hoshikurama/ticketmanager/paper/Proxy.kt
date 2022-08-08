@@ -1,4 +1,4 @@
-package com.github.hoshikurama.paper
+package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.randServerIdentifier
