@@ -12,11 +12,9 @@
 /Standalone/commonSE/src/main/java/
 /Standalone/Paper/src/main/java/
 /Standalone/Spigot/src/main/java/
-/Standalone/Velocity/src/main/java/
 /Standalone/commonSE/build/
 /Standalone/Paper/build/
 /Standalone/Spigot/build/
-/Standalone/Velocity/build/
 /ProxyBridge/src/
 /ProxyBridge/commonPDE/src/main/java/
 /commonproxybridge/build/
@@ -28,3 +26,8 @@
 /Standalone/Sponge/build/
 /Standalone/Sponge/
 /ProxyBridge/commonPDE/build/
+/Standalone/Fabric/src/main/java/
+/Standalone/Fabric/build/
+/Standalone/Fabric/.gradle/
+/Standalone/Fabric/run/
+/Standalone/Fabric/

@@ -18,8 +18,9 @@ suspend fun <T, U> Iterable<T>.parallelFlowMap(f: suspend (T) -> U) = asFlow().b
 @Suppress("Unused")
 suspend fun <T> Iterable<T>.parallelFlowForEach(f: suspend (T) -> Unit) =  asFlow().buffer(10_000).collect(f)
 
-@Suppress("Unused")
 fun <T: Any> Optional<T?>.unwrapOrNull(): T? = if (isPresent) get() else null
+fun <T: Any> Optional<T?>.tK(): T? = unwrapOrNull()
+
 
 @Suppress("Unused")
 fun <T> T.notEquals(t: T) = this != t

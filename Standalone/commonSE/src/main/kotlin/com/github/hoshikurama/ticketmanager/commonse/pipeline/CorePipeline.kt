@@ -25,6 +25,7 @@ import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
 import java.util.*
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -48,21 +49,21 @@ class CorePipeline(
         }
 
         return getTicketOrDummyTicketOrNullAsync(args, sender.locale)
-            .thenComposeAsync { ticket ->
+            .thenApplyAsync { ticket ->
 
                 // I'm so sorry future me for writing it this way. Type inference was being terrible (Future Me: I have no clue what you're talking about, but thank you anyways)
-                if (ticket == null)
+                if (ticket == null) {
                     sender.sendMessage(sender.locale.warningsInvalidID)
+                    return@thenApplyAsync CompletableFuture.completedFuture<Notification?>(null)
+                }
 
                 // Completable
-                val hasPermission = ticket?.let { hasValidPermission(sender, it, args) } ?: false
-                val isValidCommand = ticket?.let { isValidCommand(sender, ticket, args) } ?: false
-                val notUnderCooldown = notUnderCooldown(sender, args)
+                if (!hasValidPermission(sender, ticket, args) || !isValidCommand(sender, ticket, args) || !notUnderCooldown(sender, args))
+                    return@thenApplyAsync CompletableFuture.completedFuture<Notification?>(null)
 
-                if (hasPermission && isValidCommand && notUnderCooldown)
-                    executeCommand(sender, args, ticket!!)
-                else CompletableFuture.completedFuture<Notification?>(null)
+                executeCommand(sender, args, ticket)
             }
+            .thenComposeAsync { step -> step }
     }
 
     private fun getTicketOrDummyTicketOrNullAsync(
@@ -268,7 +269,7 @@ class CorePipeline(
         sender: Sender,
         args: List<String>,
         ticket: Ticket,
-    ): CompletableFuture<out Notification?> {
+    ): CompletionStage<out Notification?> {
         val nullFuture: CompletableFuture<out Notification?> = CompletableFuture.completedFuture(null)
 
         return sender.locale.run {
