@@ -600,7 +600,8 @@ class CorePipeline(
             val silenceable: Boolean,
             val command: String,
             val arguments: List<CommandArg>,
-            val permissions: List<String>
+            val permissions: List<String>,
+            val explanation: String,
         )
 
         // Builds command node entries
@@ -611,133 +612,145 @@ class CorePipeline(
                     command = commandWordAssign,
                     arguments = listOf(RequiredArg(parameterID), RequiredArg("$parameterAssignment...")),
                     permissions = listOf("ticketmanager.command.assign"),
+                    explanation = helpExplanationAssign,
                 ),
                 Command(
                     silenceable = true,
                     command = commandWordClaim,
                     arguments = listOf(RequiredArg(parameterID)),
                     permissions = listOf("ticketmanager.command.claim"),
+                    explanation = helpExplanationClaim,
                 ),
                 Command(
                     silenceable = true,
                     command = commandWordClose,
                     arguments = listOf(RequiredArg(parameterID), OptionalArg("$parameterComment...")),
                     permissions = listOf("ticketmanager.command.close.all", "ticketmanager.command.close.own"),
+                    explanation = helpExplanationClose,
                 ),
                 Command(
                     silenceable = true,
                     command = commandWordCloseAll,
                     arguments = listOf(RequiredArg(parameterLowerID), RequiredArg(parameterUpperID)),
                     permissions = listOf("ticketmanager.command.closeAll"),
+                    explanation = helpExplanationCloseAll,
                 ),
                 Command(
                     silenceable = true,
                     command = commandWordComment,
                     arguments = listOf(RequiredArg(parameterID), RequiredArg("$parameterComment...")),
                     permissions = listOf("ticketmanager.command.comment.all", "ticketmanager.command.comment.own"),
+                    explanation = helpExplanationComment,
                 ),
                 Command(
                     silenceable = false,
                     command = commandWordConvertDB,
                     arguments = listOf(RequiredArg(parameterTargetDB)),
                     permissions = listOf("ticketmanager.command.convertDatabase"),
+                    explanation = helpExplanationConvertDatabase,
                 ),
                 Command(
                     silenceable = false,
                     command = commandWordCreate,
                     arguments = listOf(RequiredArg("$parameterComment...")),
                     permissions = listOf("ticketmanager.command.create"),
+                    explanation = helpExplanationCreate,
                 ),
                 Command(
                     silenceable = false,
                     command = commandWordHelp,
                     arguments = listOf(),
                     permissions = listOf("ticketmanager.command.help"),
+                    explanation = helpExplanationHelp,
                 ),
                 Command(
                     silenceable = false,
                     command = commandWordHistory,
                     arguments = listOf(OptionalArg(parameterUser), OptionalArg(parameterPage)),
                     permissions = listOf("ticketmanager.command.history.all", "ticketmanager.command.history.own"),
+                    explanation = helpExplanationHistory,
                 ),
                 Command(
                     silenceable = false,
                     command = commandWordList,
                     arguments = listOf(OptionalArg(parameterPage)),
                     permissions = listOf("ticketmanager.command.list"),
+                    explanation = helpExplanationList,
                 ),
                 Command(
                     silenceable = false,
                     command = commandWordListAssigned,
                     arguments = listOf(OptionalArg(parameterPage)),
                     permissions = listOf("ticketmanager.command.list"),
+                    explanation = helpExplanationListAssigned,
                 ),
                 Command(
                     silenceable = false,
                     command = commandWordListUnassigned,
                     arguments = listOf(OptionalArg(parameterPage)),
                     permissions = listOf("ticketmanager.command.list"),
+                    explanation = helpExplanationListUnassigned,
                 ),
                 Command(
                     silenceable = false,
                     command = commandWordReload,
                     arguments = listOf(),
                     permissions = listOf("ticketmanager.command.reload"),
+                    explanation = helpExplanationReload,
                 ),
                 Command(
                     silenceable = true,
                     command = commandWordReopen,
                     arguments = listOf(RequiredArg(parameterID)),
                     permissions = listOf("ticketmanager.command.reopen"),
+                    explanation = helpExplanationReopen,
                 ),
                 Command(
                     silenceable = false,
                     command = commandWordSearch,
                     arguments = listOf(RequiredArg("$parameterConstraints...")),
                     permissions = listOf("ticketmanager.command.search"),
+                    explanation = helpExplanationSearch,
                 ),
                 Command(
                     silenceable = true,
                     command = commandWordSetPriority,
                     arguments = listOf(RequiredArg(parameterID), RequiredArg(parameterLevel)),
                     permissions = listOf("ticketmanager.command.setPriority"),
+                    explanation = helpExplanationSetPriority,
                 ),
                 Command(
                     silenceable = false,
                     command = commandWordTeleport,
                     arguments = listOf(RequiredArg(parameterID)),
                     permissions = listOf("ticketmanager.command.teleport"),
+                    explanation = helpExplanationTeleport,
                 ),
                 Command(
                     silenceable = true,
                     command = commandWordUnassign,
                     arguments = listOf(RequiredArg(parameterID)),
                     permissions = listOf("ticketmanager.command.assign"),
+                    explanation = helpExplanationUnassign,
                 ),
                 Command(
                     silenceable = true,
                     command = commandWordView,
                     arguments = listOf(RequiredArg(parameterID)),
                     permissions = listOf("ticketmanager.command.view.all", "ticketmanager.command.view.own"),
+                    explanation = helpExplanationView,
                 ),
                 Command(
                     silenceable = false,
                     command = commandWordDeepView,
                     arguments = listOf(RequiredArg(parameterID)),
                     permissions = listOf("ticketmanager.command.viewdeep.all", "ticketmanager.command.viewdeep.own"),
+                    explanation = helpExplanationDeepView,
                 ),
             )
         }
             .asSequence()
             .filter { it.permissions.any(sender::has) }
-            .map {
-                Command(
-                    it.silenceable,
-                    "${sender.locale.commandBase} ${it.command}",
-                    it.arguments,
-                    it.permissions
-                )
-            }
 
         val hasSilentPerm = sender.has("ticketmanager.commandArg.silence")
         val component = buildComponent {
@@ -773,9 +786,9 @@ class CorePipeline(
 
                     helpEntry.parseMiniMessage(
                         "silenceable" templated silenceableComponent,
-                        "command" templated it.command,
+                        "command" templated "${sender.locale.commandBase} ${it.command}",
                         "params" templated argsComponent,
-                    )
+                    ).append(it.explanation.parseMiniMessage())
                 }
                     .reduce(Component::append)
                     .let(this@buildComponent::append)
