@@ -15,6 +15,7 @@ import org.bstats.bungeecord.Metrics
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeUnit
 
 class WaterfallBridgeAdapter<T>(private val plugin: T) : ProxyBridge()
@@ -93,6 +94,7 @@ class WaterfallBridgeAdapter<T>(private val plugin: T) : ProxyBridge()
 @Suppress("Unused")
 class WaterfallBridge : Plugin(), Listener {
     private val adapter = WaterfallBridgeAdapter(this)
+    private val onlyOnceMap = ConcurrentLinkedQueue<ByteArray>()
 
     override fun onEnable() {
         adapter.onInitialization()
@@ -105,6 +107,11 @@ class WaterfallBridge : Plugin(), Listener {
 
     @EventHandler
     fun onMessage(event: PluginMessageEvent) {
+        if (onlyOnceMap.any { Arrays.equals(it, event.data) }) return
+
+        onlyOnceMap.add(event.data)
+        proxy.scheduler.schedule(this, { onlyOnceMap.remove(event.data) }, 1, TimeUnit.SECONDS)
+
         when (event.tag) {
 
             "ticketmanager:inform_proxy" ->
