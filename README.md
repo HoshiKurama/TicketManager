@@ -13,6 +13,7 @@ TicketManager supports full localization on a per-individual basis! However, wit
 | US English | en_US | HoshiKurama |  |
 | UK English | en_UK | HoshiKurama |  |
 | German | de_DE | _CuzImRex | \[[Spigot Forums](https://www.spigotmc.org/members/_cuzimrex.230750/)\] |
+|  |  | Haxxsmart | \[[Steam](https://steamcommunity.com/id/haxxsmart/)] |
 
 ### Config File: 
 | Language | Locale | Contributor | Social Links |
