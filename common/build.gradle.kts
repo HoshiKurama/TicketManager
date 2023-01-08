@@ -9,6 +9,6 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.0")
     implementation("com.google.guava:guava:31.1-jre")
 }

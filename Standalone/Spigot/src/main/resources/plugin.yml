@@ -5,9 +5,9 @@ api-version: 1.18
 authors: [HoshiKurama]
 depend: [Vault]
 libraries:
-  - org.jetbrains.kotlin:kotlin-stdlib:1.7.20
+  - org.jetbrains.kotlin:kotlin-stdlib:1.8.0
   - com.mysql:mysql-connector-j:8.0.31
-  - com.github.jasync-sql:jasync-mysql:2.1.7
+  - com.github.jasync-sql:jasync-mysql:2.1.8
   - com.github.seratch:kotliquery:1.9.0
   - joda-time:joda-time:2.12.1
   - com.discord4j:discord4j-core:3.2.2

@@ -18,9 +18,9 @@ repositories {
 
 dependencies {
     implementation(project(":common"))
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.0")
     implementation("com.mysql:mysql-connector-j:8.0.31")
-    implementation("com.github.jasync-sql:jasync-mysql:2.1.7")
+    implementation("com.github.jasync-sql:jasync-mysql:2.1.8")
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("net.kyori:adventure-api:4.11.0")
     implementation("net.kyori:adventure-extra-kotlin:4.11.0")

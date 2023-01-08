@@ -18,7 +18,7 @@ repositories {
 
 dependencies {
     compileOnly("org.spigotmc:spigot-api:1.19-R0.1-SNAPSHOT")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.0")
     implementation("net.kyori:adventure-extra-kotlin:4.11.0")
     implementation("net.kyori:adventure-platform-bukkit:4.1.2")
     implementation("joda-time:joda-time:2.12.1")
