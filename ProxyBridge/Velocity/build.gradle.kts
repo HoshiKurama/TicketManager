@@ -25,7 +25,7 @@ dependencies {
     implementation(project(":ProxyBridge:commonPDE"))
     compileOnly("com.velocitypowered:velocity-api:3.1.0")
     annotationProcessor("com.velocitypowered:velocity-api:3.1.0")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.0")
     implementation("org.bstats:bstats-velocity:3.0.0")
     implementation("org.yaml:snakeyaml:1.33")
 }
@@ -35,7 +35,7 @@ tasks {
         archiveBaseName.set("TicketManager-VelocityBridge")
 
         dependencies {
-            include(dependency("org.jetbrains.kotlin:kotlin-stdlib:1.7.20"))
+            include(dependency("org.jetbrains.kotlin:kotlin-stdlib:1.8.0"))
             include(project(":common"))
             include(project(":ProxyBridge:commonPDE"))
             include(dependency("org.bstats:bstats-base:3.0.0"))

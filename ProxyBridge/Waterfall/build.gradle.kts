@@ -19,7 +19,7 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":ProxyBridge:commonPDE"))
     compileOnly("io.github.waterfallmc:waterfall-api:1.19-R0.1-SNAPSHOT")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.0")
     implementation("org.bstats:bstats-bungeecord:3.0.0")
     implementation("org.yaml:snakeyaml:1.33")
 }
@@ -29,7 +29,7 @@ tasks {
         archiveBaseName.set("TicketManager-WaterfallBridge")
 
         dependencies {
-            include(dependency("org.jetbrains.kotlin:kotlin-stdlib:1.7.20"))
+            include(dependency("org.jetbrains.kotlin:kotlin-stdlib:1.8.0"))
             include(project(":common"))
             include(project(":ProxyBridge:commonPDE"))
             include(dependency("org.bstats:bstats-bungeecord:3.0.0"))
