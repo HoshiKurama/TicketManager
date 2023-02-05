@@ -1,5 +1,5 @@
 plugins {
-    id("com.github.ben-manes.versions") version "0.42.0" // https://github.com/ben-manes/gradle-versions-plugin
+    id("com.github.ben-manes.versions") version "0.45.0" // https://github.com/ben-manes/gradle-versions-plugin
     id("com.github.johnrengelman.shadow") version "7.1.2"
     kotlin("jvm")
     java
@@ -18,9 +18,9 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.19-R0.1-SNAPSHOT")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.0")
-    implementation("net.kyori:adventure-extra-kotlin:4.11.0")
-    implementation("joda-time:joda-time:2.12.1")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
+    implementation("net.kyori:adventure-extra-kotlin:4.12.0")
+    implementation("joda-time:joda-time:2.12.2")
     implementation("org.bstats:bstats-bukkit:3.0.0")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1")
     implementation(project(":common"))
