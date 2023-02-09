@@ -801,6 +801,11 @@ class LocaleHandler(
         }
     }
 
-    fun getOrDefault(type: String) = activeTypes.getOrDefault(type.lowercase(), fallbackType)
+    fun getOrDefault(type: String): TMLocale {
+        val lowercased = type.lowercase()
+        return activeTypes[lowercased] ?: activeTypes[supportedLocales.first { type.startsWith(lowercased.split("_")[0])}] ?: fallbackType
+    }
+
+    //= activeTypes[type.lowercase()] ?: activeTypes.get(supportedLocales.first) ?: fallbackType//activeTypes.getOrDefault(type.lowercase(), fallbackType)
     fun getCommandBases() = if (activeTypes.isEmpty()) setOf(fallbackType.commandBase) else activeTypes.map { it.value.commandBase }.toSet()
 }
