@@ -15,6 +15,8 @@ include("ProxyBridge:Waterfall")
 findProject(":ProxyBridge:Waterfall")?.name = "Waterfall"
 include("ProxyBridge:commonPDE")
 findProject(":ProxyBridge:commonPDE")?.name = "commonPDE"
+include("Standalone:Sponge")
+findProject(":Standalone:Sponge")?.name = "Sponge"
 
 /*
 pluginManagement {
