@@ -1,5 +1,11 @@
 package com.github.hoshikurama.ticketmanager.commonse.pipeline
 
+import com.github.hoshikurama.ticketmanager.common.Server2Proxy
+import com.github.hoshikurama.ticketmanager.common.discord.DiscordConsole
+import com.github.hoshikurama.ticketmanager.common.discord.DiscordNoOne
+import com.github.hoshikurama.ticketmanager.common.discord.DiscordPlayerOrStr
+import com.github.hoshikurama.ticketmanager.common.discord.DiscordTarget
+import com.github.hoshikurama.ticketmanager.common.discord.notifications.*
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
@@ -32,38 +38,39 @@ import java.util.concurrent.TimeUnit
 typealias ConsoleObject = Console
 typealias ConsoleSender = com.github.hoshikurama.ticketmanager.commonse.platform.Console
 typealias ResultDB = Result
+typealias StandardReturn = Notification?
 
 class CorePipeline(
     private val platform: PlatformFunctions,
     val instanceState: InstancePluginState,
     private val globalState: GlobalPluginState,
 ) {
-    fun executeLogic(sender: Sender, args: List<String>): CompletableFuture<out Notification?> {
+    fun executeLogic(sender: Sender, args: List<String>): CompletableFuture<StandardReturn> {
 
         if (args.isEmpty())
             return executeLogic(sender, listOf(sender.locale.commandWordHelp))
 
         if (globalState.pluginLocked.get()) {
             sender.sendMessage(sender.locale.warningsLocked)
-            return CompletableFuture.completedFuture<Notification?>(null)
+            return CompletableFuture.completedFuture<StandardReturn>(null)
         }
 
         return getTicketOrDummyTicketOrNullAsync(args, sender.locale)
-            .thenApplyAsync { ticket ->
-
-                // I'm so sorry future me for writing it this way. Type inference was being terrible (Future Me: I have no clue what you're talking about, but thank you anyways)
+            .thenComposeAsync { ticket ->
+                // I'm so sorry future me for writing it this way. Type inference was being terrible
+                // (Future Me: I have no clue what you're talking about, but thank you anyways)
+                // Future Future Me: I figured out what you meant, past past me. I might have resolved it
                 if (ticket == null) {
                     sender.sendMessage(sender.locale.warningsInvalidID)
-                    return@thenApplyAsync CompletableFuture.completedFuture<Notification?>(null)
+                    return@thenComposeAsync CompletableFuture.completedFuture<StandardReturn>(null)
                 }
 
                 // Completable
                 if (!hasValidPermission(sender, ticket, args) || !isValidCommand(sender, ticket, args) || !notUnderCooldown(sender, args))
-                    return@thenApplyAsync CompletableFuture.completedFuture<Notification?>(null)
+                    return@thenComposeAsync CompletableFuture.completedFuture<StandardReturn>(null)
 
                 executeCommand(sender, args, ticket)
             }
-            .thenComposeAsync { step -> step }
     }
 
     private fun getTicketOrDummyTicketOrNullAsync(
@@ -269,8 +276,8 @@ class CorePipeline(
         sender: Sender,
         args: List<String>,
         ticket: Ticket,
-    ): CompletionStage<out Notification?> {
-        val nullFuture: CompletableFuture<out Notification?> = CompletableFuture.completedFuture(null)
+    ): CompletionStage<StandardReturn> {
+        val nullFuture: CompletableFuture<StandardReturn> = CompletableFuture.completedFuture(null)
 
         return sender.locale.run {
             when (args[0]) {
@@ -317,12 +324,15 @@ class CorePipeline(
         assignmentID: String,
         dbAssignment: String?,
         ticket: Ticket,
-    ): CompletableFuture<Notification> {
-        val shownAssignment = dbAssignment ?: sender.locale.miscNobody
-
+    ): CompletableFuture<StandardReturn> {
         // Determines the assignment type
         val assignmentIsConsole = sender.locale.consoleName == dbAssignment
         val assignmentIsNobody = dbAssignment == null || sender.locale.miscNobody == dbAssignment
+        val shownAssignment = when {
+            assignmentIsConsole -> DiscordConsole(instanceState.localeHandler.consoleLocale)
+            assignmentIsNobody -> DiscordNoOne(instanceState.localeHandler.consoleLocale)
+            else -> DiscordPlayerOrStr(assignmentID)
+        }
 
         CompletableFuture.runAsync { instanceState.database.setAssignment(ticket.id, dbAssignment) }
         CompletableFuture.runAsync {
@@ -332,17 +342,27 @@ class CorePipeline(
             )
         }
 
-        if (!silent && instanceState.discord?.state?.notifyOnAssign == true)
-            CompletableFuture.runAsync {
-                instanceState.discord.assignUpdate(sender.name, assignmentID, shownAssignment)
+        //Discord
+        attemptDiscordMessageIfEnabledAsync(
+            silent = silent,
+            sender = sender,
+            hasPermission = instanceState.discordSettings.notifyOnAssign,
+            buildNotification = { user ->
+                val discordShownAssignment = when {
+                    assignmentIsConsole -> DiscordConsole(instanceState.localeHandler.consoleLocale)
+                    assignmentIsNobody -> DiscordNoOne(instanceState.localeHandler.consoleLocale)
+                    else -> DiscordPlayerOrStr(assignmentID)
+                }
+                Assign(user, ticket.id.toString(), discordShownAssignment)
             }
+        )
 
         return Notification.Assign.build(
             silent = silent,
             ticket = ticket,
             sender = sender,
             argID = assignmentID,
-            argAssigned = shownAssignment,
+            argAssigned = shownAssignment.name,
             argUser = sender.name,
             argAssignedIsConsole = assignmentIsConsole,
             argAssignedIsNobody = assignmentIsNobody,
@@ -357,7 +377,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<Notification> {
+    ): CompletableFuture<StandardReturn> {
         val sqlAssignment = args.subList(2, args.size).joinToString(" ")
         return allAssignVariations(sender, silent, args[1], sqlAssignment, ticket)
     }
@@ -368,7 +388,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<Notification> {
+    ): CompletableFuture<StandardReturn> {
         return allAssignVariations(sender, silent, args[1], sender.name, ticket)
     }
 
@@ -378,7 +398,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<Notification> {
+    ): CompletableFuture<StandardReturn> {
 
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
@@ -393,16 +413,19 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<Notification> {
+    ): CompletableFuture<StandardReturn> {
 
         val message = args.subList(2, args.size)
             .joinToString(" ")
             .let(platform::stripColour)
 
-        if (!silent && instanceState.discord?.state?.notifyOnClose == true)
-            CompletableFuture.runAsync {
-                instanceState.discord.closeUpdate(sender.name, ticket.id.toString(), message)
-            }
+        // Discord
+        attemptDiscordMessageIfEnabledAsync(
+            silent = silent,
+            sender = sender,
+            hasPermission = instanceState.discordSettings.notifyOnClose,
+            buildNotification = { user -> Close(user, ticket.id.toString(), message) }
+        )
 
         instanceState.database.run {
             CompletableFuture.runAsync {
@@ -435,7 +458,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<Notification> {
+    ): CompletableFuture<StandardReturn> {
 
         CompletableFuture.runAsync {
             instanceState.database.insertAction(
@@ -445,10 +468,13 @@ class CorePipeline(
             instanceState.database.setStatus(ticket.id, Ticket.Status.CLOSED)
         }
 
-        if (!silent && instanceState.discord?.state?.notifyOnClose == true)
-            CompletableFuture.runAsync {
-                instanceState.discord.closeUpdate(sender.name, ticket.id.toString())
-            }
+        // Discord
+        attemptDiscordMessageIfEnabledAsync(
+            silent = silent,
+            sender = sender,
+            hasPermission = instanceState.discordSettings.notifyOnClose,
+            buildNotification = { user -> Close(user, ticket.id.toString(), null) }
+        )
 
         return Notification.CloseWithoutComment.build(
             silent = silent,
@@ -467,17 +493,19 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket
-    ): CompletableFuture<Notification> {
+    ): CompletableFuture<StandardReturn> {
         val lowerBound = args[1].toLong()
         val upperBound = args[2].toLong()
 
         CompletableFuture.runAsync { instanceState.database.massCloseTickets(lowerBound, upperBound, sender.toCreator(), sender.getLocAsTicketLoc()) }
 
-        if (!silent && instanceState.discord?.state?.notifyOnCloseAll == true)
-            CompletableFuture.runAsync {
-                instanceState.discord.closeAllUpdate(sender.name, "$lowerBound", "$upperBound")
-            }
-
+        // Discord
+        attemptDiscordMessageIfEnabledAsync(
+            silent = silent,
+            sender = sender,
+            hasPermission = instanceState.discordSettings.notifyOnCloseAll,
+            buildNotification = { user -> CloseAll(user, "$lowerBound", "$upperBound") }
+        )
 
         return Notification.MassClose.build(
             silent = silent,
@@ -497,7 +525,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<Notification> {
+    ): CompletableFuture<StandardReturn> {
         val message = args.subList(2, args.size)
             .joinToString(" ")
             .let(platform::stripColour)
@@ -513,8 +541,13 @@ class CorePipeline(
             )
         }
 
-        if (!silent && instanceState.discord?.state?.notifyOnComment == true)
-            CompletableFuture.runAsync { instanceState.discord.commentUpdate(sender.name, ticket.id.toString(), message) }
+        // Discord
+        attemptDiscordMessageIfEnabledAsync(
+            silent = silent,
+            sender = sender,
+            hasPermission = instanceState.discordSettings.notifyOnComment,
+            buildNotification = { user -> Comment(user, ticket.id.toString(), message) }
+        )
 
         return Notification.Comment.build(
             silent = silent,
@@ -561,7 +594,7 @@ class CorePipeline(
     private fun create(
         sender: Sender,
         args: List<String>,
-    ): CompletableFuture<Notification> {
+    ): CompletableFuture<StandardReturn> {
         val message = args.subList(1, args.size)
             .joinToString(" ")
             .let(platform::stripColour)
@@ -576,8 +609,13 @@ class CorePipeline(
             .thenApplyAsync { id ->
                 globalState.ticketCountMetrics.getAndIncrement()
 
-                if (instanceState.discord?.state?.notifyOnCreate == true)
-                    CompletableFuture.runAsync { instanceState.discord.createUpdate(sender.name, id.toString(), message) }
+                //Discord
+                attemptDiscordMessageIfEnabledAsync(
+                    silent = false,
+                    sender = sender,
+                    hasPermission = instanceState.discordSettings.notifyOnCreate,
+                    buildNotification = { user -> Create(user, ticket.id.toString(), message) }
+                )
 
                 Notification.Create.build(
                     silent = false,
@@ -975,7 +1013,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<Notification> {
+    ): CompletableFuture<StandardReturn> {
         val action = Ticket.Action(Ticket.Action.Type.REOPEN, sender.toCreator(), sender.getLocAsTicketLoc())
 
         // Updates user status if needed
@@ -989,8 +1027,13 @@ class CorePipeline(
             instanceState.database.setStatus(ticket.id, Ticket.Status.OPEN)
         }
 
-        if (!silent && instanceState.discord?.state?.notifyOnReopen == true)
-            CompletableFuture.runAsync { instanceState.discord.reopenUpdate(sender.name, ticket.id.toString()) }
+        // Discord
+        attemptDiscordMessageIfEnabledAsync(
+            silent = silent,
+            sender = sender,
+            hasPermission = instanceState.discordSettings.notifyOnReopen,
+            buildNotification = { user -> Reopen(user, ticket.id.toString()) }
+        )
 
         return Notification.Reopen.build(
             silent = silent,
@@ -1100,7 +1143,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<Notification> {
+    ): CompletableFuture<StandardReturn> {
 
         val newPriority = byteToPriority(args[2].toByte())
 
@@ -1112,9 +1155,13 @@ class CorePipeline(
             instanceState.database.setPriority(ticket.id, newPriority)
         }
 
-        if (!silent && instanceState.discord?.state?.notifyOnPriorityChange == true)
-            CompletableFuture.runAsync { instanceState.discord.priorityChangeUpdate(sender.name, ticket.id.toString(), newPriority) }
-
+        // Discord
+        attemptDiscordMessageIfEnabledAsync(
+            silent = silent,
+            sender = sender,
+            hasPermission = instanceState.discordSettings.notifyOnPriorityChange,
+            buildNotification = { user -> ChangePriority(user, ticket.id.toString(), ticket.priority.level.toInt()) }
+        )
         return CompletableFuture.completedFuture(
             Notification.SetPriority.build(
                 silent = silent,
@@ -1149,7 +1196,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<Notification> {
+    ): CompletableFuture<StandardReturn> {
         return allAssignVariations(sender, silent, args[1], null, ticket)
     }
 
@@ -1385,6 +1432,29 @@ class CorePipeline(
             .let(this::append)
 
         append(locale.viewSep2.parseMiniMessage())
+    }
+
+    private fun attemptDiscordMessageIfEnabledAsync(
+        silent: Boolean,
+        hasPermission: Boolean,
+        sender: Sender,
+        buildNotification: (DiscordTarget) -> DiscordNotification
+    ) {
+        if (silent || !hasPermission) return
+
+        if (instanceState.discord != null || instanceState.discordSettings.forwardToProxy) {
+            val user = when (sender) {
+                is ConsoleSender -> DiscordConsole(instanceState.localeHandler.consoleLocale)
+                is Player -> DiscordPlayerOrStr(sender.name)
+            }
+
+            val notification = buildNotification(user)
+
+            CompletableFuture.runAsync {
+                if (instanceState.discord != null) instanceState.discord.sendMessage(notification, instanceState.localeHandler.consoleLocale)
+                else platform.relayMessageToProxy(Server2Proxy.DiscordMessage.waterfallString(), notification.encode())
+            }
+        }
     }
 }
 

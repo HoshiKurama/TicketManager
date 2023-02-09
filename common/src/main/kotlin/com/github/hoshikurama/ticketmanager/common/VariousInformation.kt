@@ -10,7 +10,6 @@ const val velocityBridgeKey = 15470
 const val waterfallBridgeKey = 15473
 
 val randServerIdentifier: UUID = UUID.randomUUID() // For proxies
-
 /*
 Things to do when updating version:
     - UPDATING SE:

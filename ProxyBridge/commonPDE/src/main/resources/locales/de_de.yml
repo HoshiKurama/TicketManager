@@ -1,0 +1,18 @@
+# Miscellaneous:
+Console_Name: 'Konsole'
+Nobody: 'Niemand'
+# Priority (No Formatting):
+Priority_Lowest: 'NIEDRIGSTE'
+Priority_Low: 'NIEDRIG'
+Priority_Normal: 'NORMAL'
+Priority_High: 'HOCH'
+Priority_Highest: 'HÖHCHSTE'
+# Discord Notifications
+Discord_OnAssign: '%user% wieß Ticket #%num% zu'
+Discord_OnClose: '%user% hat Ticket #%num% geschlossen'
+Discord_OnCloseAll: '%user% hat mehrere Tickets geschlossen'
+Discord_OnComment: '%user% hat auf Ticket #%num% kommentiert'
+Discord_OnCreate: '%user% hat Ticket #%num% erstellt'
+Discord_OnReopen: '%user% hat Ticket #%num% erneut geöffnet'
+Discord_OnPriorityChange: '%user% hat die Priorität von Ticket #%num% geändert'
+Notify_Event_PluginUpdate: '%TMHeader% Es ist ein Update verfügbar!%nl%  <%CC%>Aktuelle Version: <gray><current>%nl%  <%CC%>Neueste Version: <gray><latest>'        # Templates: <current> <latest>

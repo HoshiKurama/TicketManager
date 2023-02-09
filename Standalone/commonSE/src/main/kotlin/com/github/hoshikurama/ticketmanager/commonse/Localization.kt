@@ -1,7 +1,8 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
+import com.github.hoshikurama.ticketmanager.common.CommonKeywords
+import com.github.hoshikurama.ticketmanager.common.supportedLocales
 import com.github.hoshikurama.ticketmanager.commonse.misc.TypeSafeStream.Companion.asTypeSafeStream
-import com.github.hoshikurama.ticketmanager.commonse.misc.supportedLocales
 import org.yaml.snakeyaml.Yaml
 import java.nio.file.Paths
 import kotlin.io.path.inputStream
@@ -9,8 +10,8 @@ import kotlin.io.path.inputStream
 class TMLocale(
 // Core locale file fields
     // Miscellaneous
-    val consoleName: String,
-    val miscNobody: String,
+    override val consoleName: String,
+    override val miscNobody: String,
     val wikiLink: String,
 
     // Command Types
@@ -86,11 +87,11 @@ class TMLocale(
 
 // Visual Player-Modifiable Values
     // Priority
-    val priorityLowest: String,
-    val priorityLow: String,
-    val priorityNormal: String,
-    val priorityHigh: String,
-    val priorityHighest: String,
+    override val priorityLowest: String,
+    override val priorityLow: String,
+    override val priorityNormal: String,
+    override val priorityHigh: String,
+    override val priorityHighest: String,
     val priorityColourLowestHex: String,
     val priorityColourLowHex: String,
     val priorityColourNormalHex: String,
@@ -144,13 +145,13 @@ class TMLocale(
     val warningsInternalError: String,
 
     // Discord Notifications
-    val discordOnAssign: String,
-    val discordOnClose: String,
-    val discordOnCloseAll: String,
-    val discordOnComment: String,
-    val discordOnCreate: String,
-    val discordOnReopen: String,
-    val discordOnPriorityChange: String,
+    override val discordOnAssign: String,
+    override val discordOnClose: String,
+    override val discordOnCloseAll: String,
+    override val discordOnComment: String,
+    override val discordOnCreate: String,
+    override val discordOnReopen: String,
+    override val discordOnPriorityChange: String,
 
     // View and Deep View
     val viewHeader: String,
@@ -260,9 +261,9 @@ class TMLocale(
     val notifyTicketReopenEvent: String,
     val notifyTicketSetPrioritySuccess: String,
     val notifyTicketSetPriorityEvent: String,
-    val notifyPluginUpdate: String,
+    override val notifyPluginUpdate: String,
     val notifyProxyUpdate: String,
-) {
+) : CommonKeywords {
     companion object {
         private fun loadYMLFrom(location: String): Map<String, String> =
             this::class.java.classLoader
@@ -773,7 +774,7 @@ class LocaleHandler(
         fun buildLocales(
             mainColourCode: String,
             preferredLocale: String,
-            console_Locale: String,
+            consoleLocale: String,
             forceLocale: Boolean,
             rootFolderLocation: String,
             enableAVC: Boolean,
@@ -794,9 +795,9 @@ class LocaleHandler(
 
             val activeTypes = if (forceLocale) mapOf(lowercasePreferred to allLocales.getOrDefault(lowercasePreferred, allLocales["en_ca"]!!)) else allLocales
             val fallback = activeTypes.getOrDefault(lowercasePreferred, allLocales["en_ca"]!!)
-            val consoleLocale = activeTypes.getOrDefault(console_Locale.lowercase(), fallback)
+            val consoleLocaleS = activeTypes.getOrDefault(consoleLocale.lowercase(), fallback)
 
-            return LocaleHandler(activeTypes, fallback, consoleLocale)
+            return LocaleHandler(activeTypes, fallback, consoleLocaleS)
         }
     }
 

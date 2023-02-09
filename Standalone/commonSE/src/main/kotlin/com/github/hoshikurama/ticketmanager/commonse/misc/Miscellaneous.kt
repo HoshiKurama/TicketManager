@@ -17,9 +17,6 @@ import java.util.*
 
 typealias TicketPredicate = (Ticket) -> Boolean
 
-
-val supportedLocales = listOf("de_de", "en_ca", "en_uk", "en_us")
-
 fun byteToPriority(byte: Byte) = when (byte.toInt()) {
     1 -> Ticket.Priority.LOWEST
     2 -> Ticket.Priority.LOW

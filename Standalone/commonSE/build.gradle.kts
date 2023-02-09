@@ -27,7 +27,6 @@ dependencies {
     implementation("net.kyori:adventure-text-minimessage:4.12.0")
     implementation("org.yaml:snakeyaml:1.33")
     implementation("joda-time:joda-time:2.12.2")
-    implementation("com.discord4j:discord4j-core:3.2.3")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.h2database:h2:2.1.214")
     implementation("com.google.guava:guava:31.1-jre")

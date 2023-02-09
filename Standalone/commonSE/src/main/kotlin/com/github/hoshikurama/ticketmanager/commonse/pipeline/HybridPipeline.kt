@@ -44,9 +44,7 @@ abstract class HybridPipeline(
                     }
 
                     // Send notification to other servers
-                    CompletableFuture.runAsync {
-                        platform.relayMessageToProxy("ticketmanager:inform_proxy", encodeForProxy())
-                    }
+                    platform.relayMessageToProxy("ticketmanager:inform_proxy", encodeForProxy())
 
                 }
             }

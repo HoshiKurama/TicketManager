@@ -68,7 +68,7 @@ class TMPluginImpl(
     override fun readConfig(): ConfigParameters {
         return spigotPlugin.config.run {
             ConfigParameters(
-                MySQLHost = getString("MySQL_Host"),
+                mySQLHost = getString("MySQL_Host"),
                 mySQLPort = getString("MySQL_Port"),
                 mySQLDBName = getString("MySQL_DBName"),
                 mySQLUsername = getString("MySQL_Username"),
@@ -85,15 +85,15 @@ class TMPluginImpl(
                 allowUnreadTicketUpdates = getBoolean("Allow_Unread_Ticket_Updates"),
                 checkForPluginUpdates = getBoolean("Allow_UpdateChecking"),
                 enableDiscord = getBoolean("Use_Discord_Bot"),
-                DiscordNotifyOnAssign = getBoolean("Discord_Notify_On_Assign"),
-                DiscordNotifyOnClose = getBoolean("Discord_Notify_On_Close"),
-                DiscordNotifyOnCloseAll = getBoolean("Discord_Notify_On_Close_All"),
-                DiscordNotifyOnComment = getBoolean("Discord_Notify_On_Comment"),
-                DiscordNotifyOnCreate = getBoolean("Discord_Notify_On_Create"),
-                DiscordNotifyOnReopen = getBoolean("Discord_Notify_On_Reopen"),
-                DiscordNotifyOnPriorityChange = getBoolean("Discord_Notify_On_Priority_Change"),
-                DiscordToken = getString("Discord_Bot_Token"),
-                DiscordChannelID = getLong("Discord_Channel_ID"),
+                discordNotifyOnAssign = getBoolean("Discord_Notify_On_Assign"),
+                discordNotifyOnClose = getBoolean("Discord_Notify_On_Close"),
+                discordNotifyOnCloseAll = getBoolean("Discord_Notify_On_Close_All"),
+                discordNotifyOnComment = getBoolean("Discord_Notify_On_Comment"),
+                discordNotifyOnCreate = getBoolean("Discord_Notify_On_Create"),
+                discordNotifyOnReopen = getBoolean("Discord_Notify_On_Reopen"),
+                discordNotifyOnPriorityChange = getBoolean("Discord_Notify_On_Priority_Change"),
+                discordToken = getString("Discord_Bot_Token"),
+                discordChannelID = getLong("Discord_Channel_ID"),
                 printModifiedStacktrace = getBoolean("Print_Modified_Stacktrace"),
                 printFullStacktrace = getBoolean("Print_Full_Stacktrace"),
                 enableAdvancedVisualControl = getBoolean("Enable_Advanced_Visual_Control"),
@@ -102,7 +102,8 @@ class TMPluginImpl(
                 autoUpdateConfig = getBoolean("Auto_Update_Config"),
                 allowProxyUpdateChecks = false,
                 proxyUpdateFrequency = 0,
-                pluginUpdateFrequency = getLong("Plugin_Update_Check_Frequency")
+                pluginUpdateFrequency = getLong("Plugin_Update_Check_Frequency"),
+                forwardDiscordToProxy = false,
             )
         }
     }

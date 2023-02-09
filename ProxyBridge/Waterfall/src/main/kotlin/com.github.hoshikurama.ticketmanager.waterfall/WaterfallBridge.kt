@@ -1,9 +1,7 @@
 package com.github.hoshikurama.ticketmanager.waterfall
 
-import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
-import com.github.hoshikurama.ticketmanager.common.UpdateChecker
-import com.github.hoshikurama.ticketmanager.common.bridgePluginVersion
-import com.github.hoshikurama.ticketmanager.common.waterfallBridgeKey
+import com.github.hoshikurama.ticketmanager.common.*
+import com.github.hoshikurama.ticketmanager.common.discord.notifications.DiscordNotification
 import com.github.hoshikurama.ticketmanager.commonpde.ProxyBridge
 import com.google.common.io.ByteStreams
 import net.md_5.bungee.api.event.PluginMessageEvent
@@ -15,8 +13,11 @@ import org.bstats.bungeecord.Metrics
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeUnit
+
+
 
 class WaterfallBridgeAdapter<T>(private val plugin: T) : ProxyBridge()
     where T: Plugin, T: Listener
@@ -25,24 +26,35 @@ class WaterfallBridgeAdapter<T>(private val plugin: T) : ProxyBridge()
     private var task: ScheduledTask? = null
     private lateinit var metrics: Metrics
 
-    private val dataDirectory: Path
+    override val dataDirectory: Path
         get() = plugin.dataFolder.toPath()
+
     override fun registerChannels() {
-        plugin.proxy.registerChannel("ticketmanager:inform_proxy")
-        plugin.proxy.registerChannel("ticketmanager:relayed_message")
-        plugin.proxy.registerChannel("ticketmanager:server_to_proxy_tp")
-        plugin.proxy.registerChannel("ticketmanager:proxy_to_server_tp")
-        plugin.proxy.registerChannel("ticketmanager:s2p_proxy_update")
-        plugin.proxy.registerChannel("ticketmanager:p2s_proxy_update")
+        listOf(
+            Proxy2Server.Teleport,
+            Server2Proxy.Teleport,
+            Proxy2Server.ProxyVersionRequest,
+            Server2Proxy.ProxyVersionRequest,
+            Proxy2Server.NotificationSharing,
+            Server2Proxy.NotificationSharing,
+            Server2Proxy.DiscordMessage,
+        )
+            .map(ProxyChannel::waterfallString)
+            .forEach(plugin.proxy::registerChannel)
     }
 
     override fun unregisterChannels() {
-        plugin.proxy.unregisterChannel("ticketmanager:inform_proxy")
-        plugin.proxy.unregisterChannel("ticketmanager:relayed_message")
-        plugin.proxy.unregisterChannel("ticketmanager:server_to_proxy_tp")
-        plugin.proxy.unregisterChannel("ticketmanager:proxy_to_server_tp")
-        plugin.proxy.unregisterChannel("ticketmanager:s2p_proxy_update")
-        plugin.proxy.unregisterChannel("ticketmanager:p2s_proxy_update")
+        listOf(
+            Proxy2Server.Teleport,
+            Server2Proxy.Teleport,
+            Proxy2Server.ProxyVersionRequest,
+            Server2Proxy.ProxyVersionRequest,
+            Proxy2Server.NotificationSharing,
+            Server2Proxy.NotificationSharing,
+            Server2Proxy.DiscordMessage,
+        )
+            .map(ProxyChannel::waterfallString)
+            .forEach(plugin.proxy::unregisterChannel)
     }
 
     override fun doSpecialtyBeforeStart() {
@@ -52,12 +64,12 @@ class WaterfallBridgeAdapter<T>(private val plugin: T) : ProxyBridge()
         metrics = Metrics(plugin, waterfallBridgeKey)
     }
 
-    override fun loadExternalConfig(): List<String> = dataDirectory.resolve("config.yml").run(Files::readAllLines)
+    override fun loadExternalConfig(): List<String> = this.dataDirectory.resolve("config.yml").run(Files::readAllLines)
 
-    override fun configExists(): Boolean = dataDirectory.resolve("config.yml").toFile().exists()
+    override fun configExists(): Boolean = this.dataDirectory.resolve("config.yml").toFile().exists()
 
     override fun writeConfig(list: List<String>) {
-        val writer = dataDirectory.resolve("config.yml").toFile().bufferedWriter()
+        val writer = this.dataDirectory.resolve("config.yml").toFile().bufferedWriter()
 
         list.forEachIndexed { index, str ->
             writer.write(str)
@@ -85,7 +97,10 @@ class WaterfallBridgeAdapter<T>(private val plugin: T) : ProxyBridge()
         val update = UpdateChecker(true, UpdateChecker.Location.BRIDGE)
 
         update.latestVersionIfNotLatest?.let {
-            plugin.logger.info("A new bridge update is available!\n Latest: $it\n Current: $bridgePluginVersion")
+            plugin.logger.info(locale.notifyPluginUpdate
+                .replace("<current>", bridgePluginVersion)
+                .replace("<latest>", it)
+            )
         }
         updateChecker.set(update)
     }
@@ -114,13 +129,14 @@ class WaterfallBridge : Plugin(), Listener {
 
         when (event.tag) {
 
-            "ticketmanager:inform_proxy" ->
+            Server2Proxy.NotificationSharing.waterfallString() ->
                 proxy.serversCopy
                     .map { it.value }
                     .filter { it.players.isNotEmpty() }
-                    .forEach { it.sendData("ticketmanager:relayed_message", event.data) }
+                    .forEach { it.sendData(Proxy2Server.NotificationSharing.waterfallString() , event.data) }
 
-            "ticketmanager:server_to_proxy_tp" -> {
+            Server2Proxy.Teleport.waterfallString() -> {
+                @Suppress("UnstableApiUsage")
                 val input =  ByteStreams.newDataInput(event.data)
 
                 val serverName = input.readUTF()
@@ -128,20 +144,27 @@ class WaterfallBridge : Plugin(), Listener {
                 val targetServer = proxy.serversCopy[serverName]
 
                 if (targetServer != null) {
-                    targetServer.sendData("ticketmanager:proxy_to_server_tp", event.data)    // Sends data to server
+                    targetServer.sendData(Proxy2Server.Teleport.waterfallString(), event.data)      // Sends data to server
                     proxy.getPlayer(uuid).connect(targetServer)                                     // Teleport player
                 } // Note: Order is correct; data contains player info to match with
             }
 
-            "ticketmanager:s2p_proxy_update" -> {
+            Server2Proxy.ProxyVersionRequest.waterfallString() -> {
                 val serverName = ProxyUpdate.decodeProxyMsg(event.data)
                 val targetServer = proxy.serversCopy[serverName]
                 val latestVer = adapter.updateChecker.get().latestVersionIfNotLatest
 
                 if (targetServer != null && latestVer != null) {
                     val msg = ProxyUpdate.encodeServerMsg(bridgePluginVersion, latestVer)
-                    targetServer.sendData("ticketmanager:p2s_proxy_update", msg)
+                    targetServer.sendData(Proxy2Server.ProxyVersionRequest.waterfallString(), msg)
                 }
+            }
+
+            Server2Proxy.DiscordMessage.waterfallString() -> {
+                if (adapter.discord == null) return
+
+                val notification = DiscordNotification.decode(event.data, adapter.locale)
+                CompletableFuture.runAsync { adapter.discord?.sendMessage(notification, adapter.locale) }
             }
         }
     }
