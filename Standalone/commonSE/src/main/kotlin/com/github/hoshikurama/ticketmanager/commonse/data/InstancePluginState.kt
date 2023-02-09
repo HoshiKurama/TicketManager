@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse.data
 
 import com.github.hoshikurama.ticketmanager.common.UpdateChecker
-import com.github.hoshikurama.ticketmanager.commonse.Discord
+import com.github.hoshikurama.ticketmanager.common.discord.Discord
 import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.commonse.database.DatabaseBuilders
@@ -11,6 +11,7 @@ class InstancePluginState(
     val database: AsyncDatabase,
     val cooldowns: Cooldown,
     val discord: Discord?,
+    val discordSettings: Discord.Settings,
     val databaseBuilders: DatabaseBuilders,
     val localeHandler: LocaleHandler,
     val pluginUpdate: AtomicReference<UpdateChecker>,

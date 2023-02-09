@@ -2,7 +2,9 @@ package com.github.hoshikurama.ticketmanager.commonse
 
 import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.UpdateChecker
+import com.github.hoshikurama.ticketmanager.common.discord.Discord
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
+import com.github.hoshikurama.ticketmanager.common.supportedLocales
 import com.github.hoshikurama.ticketmanager.commonse.data.Cooldown
 import com.github.hoshikurama.ticketmanager.commonse.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
@@ -201,7 +203,7 @@ abstract class TMPlugin(
                 val databaseBuilders = DatabaseBuilders(
                     mySQLBuilder = kotlin.run {
                         val port = c.mySQLPort ?: "_".addToErrors("MySQL_Port") { it }
-                        val host = c.MySQLHost ?: "_".addToErrors("MySQL_Host") { it }
+                        val host = c.mySQLHost ?: "_".addToErrors("MySQL_Host") { it }
                         val dbName = c.mySQLDBName ?: "_".addToErrors("MySQL_DBName") { it }
                         val username = c.mySQLUsername ?: "_".addToErrors("MySQL_Username") { it }
                         val password = c.mySQLPassword ?: "_".addToErrors("MySQL_Password") { it }
@@ -237,29 +239,30 @@ abstract class TMPlugin(
                     }
                 }
 
-                // Builds Discord object
-                val discord = kotlin.run {
-                    val enableDiscord = c.enableDiscord ?: false.addToErrors("Use_Discord_Bot", Boolean::toString)
-                    if (enableDiscord) {
-                        try {
-                            Discord.create(
-                                notifyOnAssign = c.DiscordNotifyOnAssign ?: true.addToErrors("Discord_Notify_On_Assign", Boolean::toString),
-                                notifyOnClose = c.DiscordNotifyOnClose ?: true.addToErrors("Discord_Notify_On_Close", Boolean::toString),
-                                notifyOnCloseAll = c.DiscordNotifyOnCloseAll ?: true.addToErrors("Discord_Notify_On_Close_All", Boolean::toString),
-                                notifyOnComment = c.DiscordNotifyOnComment ?: true.addToErrors("Discord_Notify_On_Comment", Boolean::toString),
-                                notifyOnCreate = c.DiscordNotifyOnCreate ?: true.addToErrors("Discord_Notify_On_Create", Boolean::toString),
-                                notifyOnReopen = c.DiscordNotifyOnReopen ?: true.addToErrors("Discord_Notify_On_Reopen", Boolean::toString),
-                                notifyOnPriorityChange = c.DiscordNotifyOnPriorityChange ?: true.addToErrors("Discord_Notify_On_Priority_Change", Boolean::toString),
-                                token = c.DiscordToken ?: "0".addToErrors("Discord_Bot_Token") { it },
-                                channelID = c.DiscordChannelID ?: (-1L).addToErrors("Discord_Channel_ID", Long::toString),
-                                locale = localeHandler.consoleLocale,
-                            )
-                        } catch (e: Exception) {
-                            errorsToPushOnLocalization.add { pushErrors(platformFunctions, instancePluginState, e, TMLocale::consoleErrorBadDiscord) }
-                            null
-                        }
-                    } else null
-                }
+                // Builds Discord-Related Objects
+                val enableDiscord = c.enableDiscord ?: false.addToErrors("Use_Discord_Bot", Boolean::toString)
+                val enableProxyDiscord = (c.forwardDiscordToProxy ?: false.addToErrors("Discord_Bot_On_Proxy", Boolean::toString)) && enableDiscord
+                val discordSettings = Discord.Settings(
+                    notifyOnAssign = c.discordNotifyOnAssign ?: true.addToErrors("Discord_Notify_On_Assign", Boolean::toString),
+                    notifyOnClose = c.discordNotifyOnClose ?: true.addToErrors("Discord_Notify_On_Close", Boolean::toString),
+                    notifyOnCloseAll = c.discordNotifyOnCloseAll ?: true.addToErrors("Discord_Notify_On_Close_All", Boolean::toString),
+                    notifyOnComment = c.discordNotifyOnComment ?: true.addToErrors("Discord_Notify_On_Comment", Boolean::toString),
+                    notifyOnCreate = c.discordNotifyOnCreate ?: true.addToErrors("Discord_Notify_On_Create", Boolean::toString),
+                    notifyOnReopen = c.discordNotifyOnReopen ?: true.addToErrors("Discord_Notify_On_Reopen", Boolean::toString),
+                    notifyOnPriorityChange = c.discordNotifyOnPriorityChange ?: true.addToErrors("Discord_Notify_On_Priority_Change", Boolean::toString),
+                    forwardToProxy = enableProxyDiscord
+                )
+                val discord = if (enableDiscord && !enableProxyDiscord) {
+                    try {
+                        Discord(
+                            token = c.discordToken ?: "0".addToErrors("Discord_Bot_Token") { it },
+                            channelID = c.discordChannelID ?: (-1L).addToErrors("Discord_Channel_ID", Long::toString),
+                        )
+                    } catch (e: Exception) {
+                        errorsToPushOnLocalization.add { pushErrors(platformFunctions, instancePluginState, e, TMLocale::consoleErrorBadDiscord) }
+                        null
+                    }
+                } else null
 
                 // Builds Cooldowns
                 val cooldowns = Cooldown(
@@ -279,6 +282,7 @@ abstract class TMPlugin(
                     database = database,
                     cooldowns = cooldowns,
                     discord = discord,
+                    discordSettings = discordSettings,
                     databaseBuilders = databaseBuilders,
                     localeHandler = localeHandler,
                     pluginUpdate = AtomicReference(updateChecker),

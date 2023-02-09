@@ -1,0 +1,18 @@
+# Miscellaneous:
+Console_Name: 'Console'
+Nobody: 'Nobody'
+# Priority:
+Priority_Lowest: 'LOWEST'
+Priority_Low: 'LOW'
+Priority_Normal: 'NORMAL'
+Priority_High: 'HIGH'
+Priority_Highest: 'HIGHEST'
+# Discord Notifications:
+Discord_OnAssign: '%user% assigned ticket #%num%'
+Discord_OnClose: '%user% closed ticket #%num%'
+Discord_OnCloseAll: '%user% mass-closed tickets'
+Discord_OnComment: '%user% commented on ticket #%num%'
+Discord_OnCreate: '%user% created ticket #%num%'
+Discord_OnReopen: '%user% reopened ticket #%num%'
+Discord_OnPriorityChange: '%user% changed priority of ticket #%num%'
+Notify_Event_PluginUpdate: '%TMHeader% TicketManager has an update!%nl%  Current Version: <current>%nl%  Latest Version: <latest>'          # Templates: <current> <latest>

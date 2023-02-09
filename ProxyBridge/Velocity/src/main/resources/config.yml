@@ -1,7 +1,7 @@
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
 #                                              TicketManager Config File                                              #
-#                                                     Version 1.3                                                     #
+#                                                     Version 2.0                                                     #
 #                                                     Velocity Bridge                                                 #
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
@@ -27,4 +27,102 @@ Allow_Update_Checking: true
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Update_Check_Duration_Hours: 1
 #   Time in hours between the proxy checking for updates.                                                             #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#                                                Localization Settings                                                #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#   TicketManager PBE can output the following translations:                                                          #
+#       • Discord notifications                                                                                       #
+#       • Plugin messages.                                                                                            #
+#                                                                                                                     #
+#   Please note that TM:PBE only supports one language at a time, unlike TM:SE.                                       #
+#                                                                                                                     #
+#   Exceptions for localizations are                                                                                  #
+#       • Player names                                                                                                #
+#       • Ticket comments.                                                                                            #
+#                                                                                                                     #
+#                                              Supported Localizations:                                               #
+#                                     ╔═══════════╤══════════════════════════════╗                                    #
+#                                     ║   Value   │           Language           ║                                    #
+#                                     ╠═══════════╪══════════════════════════════╣                                    #
+#                                     ║  'de_DE'  │ German                       ║                                    #
+#                                     ║  'en_CA'  │ Canadian English             ║                                    #
+#                                     ║  'en_UK'  │ UK English                   ║                                    #
+#                                     ║  'en_US'  │ US English                   ║                                    #
+#                                     ╚═══════════╧══════════════════════════════╝                                    #
+#                                                                                                                     #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Preferred_Locale: "en_CA"
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#                                                 Discord Bot Settings                                                #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#   TicketManager has the ability to send ticket modification and creation notifications to a channel in your         #
+#   Discord server.                                                                                                   #
+#                                                                                                                     #
+#   Please note that you must generate your own bot token and provide a channel ID for the desired channel. The       #
+#   wiki provides step-by-step instructions, but the information may or may not be outdated.                          #
+#                                                                                                                     #
+#   TicketManager does not send notifications when users perform a command silently.                                  #
+#                                                                                                                     #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Use_Discord_Bot: false
+#   Enable or disable the Discord bot.                                                                                #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Discord_Bot_Token: ''
+#   Generated Discord bot token.                                                                                      #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Discord_Channel_ID: -1
+#   Text Channel ID of the channel the bot should send messages to.                                                   #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Discord_Notify_On_Assign: true
+#   Send notification when tickets assignments/un-assignments occur.                                                  #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Discord_Notify_On_Close: true
+#   Send notification when a ticket is closed.                                                                        #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Discord_Notify_On_Close_All: true
+#   Send notification when tickets are mass-closed.                                                                   #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Discord_Notify_On_Comment: true
+#   Send notification when a ticket receives a comment.                                                               #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Discord_Notify_On_Create: true
+#   Send notification when a ticket is created.                                                                       #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Discord_Notify_On_Reopen: true
+#   Send notification when a ticket is re-opened.                                                                     #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+Discord_Notify_On_Priority_Change: true
+#   Send notification when a ticket's priority is changed.                                                            #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#                                                                                                                     #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+#                                                   Other Settings                                                    #
+#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
+Enable_Advanced_Visual_Control: false
+#   TicketManager provides a means for end-users to safely configure plugin visuals. When enabled, the plugin will    #
+#   read from and use the visual localization files inside the TicketManager plugin folder. TM:PBE does not use       #
+#   coloured text output.
+#                                                                                                                     #
+#   Two notable safely precautions occur when enabled:                                                                #
+#       • Missing files re-generate                                                                                   #
+#       • Missing components default to the internal version.                                                         #
+#                                                                                                                     #
+#   Note: If interested in translating TicketManager to your language, please consider contacting HoshiKurama to      #
+#   discuss creating an official translation file!                                                                    #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
