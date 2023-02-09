@@ -41,6 +41,7 @@ tasks {
             include(dependency("org.bstats:bstats-base:3.0.0"))
             include(dependency("org.bstats:bstats-velocity:3.0.0"))
             include(dependency("org.yaml:snakeyaml:1.33"))
+            include(dependency("com.discord4j:discord4j-core:3.2.3")) // Remember to keep updating this
         }
 
         relocate("org.bstats", "com.github.hoshikurama.ticketmanager.bstats")
