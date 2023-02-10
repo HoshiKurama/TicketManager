@@ -614,7 +614,7 @@ class CorePipeline(
                     silent = false,
                     sender = sender,
                     hasPermission = instanceState.discordSettings.notifyOnCreate,
-                    buildNotification = { user -> Create(user, ticket.id.toString(), message) }
+                    buildNotification = { user -> Create(user, id.toString(), message) }
                 )
 
                 Notification.Create.build(
@@ -1160,7 +1160,7 @@ class CorePipeline(
             silent = silent,
             sender = sender,
             hasPermission = instanceState.discordSettings.notifyOnPriorityChange,
-            buildNotification = { user -> ChangePriority(user, ticket.id.toString(), ticket.priority.level.toInt()) }
+            buildNotification = { user -> ChangePriority(user, ticket.id.toString(), newPriority.level.toInt()) }
         )
         return CompletableFuture.completedFuture(
             Notification.SetPriority.build(
@@ -1449,7 +1449,6 @@ class CorePipeline(
             }
 
             val notification = buildNotification(user)
-
             CompletableFuture.runAsync {
                 if (instanceState.discord != null) instanceState.discord.sendMessage(notification, instanceState.localeHandler.consoleLocale)
                 else platform.relayMessageToProxy(Server2Proxy.DiscordMessage.waterfallString(), notification.encode())

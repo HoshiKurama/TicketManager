@@ -28,22 +28,14 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
     implementation("org.bstats:bstats-velocity:3.0.0")
     implementation("org.yaml:snakeyaml:1.33")
+    implementation("com.discord4j:discord4j-core:3.2.3")
 }
 
 tasks {
     shadowJar {
         archiveBaseName.set("TicketManager-VelocityBridge")
 
-        dependencies {
-            include(dependency("org.jetbrains.kotlin:kotlin-stdlib:1.8.10"))
-            include(project(":common"))
-            include(project(":ProxyBridge:commonPDE"))
-            include(dependency("org.bstats:bstats-base:3.0.0"))
-            include(dependency("org.bstats:bstats-velocity:3.0.0"))
-            include(dependency("org.yaml:snakeyaml:1.33"))
-            include(dependency("com.discord4j:discord4j-core:3.2.3")) // Remember to keep updating this
-        }
-
         relocate("org.bstats", "com.github.hoshikurama.ticketmanager.bstats")
+        relocate("io.netty", "com.discord4j.shaded.io.netty")
     }
 }

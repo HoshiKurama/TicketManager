@@ -22,6 +22,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
     implementation("org.bstats:bstats-bungeecord:3.0.0")
     implementation("org.yaml:snakeyaml:1.33")
+    implementation("com.discord4j:discord4j-core:3.2.3")
 }
 
 tasks {

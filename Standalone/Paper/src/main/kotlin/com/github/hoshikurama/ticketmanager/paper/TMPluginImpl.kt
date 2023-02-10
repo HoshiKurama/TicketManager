@@ -1,6 +1,8 @@
 package com.github.hoshikurama.ticketmanager.paper
 
 import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent
+import com.github.hoshikurama.ticketmanager.common.Proxy2Server
+import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.misc.ConfigParameters
@@ -161,12 +163,13 @@ class TMPluginImpl(
         // Register Velocity listeners if necessary
         if (instancePluginState.enableProxyMode) {
             proxy = Proxy(platformFunctions, instancePluginState)
-            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, "ticketmanager:inform_proxy")
-            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, "ticketmanager:relayed_message", proxy!!)
-            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, "ticketmanager:server_to_proxy_tp")
-            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, "ticketmanager:proxy_to_server_tp", proxy!!)
-            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, "ticketmanager:s2p_proxy_update")
-            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, "ticketmanager:p2s_proxy_update", proxy!!)
+            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.NotificationSharing.waterfallString())
+            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, Proxy2Server.NotificationSharing.waterfallString(), proxy!!)
+            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.Teleport.waterfallString())
+            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, Proxy2Server.Teleport.waterfallString(), proxy!!)
+            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.ProxyVersionRequest.waterfallString())
+            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, Proxy2Server.ProxyVersionRequest.waterfallString(), proxy!!)
+            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.DiscordMessage.waterfallString())
         }
     }
 
