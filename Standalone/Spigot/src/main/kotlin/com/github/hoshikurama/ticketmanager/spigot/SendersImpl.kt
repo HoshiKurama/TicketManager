@@ -2,7 +2,6 @@ package com.github.hoshikurama.ticketmanager.spigot
 
 import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.platform.Console
 import com.github.hoshikurama.ticketmanager.commonse.platform.Player
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
@@ -26,10 +25,6 @@ class SpigotPlayer(
         return sPlayer.location.run { Ticket.TicketLocation(null, world?.name, blockX, blockY, blockZ) }
     }
 
-    override fun sendMessage(msg: String) {
-        msg.parseMiniMessage().run(::sendMessage)
-    }
-
     override fun sendMessage(component: Component) {
         adventure.player(sPlayer).sendMessage(component)
     }
@@ -44,15 +39,7 @@ class SpigotConsole(
     locale: TMLocale,
 ): Console(locale, null) {
 
-    override fun sendMessage(msg: String) {
-        msg.parseMiniMessage().run(::sendMessage)
-    }
-
     override fun sendMessage(component: Component) {
         adventure.console().sendMessage(component)
-    }
-
-    override fun getLocAsTicketLoc(): Ticket.TicketLocation {
-        return Ticket.TicketLocation(null, null, null, null, null)
     }
 }
