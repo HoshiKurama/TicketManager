@@ -15,11 +15,8 @@ include("ProxyBridge:Waterfall")
 findProject(":ProxyBridge:Waterfall")?.name = "Waterfall"
 include("ProxyBridge:commonPDE")
 findProject(":ProxyBridge:commonPDE")?.name = "commonPDE"
-include("Standalone:Sponge")
-findProject(":Standalone:Sponge")?.name = "Sponge"
-include("Standalone:Fabric")
-findProject(":Standalone:Fabric")?.name = "Fabric"
 
+/*
 pluginManagement {
     repositories {
         mavenCentral()
@@ -27,7 +24,7 @@ pluginManagement {
         maven("https://maven.fabricmc.net") { name = "Fabric" }
     }
 }
-/*
+
 pluginManagement {
 	repositories {
 		gradlePluginPortal()
