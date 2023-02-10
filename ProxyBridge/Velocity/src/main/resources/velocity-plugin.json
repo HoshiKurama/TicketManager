@@ -5,5 +5,5 @@
   "description": "Advanced Ticket Management Solution",
   "authors": ["HoshiKurama"],
   "dependencies": [],
-  "main": "com.github.hoshikurama.ticketmanager.velocity.TMPluginVelocityImpl"
+  "main": "com.github.hoshikurama.ticketmanager.velocity.TMPluginImpl"
 }
