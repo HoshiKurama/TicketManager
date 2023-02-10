@@ -2,7 +2,6 @@ package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.platform.Console
 import com.github.hoshikurama.ticketmanager.commonse.platform.Player
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
@@ -26,10 +25,6 @@ class PaperPlayer(
         return pPlayer.location.run { Ticket.TicketLocation(serverName, world.name, blockX, blockY, blockZ) }
     }
 
-    override fun sendMessage(msg: String) {
-        msg.parseMiniMessage().run(::sendMessage)
-    }
-
     override fun sendMessage(component: Component) {
         pPlayer.sendMessage(component)
     }
@@ -44,15 +39,7 @@ class PaperConsole(
     serverName: String?,
 ) : Console(locale, serverName) {
 
-    override fun sendMessage(msg: String) {
-        msg.parseMiniMessage().run(::sendMessage)
-    }
-
     override fun sendMessage(component: Component) {
         Bukkit.getConsoleSender().sendMessage(component)
-    }
-
-    override fun getLocAsTicketLoc(): Ticket.TicketLocation {
-        return Ticket.TicketLocation(serverName, null, null, null, null)
     }
 }

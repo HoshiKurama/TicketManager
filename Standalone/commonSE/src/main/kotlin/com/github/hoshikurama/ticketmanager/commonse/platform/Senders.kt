@@ -1,6 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse.platform
 
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import net.kyori.adventure.text.Component
 import java.util.*
@@ -10,7 +11,7 @@ sealed class Sender(
     val locale: TMLocale,
     val serverName: String?,
 ) {
-    abstract fun sendMessage(msg: String)
+    fun sendMessage(msg: String) = sendMessage(msg.parseMiniMessage())
     abstract fun sendMessage(component: Component)
     abstract fun has(permission: String): Boolean
 
@@ -28,4 +29,5 @@ abstract class Player(
 
 abstract class Console(locale: TMLocale, serverName: String?) : Sender(locale.consoleName, locale, serverName) {
     override fun has(permission: String): Boolean = true
+    override fun getLocAsTicketLoc(): Ticket.TicketLocation = Ticket.TicketLocation(serverName, null, null, null, null)
 }
