@@ -1,6 +1,7 @@
 # Miscellaneous:
 Console_Name: 'Console'
 Nobody: 'Nobody'
+Uniform_Header: '[TicketManager]'
 # Priority:
 Priority_Lowest: 'LOWEST'
 Priority_Low: 'LOW'
