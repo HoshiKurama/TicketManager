@@ -11,7 +11,6 @@ import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
 import net.milkbowl.vault.permission.Permission
 import org.bukkit.Bukkit
-import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.OfflinePlayer
 import java.util.*
@@ -38,10 +37,6 @@ class PlatformFunctionsImpl(
 
     override fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<Player> {
         return Bukkit.getOnlinePlayers().map { SpigotPlayer(it, perms, adventure, localeHandler) }
-    }
-
-    override fun stripColour(msg: String): String {
-        return ChatColor.stripColor(msg)!!
     }
 
     override fun offlinePlayerNameToUUIDOrNull(name: String): UUID? {

@@ -11,7 +11,6 @@ interface PlatformFunctions {
     fun massNotify(localeHandler: LocaleHandler, permission: String, localeMsg: (TMLocale) -> Component)
     fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): Player?
     fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<Player>
-    fun stripColour(msg: String):  String
     fun offlinePlayerNameToUUIDOrNull(name: String): UUID?
     fun nameFromUUID(uuid: UUID): String
     fun teleportToTicketLocSameServer(player: Player, loc: Ticket.TicketLocation)
