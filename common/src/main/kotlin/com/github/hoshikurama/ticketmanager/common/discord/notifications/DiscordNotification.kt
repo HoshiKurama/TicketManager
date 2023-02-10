@@ -43,7 +43,7 @@ interface DiscordNotification {
                     ticketID = input.readUTF(),
                     comment = input.readUTF(),
                 )
-                Type.CREATE -> Close(
+                Type.CREATE -> Create(
                     user = computeUser(),
                     ticketID = input.readUTF(),
                     comment = input.readUTF(),

@@ -8,6 +8,7 @@
 #   Information:                                                                                                      #
 #       • Plugin Proudly Made By: HoshiKurama.                                                                        #
 #       • This plugin is a bridge and requires each connected server run the standalone edition in proxy mode.        #
+#       • UNLIKE the SE, the PBE uses a custom config parser. Please do not use quotes for things. Leave raw.         #
 #                                                                                                                     #
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
@@ -79,7 +80,7 @@ Preferred_Locale: "en_CA"
 Use_Discord_Bot: false
 #   Enable or disable the Discord bot.                                                                                #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Discord_Bot_Token: ''
+Discord_Bot_Token:
 #   Generated Discord bot token.                                                                                      #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Discord_Channel_ID: -1

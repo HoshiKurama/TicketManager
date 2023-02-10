@@ -1,15 +1,15 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
-import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
-import com.github.hoshikurama.ticketmanager.common.UpdateChecker
+import com.github.hoshikurama.ticketmanager.common.*
 import com.github.hoshikurama.ticketmanager.common.discord.Discord
-import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
-import com.github.hoshikurama.ticketmanager.common.supportedLocales
 import com.github.hoshikurama.ticketmanager.commonse.data.Cooldown
 import com.github.hoshikurama.ticketmanager.commonse.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.commonse.database.*
-import com.github.hoshikurama.ticketmanager.commonse.misc.*
+import com.github.hoshikurama.ticketmanager.commonse.misc.ConfigParameters
+import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
+import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
+import com.github.hoshikurama.ticketmanager.commonse.misc.templated
 import com.github.hoshikurama.ticketmanager.commonse.pipeline.Pipeline
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
@@ -77,7 +77,7 @@ abstract class TMPlugin(
     private fun updateProxyUpdateChecker() {
         // ASSUMES PROXY SERVER NAME IS NOT NULL AND CAN CHECK FOR UPDATES
         val message = ProxyUpdate.encodeProxyMsg(instancePluginState.proxyServerName!!)
-        platformFunctions.relayMessageToProxy("ticketmanager:s2p_proxy_update", message)
+        platformFunctions.relayMessageToProxy(Server2Proxy.ProxyVersionRequest.waterfallString(), message)
     }
 
     private fun periodicTasks() {
