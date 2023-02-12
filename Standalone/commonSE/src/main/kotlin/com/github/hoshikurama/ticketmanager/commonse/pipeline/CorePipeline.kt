@@ -417,7 +417,6 @@ class CorePipeline(
 
         val message = args.subList(2, args.size)
             .joinToString(" ")
-            .let(platform::stripColour)
 
         // Discord
         attemptDiscordMessageIfEnabledAsync(
@@ -528,7 +527,6 @@ class CorePipeline(
     ): CompletableFuture<StandardReturn> {
         val message = args.subList(2, args.size)
             .joinToString(" ")
-            .let(platform::stripColour)
 
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
@@ -597,7 +595,6 @@ class CorePipeline(
     ): CompletableFuture<StandardReturn> {
         val message = args.subList(1, args.size)
             .joinToString(" ")
-            .let(platform::stripColour)
 
         val ticket = when (sender) {
             is Player -> Ticket(creator = User(sender.uniqueID))
