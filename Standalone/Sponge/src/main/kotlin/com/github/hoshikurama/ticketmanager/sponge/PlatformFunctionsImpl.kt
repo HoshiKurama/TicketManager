@@ -2,6 +2,7 @@ package com.github.hoshikurama.ticketmanager.sponge
 
 import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.misc.unwrapOrNull
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.platform.Player
 import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
@@ -9,7 +10,9 @@ import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
 import net.luckperms.api.LuckPerms
+import net.luckperms.api.model.group.Group
 import org.spongepowered.api.Sponge
+import org.spongepowered.api.entity.living.player.server.ServerPlayer
 import java.util.*
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -28,7 +31,9 @@ class PlatformFunctionsImpl(
     }
 
     override fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): Player? {
-        val player = Sponge.serviceProvider().provide(UserStorageService::class.java)
+        return Sponge.server().player(uuid)
+            .map { SpongePlayer(it, lp, localeHandler, serverName) }
+            .unwrapOrNull()
     }
 
     override fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<Player> {
@@ -36,11 +41,11 @@ class PlatformFunctionsImpl(
     }
 
     override fun offlinePlayerNameToUUIDOrNull(name: String): UUID? {
-        TODO("Not yet implemented")
+        return Sponge.server().player(name).unwrapOrNull()?.uniqueId()
     }
 
     override fun nameFromUUID(uuid: UUID): String {
-
+        return Sponge.server().player(uuid).unwrapOrNull()?.name() ?: "UUID"
     }
 
     override fun teleportToTicketLocSameServer(player: Player, loc: Ticket.TicketLocation) {
@@ -72,19 +77,32 @@ class PlatformFunctionsImpl(
     }
 
     override fun getPermissionGroups(): List<String> {
-        TODO("Not yet implemented")
+        return lp.groupManager.loadedGroups.map(Group::getName)
+    // NOTE: I know this only does the loaded groups, but I don't
+    // want to deal with CompletableFutures for this. It's unnecessary
     }
 
     override fun getOfflinePlayerNames(): List<String> {
-        TODO("Not yet implemented")
+        return Sponge.server().onlinePlayers().map(ServerPlayer::name)
+    // NOTE: I don't know how to grab offline player list, so this will suffice.
     }
 
     override fun getOnlineSeenPlayerNames(sender: Sender): List<String> {
-        TODO("Not yet implemented")
+
+        return when(sender) {
+            is com.github.hoshikurama.ticketmanager.commonse.platform.Console ->
+                Sponge.server().onlinePlayers().map(ServerPlayer::name)
+            is Player -> {
+                val sender = Sponge.server().player(sender.uniqueID).unwrapOrNull()!! // Known to be online
+                Sponge.server().onlinePlayers()
+                    .filter(sender::canSee)
+                    .map(ServerPlayer::name)
+            }
+        }
     }
 
     override fun getWorldNames(): List<String> {
-        TODO("Not yet implemented")
+        return emptyList() // NOTE: Worlds currently unsupported because sponge doesn't let me get the name
     }
 }
 
