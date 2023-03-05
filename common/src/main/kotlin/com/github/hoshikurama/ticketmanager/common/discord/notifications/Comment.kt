@@ -11,7 +11,7 @@ class Comment(
 ) : DiscordNotification {
     override fun encode(): ByteArray = createByteArrayMessage {
         writeUTF(DiscordNotification.Type.COMMENT.toString())
-        writeUTF(user.name)
+        writeUTF(user.toString())
         writeUTF(ticketID)
         writeUTF(comment)
     }
