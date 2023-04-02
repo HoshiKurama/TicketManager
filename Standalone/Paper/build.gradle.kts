@@ -18,11 +18,10 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.19-R0.1-SNAPSHOT")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
-    implementation("net.kyori:adventure-extra-kotlin:4.12.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
+    implementation("net.kyori:adventure-extra-kotlin:4.13.0")
     implementation("joda-time:joda-time:2.12.2")
-    implementation("org.bstats:bstats-bukkit:3.0.0")
-    compileOnly("com.github.MilkBowl:VaultAPI:1.7.1")
+    implementation("org.bstats:bstats-bukkit:3.0.1")
     implementation(project(":common"))
     implementation(project(":Standalone:commonSE"))
 }
@@ -34,8 +33,8 @@ tasks {
         dependencies {
             include(project(":common"))
             include(project(":Standalone:commonSE"))
-            include(dependency("org.bstats:bstats-bukkit:3.0.0"))
-            include(dependency("org.bstats:bstats-base:3.0.0"))
+            include(dependency("org.bstats:bstats-bukkit:3.0.1"))
+            include(dependency("org.bstats:bstats-base:3.0.1"))
 
             relocate("org.bstats", "com.github.hoshikurama.ticketmanager.bstats")
         }

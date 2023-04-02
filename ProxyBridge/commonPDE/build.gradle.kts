@@ -10,6 +10,6 @@ repositories {
 
 dependencies {
     implementation(project(":common"))
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
-    implementation("org.yaml:snakeyaml:1.33")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
+    implementation("org.yaml:snakeyaml:2.0")
 }
