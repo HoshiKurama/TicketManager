@@ -18,7 +18,9 @@ repositories {
 
 dependencies {
     implementation(project(":common"))
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta") //TODO IMPLEMENT INTO PLUGIN
+    runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.0-Beta")
     implementation("com.mysql:mysql-connector-j:8.0.32")
     implementation("com.github.jasync-sql:jasync-mysql:2.1.23")
     implementation("com.github.seratch:kotliquery:1.9.0")
@@ -30,6 +32,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.h2database:h2:2.1.214")
     implementation("com.google.guava:guava:31.1-jre")
+    compileOnly("net.luckperms:api:5.4")
 }
 
 tasks {

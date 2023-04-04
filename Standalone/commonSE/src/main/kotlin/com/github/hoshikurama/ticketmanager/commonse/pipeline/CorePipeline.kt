@@ -19,10 +19,11 @@ import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.buildComponent
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.onHover
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.platform.Player
+import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
 import com.github.hoshikurama.ticketmanager.commonse.ticket.*
 import com.github.jasync.sql.db.util.size
+import kotlinx.coroutines.delay
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.event.HoverEvent
@@ -30,10 +31,6 @@ import net.kyori.adventure.text.event.HoverEvent.showText
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
 import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 typealias ConsoleObject = Console
 typealias ConsoleSender = com.github.hoshikurama.ticketmanager.commonse.platform.Console
@@ -45,38 +42,36 @@ class CorePipeline(
     val instanceState: InstancePluginState,
     private val globalState: GlobalPluginState,
 ) {
-    fun executeLogic(sender: Sender, args: List<String>): CompletableFuture<StandardReturn> {
+    suspend fun executeLogic(sender: Sender, args: List<String>): StandardReturn {
 
         if (args.isEmpty())
             return executeLogic(sender, listOf(sender.locale.commandWordHelp))
 
         if (globalState.pluginLocked.get()) {
             sender.sendMessage(sender.locale.warningsLocked)
-            return CompletableFuture.completedFuture<StandardReturn>(null)
+            return null
         }
 
-        return getTicketOrDummyTicketOrNullAsync(args, sender.locale)
-            .thenComposeAsync { ticket ->
-                // I'm so sorry future me for writing it this way. Type inference was being terrible
-                // (Future Me: I have no clue what you're talking about, but thank you anyways)
-                // Future Future Me: I figured out what you meant, past past me. I might have resolved it
-                if (ticket == null) {
-                    sender.sendMessage(sender.locale.warningsInvalidID)
-                    return@thenComposeAsync CompletableFuture.completedFuture<StandardReturn>(null)
-                }
+        // I'm so sorry future me for writing it this way. Type inference was being terrible
+        // (Future Me: I have no clue what you're talking about, but thank you anyways)
+        // Future Future Me: I figured out what you meant, past past me. I might have resolved it
+        // Future x3 Me: I might be going back to coroutines, so your work is going away
+        val ticket = getTicketOrDummyTicketOrNullAsync(args, sender.locale)
+        if (ticket == null) {
+            sender.sendMessage(sender.locale.warningsInvalidID)
+            return null
+        }
 
-                // Completable
-                if (!hasValidPermission(sender, ticket, args) || !isValidCommand(sender, ticket, args) || !notUnderCooldown(sender, args))
-                    return@thenComposeAsync CompletableFuture.completedFuture<StandardReturn>(null)
+        if (!hasValidPermission(sender, ticket, args) || !isValidCommand(sender, ticket, args) || !notUnderCooldown(sender, args))
+            return null
 
-                executeCommand(sender, args, ticket)
-            }
+        return executeCommand(sender, args, ticket)
     }
 
-    private fun getTicketOrDummyTicketOrNullAsync(
+    private suspend fun getTicketOrDummyTicketOrNullAsync(
         args: List<String>,
         senderLocale: TMLocale,
-    ): CompletableFuture<Ticket?> {
+    ): Ticket? {
         // Grabs Ticket. Only null if ID required but doesn't exist. Filters non-valid tickets
         return when (args[0]) {
             senderLocale.commandWordAssign,
@@ -98,8 +93,8 @@ class CorePipeline(
             senderLocale.commandWordDeepView ->
                 args.getOrNull(1)
                     ?.toLongOrNull()
-                    ?.let { instanceState.database.getTicketOrNullAsync(it) } ?: CompletableFuture.completedFuture(null)
-            else -> CompletableFuture.completedFuture(Ticket(creator = Dummy))
+                    ?.let { instanceState.database.getTicketOrNullAsync(it) }
+            else -> Ticket(creator = Dummy)
         }
     }
 
@@ -109,7 +104,7 @@ class CorePipeline(
         args: List<String>,
     ): Boolean {
         if (sender is ConsoleSender || args.isEmpty()) return true
-        val player = sender as Player
+        val player = sender as OnlinePlayer
 
         fun has(perm: String) = player.has(perm)
         fun hasSilent() = has("ticketmanager.commandArg.silence")
@@ -258,7 +253,7 @@ class CorePipeline(
         if (args.isEmpty()) return false
         if (sender is ConsoleSender) return true
 
-        val player = sender as Player
+        val player = sender as OnlinePlayer
         val underCooldown = when (args[0]) {
             sender.locale.commandWordCreate,
             sender.locale.commandWordComment,
@@ -272,13 +267,11 @@ class CorePipeline(
         return !underCooldown
     }
 
-    private fun executeCommand(
+    private suspend fun executeCommand(
         sender: Sender,
         args: List<String>,
         ticket: Ticket,
-    ): CompletionStage<StandardReturn> {
-        val nullFuture: CompletableFuture<StandardReturn> = CompletableFuture.completedFuture(null)
-
+    ): StandardReturn {
         return sender.locale.run {
             when (args[0]) {
                 commandWordAssign -> assign(sender, args, false, ticket)
@@ -292,25 +285,25 @@ class CorePipeline(
                 commandWordComment -> comment(sender, args, false, ticket)
                 commandWordSilentComment -> comment(sender, args, true, ticket)
                 commandWordCreate -> create(sender, args)
-                commandWordHelp -> help(sender).let { nullFuture }
-                commandWordHistory -> history(sender, args).let { nullFuture }
-                commandWordList -> list(sender, args).let { nullFuture }
-                commandWordListAssigned -> listAssigned(sender, args).let { nullFuture }
-                commandWordListUnassigned -> listUnassigned(sender, args).let { nullFuture }
-                commandWordReload -> reload(sender).let { nullFuture }
+                commandWordHelp -> help(sender).let { null }
+                commandWordHistory -> history(sender, args).let { null }
+                commandWordList -> list(sender, args).let { null }
+                commandWordListAssigned -> listAssigned(sender, args).let { null }
+                commandWordListUnassigned -> listUnassigned(sender, args).let { null }
+                commandWordReload -> reload(sender).let { null }
                 commandWordReopen -> reopen(sender,args, false, ticket)
                 commandWordSilentReopen -> reopen(sender,args, true, ticket)
-                commandWordSearch -> search(sender, args).let { nullFuture }
+                commandWordSearch -> search(sender, args).let { null }
                 commandWordSetPriority -> setPriority(sender, args, false, ticket)
                 commandWordSilentSetPriority -> setPriority(sender, args, true, ticket)
-                commandWordTeleport -> teleport(sender, ticket).let { nullFuture }
+                commandWordTeleport -> teleport(sender, ticket).let { null }
                 commandWordUnassign -> unAssign(sender, args, false, ticket)
                 commandWordSilentUnassign -> unAssign(sender, args, true, ticket)
-                commandWordVersion -> version(sender).let { nullFuture }
-                commandWordView -> view(sender, ticket).let { nullFuture }
-                commandWordDeepView -> viewDeep(sender, ticket).let { nullFuture }
-                commandWordConvertDB -> convertDatabase(args).let { nullFuture }
-                else -> nullFuture
+                commandWordVersion -> version(sender).let { null }
+                commandWordView -> view(sender, ticket).let { null }
+                commandWordDeepView -> viewDeep(sender, ticket).let { null }
+                commandWordConvertDB -> convertDatabase(args).let { null }
+                else -> null
             }
         }
     }
@@ -324,7 +317,7 @@ class CorePipeline(
         assignmentID: String,
         dbAssignment: String?,
         ticket: Ticket,
-    ): CompletableFuture<StandardReturn> {
+    ): StandardReturn {
         // Determines the assignment type
         val assignmentIsConsole = sender.locale.consoleName == dbAssignment
         val assignmentIsNobody = dbAssignment == null || sender.locale.miscNobody == dbAssignment
@@ -334,15 +327,15 @@ class CorePipeline(
             else -> DiscordPlayerOrStr(assignmentID)
         }
 
-        CompletableFuture.runAsync { instanceState.database.setAssignment(ticket.id, dbAssignment) }
-        CompletableFuture.runAsync {
+        TMCoroutine.launchIndependent { instanceState.database.setAssignment(ticket.id, dbAssignment) }
+        TMCoroutine.launchIndependent {
             instanceState.database.insertAction(
                 id = ticket.id,
                 action = Ticket.Action(Ticket.Action.Type.ASSIGN, sender.toCreator(), sender.getLocAsTicketLoc(), dbAssignment)
             )
         }
 
-        //Discord
+        //Discord (Async on coroutine)
         attemptDiscordMessageIfEnabledAsync(
             silent = silent,
             sender = sender,
@@ -368,7 +361,6 @@ class CorePipeline(
             argAssignedIsNobody = assignmentIsNobody,
             argUserIsConsole = sender is ConsoleSender,
         )
-            .let { CompletableFuture.completedFuture(it) }
     }
 
     // /ticket assign <ID> <Assignment>
@@ -377,7 +369,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<StandardReturn> {
+    ): StandardReturn {
         val sqlAssignment = args.subList(2, args.size).joinToString(" ")
         return allAssignVariations(sender, silent, args[1], sqlAssignment, ticket)
     }
@@ -388,7 +380,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<StandardReturn> {
+    ): StandardReturn {
         return allAssignVariations(sender, silent, args[1], sender.name, ticket)
     }
 
@@ -398,11 +390,13 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<StandardReturn> {
+    ): StandardReturn {
 
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-            CompletableFuture.runAsync { instanceState.database.setCreatorStatusUpdate(ticket.id, newCreatorStatusUpdate) }
+            TMCoroutine.launchIndependent {
+                instanceState.database.setCreatorStatusUpdate(ticket.id, newCreatorStatusUpdate)
+            }
 
         return if (args.size >= 3) closeWithComment(sender, args, silent, ticket)
                 else closeWithoutComment(sender, args, silent, ticket)
@@ -413,12 +407,12 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<StandardReturn> {
+    ): StandardReturn {
 
         val message = args.subList(2, args.size)
             .joinToString(" ")
 
-        // Discord
+        // Discord (Async on new coroutine)
         attemptDiscordMessageIfEnabledAsync(
             silent = silent,
             sender = sender,
@@ -427,17 +421,17 @@ class CorePipeline(
         )
 
         instanceState.database.run {
-            CompletableFuture.runAsync {
+            TMCoroutine.launchIndependent {
                 insertAction(
                     id = ticket.id,
                     action = Ticket.Action(Ticket.Action.Type.COMMENT, sender.toCreator(), sender.getLocAsTicketLoc(), message)
                 )
-            }.thenRunAsync {
                 insertAction(
                     id = ticket.id,
                     action = Ticket.Action(Ticket.Action.Type.CLOSE, sender.toCreator(), sender.getLocAsTicketLoc())
                 )
-            }.thenRunAsync { instanceState.database.setStatus(ticket.id, Ticket.Status.CLOSED) }
+                instanceState.database.setStatus(ticket.id, Ticket.Status.CLOSED)
+            }
         }
 
         return Notification.CloseWithComment.build(
@@ -449,7 +443,6 @@ class CorePipeline(
             argMessage = message,
             argUserIsConsole = sender is ConsoleSender
         )
-            .let { CompletableFuture.completedFuture(it) }
     }
 
     private fun closeWithoutComment(
@@ -457,9 +450,9 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<StandardReturn> {
+    ): StandardReturn {
 
-        CompletableFuture.runAsync {
+        TMCoroutine.launchIndependent {
             instanceState.database.insertAction(
                 id = ticket.id,
                 action = Ticket.Action(Ticket.Action.Type.CLOSE, sender.toCreator(), sender.getLocAsTicketLoc())
@@ -467,7 +460,7 @@ class CorePipeline(
             instanceState.database.setStatus(ticket.id, Ticket.Status.CLOSED)
         }
 
-        // Discord
+        // Discord (async in new coroutine)
         attemptDiscordMessageIfEnabledAsync(
             silent = silent,
             sender = sender,
@@ -483,7 +476,6 @@ class CorePipeline(
             argUser = sender.name,
             argUserIsConsole = sender is ConsoleSender
         )
-            .let { CompletableFuture.completedFuture(it) }
     }
 
     // /ticket closeall <Lower ID> <Upper ID>
@@ -492,11 +484,11 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket
-    ): CompletableFuture<StandardReturn> {
+    ): StandardReturn {
         val lowerBound = args[1].toLong()
         val upperBound = args[2].toLong()
 
-        CompletableFuture.runAsync { instanceState.database.massCloseTickets(lowerBound, upperBound, sender.toCreator(), sender.getLocAsTicketLoc()) }
+        TMCoroutine.launchIndependent { instanceState.database.massCloseTickets(lowerBound, upperBound, sender.toCreator(), sender.getLocAsTicketLoc()) }
 
         // Discord
         attemptDiscordMessageIfEnabledAsync(
@@ -515,7 +507,6 @@ class CorePipeline(
             argUser = sender.name,
             argUserIsConsole = sender is ConsoleSender,
         )
-            .let { CompletableFuture.completedFuture(it) }
     }
 
     // /ticket comment <ID> <Comment…>
@@ -524,22 +515,22 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<StandardReturn> {
+    ): StandardReturn {
         val message = args.subList(2, args.size)
             .joinToString(" ")
 
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-            CompletableFuture.runAsync { instanceState.database.setCreatorStatusUpdate(ticket.id, newCreatorStatusUpdate) }
+            TMCoroutine.launchIndependent { instanceState.database.setCreatorStatusUpdate(ticket.id, newCreatorStatusUpdate) }
 
-        CompletableFuture.runAsync {
+        TMCoroutine.launchIndependent {
             instanceState.database.insertAction(
                 id = ticket.id,
                 action = Ticket.Action(Ticket.Action.Type.COMMENT, sender.toCreator(), sender.getLocAsTicketLoc(), message)
             )
         }
 
-        // Discord
+        // Discord (async in new coroutine)
         attemptDiscordMessageIfEnabledAsync(
             silent = silent,
             sender = sender,
@@ -556,11 +547,10 @@ class CorePipeline(
             argMessage = message,
             argUserIsConsole = sender is ConsoleSender
         )
-            .let { CompletableFuture.completedFuture(it) }
     }
 
     // /ticket convertdatabase <Target Database>
-    private fun convertDatabase(args: List<String>) {
+    private suspend fun convertDatabase(args: List<String>) {
         val type = args[1].run(AsyncDatabase.Type::valueOf)
 
         instanceState.database.migrateDatabase(
@@ -589,41 +579,41 @@ class CorePipeline(
     }
 
     // /ticket create <Message…>
-    private fun create(
+    private suspend fun create(
         sender: Sender,
         args: List<String>,
-    ): CompletableFuture<StandardReturn> {
+    ): StandardReturn {
         val message = args.subList(1, args.size)
             .joinToString(" ")
 
         val ticket = when (sender) {
-            is Player -> Ticket(creator = User(sender.uniqueID))
+            is OnlinePlayer -> Ticket(creator = User(sender.uniqueID))
             is ConsoleSender -> Ticket(creator = ConsoleObject)
         }
             .let { it + listOf(Ticket.Action(type = Ticket.Action.Type.OPEN, user = sender.toCreator(), sender.getLocAsTicketLoc(), message)) }
 
-        return instanceState.database.insertTicketAsync(ticket)
-            .thenApplyAsync { id ->
-                globalState.ticketCountMetrics.getAndIncrement()
 
-                //Discord
-                attemptDiscordMessageIfEnabledAsync(
-                    silent = false,
-                    sender = sender,
-                    hasPermission = instanceState.discordSettings.notifyOnCreate,
-                    buildNotification = { user -> Create(user, id.toString(), message) }
-                )
+        // Inserts ticket and receives ID
+        val id = instanceState.database.insertTicketAsync(ticket)
+        globalState.ticketCountMetrics.getAndIncrement()
 
-                Notification.Create.build(
-                    silent = false,
-                    ticket = ticket,
-                    sender = sender,
-                    argID = id.toString(),
-                    argUser = sender.name,
-                    argMessage = message,
-                    argUserIsConsole = sender is ConsoleSender
-                )
-            }
+        //Discord (async in new coroutine)
+        attemptDiscordMessageIfEnabledAsync(
+            silent = false,
+            sender = sender,
+            hasPermission = instanceState.discordSettings.notifyOnCreate,
+            buildNotification = { user -> Create(user, id.toString(), message) }
+        )
+
+        return Notification.Create.build(
+            silent = false,
+            ticket = ticket,
+            sender = sender,
+            argID = id.toString(),
+            argUser = sender.name,
+            argMessage = message,
+            argUserIsConsole = sender is ConsoleSender
+        )
     }
 
     private fun help(sender: Sender) {
@@ -834,167 +824,152 @@ class CorePipeline(
     }
 
     // /ticket history [User] [Page]
-    private fun history(
+    private suspend fun history(
         sender: Sender,
         args: List<String>,
     ) {
         val locale = sender.locale
 
-        val targetName = if (args.size >= 2) args[1].takeIf { it != locale.consoleName } else sender.name.takeIf { sender is Player }
+        val targetName = if (args.size >= 2) args[1].takeIf { it != locale.consoleName } else sender.name.takeIf { sender is OnlinePlayer }
         val requestedPage = if (args.size >= 3) args[2].toInt() else 1
 
         val searchedUser: Creator = targetName?.run { platform.offlinePlayerNameToUUIDOrNull(this)?.let(::User) ?: User(UUID.randomUUID()) } ?: ConsoleObject //NOTE: Does this need to account for multi-servers?
         val constraints = SearchConstraint(creator = Option(searchedUser))
 
-        instanceState.database.searchDatabaseAsync(constraints, requestedPage, 9)
-            .thenApplyAsync { (results, pageCount, resultCount, returnedPage) ->
+        // Search
+        val (results, pageCount, resultCount, returnedPage) = instanceState.database
+            .searchDatabaseAsync(constraints, requestedPage, 9)
 
-                val sentComponent = buildComponent {
-                    // Header
-                    locale.historyHeader.parseMiniMessage(
-                        "name" templated (targetName ?: locale.consoleName),
-                        "count" templated "$resultCount"
-                    ).let(this::append)
+        // Component Builder...
+        val sentComponent = buildComponent {
+            // Header
+            locale.historyHeader.parseMiniMessage(
+                "name" templated (targetName ?: locale.consoleName),
+                "count" templated "$resultCount"
+            ).let(this::append)
 
-                    if (results.isNotEmpty()) {
-                        results.forEach { t ->
-                            val id = "${t.id}"
-                            val status = t.status.toLocaledWord(locale)
-                            val comment = trimCommentToSize(
-                                comment = t.actions[0].message!!,
-                                preSize = id.size + status.size + locale.historyFormattingSize,
-                                maxSize = locale.historyMaxLineSize
-                            )
+            if (results.isNotEmpty()) {
+                results.forEach { t ->
+                    val id = "${t.id}"
+                    val status = t.status.toLocaledWord(locale)
+                    val comment = trimCommentToSize(
+                        comment = t.actions[0].message!!,
+                        preSize = id.size + status.size + locale.historyFormattingSize,
+                        maxSize = locale.historyMaxLineSize
+                    )
 
-                            val entry = locale.historyEntry
-                                .replace("%SCC%", statusToHexColour(t.status, sender.locale))
-                                .parseMiniMessage(
-                                    "id" templated id,
-                                    "status" templated status,
-                                    "comment" templated comment,
-                                )
+                    val entry = locale.historyEntry
+                        .replace("%SCC%", statusToHexColour(t.status, sender.locale))
+                        .parseMiniMessage(
+                            "id" templated id,
+                            "status" templated status,
+                            "comment" templated comment,
+                        )
 
-                            // Adds click/hover events and appends
-                            entry.hoverEvent(showText(Component.text(locale.clickViewTicket)))
-                                .clickEvent(ClickEvent.runCommand(locale.run { "/$commandBase $commandWordView ${t.id}" } ))
-                                .let(this::append)
-                        }
-
-                        if (pageCount > 1) {
-                            append(buildPageComponent(returnedPage, pageCount, locale) {
-                                "/${it.commandBase} ${it.commandWordHistory} ${targetName ?: it.consoleName} "
-                            })
-                        }
-                    }
+                    // Adds click/hover events and appends
+                    entry.hoverEvent(showText(Component.text(locale.clickViewTicket)))
+                        .clickEvent(ClickEvent.runCommand(locale.run { "/$commandBase $commandWordView ${t.id}" } ))
+                        .let(this::append)
                 }
 
-                sender.sendMessage(sentComponent)
+                if (pageCount > 1) {
+                    append(buildPageComponent(returnedPage, pageCount, locale) {
+                        "/${it.commandBase} ${it.commandWordHistory} ${targetName ?: it.consoleName} "
+                    })
+                }
             }
+        }
+
+        sender.sendMessage(sentComponent)
     }
 
     // /ticket list [Page]
-    private fun list(
+    private suspend fun list(
         sender: Sender,
         args: List<String>,
     ) {
         val page = if (args.size == 2) args[1].toIntOrNull() ?: 1 else 1
 
-        instanceState.database.getOpenTicketsAsync(page, 8).thenApplyAsync {
-            createGeneralList(sender.locale, sender.locale.listHeader, it) { sender.locale.run { "/$commandBase $commandWordList " } }
-                .run(sender::sendMessage)
-        }
+        val tickets = instanceState.database.getOpenTicketsAsync(page, 8)
+        createGeneralList(sender.locale, sender.locale.listHeader, tickets) { sender.locale.run { "/$commandBase $commandWordList " } }
+            .run(sender::sendMessage)
     }
 
     // /ticket listassigned [Page]
-    private fun listAssigned(
+    private suspend fun listAssigned(
         sender: Sender,
         args: List<String>,
     ) {
         val page = if (args.size == 2) args[1].toIntOrNull() ?: 1 else 1
-        val groups: List<String> = if (sender is Player) sender.permissionGroups else listOf()
-        instanceState.database.getOpenTicketsAssignedToAsync(page,8, sender.name, groups)
-            .thenApplyAsync {
-                createGeneralList(sender.locale, sender.locale.listAssignedHeader, it) { sender.locale.run { "/$commandBase $commandWordListAssigned " } }
-                    .run(sender::sendMessage)
-            }
+        val groups: List<String> = if (sender is OnlinePlayer) sender.permissionGroups else listOf()
+
+        val tickets = instanceState.database.getOpenTicketsAssignedToAsync(page,8, sender.name, groups)
+        createGeneralList(sender.locale, sender.locale.listAssignedHeader, tickets) { sender.locale.run { "/$commandBase $commandWordListAssigned " } }
+            .run(sender::sendMessage)
     }
 
     // /ticket listunassigned [Page]
-    private fun listUnassigned(
+    private suspend fun listUnassigned(
         sender: Sender,
         args: List<String>,
     ) {
         val page = if (args.size == 2) args[1].toIntOrNull() ?: 1 else 1
-        instanceState.database.getOpenTicketsNotAssignedAsync(page, 8)
-            .thenApplyAsync {
-                createGeneralList(sender.locale, sender.locale.listUnassignedHeader, it) { sender.locale.run { "/$commandBase $commandWordListUnassigned " } }
-                    .run(sender::sendMessage)
-            }
+        val tickets = instanceState.database.getOpenTicketsNotAssignedAsync(page, 8)
+
+        createGeneralList(sender.locale, sender.locale.listUnassignedHeader, tickets) { sender.locale.run { "/$commandBase $commandWordListUnassigned " } }
+            .run(sender::sendMessage)
     }
 
     // /ticket reload
-    private fun reload(
+    private suspend fun reload(
         sender: Sender
     ) {
         try {
+            // Lock Plugin
             globalState.pluginLocked.set(true)
 
+            // Announce Intentions
             platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
                 it.informationReloadInitiated.parseMiniMessage("user" templated sender.name)
             }
 
-            // Task to execute on thread pool once safe to do so
-            fun continueExecution() {
-                platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
-                    it.informationReloadTasksDone.parseMiniMessage()
-                }
+            // Give time for things to complete
+            TMCoroutine.run {
+                var counter = 0
 
-                instanceState.database.closeDatabase()
+                while (activeJobCount != 0) {
 
-                // I REALLY HATE THIS STATIC VARIABLE, BUT IT WILL WORK FOR NOW SINCE I ONLY USE IT HERE
-                TMPlugin.activeInstance.unregisterProcesses()
-                TMPlugin.activeInstance.initializeData() // Also re-registers things
-
-                // Notifications
-                platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
-                    it.informationReloadSuccess.parseMiniMessage()
-                }
-
-                if (!sender.has("ticketmanager.notify.info"))
-                    sender.sendMessage(sender.locale.informationReloadSuccess)
-            }
-
-
-            // Safety checking
-            if (globalState.jobCount.get() <= 1)
-                continueExecution()
-            else {
-                val pool = Executors.newScheduledThreadPool(2)
-
-                val forceContinue = pool.schedule(
-                    {
-                        CompletableFuture.runAsync {
-                            platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.warning") {
-                                it.warningsLongTaskDuringReload.parseMiniMessage()
-                            }
+                    if (counter > 29) {
+                        cancelTasks("User ${sender.name} requested a plugin restart and 1+ tasks is taking too long")
+                        platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.warning") {
+                            it.warningsLongTaskDuringReload.parseMiniMessage()
                         }
-                        CompletableFuture.runAsync(pool::shutdownNow)
-                    }, 30500, TimeUnit.MILLISECONDS
-                )
-
-
-                fun normalExecution() {
-                    if (globalState.jobCount.get() > 1)
-                        pool.schedule(::normalExecution, 1L, TimeUnit.SECONDS)
-                    else {
-                        CompletableFuture.runAsync(::continueExecution)
-                        forceContinue.cancel(true)
-                        CompletableFuture.runAsync(pool::shutdown)
                     }
-                }
 
-                pool.schedule(::normalExecution, 1L, TimeUnit.SECONDS)
+                    delay(1000)
+                    counter++
+                }
             }
+
+            // Closed...
+            platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
+                it.informationReloadTasksDone.parseMiniMessage()
+            }
+
+            instanceState.database.closeDatabase()
+            TMCoroutine.beginNewScope()
+
+            // I REALLY HATE THIS STATIC VARIABLE, BUT IT WILL WORK FOR NOW SINCE I ONLY USE IT HERE
+            TMPlugin.activeInstance.unregisterProcesses()
+            TMPlugin.activeInstance.initializeData() // Also re-registers things
+
+            // Notifications
+            platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
+                it.informationReloadSuccess.parseMiniMessage()
+            }
+
+            if (!sender.has("ticketmanager.notify.info"))
+                sender.sendMessage(sender.locale.informationReloadSuccess)
 
         } catch (e: Exception) {
             platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
@@ -1010,21 +985,21 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<StandardReturn> {
+    ): StandardReturn {
         val action = Ticket.Action(Ticket.Action.Type.REOPEN, sender.toCreator(), sender.getLocAsTicketLoc())
 
         // Updates user status if needed
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate) {
-            CompletableFuture.runAsync { instanceState.database.setCreatorStatusUpdate(ticket.id, newCreatorStatusUpdate) }
+            TMCoroutine.launchIndependent { instanceState.database.setCreatorStatusUpdate(ticket.id, newCreatorStatusUpdate) }
         }
 
-        CompletableFuture.runAsync {
+        TMCoroutine.launchIndependent {
             instanceState.database.insertAction(ticket.id, action)
             instanceState.database.setStatus(ticket.id, Ticket.Status.OPEN)
         }
 
-        // Discord
+        // Discord (async in new coroutine)
         attemptDiscordMessageIfEnabledAsync(
             silent = silent,
             sender = sender,
@@ -1040,11 +1015,10 @@ class CorePipeline(
             argUser = sender.name,
             argUserIsConsole = sender is ConsoleSender
         )
-            .let { CompletableFuture.completedFuture(it) }
     }
 
     // /ticket search <Params>
-    private fun search(
+    private suspend fun search(
         sender: Sender,
         args: List<String>,
     ) {
@@ -1083,55 +1057,55 @@ class CorePipeline(
         }
 
         // Results calculation and destructuring
-        instanceState.database.searchDatabaseAsync(constraints, attemptedPage, 9)
-            .thenApplyAsync { (results, pageCount, resultCount, returnedPage) ->
-                val sentComponent = buildComponent {
-                    // Initial header
-                    append(locale.searchHeader.parseMiniMessage("size" templated "$resultCount"))
+        val (results, pageCount, resultCount, returnedPage) =
+            instanceState.database.searchDatabaseAsync(constraints, attemptedPage, 9)
 
-                    // Adds entries
-                    if (results.isNotEmpty()) {
-                        results.forEach {
-                            val time = it.actions[0].timestamp.toLargestRelativeTime(locale)
-                            val comment = trimCommentToSize(
-                                comment = it.actions[0].message!!,
-                                preSize = locale.searchFormattingSize + time.length,
-                                maxSize = locale.searchMaxLineSize,
-                            )
+        // Component Builder...
+        val sentComponent = buildComponent {
+            // Initial header
+            append(locale.searchHeader.parseMiniMessage("size" templated "$resultCount"))
 
-                            locale.searchEntry
-                                .replace("%PCC%", priorityToHexColour(it.priority, locale))
-                                .replace("%SCC%", statusToHexColour(it.status, locale))
-                                .parseMiniMessage(
-                                    "id" templated "${it.id}",
-                                    "status" templated it.status.toLocaledWord(locale),
-                                    "creator" templated (it.creator.run { if (this is User) uuid else null }?.run(platform::nameFromUUID) ?: locale.consoleName),
-                                    "assignment" templated (it.assignedTo ?: ""),
-                                    "world" templated (it.actions[0].location.world ?: ""),
-                                    "time" templated time,
-                                    "comment" templated comment,
-                                )
-                                .hoverEvent(showText(Component.text(locale.clickViewTicket)))
-                                .clickEvent(ClickEvent.runCommand(locale.run { "/$commandBase $commandWordView ${it.id}" }))
-                                .let(this::append)
-                        }
+            // Adds entries
+            if (results.isNotEmpty()) {
+                results.forEach {
+                    val time = it.actions[0].timestamp.toLargestRelativeTime(locale)
+                    val comment = trimCommentToSize(
+                        comment = it.actions[0].message!!,
+                        preSize = locale.searchFormattingSize + time.length,
+                        maxSize = locale.searchMaxLineSize,
+                    )
 
-                        // Implement pages if needed
-                        if (pageCount > 1) {
-                            buildPageComponent(returnedPage, pageCount, locale) {
-                                // Removes page constraint and converts rest to key:arg
-                                val constraintArgs = arguments
-                                    .filter { it.key != locale.searchPage }
-                                    .map { (k, v) -> "$k:$v" }
-                                    .joinToString(" ")
-                                "/${locale.commandBase} ${locale.commandWordSearch} $constraintArgs ${locale.searchPage}:"
-                            }.let(this::append)
-                        }
-                    }
+                    locale.searchEntry
+                        .replace("%PCC%", priorityToHexColour(it.priority, locale))
+                        .replace("%SCC%", statusToHexColour(it.status, locale))
+                        .parseMiniMessage(
+                            "id" templated "${it.id}",
+                            "status" templated it.status.toLocaledWord(locale),
+                            "creator" templated (it.creator.run { if (this is User) uuid else null }?.run(platform::nameFromUUID) ?: locale.consoleName),
+                            "assignment" templated (it.assignedTo ?: ""),
+                            "world" templated (it.actions[0].location.world ?: ""),
+                            "time" templated time,
+                            "comment" templated comment,
+                        )
+                        .hoverEvent(showText(Component.text(locale.clickViewTicket)))
+                        .clickEvent(ClickEvent.runCommand(locale.run { "/$commandBase $commandWordView ${it.id}" }))
+                        .let(this::append)
                 }
 
-                sender.sendMessage(sentComponent)
+                // Implement pages if needed
+                if (pageCount > 1) {
+                    buildPageComponent(returnedPage, pageCount, locale) {
+                        // Removes page constraint and converts rest to key:arg
+                        val constraintArgs = arguments
+                            .filter { it.key != locale.searchPage }
+                            .map { (k, v) -> "$k:$v" }
+                            .joinToString(" ")
+                        "/${locale.commandBase} ${locale.commandWordSearch} $constraintArgs ${locale.searchPage}:"
+                    }.let(this::append)
+                }
             }
+        }
+        sender.sendMessage(sentComponent)
     }
 
     // /ticket setpriority <ID> <Level>
@@ -1140,11 +1114,11 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<StandardReturn> {
+    ): StandardReturn {
 
         val newPriority = byteToPriority(args[2].toByte())
 
-        CompletableFuture.runAsync {
+        TMCoroutine.launchIndependent {
             instanceState.database.insertAction(
                 id = ticket.id,
                 action = Ticket.Action(Ticket.Action.Type.SET_PRIORITY, sender.toCreator(), sender.getLocAsTicketLoc(), args[2])
@@ -1152,23 +1126,21 @@ class CorePipeline(
             instanceState.database.setPriority(ticket.id, newPriority)
         }
 
-        // Discord
+        // Discord (async on new coroutine)
         attemptDiscordMessageIfEnabledAsync(
             silent = silent,
             sender = sender,
             hasPermission = instanceState.discordSettings.notifyOnPriorityChange,
             buildNotification = { user -> ChangePriority(user, ticket.id.toString(), newPriority.level.toInt()) }
         )
-        return CompletableFuture.completedFuture(
-            Notification.SetPriority.build(
-                silent = silent,
-                ticket = ticket,
-                sender = sender,
-                argUser = sender.name,
-                argID = args[1],
-                argPriority = newPriority,
-                argUserIsConsole = sender is ConsoleSender
-            )
+        return Notification.SetPriority.build(
+            silent = silent,
+            ticket = ticket,
+            sender = sender,
+            argUser = sender.name,
+            argID = args[1],
+            argPriority = newPriority,
+            argUserIsConsole = sender is ConsoleSender
         )
     }
 
@@ -1177,7 +1149,7 @@ class CorePipeline(
         ticket: Ticket,
     ) {
         val location = ticket.actions[0].location
-        if (sender !is Player || location.world == null) return
+        if (sender !is OnlinePlayer || location.world == null) return
         // Sender is player and location exists...
 
         if (location.server == instanceState.proxyServerName)
@@ -1193,7 +1165,7 @@ class CorePipeline(
         args: List<String>,
         silent: Boolean,
         ticket: Ticket,
-    ): CompletableFuture<StandardReturn> {
+    ): StandardReturn {
         return allAssignVariations(sender, silent, args[1], null, ticket)
     }
 
@@ -1245,7 +1217,7 @@ class CorePipeline(
 
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-            CompletableFuture.runAsync { instanceState.database.setCreatorStatusUpdate(ticket.id, false) }
+            TMCoroutine.launchIndependent { instanceState.database.setCreatorStatusUpdate(ticket.id, false) }
 
         val entries = ticket.actions.asSequence()
             .filter { it.type == Ticket.Action.Type.COMMENT || it.type == Ticket.Action.Type.OPEN }
@@ -1269,7 +1241,7 @@ class CorePipeline(
 
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-            CompletableFuture.runAsync { instanceState.database.setCreatorStatusUpdate(ticket.id, false) }
+            TMCoroutine.launchIndependent { instanceState.database.setCreatorStatusUpdate(ticket.id, false) }
 
         fun formatDeepAction(action: Ticket.Action): Component {
             val templatedUser = "user" templated (action.user.run { if (this is User) uuid else null }?.run(platform::nameFromUUID) ?: sender.locale.consoleName)
@@ -1442,11 +1414,11 @@ class CorePipeline(
         if (instanceState.discord != null || instanceState.discordSettings.forwardToProxy) {
             val user = when (sender) {
                 is ConsoleSender -> DiscordConsole(instanceState.localeHandler.consoleLocale)
-                is Player -> DiscordPlayerOrStr(sender.name)
+                is OnlinePlayer -> DiscordPlayerOrStr(sender.name)
             }
 
             val notification = buildNotification(user)
-            CompletableFuture.runAsync {
+            TMCoroutine.launchIndependent {
                 if (instanceState.discord != null) instanceState.discord.sendMessage(notification, instanceState.localeHandler.consoleLocale)
                 else platform.relayMessageToProxy(Server2Proxy.DiscordMessage.waterfallString(), notification.encode())
             }
@@ -1474,7 +1446,7 @@ private inline fun Boolean.thenCheck(error: () -> Unit, predicate: () -> Boolean
 
 fun Sender.toCreator(): Creator {
     return when(this) {
-        is Player -> User(uniqueID)
+        is OnlinePlayer -> User(uniqueID)
         is ConsoleSender -> ConsoleObject
     }
 }

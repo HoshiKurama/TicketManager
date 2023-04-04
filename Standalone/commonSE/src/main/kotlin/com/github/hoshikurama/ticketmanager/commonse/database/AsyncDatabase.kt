@@ -19,35 +19,35 @@ interface AsyncDatabase {
 
     // Database Additions
     fun insertAction(id: Long, action: Ticket.Action)
-    fun insertTicketAsync(ticket: Ticket): CompletableFuture<Long>
+    suspend fun insertTicketAsync(ticket: Ticket): Long
 
     // Get Ticket(s)
-    fun getTicketsAsync(ids: List<Long>): CompletableFuture<List<Ticket>>
-    fun getTicketOrNullAsync(id: Long): CompletableFuture<Ticket?>
+    suspend fun getTicketsAsync(ids: List<Long>): List<Ticket>
+    suspend fun getTicketOrNullAsync(id: Long): Ticket?
 
     // Aggregate Operations
-    fun getOpenTicketsAsync(page: Int, pageSize: Int): CompletableFuture<Result>
-    fun getOpenTicketsAssignedToAsync(page: Int, pageSize: Int, assignment: String, unfixedGroupAssignment: List<String>): CompletableFuture<Result>
-    fun getOpenTicketsNotAssignedAsync(page: Int, pageSize: Int): CompletableFuture<Result>
+    suspend fun getOpenTicketsAsync(page: Int, pageSize: Int): Result
+    suspend fun getOpenTicketsAssignedToAsync(page: Int, pageSize: Int, assignment: String, unfixedGroupAssignment: List<String>): Result
+    suspend fun getOpenTicketsNotAssignedAsync(page: Int, pageSize: Int): Result
     fun massCloseTickets(lowerBound: Long, upperBound: Long, actor: Creator, ticketLoc:  Ticket.TicketLocation)
 
     // Counting
     fun countOpenTicketsAsync(): CompletableFuture<Long>
-    fun countOpenTicketsAssignedToAsync(assignment: String, unfixedGroupAssignment: List<String>): CompletableFuture<Long>
+    suspend fun countOpenTicketsAssignedToAsync(assignment: String, unfixedGroupAssignment: List<String>): Long
 
     // Searching
-    fun searchDatabaseAsync(constraints: SearchConstraint, page: Int, pageSize: Int): CompletableFuture<Result>
+    suspend fun searchDatabaseAsync(constraints: SearchConstraint, page: Int, pageSize: Int): Result
 
     // Other stuff I can't name right now
-    fun getTicketIDsWithUpdatesAsync(): CompletableFuture<List<Long>>
-    fun getTicketIDsWithUpdatesForAsync(creator: Creator): CompletableFuture<List<Long>>
+    suspend fun getTicketIDsWithUpdatesAsync(): List<Long>
+    suspend fun getTicketIDsWithUpdatesForAsync(creator: Creator): List<Long>
 
     // Internal Database Functions
     fun closeDatabase()
     fun initializeDatabase()
 
-    fun insertTicketForMigration(other: AsyncDatabase)
-    fun migrateDatabase(
+    suspend fun insertTicketForMigration(other: AsyncDatabase)
+    suspend fun migrateDatabase(
         to: Type,
         databaseBuilders: DatabaseBuilders,
         onBegin: () -> Unit,
@@ -65,7 +65,7 @@ interface AsyncDatabase {
             }
                 .let(DatabaseBuilder::build)
                 .apply(AsyncDatabase::initializeDatabase)
-                .apply(this::insertTicketForMigration)
+                .apply { insertTicketForMigration(this) }
                 .apply(AsyncDatabase::closeDatabase)
 
         } catch (e: Exception) {

@@ -3,7 +3,7 @@ package com.github.hoshikurama.ticketmanager.spigot
 import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.platform.Player
+import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import net.kyori.adventure.audience.Audience
@@ -31,11 +31,11 @@ class PlatformFunctionsImpl(
             .forEach { localeMsg(it.locale).run(it::sendMessage) }
     }
 
-    override fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): Player? {
+    override fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): OnlinePlayer? {
         return Bukkit.getPlayer(uuid)?.run { SpigotPlayer(this, perms, adventure, localeHandler) }
     }
 
-    override fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<Player> {
+    override fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<OnlinePlayer> {
         return Bukkit.getOnlinePlayers().map { SpigotPlayer(it, perms, adventure, localeHandler) }
     }
 
@@ -48,7 +48,7 @@ class PlatformFunctionsImpl(
         return uuid.run(Bukkit::getOfflinePlayer).name ?: "UUID"
     }
 
-    override fun teleportToTicketLocSameServer(player: Player, loc: Ticket.TicketLocation) {
+    override fun teleportToTicketLocSameServer(player: OnlinePlayer, loc: Ticket.TicketLocation) {
         val world = Bukkit.getWorld(loc.world!!)
         val spigotPlayer = player as SpigotPlayer
 
@@ -58,7 +58,7 @@ class PlatformFunctionsImpl(
         }
     }
 
-    override fun teleportToTicketLocDiffServer(player: Player, loc: Ticket.TicketLocation) {
+    override fun teleportToTicketLocDiffServer(player: OnlinePlayer, loc: Ticket.TicketLocation) {
         throw Exception("Proxies with Spigot NOT Supported! Please use Paper for Proxy Support")
     }
 

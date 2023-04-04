@@ -1,11 +1,13 @@
 package com.github.hoshikurama.ticketmanager.commonse.platform
 
 import com.github.hoshikurama.ticketmanager.commonse.database.AsyncDatabase
+import net.luckperms.api.LuckPermsProvider
 
 abstract class TabComplete(private val platform: PlatformFunctions) {
+    // Note: Be careful with this, future me. Maintain admin invisibility
 
     fun getReturnedTabs(sender: Sender, args: List<String>): List<String> {
-        if (!sender.has("ticketmanager.commandArg.autotab") && sender is Player) return listOf("")
+        if (!sender.has("ticketmanager.commandArg.autotab") && sender is OnlinePlayer) return listOf("")
         val perms = LazyPermissions(sender)
 
         return sender.locale.run {

@@ -4,12 +4,12 @@ import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.misc.encodeRequestTP
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.platform.Player
+import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
-import net.milkbowl.vault.permission.Permission
+import net.luckperms.api.LuckPerms
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.OfflinePlayer
@@ -18,7 +18,6 @@ import java.util.*
 import java.util.logging.Level
 
 class PlatformFunctionsImpl(
-    private val perms: Permission,
     private val plugin: Plugin,
     private val serverName: String?,
 ) : PlatformFunctions {
@@ -33,12 +32,12 @@ class PlatformFunctionsImpl(
 
     }
 
-    override fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): Player? {
-        return Bukkit.getPlayer(uuid)?.run { PaperPlayer(this, perms, localeHandler, serverName) }
+    override fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): OnlinePlayer? {
+        return Bukkit.getPlayer(uuid)?.run { PaperPlayer(this, localeHandler, serverName) }
     }
 
-    override fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<Player> {
-        return Bukkit.getOnlinePlayers().map { PaperPlayer(it, perms, localeHandler, serverName) }
+    override fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<OnlinePlayer> {
+        return Bukkit.getOnlinePlayers().map { PaperPlayer(it, localeHandler, serverName) }
     }
 
     override fun offlinePlayerNameToUUIDOrNull(name: String): UUID? {
@@ -50,7 +49,7 @@ class PlatformFunctionsImpl(
         return uuid.run(Bukkit::getOfflinePlayer).name ?: "UUID"
     }
 
-    override fun teleportToTicketLocSameServer(player: Player, loc: Ticket.TicketLocation) {
+    override fun teleportToTicketLocSameServer(player: OnlinePlayer, loc: Ticket.TicketLocation) {
         val world = Bukkit.getWorld(loc.world!!)
         val paperPlayer = player as PaperPlayer
 
@@ -60,7 +59,7 @@ class PlatformFunctionsImpl(
         }
     }
 
-    override fun teleportToTicketLocDiffServer(player: Player, loc: Ticket.TicketLocation) {
+    override fun teleportToTicketLocDiffServer(player: OnlinePlayer, loc: Ticket.TicketLocation) {
         plugin.server.sendPluginMessage(plugin, "ticketmanager:server_to_proxy_tp", encodeRequestTP(player, loc))
     }
 
@@ -84,8 +83,13 @@ class PlatformFunctionsImpl(
         Bukkit.getLogger().log(Level.SEVERE, message)
     }
 
-    override fun getPermissionGroups(): List<String> {
-        return perms.groups.toList()
+    override suspend fun getPermissionGroups(): List<String> {
+        //TODO I WOULD PREFERABLY LIKE TO MOVE THIS INTO THE JOINEVENT SYSTEMd
+
+
+        val provider: LuckPerms = Bukkit.getServicesManager().getRegistration(LuckPerms::class.java)?.provider!!
+
+        provider.platform.
     }
 
     override fun getOfflinePlayerNames(): List<String> {

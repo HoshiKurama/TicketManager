@@ -3,6 +3,7 @@ package com.github.hoshikurama.ticketmanager.commonse.pipeline
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.commonse.misc.TMCoroutine
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
@@ -16,11 +17,10 @@ abstract class PurePipeline(
 ) : Pipeline {
     private val corePipeline = CorePipeline(platform, instanceState, globalState)
 
-    override fun execute(sender: Sender, args: List<String>) {
-        CompletableFuture.supplyAsync { corePipeline.executeLogic(sender, args) }
-            .thenComposeAsync { it }
-            .thenApplyAsync { notification ->
-                notification?.run {
+    override fun executeAsync(sender: Sender, args: List<String>) {
+        TMCoroutine.launchIndependent {
+            try {
+                corePipeline.executeLogic(sender, args)?.run {
 
                     if (sendSenderMSG)
                         generateSenderMSG(sender.locale).run(sender::sendMessage)
@@ -32,14 +32,13 @@ abstract class PurePipeline(
                             generateCreatorMSG(creatorPlayer.locale).run(creatorPlayer::sendMessage)
                     }
 
-                    if (sendMassNotify) {
+                    if (sendMassNotify)
                         platform.massNotify(instanceState.localeHandler, massNotifyPerm, generateMassNotify)
-                    }
                 }
-            }
-            .exceptionallyAsync {
-                pushErrors(platform, instanceState, it as Exception, TMLocale::consoleErrorCommandExecution)
+            } catch (e: Exception) {
+                pushErrors(platform, instanceState, e, TMLocale::consoleErrorCommandExecution)
                 sender.sendMessage(sender.locale.warningsUnexpectedError)
             }
+        }
     }
 }

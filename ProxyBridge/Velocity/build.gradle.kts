@@ -25,7 +25,7 @@ dependencies {
     implementation(project(":ProxyBridge:commonPDE"))
     compileOnly("com.velocitypowered:velocity-api:3.1.0")
     annotationProcessor("com.velocitypowered:velocity-api:3.1.0")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
     implementation("org.bstats:bstats-velocity:3.0.1")
     implementation("org.yaml:snakeyaml:2.0")
     implementation("com.discord4j:discord4j-core:3.2.3")
