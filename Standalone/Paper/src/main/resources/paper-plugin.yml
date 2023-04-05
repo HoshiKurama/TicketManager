@@ -3,7 +3,11 @@ version: 9.0.0
 main: com.github.hoshikurama.ticketmanager.paper.PaperPlugin
 api-version: 1.18
 authors: [HoshiKurama]
-depend: [LuckPerms]
+folia-supported: true
+dependencies:
+  - name: LuckPerms
+    required: true
+    bootstrap: false
 libraries:
   - org.jetbrains.kotlin:kotlin-stdlib:1.8.20
   - com.mysql:mysql-connector-j:8.0.32

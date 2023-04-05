@@ -149,7 +149,7 @@ class TMPluginImpl(
         // Register Commands
         instancePluginState.localeHandler.getCommandBases().forEach {
             paperPlugin.getCommand(it)?.setExecutor(commandPipeline as CommandExecutor)
-            // Remember to register any keyword in plugin.yml
+            // Remember to register any keyword in paper-plugin.yml
         }
         // Registers Tab Completion
         paperPlugin.server.pluginManager.registerEvents(tabComplete as Listener, paperPlugin)
