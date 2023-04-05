@@ -6,19 +6,18 @@ import com.github.hoshikurama.ticketmanager.commonse.data.Cooldown
 import com.github.hoshikurama.ticketmanager.commonse.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.commonse.database.*
-import com.github.hoshikurama.ticketmanager.commonse.misc.ConfigParameters
-import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
-import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
-import com.github.hoshikurama.ticketmanager.commonse.misc.templated
+import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.pipeline.Pipeline
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
 import com.github.hoshikurama.ticketmanager.commonse.platform.TabComplete
 import com.github.hoshikurama.ticketmanager.commonse.ticket.User
+import kotlinx.coroutines.runBlocking
+import net.luckperms.api.LuckPermsProvider
+import net.luckperms.api.model.group.Group
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.io.path.exists
@@ -30,7 +29,6 @@ abstract class TMPlugin(
     private val buildPipeline: (PlatformFunctions, InstancePluginState, GlobalPluginState) -> Pipeline,
 ) {
     protected val globalPluginState = GlobalPluginState()
-
     protected lateinit var instancePluginState: InstancePluginState private set
     protected lateinit var platformFunctions: PlatformFunctions private set
     protected lateinit var tabComplete: TabComplete private set
@@ -38,8 +36,8 @@ abstract class TMPlugin(
     protected lateinit var commandPipeline: Pipeline private set
 
     companion object {
-       internal lateinit var activeInstance: TMPlugin
-       private set
+        internal lateinit var activeInstance: TMPlugin private set
+        internal lateinit var lpGroupNames: List<String> private set
     }
 
     abstract fun performSyncBefore()
@@ -65,7 +63,7 @@ abstract class TMPlugin(
     fun enableTicketManager() {
         performSyncBefore()
         activeInstance = this
-        CompletableFuture.runAsync(::initializeData) // Also registers
+        TMCoroutine.runAsync { initializeData() } // Also registers
         performAsyncTaskTimer(10, TimeUnit.MINUTES, ::periodicTasks)
     }
 
@@ -83,53 +81,65 @@ abstract class TMPlugin(
     private fun periodicTasks() {
         if (globalPluginState.pluginLocked.get()) return
 
-        CompletableFuture.runAsync(instancePluginState.cooldowns::filterMapAsync)
+        TMCoroutine.runAsync { instancePluginState.cooldowns.filterMapAsync() }
 
         // Mass Unread Notify
-        CompletableFuture.runAsync {
+        TMCoroutine.runAsync {
             if (!instancePluginState.allowUnreadTicketUpdates) return@runAsync
 
             platformFunctions.getAllOnlinePlayers(instancePluginState.localeHandler)
                 .filter { it.has("ticketmanager.notify.unreadUpdates.scheduled") }
                 .forEach {
-                    instancePluginState.database.getTicketIDsWithUpdatesForAsync(User(it.uniqueID)).thenAcceptAsync { ids ->
-                        val tickets = ids.joinToString(", ")
+                    val ids = instancePluginState.database.getTicketIDsWithUpdatesForAsync(User(it.uniqueID))
+                    val tickets = ids.joinToString(", ")
 
-                        if (ids.isEmpty()) return@thenAcceptAsync
+                    if (ids.isEmpty()) return@forEach
 
-                        val template = if (ids.size > 1) it.locale.notifyUnreadUpdateMulti
-                        else it.locale.notifyUnreadUpdateSingle
+                    val template = if (ids.size > 1) it.locale.notifyUnreadUpdateMulti
+                    else it.locale.notifyUnreadUpdateSingle
 
-                        template.parseMiniMessage("num" templated tickets).run(it::sendMessage)
-                    }
-                        .exceptionallyAsync { e -> pushScheduledMessage(e as Exception) }
+                    template.parseMiniMessage("num" templated tickets).run(it::sendMessage)
                 }
         }
 
         // Open and Assigned Notify
-        instancePluginState.database.getOpenTicketsAsync(1, 0).thenApplyAsync { (openTickets, _, openCount,_) ->
-            platformFunctions.getAllOnlinePlayers(instancePluginState.localeHandler)
-                .filter { it.has("ticketmanager.notify.openTickets.scheduled") }
-                .forEach { p ->
-                    val groups = p.permissionGroups.map { "::$it" }
-                    val assignedCount = openTickets.count { it.assignedTo == p.name || it.assignedTo in groups }
+        TMCoroutine.runAsync {
+            try {
+                val (openTickets, _, openCount, _) = instancePluginState.database.getOpenTicketsAsync(1, 0)
+                platformFunctions.getAllOnlinePlayers(instancePluginState.localeHandler)
+                    .filter { it.has("ticketmanager.notify.openTickets.scheduled") }
+                    .forEach { p ->
+                        val groups = p.permissionGroups.map { "::$it" }
+                        val assignedCount = openTickets.count { it.assignedTo == p.name || it.assignedTo in groups }
 
-                    if (assignedCount != 0)
-                        p.locale.notifyOpenAssigned.parseMiniMessage(
-                            "open" templated "$openCount",
-                            "assigned" templated "$assignedCount"
-                        ).run(p::sendMessage)
-                }
-        }.exceptionallyAsync { e -> pushScheduledMessage(e as Exception) }
+                        if (assignedCount != 0)
+                            p.locale.notifyOpenAssigned.parseMiniMessage(
+                                "open" templated "$openCount",
+                                "assigned" templated "$assignedCount"
+                            ).run(p::sendMessage)
+                    }
+            } catch (e: Exception) { pushScheduledMessage(e) }
+        }
     }
 
     fun disablePlugin() {
-        globalPluginState.pluginLocked.set(true)
-        instancePluginState.database.closeDatabase()
+        runBlocking {
+            globalPluginState.pluginLocked.set(true)
+            instancePluginState.database.closeDatabase()
+        }
     }
 
     fun initializeData() {
-        CompletableFuture.runAsync {
+        // Initializes LuckPerms Group Data
+        TMCoroutine.runAsync {
+            LuckPermsProvider.get().groupManager.run {
+                loadAllGroups().asDeferredThenAwait()
+                lpGroupNames = loadedGroups.map(Group::getName)
+            }
+        }
+
+        // Plugin initialization
+        TMCoroutine.runAsync {
             globalPluginState.pluginLocked.set(true)
             val errorsToPushOnLocalization = mutableListOf<() -> Unit>()
 
@@ -153,7 +163,7 @@ abstract class TMPlugin(
 
                 // Updates config file if requested
                 if (c.autoUpdateConfig ?: true.addToErrors("Auto_Update_Config", Boolean::toString)) {
-                    com.github.hoshikurama.ticketmanager.common.updateConfig(::loadPlayerConfig, ::loadInternalConfig, ::writeNewConfig)
+                    updateConfig(::loadPlayerConfig, ::loadInternalConfig, ::writeNewConfig)
                 }
 
                 // Generates Advanced Visual Control files
@@ -300,7 +310,7 @@ abstract class TMPlugin(
                 registerProcesses()
 
                 // Print warnings
-                CompletableFuture.runAsync {
+                TMCoroutine.runAsync {
                     errors.forEach { (node, default) ->
                         localeHandler.consoleLocale.consoleWarningInvalidConfigNode
                             .replaceFirst("%node%", node)
@@ -343,7 +353,7 @@ abstract class TMPlugin(
             }
 
             globalPluginState.pluginLocked.set(false)
-        }.exceptionallyAsync { it.printStackTrace(); null; }
+        }
     }
 
     private fun pushScheduledMessage(exception: Exception): Void? {

@@ -8,7 +8,6 @@ import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
 import com.github.hoshikurama.ticketmanager.commonse.ticket.User
-import java.util.concurrent.CompletableFuture
 
 abstract class HybridPipeline(
     val platform: PlatformFunctions,
@@ -18,7 +17,7 @@ abstract class HybridPipeline(
     private val corePipeline = CorePipeline(platform, instanceState, globalState)
 
     override fun executeAsync(sender: Sender, args: List<String>) {
-        TMCoroutine.launchIndependent {
+        TMCoroutine.runAsync {
             try {
                 corePipeline.executeLogic(sender, args)?.run {
                     //  Send to other servers

@@ -7,26 +7,38 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.Exception
 
 object TMCoroutine {
-    internal val commonPoolDispatcher = ForkJoinPool.commonPool().asCoroutineDispatcher() //Must initialize first
+    private val commonPoolDispatcher = ForkJoinPool.commonPool().asCoroutineDispatcher() //Must initialize first
 
     private val commonPoolScopeRef = AtomicReference(generateNewScope())
     private val activeJobCountInternal = AtomicInteger(0)
 
-    internal val commonPoolScope: CoroutineScope
+    private val commonPoolScope: CoroutineScope
         get() = commonPoolScopeRef.get()
 
     internal val activeJobCount
         get() = activeJobCountInternal.get()
 
-    internal fun launchIndependent(
+    internal fun runAsync(
+        function: suspend CoroutineScope.() -> Unit,
         error: (Exception.() -> Unit)? = null,
+    ) {
+        // No need to add job to anything. Supervisor can unilaterally cancel
+        commonPoolScope.launch(commonPoolDispatcher) {
+            activeJobCountInternal.getAndIncrement()
+            try { function() }
+            catch (e: Exception) { if (error != null) error(e) }
+            finally { activeJobCountInternal.getAndDecrement() }
+        }
+    }
+
+    internal fun runAsync(
         function: suspend CoroutineScope.() -> Unit,
     ) {
         // No need to add job to anything. Supervisor can unilaterally cancel
         commonPoolScope.launch(commonPoolDispatcher) {
-            activeJobCountInternal
+            activeJobCountInternal.getAndIncrement()
             try { function() }
-            catch (e: Exception) { if (error != null) error(e) }
+            catch (e: Exception) { e.printStackTrace() }
             finally { activeJobCountInternal.getAndDecrement() }
         }
     }

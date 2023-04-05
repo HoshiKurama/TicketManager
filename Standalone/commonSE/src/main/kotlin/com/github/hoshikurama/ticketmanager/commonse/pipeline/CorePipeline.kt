@@ -327,8 +327,8 @@ class CorePipeline(
             else -> DiscordPlayerOrStr(assignmentID)
         }
 
-        TMCoroutine.launchIndependent { instanceState.database.setAssignment(ticket.id, dbAssignment) }
-        TMCoroutine.launchIndependent {
+        TMCoroutine.runAsync { instanceState.database.setAssignment(ticket.id, dbAssignment) }
+        TMCoroutine.runAsync {
             instanceState.database.insertAction(
                 id = ticket.id,
                 action = Ticket.Action(Ticket.Action.Type.ASSIGN, sender.toCreator(), sender.getLocAsTicketLoc(), dbAssignment)
@@ -394,7 +394,7 @@ class CorePipeline(
 
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-            TMCoroutine.launchIndependent {
+            TMCoroutine.runAsync {
                 instanceState.database.setCreatorStatusUpdate(ticket.id, newCreatorStatusUpdate)
             }
 
@@ -421,7 +421,7 @@ class CorePipeline(
         )
 
         instanceState.database.run {
-            TMCoroutine.launchIndependent {
+            TMCoroutine.runAsync {
                 insertAction(
                     id = ticket.id,
                     action = Ticket.Action(Ticket.Action.Type.COMMENT, sender.toCreator(), sender.getLocAsTicketLoc(), message)
@@ -452,7 +452,7 @@ class CorePipeline(
         ticket: Ticket,
     ): StandardReturn {
 
-        TMCoroutine.launchIndependent {
+        TMCoroutine.runAsync {
             instanceState.database.insertAction(
                 id = ticket.id,
                 action = Ticket.Action(Ticket.Action.Type.CLOSE, sender.toCreator(), sender.getLocAsTicketLoc())
@@ -488,7 +488,7 @@ class CorePipeline(
         val lowerBound = args[1].toLong()
         val upperBound = args[2].toLong()
 
-        TMCoroutine.launchIndependent { instanceState.database.massCloseTickets(lowerBound, upperBound, sender.toCreator(), sender.getLocAsTicketLoc()) }
+        TMCoroutine.runAsync { instanceState.database.massCloseTickets(lowerBound, upperBound, sender.toCreator(), sender.getLocAsTicketLoc()) }
 
         // Discord
         attemptDiscordMessageIfEnabledAsync(
@@ -521,9 +521,9 @@ class CorePipeline(
 
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-            TMCoroutine.launchIndependent { instanceState.database.setCreatorStatusUpdate(ticket.id, newCreatorStatusUpdate) }
+            TMCoroutine.runAsync { instanceState.database.setCreatorStatusUpdate(ticket.id, newCreatorStatusUpdate) }
 
-        TMCoroutine.launchIndependent {
+        TMCoroutine.runAsync {
             instanceState.database.insertAction(
                 id = ticket.id,
                 action = Ticket.Action(Ticket.Action.Type.COMMENT, sender.toCreator(), sender.getLocAsTicketLoc(), message)
@@ -991,10 +991,10 @@ class CorePipeline(
         // Updates user status if needed
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate) {
-            TMCoroutine.launchIndependent { instanceState.database.setCreatorStatusUpdate(ticket.id, newCreatorStatusUpdate) }
+            TMCoroutine.runAsync { instanceState.database.setCreatorStatusUpdate(ticket.id, newCreatorStatusUpdate) }
         }
 
-        TMCoroutine.launchIndependent {
+        TMCoroutine.runAsync {
             instanceState.database.insertAction(ticket.id, action)
             instanceState.database.setStatus(ticket.id, Ticket.Status.OPEN)
         }
@@ -1118,7 +1118,7 @@ class CorePipeline(
 
         val newPriority = byteToPriority(args[2].toByte())
 
-        TMCoroutine.launchIndependent {
+        TMCoroutine.runAsync {
             instanceState.database.insertAction(
                 id = ticket.id,
                 action = Ticket.Action(Ticket.Action.Type.SET_PRIORITY, sender.toCreator(), sender.getLocAsTicketLoc(), args[2])
@@ -1217,7 +1217,7 @@ class CorePipeline(
 
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-            TMCoroutine.launchIndependent { instanceState.database.setCreatorStatusUpdate(ticket.id, false) }
+            TMCoroutine.runAsync { instanceState.database.setCreatorStatusUpdate(ticket.id, false) }
 
         val entries = ticket.actions.asSequence()
             .filter { it.type == Ticket.Action.Type.COMMENT || it.type == Ticket.Action.Type.OPEN }
@@ -1241,7 +1241,7 @@ class CorePipeline(
 
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-            TMCoroutine.launchIndependent { instanceState.database.setCreatorStatusUpdate(ticket.id, false) }
+            TMCoroutine.runAsync { instanceState.database.setCreatorStatusUpdate(ticket.id, false) }
 
         fun formatDeepAction(action: Ticket.Action): Component {
             val templatedUser = "user" templated (action.user.run { if (this is User) uuid else null }?.run(platform::nameFromUUID) ?: sender.locale.consoleName)
@@ -1418,7 +1418,7 @@ class CorePipeline(
             }
 
             val notification = buildNotification(user)
-            TMCoroutine.launchIndependent {
+            TMCoroutine.runAsync {
                 if (instanceState.discord != null) instanceState.discord.sendMessage(notification, instanceState.localeHandler.consoleLocale)
                 else platform.relayMessageToProxy(Server2Proxy.DiscordMessage.waterfallString(), notification.encode())
             }

@@ -10,9 +10,11 @@ import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
 import net.luckperms.api.LuckPerms
+import net.luckperms.api.LuckPermsProvider
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.OfflinePlayer
+import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
 import java.util.*
 import java.util.logging.Level
@@ -24,9 +26,10 @@ class PlatformFunctionsImpl(
 
     override fun massNotify(localeHandler: LocaleHandler, permission: String, localeMsg: (TMLocale) -> Component) {
         Bukkit.getConsoleSender().sendMessage(localeMsg(localeHandler.consoleLocale))
+        val lpUserAdapter = LuckPermsProvider.get().getPlayerAdapter(Player::class.java)
 
         Bukkit.getOnlinePlayers()
-            .filter { perms.has(it, permission) }
+            .filter { lpUserAdapter.getPermissionData(it).checkPermission(permission).asBoolean() }
             .map { it to localeHandler.getOrDefault(it.locale().toString()) }
             .forEach { (p, locale) -> localeMsg(locale).run(p::sendMessage) }
 
@@ -81,19 +84,6 @@ class PlatformFunctionsImpl(
 
     override fun pushErrorToConsole(message: String) {
         Bukkit.getLogger().log(Level.SEVERE, message)
-    }
-
-    override suspend fun getPermissionGroups(): List<String> {
-        //TODO I WOULD PREFERABLY LIKE TO MOVE THIS INTO THE JOINEVENT SYSTEMd
-
-
-        val provider: LuckPerms = Bukkit.getServicesManager().getRegistration(LuckPerms::class.java)?.provider!!
-
-        provider.platform.
-    }
-
-    override fun getOfflinePlayerNames(): List<String> {
-        return Bukkit.getOfflinePlayers().mapNotNull(OfflinePlayer::getName)
     }
 
     override fun getOnlineSeenPlayerNames(sender: Sender): List<String> {

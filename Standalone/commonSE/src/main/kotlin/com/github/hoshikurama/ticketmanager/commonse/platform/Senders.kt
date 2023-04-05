@@ -3,10 +3,8 @@ package com.github.hoshikurama.ticketmanager.commonse.platform
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
-import com.github.hoshikurama.ticketmanager.commonse.ticket.User
 import net.kyori.adventure.text.Component
 import net.luckperms.api.LuckPermsProvider
-import java.lang.Exception
 import java.util.*
 
 sealed class Sender(

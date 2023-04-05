@@ -24,8 +24,6 @@ interface PlatformFunctions {
     fun pushErrorToConsole(message: String)
 
     // Tab Complete Functions:
-    suspend fun getPermissionGroups(): List<String>
-    fun getOfflinePlayerNames(): List<String>
     fun getOnlineSeenPlayerNames(sender: Sender): List<String>
     fun getWorldNames(): List<String>
 }

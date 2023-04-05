@@ -170,11 +170,10 @@ class MySQL(
         val totalSize = AtomicInteger(0)
         val totalPages = AtomicInteger(0)
 
-        val targetIDs = connectionPool.sendPreparedStatement(preparedQuery, values)
+        val sortedTickets = connectionPool.sendPreparedStatement(preparedQuery, values)
             .asDeferredThenAwait()
             .rows.map { it.getLong(0)!! }
-
-        val sortedTickets = getTicketsAsync(targetIDs)
+            .let { getTicketsAsync(it) }
             .sortedWith(compareByDescending<Ticket> { it.priority.level }
                 .thenByDescending { it.id })
 
@@ -212,9 +211,7 @@ class MySQL(
 
         val rows = connectionPool.sendPreparedStatement(
             "SELECT ID FROM TicketManager_V8_Tickets WHERE STATUS = ? AND ID BETWEEN $lowerBound AND $upperBound;",
-            listOf(
-                Ticket.Status.OPEN.name
-            )
+            listOf(Ticket.Status.OPEN.name)
         )
             .thenApply { r -> r.rows.map { it.getLong(0)!! } }
 
@@ -243,13 +240,14 @@ class MySQL(
         }
     }
 
-    override fun countOpenTicketsAsync(): CompletableFuture<Long> {
+    override suspend fun countOpenTicketsAsync(): Long {
         return connectionPool.sendPreparedStatement(
             "SELECT COUNT(*) FROM TicketManager_V8_Tickets WHERE STATUS = ?;", listOf(
                 Ticket.Status.OPEN.name
             )
         )
-            .thenApply { r -> r.rows.firstNotNullOf { it.getLong(0) } }
+            .asDeferredThenAwait()
+            .rows.firstNotNullOf { it.getLong(0) }
     }
 
     override suspend fun countOpenTicketsAssignedToAsync(
@@ -390,7 +388,7 @@ class MySQL(
             .rows.map { it.getLong(0)!! }
     }
 
-    override fun closeDatabase() {
+    override suspend fun closeDatabase() {
         connectionPool.disconnect()
     }
 

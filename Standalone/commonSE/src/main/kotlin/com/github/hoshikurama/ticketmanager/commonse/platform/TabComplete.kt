@@ -1,11 +1,12 @@
 package com.github.hoshikurama.ticketmanager.commonse.platform
 
+import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.database.AsyncDatabase
-import net.luckperms.api.LuckPermsProvider
+//TODO IMPLEMENT OPTIMISATION
+
 
 abstract class TabComplete(private val platform: PlatformFunctions) {
     // Note: Be careful with this, future me. Maintain admin invisibility
-
     fun getReturnedTabs(sender: Sender, args: List<String>): List<String> {
         if (!sender.has("ticketmanager.commandArg.autotab") && sender is OnlinePlayer) return listOf("")
         val perms = LazyPermissions(sender)
@@ -20,8 +21,8 @@ abstract class TabComplete(private val platform: PlatformFunctions) {
                     args.size == 2 -> listOf("<$parameterID>")
                         .filter { it.startsWith(args[1]) }
                     args.size == 3 -> {
-                        val groups = platform.getPermissionGroups().map { "::$it" }
-                        (listOf("<$parameterAssignment...>") + platform.getOfflinePlayerNames() + groups + listOf(consoleName))
+                        val groups = TMPlugin.lpGroupNames.map { "::$it" }
+                        (listOf("<$parameterAssignment...>") + platform.getOnlineSeenPlayerNames(sender) + groups + listOf(consoleName))
                             .filter { it.startsWith(args[2]) }
                     }
                     else -> listOf("")
@@ -64,7 +65,7 @@ abstract class TabComplete(private val platform: PlatformFunctions) {
 
                 commandWordHistory -> when { // /ticket history [User] [Page]
                     !perms.hasHistory -> listOf("")
-                    args.size == 2 -> (listOf("[$parameterUser]", consoleName) + platform.getOfflinePlayerNames())
+                    args.size == 2 -> (listOf("[$parameterUser]", consoleName) + platform.getOnlineSeenPlayerNames(sender))
                         .filter { it.startsWith(args[1]) }
                     args.size == 3 -> listOf("[$parameterPage]").filter { it.startsWith(args[2]) }
                     else -> listOf("")
@@ -140,14 +141,14 @@ abstract class TabComplete(private val platform: PlatformFunctions) {
                     // String now has form "constraint:"
                     return@run when (splitArgs[0]) {
                         searchAssigned -> {
-                            val groups = platform.getPermissionGroups().map { "::$it" }
-                            (platform.getOfflinePlayerNames() + groups)
+                            val groups = TMPlugin.lpGroupNames.map { "::$it" }
+                            (platform.getOnlineSeenPlayerNames(sender) + groups)
                                 .filter { it.startsWith(splitArgs[1]) }
                                 .map { "${splitArgs[0]}:$it" }
                         }
 
                         searchCreator, searchLastClosedBy, searchClosedBy -> {
-                            (platform.getOfflinePlayerNames() + listOf(consoleName))
+                            (platform.getOnlineSeenPlayerNames(sender) + listOf(consoleName))
                                 .filter { it.startsWith(splitArgs[1]) }
                                 .map { "${splitArgs[0]}:$it" }
                         }

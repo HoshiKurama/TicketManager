@@ -3,16 +3,15 @@ package com.github.hoshikurama.ticketmanager.commonse.database.impl
 import com.github.hoshikurama.ticketmanager.commonse.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.commonse.database.Result
 import com.github.hoshikurama.ticketmanager.commonse.database.SearchConstraint
-import com.github.hoshikurama.ticketmanager.commonse.misc.TicketPredicate
-import com.github.hoshikurama.ticketmanager.commonse.misc.byteToPriority
-import com.github.hoshikurama.ticketmanager.commonse.misc.mapToCreatorOrNull
+import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Creator
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotliquery.*
 import org.h2.jdbcx.JdbcConnectionPool
 import java.sql.Statement
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 
 class H2(
@@ -27,8 +26,7 @@ class H2(
             .replace("\\", "/")
 
         connectionPool = JdbcConnectionPool.create(fixedURL,"","")
-        connectionPool.maxConnections = 6
-
+        connectionPool.maxConnections = 3
     }
 
     private inline fun <T> usingSession(crossinline f: Session.() -> T): T {
@@ -79,7 +77,7 @@ class H2(
         }
     }
 
-    override fun insertTicketAsync(ticket: Ticket): CompletableFuture<Long> {
+    override suspend fun insertTicketAsync(ticket: Ticket): Long {
         var connection: java.sql.Connection? = null
 
         val id = try {
@@ -101,7 +99,7 @@ class H2(
             connection?.close()
         }
 
-        CompletableFuture.runAsync {
+        TMCoroutine.runAsync {
             ticket.actions.forEach {
                 usingSession {
                     update(
@@ -122,13 +120,13 @@ class H2(
             }
         }
 
-        return CompletableFuture.completedFuture(id)
+        return id
     }
 
-    override fun getTicketsAsync(ids: List<Long>): CompletableFuture<List<Ticket>> {
+    override suspend fun getTicketsAsync(ids: List<Long>): List<Ticket> = coroutineScope {
         val idsSQL = ids.joinToString(", ") { "$it" }
 
-        val ticketsCF = CompletableFuture.supplyAsync {
+        val ticketsDef = async {
             usingSession {
                 run(queryOf("SELECT * FROM \"TicketManager_V8_Tickets\" WHERE ID IN ($idsSQL);")
                     .map { it.toTicket() }
@@ -137,7 +135,7 @@ class H2(
             }
         }
 
-        val actionsCF = CompletableFuture.supplyAsync {
+        val actionsDef = async {
             usingSession {
                 run(queryOf("SELECT * FROM \"TicketManager_V8_Actions\" WHERE TICKET_ID IN ($idsSQL);")
                     .map { it.long(2) to it.toAction() }
@@ -146,19 +144,17 @@ class H2(
             }
         }
 
-        return CompletableFuture.allOf(actionsCF, ticketsCF).thenApplyAsync {
-            val tickets = ticketsCF.join()
-            val actionMap = actionsCF.get()
-                .groupBy({ it.first }, { it.second })
-                .mapValues { it.value.sortedBy(Ticket.Action::timestamp) }
+        val tickets = ticketsDef.await()
+        val actionMap = actionsDef.await()
+            .groupBy({ it.first }, { it.second })
+            .mapValues { it.value.sortedBy(Ticket.Action::timestamp) }
 
-            tickets.map { it + actionMap[it.id]!! }
-        }
+        return@coroutineScope tickets.map { it + actionMap[it.id]!! }
     }
 
-    override fun getTicketOrNullAsync(id: Long): CompletableFuture<Ticket?> {
+    override suspend fun getTicketOrNullAsync(id: Long): Ticket? = coroutineScope {
 
-        val ticketCF = CompletableFuture.supplyAsync {
+        val ticketDef = async {
             usingSession {
                 run(queryOf("SELECT * FROM \"TicketManager_V8_Tickets\" WHERE ID = ?", id)
                     .map { it.toTicket() }
@@ -167,34 +163,31 @@ class H2(
             }
         }
 
-        val actionsCF = CompletableFuture.supplyAsync {
+        val actionsDef = async {
             usingSession {
-                run(
-                    queryOf("SELECT * FROM \"TicketManager_V8_Actions\" WHERE TICKET_ID = ?", id)
-                        .map { it.toAction() }
-                        .asList
+                run(queryOf("SELECT * FROM \"TicketManager_V8_Actions\" WHERE TICKET_ID = ?", id)
+                    .map { it.toAction() }
+                    .asList
                 )
             }.sortedBy(Ticket.Action::timestamp)
         }
 
-        return CompletableFuture.allOf(ticketCF, actionsCF).thenApplyAsync {
-            val ticket = ticketCF.join()
-            val actions = actionsCF.join()
+        val ticket = ticketDef.await()
+        val actions = actionsDef.await()
 
-            ticket?.let { it + actions }
-        }
+        ticket?.let { it + actions }
     }
 
-    override fun getOpenTicketsAsync(page: Int, pageSize: Int): CompletableFuture<Result> {
+    override suspend fun getOpenTicketsAsync(page: Int, pageSize: Int): Result {
         return ticketsFilteredByAsync(page, pageSize, "SELECT * FROM \"TicketManager_V8_Tickets\" WHERE STATUS = ?;", Ticket.Status.OPEN.name)
     }
 
-    override fun getOpenTicketsAssignedToAsync(
+    override suspend fun getOpenTicketsAssignedToAsync(
         page: Int,
         pageSize: Int,
         assignment: String,
         unfixedGroupAssignment: List<String>
-    ): CompletableFuture<Result> {
+    ): Result {
         val groupsFixed = unfixedGroupAssignment.map { "::$it" }
         val assignedSQL = (unfixedGroupAssignment + assignment).joinToString(" OR ") { "ASSIGNED_TO = ?" }
         val args = (listOf(Ticket.Status.OPEN.name, assignment) + groupsFixed).toTypedArray()
@@ -202,41 +195,45 @@ class H2(
         return ticketsFilteredByAsync(page, pageSize, "SELECT * FROM \"TicketManager_V8_Tickets\" WHERE STATUS = ? AND ($assignedSQL);", *args)
     }
 
-    override fun getOpenTicketsNotAssignedAsync(page: Int, pageSize: Int): CompletableFuture<Result> {
+    override suspend fun getOpenTicketsNotAssignedAsync(page: Int, pageSize: Int): Result {
         return ticketsFilteredByAsync(page, pageSize, "SELECT * FROM \"TicketManager_V8_Tickets\" WHERE STATUS = ? AND ASSIGNED_TO IS NULL", Ticket.Status.OPEN.name)
     }
 
-    private fun ticketsFilteredByAsync(page: Int, pageSize: Int, preparedQuery: String, vararg params: Any?): CompletableFuture<Result> {
+    private suspend fun ticketsFilteredByAsync(page: Int, pageSize: Int, preparedQuery: String, vararg params: Any?): Result {
         val totalSize = AtomicInteger(0)
         val totalPages = AtomicInteger(0)
 
-        return CompletableFuture.supplyAsync {
-            usingSession {
-                run(queryOf(preparedQuery, *params)
-                    .map { it.long(1) }
-                    .asList
+        val sortedTickets = usingSession {
+            run(queryOf(preparedQuery, *params)
+                .map { it.long(1) }
+                .asList
             ) }
-        }
-            .thenComposeAsync(::getTicketsAsync)
-            .thenApplyAsync { l -> l.sortedWith(compareByDescending<Ticket> { it.priority.level }.thenByDescending(
-                Ticket::id)) }
-            .thenApply { totalSize.set(it.count()); it }
-            .thenApply { if (pageSize == 0 || it.isEmpty()) listOf(it) else it.chunked(pageSize) }
-            .thenApply { totalPages.set(it.count()); it }
-            .thenApplyAsync {
-                val fixedPage = when {
-                    totalPages.get() == 0 || page < 1 -> 1
-                    page in 1..totalPages.get()-> page
-                    else -> totalPages.get()
-                }
+            .let { getTicketsAsync(it) }
+            .sortedWith(compareByDescending<Ticket> { it.priority.level }
+                .thenByDescending(Ticket::id))
 
-                Result(
-                    filteredResults = it.getOrElse(fixedPage-1) { listOf() },
-                    totalPages = totalPages.get(),
-                    totalResults = totalSize.get(),
-                    returnedPage = fixedPage,
-                )
-            }
+        totalSize.set(sortedTickets.count())
+
+        val chunkedTickets = sortedTickets.let {
+            if (pageSize == 0 || it.isEmpty())
+                listOf(it)
+            else it.chunked(pageSize)
+        }
+
+        totalPages.set(chunkedTickets.count())
+
+        val fixedPage = when {
+            totalPages.get() == 0 || page < 1 -> 1
+            page in 1..totalPages.get()-> page
+            else -> totalPages.get()
+        }
+
+        return Result(
+            filteredResults = chunkedTickets.getOrElse(fixedPage-1) { listOf() },
+            totalPages = totalPages.get(),
+            totalResults = totalSize.get(),
+            returnedPage = fixedPage,
+        )
     }
 
     override fun massCloseTickets(lowerBound: Long, upperBound: Long, actor: Creator, ticketLoc: Ticket.TicketLocation) {
@@ -250,7 +247,7 @@ class H2(
         }
 
         // Sets Ticket statuses
-        CompletableFuture.runAsync {
+        TMCoroutine.runAsync {
             usingSession {
                 val idString = ids.joinToString(", ")
                 update(queryOf("UPDATE \"TicketManager_V8_Tickets\" SET STATUS = ? WHERE ID IN ($idString);", Ticket.Status.CLOSED.name))
@@ -258,7 +255,7 @@ class H2(
         }
 
         // Adds Actions
-        CompletableFuture.runAsync {
+        TMCoroutine.runAsync {
             val action = Ticket.Action(
                 type = Ticket.Action.Type.MASS_CLOSE,
                 user = actor,
@@ -270,40 +267,36 @@ class H2(
         }
     }
 
-    override fun countOpenTicketsAsync(): CompletableFuture<Long> {
-        return CompletableFuture.completedFuture(
-            usingSession {
-                run(queryOf("SELECT COUNT(*) FROM \"TicketManager_V8_Tickets\" WHERE STATUS = ?;", Ticket.Status.OPEN.name)
-                    .map { it.long(1) }
-                    .asSingle
-                )
-            }
-        )
+    override suspend fun countOpenTicketsAsync(): Long {
+        return usingSession {
+            run(queryOf("SELECT COUNT(*) FROM \"TicketManager_V8_Tickets\" WHERE STATUS = ?;", Ticket.Status.OPEN.name)
+                .map { it.long(1) }
+                .asSingle
+            )!!
+        }
     }
 
-    override fun countOpenTicketsAssignedToAsync(
+    override suspend fun countOpenTicketsAssignedToAsync(
         assignment: String,
         unfixedGroupAssignment: List<String>
-    ): CompletableFuture<Long> {
+    ): Long {
         val groupsFixed = unfixedGroupAssignment.map { "::$it" }
         val assignedSQL = (unfixedGroupAssignment + assignment).joinToString(" OR ") { "ASSIGNED_TO = ?" }
         val args = (listOf(Ticket.Status.OPEN.name, assignment) + groupsFixed).toTypedArray()
 
-        return CompletableFuture.completedFuture(
-            usingSession {
-                run(queryOf("SELECT COUNT(*) FROM \"TicketManager_V8_Tickets\" WHERE STATUS = ? AND ($assignedSQL);", *args)
-                    .map { it.long(1) }
-                    .asSingle
-                )
-            }
-        )
+        return usingSession {
+            run(queryOf("SELECT COUNT(*) FROM \"TicketManager_V8_Tickets\" WHERE STATUS = ? AND ($assignedSQL);", *args)
+                .map { it.long(1) }
+                .asSingle
+            )
+        }!!
     }
 
-    override fun searchDatabaseAsync(
+    override suspend fun searchDatabaseAsync(
         constraints: SearchConstraint,
         page: Int,
         pageSize: Int
-    ): CompletableFuture<Result> {
+    ): Result {
 
         val args = mutableListOf<Any?>()
         val searches = mutableListOf<String>()
@@ -365,83 +358,84 @@ class H2(
         val totalSize = AtomicInteger(0)
         val totalPages = AtomicInteger(0)
 
-        val ticketsCF = CompletableFuture.supplyAsync {
-            usingSession {
-                run(
-                    queryOf("$searchString;", *args.toTypedArray())
-                        .map { it.toTicket() }
-                        .asList
-                )
-            }
+        // Query
+        val baseTickets = usingSession {
+            run(queryOf("$searchString;", *args.toTypedArray())
+                .map { it.toTicket() }
+                .asList
+            )
         }
 
-        return ticketsCF.thenApplyAsync { l -> l.map { it.id }.joinToString(", ") }
-            .thenApplyAsync {
-                usingSession {
-                    run(queryOf("SELECT * FROM \"TicketManager_V8_Actions\" WHERE TICKET_ID IN ($it);")
+        val fullTickets =
+            if (baseTickets.isEmpty()) emptyList()
+            else {
+                val constraintsStr = baseTickets.map { it.id }.joinToString(", ")
+                val actionMap = usingSession {
+                    run(queryOf("SELECT * FROM \"TicketManager_V8_Actions\" WHERE TICKET_ID IN ($constraintsStr);")
                         .map { it.long(2) to it.toAction() }
                         .asList
                     )
                 }
+                    .groupBy({ it.first }, { it.second })
+                baseTickets.map { it + actionMap[it.id]!! }
             }
-            .thenCombineAsync(ticketsCF) { actions, tickets ->
-                val actionMap = actions.groupBy({ it.first }, { it.second })
-                tickets.map { it + actionMap[it.id]!! }
-            }
-            .thenApplyAsync { l -> l.filter(combinedFunction).sortedWith(compareByDescending { it.id}) }
-            .thenApply { totalSize.set(it.count()); it }
-            .thenApply { if (pageSize == 0 || it.isEmpty()) listOf(it) else it.chunked(pageSize) }
-            .thenApply { totalPages.set(it.count()); it }
-            .thenApply {
-                val fixedPage = when {
-                    totalPages.get() == 0 || page < 1 -> 1
-                    page in 1..totalPages.get() -> page
-                    else -> totalPages.get()
-                }
 
-                Result(
-                    filteredResults = it.getOrElse(fixedPage-1) { listOf() },
-                    totalPages = totalPages.get(),
-                    totalResults = totalSize.get(),
-                    returnedPage = fixedPage,
-                )
-            }
+        val chunkedTargetTickets = fullTickets
+            .asParallelStream()
+            .filter(combinedFunction)
+            .toList()
+            .sortedWith(compareByDescending { it.id })
+            .also { totalSize.set(it.count()) }
+            .let { if (pageSize == 0 || it.isEmpty()) listOf(it) else it.chunked(pageSize) }
+            .also { totalPages.set(it.count()) }
+
+        val fixedPage = when {
+            totalPages.get() == 0 || page < 1 -> 1
+            page in 1..totalPages.get() -> page
+            else -> totalPages.get()
+        }
+
+        return Result(
+            filteredResults = chunkedTargetTickets.getOrElse(fixedPage-1) { listOf() },
+            totalPages = totalPages.get(),
+            totalResults = totalSize.get(),
+            returnedPage = fixedPage,
+        )
     }
 
-    override fun getTicketIDsWithUpdatesAsync(): CompletableFuture<List<Long>> {
-        val ids = usingSession {
+    override suspend fun getTicketIDsWithUpdatesAsync(): List<Long> {
+        return usingSession {
             run(queryOf("SELECT ID FROM \"TicketManager_V8_Tickets\" WHERE STATUS_UPDATE_FOR_CREATOR = ?;", true)
                 .map { it.long(1) }
                 .asList
             )
         }
-
-        return CompletableFuture.completedFuture(ids)
     }
 
-    override fun getTicketIDsWithUpdatesForAsync(creator: Creator): CompletableFuture<List<Long>> {
-        val ids = usingSession {
+    override suspend fun getTicketIDsWithUpdatesForAsync(creator: Creator): List<Long> {
+        return usingSession {
             run(queryOf( "SELECT ID FROM \"TicketManager_V8_Tickets\" WHERE STATUS_UPDATE_FOR_CREATOR = ? AND CREATOR = ?;", true, creator.toString())
                 .map { it.long(1) }
                 .asList
             )
         }
-
-        return CompletableFuture.completedFuture(ids)
     }
 
-    override fun closeDatabase() {
-        connectionPool.dispose()
+    override suspend fun closeDatabase() {
+        connectionPool.connection.createStatement().execute("SHUTDOWN")
     }
 
-    override fun insertTicketForMigration(other: AsyncDatabase) {
+    override suspend fun insertTicketForMigration(other: AsyncDatabase) {
         usingSession {
             run(queryOf("SELECT ID FROM \"TicketManager_V8_Tickets\";")
                 .map { it.long(1) }
                 .asList
             )
         }
-            .forEach { id -> getTicketOrNullAsync(id).thenApplyAsync { other.insertTicketAsync(it!!)} }
+            .forEach { id ->
+                val ticket = getTicketOrNullAsync(id)!!
+                TMCoroutine.runAsync { other.insertTicketAsync(ticket) }
+            }
     }
 
     private fun Row.toTicket(): Ticket {

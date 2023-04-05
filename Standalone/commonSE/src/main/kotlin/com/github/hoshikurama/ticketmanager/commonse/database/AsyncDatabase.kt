@@ -1,8 +1,8 @@
 package com.github.hoshikurama.ticketmanager.commonse.database
 
+import com.github.hoshikurama.ticketmanager.commonse.misc.TMCoroutine
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Creator
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
-import java.util.concurrent.CompletableFuture
 
 interface AsyncDatabase {
     val type: Type
@@ -32,7 +32,7 @@ interface AsyncDatabase {
     fun massCloseTickets(lowerBound: Long, upperBound: Long, actor: Creator, ticketLoc:  Ticket.TicketLocation)
 
     // Counting
-    fun countOpenTicketsAsync(): CompletableFuture<Long>
+    suspend fun countOpenTicketsAsync(): Long
     suspend fun countOpenTicketsAssignedToAsync(assignment: String, unfixedGroupAssignment: List<String>): Long
 
     // Searching
@@ -43,7 +43,7 @@ interface AsyncDatabase {
     suspend fun getTicketIDsWithUpdatesForAsync(creator: Creator): List<Long>
 
     // Internal Database Functions
-    fun closeDatabase()
+    suspend fun closeDatabase()
     fun initializeDatabase()
 
     suspend fun insertTicketForMigration(other: AsyncDatabase)
@@ -54,7 +54,7 @@ interface AsyncDatabase {
         onComplete: () -> Unit,
         onError: (Exception) -> Unit,
     ) {
-        CompletableFuture.runAsync(onBegin)
+        onBegin()
 
         try {
             when (to) {
@@ -66,13 +66,12 @@ interface AsyncDatabase {
                 .let(DatabaseBuilder::build)
                 .apply(AsyncDatabase::initializeDatabase)
                 .apply { insertTicketForMigration(this) }
-                .apply(AsyncDatabase::closeDatabase)
+                .apply { closeDatabase() }
 
         } catch (e: Exception) {
-            CompletableFuture.runAsync { onError(e) }
+            TMCoroutine.runAsync { onError(e) }
         }
-
-        CompletableFuture.runAsync(onComplete)
+        onComplete()
     }
 }
 

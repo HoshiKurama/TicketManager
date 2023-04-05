@@ -8,12 +8,12 @@ import com.github.hoshikurama.ticketmanager.commonse.ticket.Creator
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.delay
 import java.io.BufferedWriter
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -108,43 +108,41 @@ class Memory(
         ticketMap[id] = ticketMap[id]!! + action
     }
 
-    override fun insertTicketAsync(ticket: Ticket): CompletableFuture<Long> {
+    override suspend fun insertTicketAsync(ticket: Ticket): Long {
         val newID = nextTicketID.getAndIncrement()
         val newTicket = Ticket(newID, ticket.creator, ticket.priority, ticket.status, ticket.assignedTo, ticket.creatorStatusUpdate, ticket.actions)
 
         ticketMap[newID] = newTicket
-        return CompletableFuture.completedFuture(newID)
+        return newID
     }
 
-    override fun getTicketsAsync(ids: List<Long>): CompletableFuture<List<Ticket>> {
-        val tickets = ids.asParallelStream().map(ticketMap::get).filterNotNull().toList()
-        return CompletableFuture.completedFuture(tickets)
-
+    override suspend fun getTicketsAsync(ids: List<Long>): List<Ticket> {
+        return ids.asParallelStream().map(ticketMap::get).filterNotNull().toList()
     }
 
-    override fun getTicketOrNullAsync(id: Long): CompletableFuture<Ticket?> {
-        return CompletableFuture.completedFuture(ticketMap[id])
+    override suspend fun getTicketOrNullAsync(id: Long): Ticket? {
+        return ticketMap[id]
     }
 
-    override fun getOpenTicketsAsync(page: Int, pageSize: Int): CompletableFuture<Result> {
+    override suspend fun getOpenTicketsAsync(page: Int, pageSize: Int): Result {
         return getTicketsFilteredBy(page, pageSize) { it.status == Ticket.Status.OPEN }
     }
 
-    override fun getOpenTicketsAssignedToAsync(
+    override suspend fun getOpenTicketsAssignedToAsync(
         page: Int,
         pageSize: Int,
         assignment: String,
         unfixedGroupAssignment: List<String>
-    ): CompletableFuture<Result> {
+    ): Result {
         val assignments = unfixedGroupAssignment.map { "::$it" } + assignment
         return getTicketsFilteredBy(page, pageSize) { it.status == Ticket.Status.OPEN && it.assignedTo in assignments }
     }
 
-    override fun getOpenTicketsNotAssignedAsync(page: Int, pageSize: Int): CompletableFuture<Result> {
+    override suspend fun getOpenTicketsNotAssignedAsync(page: Int, pageSize: Int): Result {
         return getTicketsFilteredBy(page, pageSize) { it.status == Ticket.Status.OPEN && it.assignedTo == null }
     }
 
-    private fun getTicketsFilteredBy(page: Int, pageSize: Int, f: TicketPredicate): CompletableFuture<Result> {
+    private fun getTicketsFilteredBy(page: Int, pageSize: Int, f: TicketPredicate): Result {
         val totalSize: Int
         val totalPages: Int
 
@@ -163,13 +161,11 @@ class Memory(
             else -> totalPages
         }
 
-        return CompletableFuture.completedFuture(
-            Result(
-                filteredResults = results.getOrElse(fixedPage-1) { listOf() },
-                totalPages = totalPages,
-                totalResults = totalSize,
-                returnedPage = fixedPage,
-            )
+        return Result(
+            filteredResults = results.getOrElse(fixedPage-1) { listOf() },
+            totalPages = totalPages,
+            totalResults = totalSize,
+            returnedPage = fixedPage,
         )
     }
 
@@ -187,33 +183,29 @@ class Memory(
             }
     }
 
-    override fun countOpenTicketsAsync(): CompletableFuture<Long> {
-        val count = ticketMap.values.toList()
+    override suspend fun countOpenTicketsAsync(): Long {
+        return ticketMap.values.toList()
             .asParallelStream()
             .filter { it.status == Ticket.Status.OPEN }
             .count()
-
-        return CompletableFuture.completedFuture(count)
     }
 
-    override fun countOpenTicketsAssignedToAsync(
+    override suspend fun countOpenTicketsAssignedToAsync(
         assignment: String,
         unfixedGroupAssignment: List<String>
-    ): CompletableFuture<Long> {
+    ): Long {
         val assignments = unfixedGroupAssignment.map { "::$it" } + assignment
-        val count = ticketMap.values.toList()
+        return ticketMap.values.toList()
             .asParallelStream()
             .filter { it.status == Ticket.Status.OPEN && it.assignedTo in assignments }
             .count()
-
-        return CompletableFuture.completedFuture(count)
     }
 
-    override fun searchDatabaseAsync(
+    override suspend fun searchDatabaseAsync(
         constraints: SearchConstraint,
         page: Int,
         pageSize: Int
-    ): CompletableFuture<Result> {
+    ): Result {
         val functions = mutableListOf<TicketPredicate>()
 
         constraints.run {
@@ -257,41 +249,35 @@ class Memory(
             else -> maxPages
         }
 
-        return CompletableFuture.completedFuture(
-            Result(
-                filteredResults = results.getOrElse(fixedPage-1) { listOf() },
-                totalPages = maxPages,
-                totalResults = totalSize,
-                returnedPage = fixedPage,
-            )
+        return Result(
+            filteredResults = results.getOrElse(fixedPage-1) { listOf() },
+            totalPages = maxPages,
+            totalResults = totalSize,
+            returnedPage = fixedPage,
         )
     }
 
-    override fun getTicketIDsWithUpdatesAsync(): CompletableFuture<List<Long>> {
-        val values = ticketMap.values.toList()
+    override suspend fun getTicketIDsWithUpdatesAsync(): List<Long> {
+        return  ticketMap.values.toList()
             .asParallelStream()
             .filter { it.creatorStatusUpdate }
             .map { it.id }
             .toList()
-
-        return CompletableFuture.completedFuture(values)
     }
 
-    override fun getTicketIDsWithUpdatesForAsync(creator: Creator): CompletableFuture<List<Long>> {
-        val values = ticketMap.values.toList()
+    override suspend fun getTicketIDsWithUpdatesForAsync(creator: Creator): List<Long> {
+        return ticketMap.values.toList()
             .asParallelStream()
             .filter { it.creatorStatusUpdate && it.creator == creator }
             .map { it.id }
             .toList()
-
-        return CompletableFuture.completedFuture(values)
     }
 
-    override fun closeDatabase() {
+    override suspend fun closeDatabase() {
 
         if (fileIOOccurring.get()) {
             while (fileIOOccurring.get())
-                Thread.sleep(100) // Plugin is either reloading or server is restarting. It's fine to sleep this one thread. EXTREMELY IMPORTANT THIS FINISHES!
+                delay(100) // Plugin is either reloading or server is restarting. EXTREMELY IMPORTANT THIS FINISHES!
         } else {
             fileIOOccurring.set(true)
             writeDatabaseToFile()
@@ -305,8 +291,8 @@ class Memory(
         // Done on object instantiation
     }
 
-    override fun insertTicketForMigration(other: AsyncDatabase) {
-        ticketMap.values.forEach(other::insertTicketAsync)
+    override suspend fun insertTicketForMigration(other: AsyncDatabase) {
+        ticketMap.values.forEach { other.insertTicketAsync(it) }
     }
 
     private fun writeDatabaseToFile() {
