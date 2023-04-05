@@ -5,7 +5,6 @@ import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.commonse.pipeline.PurePipeline
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
-import net.milkbowl.vault.permission.Permission
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
@@ -14,7 +13,6 @@ class CommandExecutorImpl(
     platform: PlatformFunctions,
     instanceState: InstancePluginState,
     globalState: GlobalPluginState,
-    private val perms: Permission,
     private val adventure: BukkitAudiences,
 ) : CommandExecutor, PurePipeline(platform, instanceState, globalState) {
 
@@ -26,10 +24,10 @@ class CommandExecutorImpl(
     ): Boolean {
         val localeHandler = instanceState.localeHandler
         val tmSender =
-            if (sender is org.bukkit.entity.Player) SpigotPlayer(sender, perms, adventure, localeHandler)
+            if (sender is org.bukkit.entity.Player) SpigotPlayer(sender, adventure, localeHandler)
             else SpigotConsole(adventure, localeHandler.consoleLocale)
 
-        super.execute(tmSender, args.toList())
+        super.executeAsync(tmSender, args.toList())
         return false
     }
 }

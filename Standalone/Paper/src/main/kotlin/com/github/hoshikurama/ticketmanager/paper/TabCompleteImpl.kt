@@ -5,14 +5,12 @@ import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
 import com.github.hoshikurama.ticketmanager.commonse.platform.TabComplete
-import net.milkbowl.vault.permission.Permission
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 
 class TabCompleteImpl(
     platform: PlatformFunctions,
     private val instanceState: InstancePluginState,
-    private val perms: Permission,
 ) : TabComplete(platform), Listener {
 
     @EventHandler
@@ -27,7 +25,7 @@ class TabCompleteImpl(
             val sender = event.sender
             val localeHandler = instanceState.localeHandler
             val tmSender: Sender =
-                if (sender is org.bukkit.entity.Player) PaperPlayer(sender, perms, localeHandler, instanceState.proxyServerName)
+                if (sender is org.bukkit.entity.Player) PaperPlayer(sender, localeHandler, instanceState.proxyServerName)
                 else PaperConsole(localeHandler.consoleLocale, instanceState.proxyServerName)
 
             event.completions = getReturnedTabs(tmSender, args)

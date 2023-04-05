@@ -4,7 +4,6 @@ import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.misc.ConfigParameters
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
-import net.milkbowl.vault.permission.Permission
 import org.bstats.bukkit.Metrics
 import org.bstats.charts.SimplePie
 import org.bstats.charts.SingleLineChart
@@ -22,13 +21,12 @@ import java.util.concurrent.TimeUnit
 
 class TMPluginImpl(
     private val spigotPlugin: SpigotPlugin,
-    private val perms: Permission,
     private val adventure: BukkitAudiences,
 ) : TMPlugin(
-    buildPlatformFunctions = { PlatformFunctionsImpl(perms, adventure, spigotPlugin) },
-    buildPipeline = { platform,instance,global -> CommandExecutorImpl(platform, instance, global, perms, adventure) },
-    buildTabComplete = { platform, instance -> TabCompleteImpl(platform, instance, perms, adventure) },
-    buildJoinEvent = { global, instance, platform -> JoinEventImpl(global, instance, platform, perms, adventure) },
+    buildPlatformFunctions = { PlatformFunctionsImpl(adventure, spigotPlugin) },
+    buildPipeline = { platform,instance,global -> CommandExecutorImpl(platform, instance, global, adventure) },
+    buildTabComplete = { platform, instance -> TabCompleteImpl(platform, instance, adventure) },
+    buildJoinEvent = { global, instance, platform -> JoinEventImpl(global, instance, platform, adventure) },
 ) {
     private lateinit var metrics: Metrics
 

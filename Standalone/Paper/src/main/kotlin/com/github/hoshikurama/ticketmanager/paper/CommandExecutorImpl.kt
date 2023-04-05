@@ -7,7 +7,6 @@ import com.github.hoshikurama.ticketmanager.commonse.pipeline.Pipeline
 import com.github.hoshikurama.ticketmanager.commonse.pipeline.PurePipeline
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
-import net.milkbowl.vault.permission.Permission
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
@@ -16,15 +15,14 @@ class CommandExecutorImpl(
     private val platform: PlatformFunctions,
     private val instanceState: InstancePluginState,
     private val globalState: GlobalPluginState,
-    private val perms: Permission,
 ) : CommandExecutor, Pipeline {
 
     private val purePipeline: PurePipeline = object : PurePipeline(platform, instanceState, globalState) {}
     private val hybridPipeline: HybridPipeline = object : HybridPipeline(platform, instanceState, globalState) {}
 
-    override fun execute(sender: Sender, args: List<String>) {
-        if (instanceState.enableProxyMode) hybridPipeline.execute(sender, args)
-        else purePipeline.execute(sender, args)
+    override fun executeAsync(sender: Sender, args: List<String>) {
+        if (instanceState.enableProxyMode) hybridPipeline.executeAsync(sender, args)
+        else purePipeline.executeAsync(sender, args)
     }
     override fun onCommand(
         sender: CommandSender,
@@ -36,7 +34,6 @@ class CommandExecutorImpl(
         val agnosticSender: Sender =
             if (sender is org.bukkit.entity.Player) PaperPlayer(
                 sender,
-                perms,
                 localeHandler,
                 instanceState.proxyServerName
             )
@@ -45,7 +42,7 @@ class CommandExecutorImpl(
                 instanceState.proxyServerName
             )
 
-        execute(agnosticSender, args.toList())
+        executeAsync(agnosticSender, args.toList())
         return false
     }
 }

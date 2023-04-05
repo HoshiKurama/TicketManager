@@ -9,7 +9,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
     implementation("com.google.guava:guava:31.1-jre")
     implementation("com.discord4j:discord4j-core:3.2.3")
 }

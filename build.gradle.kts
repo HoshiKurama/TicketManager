@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.8.10"
+    kotlin("jvm") version "1.8.20"
     java
 }
 
@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
 }
 
 subprojects {

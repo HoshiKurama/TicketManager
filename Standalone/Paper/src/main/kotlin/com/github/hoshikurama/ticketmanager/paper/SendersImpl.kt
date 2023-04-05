@@ -29,6 +29,5 @@ class PaperConsole(
     locale: TMLocale,
     serverName: String?,
 ) : Console(locale, serverName) {
-
     override fun sendMessage(component: Component) = Bukkit.getConsoleSender().sendMessage(component)
 }

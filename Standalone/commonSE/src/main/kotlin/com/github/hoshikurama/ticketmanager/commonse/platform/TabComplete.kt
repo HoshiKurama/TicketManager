@@ -2,8 +2,8 @@ package com.github.hoshikurama.ticketmanager.commonse.platform
 
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.database.AsyncDatabase
-//TODO IMPLEMENT OPTIMISATION
 
+//TODO IMPLEMENT OPTIMISATION
 
 abstract class TabComplete(private val platform: PlatformFunctions) {
     // Note: Be careful with this, future me. Maintain admin invisibility

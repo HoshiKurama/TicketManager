@@ -18,7 +18,7 @@ abstract class PlayerJoinEvent(
     protected val instanceState: InstancePluginState,
 ) {
 
-    fun whenPlayerJoins(player: OnlinePlayer, serverCount: Int) {
+    fun whenPlayerJoinsAsync(player: OnlinePlayer, serverCount: Int) {
         if (globalPluginState.pluginLocked.get()) return
         try {
             TMCoroutine.runAsync {

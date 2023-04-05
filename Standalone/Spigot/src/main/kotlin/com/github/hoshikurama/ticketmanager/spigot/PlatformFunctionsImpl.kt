@@ -9,15 +9,12 @@ import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
-import net.milkbowl.vault.permission.Permission
 import org.bukkit.Bukkit
 import org.bukkit.Location
-import org.bukkit.OfflinePlayer
 import java.util.*
 import java.util.logging.Level
 
 class PlatformFunctionsImpl(
-    private val perms: Permission,
     private val adventure: BukkitAudiences,
     private val plugin: SpigotPlugin,
 ): PlatformFunctions {
@@ -26,17 +23,17 @@ class PlatformFunctionsImpl(
         adventure.console().sendMessage(localeMsg(localeHandler.consoleLocale))
 
         Bukkit.getOnlinePlayers()
-            .map { SpigotPlayer(it, perms, adventure, localeHandler) }
+            .map { SpigotPlayer(it, adventure, localeHandler) }
             .filter { it.has(permission) }
             .forEach { localeMsg(it.locale).run(it::sendMessage) }
     }
 
     override fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): OnlinePlayer? {
-        return Bukkit.getPlayer(uuid)?.run { SpigotPlayer(this, perms, adventure, localeHandler) }
+        return Bukkit.getPlayer(uuid)?.run { SpigotPlayer(this, adventure, localeHandler) }
     }
 
     override fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<OnlinePlayer> {
-        return Bukkit.getOnlinePlayers().map { SpigotPlayer(it, perms, adventure, localeHandler) }
+        return Bukkit.getOnlinePlayers().map { SpigotPlayer(it, adventure, localeHandler) }
     }
 
     override fun offlinePlayerNameToUUIDOrNull(name: String): UUID? {
@@ -80,14 +77,6 @@ class PlatformFunctionsImpl(
 
     override fun pushErrorToConsole(message: String) {
         Bukkit.getLogger().log(Level.SEVERE, message)
-    }
-
-    override fun getPermissionGroups(): List<String> {
-        return perms.groups.toList()
-    }
-
-    override fun getOfflinePlayerNames(): List<String> {
-        return Bukkit.getOfflinePlayers().mapNotNull(OfflinePlayer::getName)
     }
 
     override fun getOnlineSeenPlayerNames(sender: Sender): List<String> {

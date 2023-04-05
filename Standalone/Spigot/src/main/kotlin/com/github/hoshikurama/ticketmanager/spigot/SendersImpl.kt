@@ -7,16 +7,13 @@ import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
-import net.milkbowl.vault.permission.Permission
 
 class SpigotPlayer(
     internal val sPlayer: org.bukkit.entity.Player,
-    private val perms: Permission,
     private val adventure: BukkitAudiences,
     localeHandler: LocaleHandler,
 ) : OnlinePlayer(
     uniqueID = sPlayer.uniqueId,
-    permissionGroups = perms.getPlayerGroups(sPlayer).toList(),
     name = sPlayer.name,
     locale = localeHandler.getOrDefault(sPlayer.locale),
     serverName = null,
@@ -27,10 +24,6 @@ class SpigotPlayer(
 
     override fun sendMessage(component: Component) {
         adventure.player(sPlayer).sendMessage(component)
-    }
-
-    override fun has(permission: String): Boolean {
-        return perms.has(sPlayer, permission)
     }
 }
 
