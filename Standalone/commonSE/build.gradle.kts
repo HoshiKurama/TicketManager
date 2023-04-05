@@ -1,7 +1,6 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "7.1.2"
-    id("com.github.ben-manes.versions") version "0.45.0" // https://github.com/ben-manes/gradle-versions-plugin
-    //kotlin("plugin.serialization") version "1.8.10"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.github.ben-manes.versions") version "0.46.0" // https://github.com/ben-manes/gradle-versions-plugin
     kotlin("jvm")
     java
     application
@@ -28,7 +27,7 @@ dependencies {
     implementation("net.kyori:adventure-extra-kotlin:4.13.0")
     implementation("net.kyori:adventure-text-minimessage:4.13.0")
     implementation("org.yaml:snakeyaml:2.0")
-    implementation("joda-time:joda-time:2.12.2")
+    implementation("joda-time:joda-time:2.12.5")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.h2database:h2:2.1.214")
     implementation("com.google.guava:guava:31.1-jre")

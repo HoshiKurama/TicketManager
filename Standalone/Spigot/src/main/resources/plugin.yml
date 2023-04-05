@@ -9,7 +9,7 @@ libraries:
   - com.mysql:mysql-connector-j:8.0.32
   - com.github.jasync-sql:jasync-mysql:2.1.23
   - com.github.seratch:kotliquery:1.9.0
-  - joda-time:joda-time:2.12.2
+  - joda-time:joda-time:2.12.5
   - com.discord4j:discord4j-core:3.2.2
   - net.kyori:adventure-text-minimessage:4.13.0
   - net.kyori:adventure-platform-bukkit:4.3.0

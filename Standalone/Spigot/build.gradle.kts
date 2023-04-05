@@ -1,6 +1,6 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "7.1.2"
-    id("com.github.ben-manes.versions") version "0.45.0" // https://github.com/ben-manes/gradle-versions-plugin
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.github.ben-manes.versions") version "0.46.0" // https://github.com/ben-manes/gradle-versions-plugin
     kotlin("jvm")
     java
     application
@@ -21,8 +21,8 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
     implementation("net.kyori:adventure-extra-kotlin:4.13.0")
     implementation("net.kyori:adventure-platform-bukkit:4.3.0")
-    implementation("joda-time:joda-time:2.12.2")
-    implementation("org.bstats:bstats-bukkit:3.0.1")
+    implementation("joda-time:joda-time:2.12.5")
+    implementation("org.bstats:bstats-bukkit:3.0.2")
     compileOnly("net.luckperms:api:5.4")
     implementation(project(":Standalone:commonSE"))
     implementation(project(":common"))
@@ -35,8 +35,8 @@ tasks {
         dependencies {
             include(project(":Standalone:commonSE"))
             include(project(":common"))
-            include(dependency("org.bstats:bstats-bukkit:3.0.1"))
-            include(dependency("org.bstats:bstats-base:3.0.1"))
+            include(dependency("org.bstats:bstats-bukkit:3.0.2"))
+            include(dependency("org.bstats:bstats-base:3.0.2"))
 
             relocate("org.bstats", "com.github.hoshikurama.ticketmanager.bstats")
         }

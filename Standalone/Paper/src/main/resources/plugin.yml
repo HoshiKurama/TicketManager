@@ -10,7 +10,7 @@ libraries:
   - com.github.jasync-sql:jasync-mysql:2.1.23
   - com.github.seratch:kotliquery:1.9.0
   - net.kyori:adventure-extra-kotlin:4.13.0
-  - joda-time:joda-time:2.12.2
+  - joda-time:joda-time:2.12.5
   - com.discord4j:discord4j-core:3.2.3
   - com.h2database:h2:2.1.214
 commands:
