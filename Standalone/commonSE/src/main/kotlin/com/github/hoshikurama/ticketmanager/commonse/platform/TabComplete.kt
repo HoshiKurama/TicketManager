@@ -3,10 +3,7 @@ package com.github.hoshikurama.ticketmanager.commonse.platform
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.database.AsyncDatabase
 
-//TODO IMPLEMENT OPTIMISATION
-
 abstract class TabComplete(private val platform: PlatformFunctions) {
-    // Note: Be careful with this, future me. Maintain admin invisibility
     fun getReturnedTabs(sender: Sender, args: List<String>): List<String> {
         if (!sender.has("ticketmanager.commandArg.autotab") && sender is OnlinePlayer) return listOf("")
         val perms = LazyPermissions(sender)
@@ -19,7 +16,6 @@ abstract class TabComplete(private val platform: PlatformFunctions) {
                 commandWordAssign, commandWordSilentAssign -> when { // /ticket assign <ID> <Assignment...>
                     !perms.hasAssignVariation -> listOf("")
                     args.size == 2 -> listOf("<$parameterID>")
-                        .filter { it.startsWith(args[1]) }
                     args.size == 3 -> {
                         val groups = TMPlugin.lpGroupNames.map { "::$it" }
                         (listOf("<$parameterAssignment...>") + platform.getOnlineSeenPlayerNames(sender) + groups + listOf(consoleName))
@@ -28,7 +24,7 @@ abstract class TabComplete(private val platform: PlatformFunctions) {
                     else -> listOf("")
                 }
 
-                commandWordClaim, commandWordSilentClaim, commandWordUnassign, commandWordSilentUnassign -> when { // /ticket claim <ID>
+                commandWordClaim, commandWordSilentClaim, commandWordUnassign, commandWordSilentUnassign -> when { // /ticket claim/unassign <ID>
                     !perms.hasAssignVariation -> listOf("")
                     args.size == 2 -> listOf("<$parameterID>").filter { it.startsWith(args[1]) }
                     else -> listOf("")
@@ -277,3 +273,58 @@ abstract class TabComplete(private val platform: PlatformFunctions) {
         }
     }
 }
+// NOTE: THIS WAS ONE POTENTIAL IDEA, BUT I MIGHT TRY TO IMPLEMENT SUPPORT
+/*
+fun selectOptimized(f: () -> List<String>): List<String> = Optimizer.selectOptimizedAndUpdate(f, sender, args.size, args.last().size)
+ */
+/*
+private object Optimizer {
+        private val map: ConcurrentHashMap<UUID, Data> = ConcurrentHashMap()
+        private val randomConsoleUUID = UUID.randomUUID()
+        //TODO TEST
+        data class Data(
+            @Volatile var deletingJob: Job,
+            @Volatile var lastArgsCount: Int,
+            @Volatile var lastArgSize: Int,
+            @Volatile var options: List<String>
+        )
+        // Note: It's okay as only one person can modify their own data at once, so race conditions won't apply for internal Data
+        // todo: uhhh, what if second+ event fires async and finishes before or at the same time as longer first query with db read
+
+        val generateAsyncDelete: (UUID) -> Job = { uuid ->
+            TMCoroutine.asyncNoSupervisor {
+                delay(30_000)
+                if (isActive) map.remove(uuid) // Does nothing if cancelled
+            }
+        }
+        fun selectOptimizedAndUpdate(regenerateOptions: () -> List<String>, sender: Sender, curArgsCount: Int, curArgSize: Int): List<String> {
+            val targetUuid = when (sender) {
+                is Console -> randomConsoleUUID
+                is OnlinePlayer -> sender.uniqueID
+            }
+
+            // Is person a new typer or still cached?
+            if (!map.containsKey(targetUuid)) {
+                val options = regenerateOptions()
+                map[targetUuid] = Data(generateAsyncDelete(targetUuid), curArgsCount, curArgSize, options)
+                return options
+            }
+
+            //Person is still cached... Cancel and Initiate new Job
+            val dataRef = map[targetUuid]!!
+            dataRef.deletingJob.cancel()
+            dataRef.deletingJob = generateAsyncDelete(targetUuid)
+
+            return if (dataRef.lastArgsCount == curArgsCount && dataRef.lastArgSize + 1 == curArgSize) {
+                // Person only typed one extra character for the same argument. Previous results valid
+                dataRef.lastArgSize += 1
+                dataRef.options
+            } else {
+                // Person either moved onto something else or hit backspace. Regenerate...
+                val options = regenerateOptions()
+                map[targetUuid] = Data(generateAsyncDelete(targetUuid), curArgsCount, curArgSize, options)
+                options
+            }
+        }
+    }
+ */

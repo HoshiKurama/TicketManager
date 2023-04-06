@@ -10,6 +10,8 @@ dependencies:
     bootstrap: false
 libraries:
   - org.jetbrains.kotlin:kotlin-stdlib:1.8.20
+  - org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta
+  - org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.0-Beta
   - com.mysql:mysql-connector-j:8.0.32
   - com.github.jasync-sql:jasync-mysql:2.1.23
   - com.github.seratch:kotliquery:1.9.0

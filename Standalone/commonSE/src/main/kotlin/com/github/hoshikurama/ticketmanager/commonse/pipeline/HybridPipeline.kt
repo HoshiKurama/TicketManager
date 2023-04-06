@@ -21,7 +21,8 @@ abstract class HybridPipeline(
             try {
                 corePipeline.executeLogic(sender, args)?.run {
                     //  Send to other servers
-                    platform.relayMessageToProxy("ticketmanager:inform_proxy", encodeForProxy())
+                    if (instanceState.enableProxyMode)
+                        platform.relayMessageToProxy("ticketmanager:inform_proxy", encodeForProxy())
 
                     // Send notification to current server
                     if (sendSenderMSG)
