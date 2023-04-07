@@ -1,90 +1,74 @@
 package com.github.hoshikurama.ticketmanager.commonse.ticket
 
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.apiTesting.Creator
+import com.github.hoshikurama.ticketmanager.commonse.apiTesting.Ticket
 import java.time.Instant
-import java.util.*
 
-class Ticket(
-    val id: Long = -1L,                             // Ticket ID 1+... -1 placeholder during ticket creation
-    val creator: Creator,
-    val priority: Priority = Priority.NORMAL,       // Priority 1-5 or Lowest to Highest
-    val status: Status = Status.OPEN,               // Status OPEN or CLOSED
-    val assignedTo: String? = null,                 // Null if not assigned to anybody
-    val creatorStatusUpdate: Boolean = false,       // Determines whether player should be notified
-    val actions: List<Action> = listOf()
-) {
+class TicketImpl(
+    override val id: Long = -1L,                                          // Ticket ID 1+... -1 placeholder during ticket creation
+    override val creator: Creator,
+    override val priority: Ticket.Priority = Ticket.Priority.NORMAL,     // Priority 1-5 or Lowest to Highest
+    override val status: Ticket.Status = Ticket.Status.OPEN,             // Status OPEN or CLOSED
+    override val assignedTo: String? = null,                             // Null if not assigned to anybody
+    override val creatorStatusUpdate: Boolean = false,                   // Determines whether player should be notified
+    override val actions: List<ActionImpl> = listOf()
+) : Ticket {
 
-    operator fun plus(actions: List<Action>): Ticket {
-        return Ticket(id, creator, priority, status, assignedTo, creatorStatusUpdate, actions)
+    override operator fun plus(actions: List<Ticket.Action>): Ticket {
+        return TicketImpl(id, creator, priority, status, assignedTo, creatorStatusUpdate, actions)
     }
-    operator fun plus(actions: Action): Ticket {
-        return Ticket(id, creator, priority, status, assignedTo, creatorStatusUpdate, this.actions + actions)
-    }
-
-
-    data class TicketLocation(val server: String?, val world: String?, val x: Int?, val y: Int?, val z: Int?) {
-        override fun toString(): String = "${server ?: ""} ${world ?: ""} ${x ?: ""} ${y ?: ""} ${z ?: ""}".trimStart()
+    override operator fun plus(action: Ticket.Action): Ticket {
+        return TicketImpl(id, creator, priority, status, assignedTo, creatorStatusUpdate, this.actions + action)
     }
 
-    enum class Priority(val level: Byte) {
-        LOWEST(1),
-        LOW(2),
-        NORMAL(3),
-        HIGH(4),
-        HIGHEST(5);
-
-        fun toLocaledWord(locale: TMLocale) = when (this) {
-            LOWEST -> locale.priorityLowest
-            LOW -> locale.priorityLow
-            NORMAL -> locale.priorityNormal
-            HIGH -> locale.priorityHigh
-            HIGHEST -> locale.priorityHighest
-        }
+    @JvmRecord
+    data class PlayerTicketLocationImpl(
+        override val server: String?,
+        override val world: String,
+        override val x: Int,
+        override val y: Int,
+        override val z: Int,
+    ) : Ticket.CreationLocation.FromPlayer {
+        override fun toString(): String = "${server ?: ""} $world $x $y $z".trimStart()
     }
 
-    enum class Status {
-        OPEN, CLOSED;
+    data class ConsoleTicketLocationImpl(override val server: String?) : Ticket.CreationLocation.FromConsole {
+        override val world: String? = null
+        override val x: Int? = null
+        override val y: Int? = null
+        override val z: Int? = null
 
-        fun toLocaledWord(locale: TMLocale) = when (this) {
-            OPEN -> locale.statusOpen
-            CLOSED -> locale.statusClosed
-        }
+        override fun toString(): String = "${server ?: ""} ${""} ${""} ${""} ${""}".trimStart()
     }
 
-    data class Action(val type: Type, val user: Creator, val location: TicketLocation, val message: String? = null, val timestamp: Long = Instant.now().epochSecond) {
-        enum class Type {
-            ASSIGN, CLOSE, COMMENT, OPEN, REOPEN, SET_PRIORITY, MASS_CLOSE
-        }
+    data class ActionImpl(
+        override val type: Ticket.Action.Type,
+        override val user: Creator,
+        override val location: Ticket.CreationLocation,
+        override val timestamp: Long = Instant.now().epochSecond
+    ) : Ticket.Action {
+
+        @JvmInline
+        value class ASSIGNImpl(override val assignment: String?) : Ticket.Action.Type.ASSIGN
+        @JvmInline value class COMMENTImpl(override val comment: String) : Ticket.Action.Type.COMMENT
+        @JvmInline value class OPENImpl(override val message: String) : Ticket.Action.Type.OPEN
+        @JvmInline value class SETPRIORITYImpl(override val priority: Ticket.Priority) : Ticket.Action.Type.SET_PRIORITY
+        object CLOSEImpl : Ticket.Action.Type.CLOSE
+        object REOPENImpl : Ticket.Action.Type.REOPEN
+        object MASSCLOSEImpl : Ticket.Action.Type.MASS_CLOSE
     }
 }
 
-
-
-
-sealed interface Creator {
-    override fun toString(): String
-    infix fun equal(other: Creator) = other.toString() == this.toString()
+fun Ticket.Priority.toLocaledWord(locale: TMLocale) = when (this) {
+    Ticket.Priority.LOWEST -> locale.priorityLowest
+    Ticket.Priority.LOW -> locale.priorityLow
+    Ticket.Priority.NORMAL -> locale.priorityNormal
+    Ticket.Priority.HIGH -> locale.priorityHigh
+    Ticket.Priority.HIGHEST -> locale.priorityHighest
 }
 
-class User(val uuid: UUID): Creator {
-
-    override fun toString(): String = "USER.$uuid"
-    override fun equals(other: Any?): Boolean {
-        return if (other != null && other is User)
-            this.uuid == other.uuid
-        else false
-    }
-    override fun hashCode() = uuid.hashCode()
-}
-
-object Console : Creator {
-    override fun toString(): String = "CONSOLE"
-}
-
-object Dummy : Creator {
-    override fun toString(): String = throw Exception("Attempting to convert a dummy creator to a string!")
-}
-
-object InvalidUUID : Creator {
-    override fun toString(): String = "INVALID_UUID"
+fun Ticket.Status.toLocaledWord(locale: TMLocale) = when (this) {
+    Ticket.Status.OPEN -> locale.statusOpen
+    Ticket.Status.CLOSED -> locale.statusClosed
 }

@@ -1,8 +1,8 @@
 package com.github.hoshikurama.ticketmanager.commonse.database
 
+import com.github.hoshikurama.ticketmanager.commonse.apiTesting.Creator
+import com.github.hoshikurama.ticketmanager.commonse.apiTesting.Ticket
 import com.github.hoshikurama.ticketmanager.commonse.misc.TMCoroutine
-import com.github.hoshikurama.ticketmanager.commonse.ticket.Creator
-import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 
 interface AsyncDatabase {
     val type: Type
@@ -29,7 +29,7 @@ interface AsyncDatabase {
     suspend fun getOpenTicketsAsync(page: Int, pageSize: Int): Result
     suspend fun getOpenTicketsAssignedToAsync(page: Int, pageSize: Int, assignment: String, unfixedGroupAssignment: List<String>): Result
     suspend fun getOpenTicketsNotAssignedAsync(page: Int, pageSize: Int): Result
-    fun massCloseTickets(lowerBound: Long, upperBound: Long, actor: Creator, ticketLoc:  Ticket.TicketLocation)
+    fun massCloseTickets(lowerBound: Long, upperBound: Long, actor: Creator, ticketLoc:  Ticket.CreationLocation)
 
     // Counting
     suspend fun countOpenTicketsAsync(): Long

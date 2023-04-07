@@ -1,13 +1,12 @@
 package com.github.hoshikurama.ticketmanager.commonse.misc
 
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.apiTesting.Creator
+import com.github.hoshikurama.ticketmanager.commonse.apiTesting.Ticket
 import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.buildComponent
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.ticket.Console
-import com.github.hoshikurama.ticketmanager.commonse.ticket.Creator
-import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
-import com.github.hoshikurama.ticketmanager.commonse.ticket.User
+import com.github.hoshikurama.ticketmanager.commonse.ticket.CreatorImpl
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder
@@ -119,8 +118,8 @@ fun generateModifiedStacktrace(e: Exception, locale: TMLocale) = buildComponent 
 fun mapToCreatorOrNull(string: String): Creator? {
     val sep = string.split(".")
     return when (sep[0]) {
-        "USER" -> User(UUID.fromString(sep[1]))
-        "CONSOLE" -> Console
+        "USER" -> CreatorImpl.UserImpl(UUID.fromString(sep[1]))
+        "CONSOLE" -> CreatorImpl.ConsoleImpl
         else -> null
     }
 }

@@ -9,6 +9,8 @@ import com.github.hoshikurama.ticketmanager.common.discord.notifications.*
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
+import com.github.hoshikurama.ticketmanager.commonse.apiTesting.Creator
+import com.github.hoshikurama.ticketmanager.commonse.apiTesting.Ticket
 import com.github.hoshikurama.ticketmanager.commonse.data.GlobalPluginState
 import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.commonse.database.AsyncDatabase
@@ -18,10 +20,12 @@ import com.github.hoshikurama.ticketmanager.commonse.database.SearchConstraint
 import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.buildComponent
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.onHover
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
+import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
-import com.github.hoshikurama.ticketmanager.commonse.ticket.*
+import com.github.hoshikurama.ticketmanager.commonse.ticket.CreatorImpl
+import com.github.hoshikurama.ticketmanager.commonse.ticket.TicketImpl
+import com.github.hoshikurama.ticketmanager.commonse.ticket.toLocaledWord
 import com.github.jasync.sql.db.util.size
 import kotlinx.coroutines.delay
 import net.kyori.adventure.text.Component
@@ -32,7 +36,7 @@ import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
 import java.util.*
 
-typealias ConsoleObject = Console
+typealias ConsoleObject = CreatorImpl.ConsoleImpl
 typealias ConsoleSender = com.github.hoshikurama.ticketmanager.commonse.platform.Console
 typealias ResultDB = Result
 typealias StandardReturn = Notification?
@@ -94,7 +98,7 @@ class CorePipeline(
                 args.getOrNull(1)
                     ?.toLongOrNull()
                     ?.let { instanceState.database.getTicketOrNullAsync(it) }
-            else -> Ticket(creator = Dummy)
+            else -> TicketImpl(creator = CreatorImpl.Dummy)
         }
     }
 
@@ -110,7 +114,7 @@ class CorePipeline(
         fun hasSilent() = has("ticketmanager.commandArg.silence")
         fun hasWithSilent(perm: String): Boolean = has(perm) && hasSilent()
         fun hasDuality(basePerm: String): Boolean {
-            val ownsTicket = ticket.creator == User(player.uniqueID)
+            val ownsTicket = ticket.creator == CreatorImpl.UserImpl(player.uniqueID)
             val hasAll = has("$basePerm.all")
             val hasOwn = has("$basePerm.own")
             return hasAll || (hasOwn && ownsTicket)
@@ -270,7 +274,7 @@ class CorePipeline(
     private suspend fun executeCommand(
         sender: Sender,
         args: List<String>,
-        ticket: Ticket,
+        ticket: TicketImpl,
     ): StandardReturn {
         return sender.locale.run {
             when (args[0]) {
@@ -331,7 +335,7 @@ class CorePipeline(
         TMCoroutine.runAsync {
             instanceState.database.insertAction(
                 id = ticket.id,
-                action = Ticket.Action(Ticket.Action.Type.ASSIGN, sender.toCreator(), sender.getLocAsTicketLoc(), dbAssignment)
+                action = TicketImpl.ActionImpl(TicketImpl.ActionImpl.ASSIGNImpl(dbAssignment), sender.toCreator(), sender.getLocAsTicketLoc())
             )
         }
 
@@ -424,11 +428,11 @@ class CorePipeline(
             TMCoroutine.runAsync {
                 insertAction(
                     id = ticket.id,
-                    action = Ticket.Action(Ticket.Action.Type.COMMENT, sender.toCreator(), sender.getLocAsTicketLoc(), message)
+                    action = TicketImpl.ActionImpl(TicketImpl.ActionImpl.COMMENTImpl(message), sender.toCreator(), sender.getLocAsTicketLoc())
                 )
                 insertAction(
                     id = ticket.id,
-                    action = Ticket.Action(Ticket.Action.Type.CLOSE, sender.toCreator(), sender.getLocAsTicketLoc())
+                    action = TicketImpl.ActionImpl(TicketImpl.ActionImpl.CLOSEImpl, sender.toCreator(), sender.getLocAsTicketLoc())
                 )
                 instanceState.database.setStatus(ticket.id, Ticket.Status.CLOSED)
             }
@@ -455,7 +459,7 @@ class CorePipeline(
         TMCoroutine.runAsync {
             instanceState.database.insertAction(
                 id = ticket.id,
-                action = Ticket.Action(Ticket.Action.Type.CLOSE, sender.toCreator(), sender.getLocAsTicketLoc())
+                action = TicketImpl.ActionImpl(TicketImpl.ActionImpl.CLOSEImpl, sender.toCreator(), sender.getLocAsTicketLoc())
             )
             instanceState.database.setStatus(ticket.id, Ticket.Status.CLOSED)
         }
@@ -526,7 +530,7 @@ class CorePipeline(
         TMCoroutine.runAsync {
             instanceState.database.insertAction(
                 id = ticket.id,
-                action = Ticket.Action(Ticket.Action.Type.COMMENT, sender.toCreator(), sender.getLocAsTicketLoc(), message)
+                action = TicketImpl.ActionImpl(TicketImpl.ActionImpl.COMMENTImpl(message), sender.toCreator(), sender.getLocAsTicketLoc())
             )
         }
 
@@ -587,10 +591,10 @@ class CorePipeline(
             .joinToString(" ")
 
         val ticket = when (sender) {
-            is OnlinePlayer -> Ticket(creator = User(sender.uniqueID))
-            is ConsoleSender -> Ticket(creator = ConsoleObject)
+            is OnlinePlayer -> TicketImpl(creator = CreatorImpl.UserImpl(sender.uniqueID))
+            is ConsoleSender -> TicketImpl(creator = ConsoleObject)
         }
-            .let { it + listOf(Ticket.Action(type = Ticket.Action.Type.OPEN, user = sender.toCreator(), sender.getLocAsTicketLoc(), message)) }
+            .let { it + listOf(TicketImpl.ActionImpl(type = TicketImpl.ActionImpl.OPENImpl(message), user = sender.toCreator(), sender.getLocAsTicketLoc())) }
 
 
         // Inserts ticket and receives ID
@@ -833,7 +837,8 @@ class CorePipeline(
         val targetName = if (args.size >= 2) args[1].takeIf { it != locale.consoleName } else sender.name.takeIf { sender is OnlinePlayer }
         val requestedPage = if (args.size >= 3) args[2].toInt() else 1
 
-        val searchedUser: Creator = targetName?.run { platform.offlinePlayerNameToUUIDOrNull(this)?.let(::User) ?: User(UUID.randomUUID()) } ?: ConsoleObject //NOTE: Does this need to account for multi-servers?
+        val searchedUser: Creator = targetName?.run { platform.offlinePlayerNameToUUIDOrNull(this)?.let(CreatorImpl::UserImpl)
+            ?: CreatorImpl.UserImpl(UUID.randomUUID()) } ?: ConsoleObject //NOTE: Does this need to account for multi-servers?
         val constraints = SearchConstraint(creator = Option(searchedUser))
 
         // Search
@@ -853,7 +858,7 @@ class CorePipeline(
                     val id = "${t.id}"
                     val status = t.status.toLocaledWord(locale)
                     val comment = trimCommentToSize(
-                        comment = t.actions[0].message!!,
+                        comment = (t.actions[0] as Ticket.Action.Type.OPEN).message,
                         preSize = id.size + status.size + locale.historyFormattingSize,
                         maxSize = locale.historyMaxLineSize
                     )
@@ -986,7 +991,7 @@ class CorePipeline(
         silent: Boolean,
         ticket: Ticket,
     ): StandardReturn {
-        val action = Ticket.Action(Ticket.Action.Type.REOPEN, sender.toCreator(), sender.getLocAsTicketLoc())
+        val action = TicketImpl.ActionImpl(TicketImpl.ActionImpl.REOPENImpl, sender.toCreator(), sender.getLocAsTicketLoc())
 
         // Updates user status if needed
         val newCreatorStatusUpdate = (ticket.creator != sender.toCreator()) && instanceState.allowUnreadTicketUpdates
@@ -1029,7 +1034,7 @@ class CorePipeline(
 
         fun attemptNameToCreator(name: String): Option<Creator> {
             return if (name == locale.consoleName) Option(ConsoleObject)
-            else platform.offlinePlayerNameToUUIDOrNull(name)?.let { Option(User(it)) } ?: Option(InvalidUUID)
+            else platform.offlinePlayerNameToUUIDOrNull(name)?.let { Option(CreatorImpl.UserImpl(it)) } ?: Option(CreatorImpl.InvalidUUID)
         }
 
         // Input args mapped to valid search types
@@ -1070,7 +1075,7 @@ class CorePipeline(
                 results.forEach {
                     val time = it.actions[0].timestamp.toLargestRelativeTime(locale)
                     val comment = trimCommentToSize(
-                        comment = it.actions[0].message!!,
+                        comment = (it.actions[0] as Ticket.Action.Type.OPEN).message,
                         preSize = locale.searchFormattingSize + time.length,
                         maxSize = locale.searchMaxLineSize,
                     )
@@ -1081,7 +1086,7 @@ class CorePipeline(
                         .parseMiniMessage(
                             "id" templated "${it.id}",
                             "status" templated it.status.toLocaledWord(locale),
-                            "creator" templated (it.creator.run { if (this is User) uuid else null }?.run(platform::nameFromUUID) ?: locale.consoleName),
+                            "creator" templated (it.creator.run { if (this is Creator.User) uuid else null }?.run(platform::nameFromUUID) ?: locale.consoleName),
                             "assignment" templated (it.assignedTo ?: ""),
                             "world" templated (it.actions[0].location.world ?: ""),
                             "time" templated time,
@@ -1121,7 +1126,7 @@ class CorePipeline(
         TMCoroutine.runAsync {
             instanceState.database.insertAction(
                 id = ticket.id,
-                action = Ticket.Action(Ticket.Action.Type.SET_PRIORITY, sender.toCreator(), sender.getLocAsTicketLoc(), args[2])
+                action = TicketImpl.ActionImpl(TicketImpl.ActionImpl.SETPRIORITYImpl(byteToPriority(args[2].toByteOrNull() ?: 3)), sender.toCreator(), sender.getLocAsTicketLoc())
             )
             instanceState.database.setPriority(ticket.id, newPriority)
         }
@@ -1220,11 +1225,15 @@ class CorePipeline(
             TMCoroutine.runAsync { instanceState.database.setCreatorStatusUpdate(ticket.id, false) }
 
         val entries = ticket.actions.asSequence()
-            .filter { it.type == Ticket.Action.Type.COMMENT || it.type == Ticket.Action.Type.OPEN }
+            .filter { it.type is Ticket.Action.Type.COMMENT || it.type is Ticket.Action.Type.OPEN }
             .map {
                 sender.locale.viewComment.parseMiniMessage(
-                    "user" templated (it.user.run { if (this is User) uuid else null }?.run(platform::nameFromUUID) ?: sender.locale.consoleName),
-                    "comment" templated it.message!!,
+                    "user" templated (it.user.run { if (this is Creator.User) uuid else null }?.run(platform::nameFromUUID) ?: sender.locale.consoleName),
+                    "comment" templated when (it.type) {
+                        is TicketImpl.ActionImpl.COMMENTImpl -> (it.type as TicketImpl.ActionImpl.COMMENTImpl).comment
+                        is Ticket.Action.Type.OPEN -> (it.type as Ticket.Action.Type.OPEN).message
+                        else -> ""
+                    }
                 )
             }
             .reduce(Component::append)
@@ -1235,7 +1244,7 @@ class CorePipeline(
     // /ticket viewdeep <ID>
     private fun viewDeep(
         sender: Sender,
-        ticket: Ticket,
+        ticket: TicketImpl,
     ) {
         val baseComponent = buildTicketInfoComponent(ticket, sender.locale)
 
@@ -1243,25 +1252,27 @@ class CorePipeline(
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
             TMCoroutine.runAsync { instanceState.database.setCreatorStatusUpdate(ticket.id, false) }
 
-        fun formatDeepAction(action: Ticket.Action): Component {
-            val templatedUser = "user" templated (action.user.run { if (this is User) uuid else null }?.run(platform::nameFromUUID) ?: sender.locale.consoleName)
+        fun formatDeepAction(action: TicketImpl.ActionImpl): Component {
+            val templatedUser = "user" templated (action.user.run { if (this is Creator.User) uuid else null }?.run(platform::nameFromUUID) ?: sender.locale.consoleName)
             val templatedTime = "time" templated action.timestamp.toLargestRelativeTime(sender.locale)
 
             return when (action.type) {
-                Ticket.Action.Type.OPEN, Ticket.Action.Type.COMMENT ->
-                    sender.locale.viewDeepComment.parseMiniMessage(templatedUser, templatedTime, "comment" templated action.message!!)
+                is Ticket.Action.Type.OPEN, is Ticket.Action.Type.COMMENT -> kotlin.run {
+                    val message = if (action.type is Ticket.Action.Type.OPEN) (action.type as Ticket.Action.Type.OPEN).message else (action.type as Ticket.Action.Type.COMMENT).comment
+                    sender.locale.viewDeepComment.parseMiniMessage(templatedUser, templatedTime, "comment" templated message)
+                }
 
-                Ticket.Action.Type.SET_PRIORITY ->
-                    byteToPriority(action.message!!.toByte())
+                is Ticket.Action.Type.SET_PRIORITY ->
+                    byteToPriority(action.type.priority.level)
                         .let { it to sender.locale.viewDeepSetPriority.replace("%PCC%", priorityToHexColour(it, sender.locale)) }
                         .let { (priority, string) -> string.parseMiniMessage(templatedUser,templatedTime, "priority" templated priority.toLocaledWord(sender.locale)) }
 
-                Ticket.Action.Type.ASSIGN ->
-                    sender.locale.viewDeepAssigned.parseMiniMessage(templatedUser, templatedTime, "assignment" templated (action.message ?: ""))
+                is Ticket.Action.Type.ASSIGN ->
+                    sender.locale.viewDeepAssigned.parseMiniMessage(templatedUser, templatedTime, "assignment" templated (action.type.assignment ?: ""))
 
-                Ticket.Action.Type.REOPEN -> sender.locale.viewDeepReopen.parseMiniMessage(templatedUser, templatedTime)
-                Ticket.Action.Type.CLOSE -> sender.locale.viewDeepClose.parseMiniMessage(templatedUser, templatedTime)
-                Ticket.Action.Type.MASS_CLOSE -> sender.locale.viewDeepMassClose.parseMiniMessage(templatedUser, templatedTime)
+                is Ticket.Action.Type.REOPEN -> sender.locale.viewDeepReopen.parseMiniMessage(templatedUser, templatedTime)
+                is Ticket.Action.Type.CLOSE -> sender.locale.viewDeepClose.parseMiniMessage(templatedUser, templatedTime)
+                is Ticket.Action.Type.MASS_CLOSE -> sender.locale.viewDeepMassClose.parseMiniMessage(templatedUser, templatedTime)
             }
         }
 
@@ -1320,12 +1331,12 @@ class CorePipeline(
         locale: TMLocale
     ): Component {
         val id = "${ticket.id}"
-        val creator = ticket.creator.run { if (this is User) uuid else null }?.run(platform::nameFromUUID) ?: locale.consoleName
+        val creator = ticket.creator.run { if (this is Creator.User) uuid else null }?.run(platform::nameFromUUID) ?: locale.consoleName
         val fixedAssign = ticket.assignedTo ?: ""
         val pcc = priorityToHexColour(ticket.priority, locale)
 
         val fixedComment = trimCommentToSize(
-            comment = ticket.actions[0].message!!,
+            comment = (ticket.actions[0] as Ticket.Action.Type.OPEN).message,
             preSize = locale.listFormattingSize + id.size + creator.size + fixedAssign.size,
             maxSize = 58,
         )
@@ -1371,7 +1382,7 @@ class CorePipeline(
         append(locale.viewSep1.parseMiniMessage())
         append(
             locale.viewCreator.parseMiniMessage(
-                "creator" templated (ticket.creator.run { if (this is User) uuid else null }?.run(platform::nameFromUUID) ?: locale.consoleName)
+                "creator" templated (ticket.creator.run { if (this is Creator.User) uuid else null }?.run(platform::nameFromUUID) ?: locale.consoleName)
             )
         )
         append(locale.viewAssignedTo.parseMiniMessage("assignment" templated (ticket.assignedTo ?: "")))
@@ -1446,7 +1457,7 @@ private inline fun Boolean.thenCheck(error: () -> Unit, predicate: () -> Boolean
 
 fun Sender.toCreator(): Creator {
     return when(this) {
-        is OnlinePlayer -> User(uniqueID)
+        is OnlinePlayer -> CreatorImpl.UserImpl(uniqueID)
         is ConsoleSender -> ConsoleObject
     }
 }
