@@ -2,7 +2,6 @@ package com.github.hoshikurama.ticketmanager.commonse
 
 import com.github.hoshikurama.ticketmanager.common.CommonKeywords
 import com.github.hoshikurama.ticketmanager.common.supportedLocales
-import com.github.hoshikurama.ticketmanager.commonse.misc.TypeSafeStream.Companion.asTypeSafeStream
 import org.yaml.snakeyaml.Yaml
 import java.nio.file.Paths
 import kotlin.io.path.inputStream
@@ -765,47 +764,17 @@ class TMLocale(
     }
 }
 
-class LocaleHandler(
-    private val activeTypes: Map<String, TMLocale>,
-    private val fallbackType: TMLocale,
-    val consoleLocale: TMLocale,
-) {
-    companion object {
-        fun buildLocales(
-            mainColourCode: String,
-            preferredLocale: String,
-            consoleLocale: String,
-            forceLocale: Boolean,
-            rootFolderLocation: String,
-            enableAVC: Boolean,
-        ) : LocaleHandler {
-            val allLocales = supportedLocales
-                .asTypeSafeStream()
-                .parallel()
-                .map { it to TMLocale.buildLocaleFromInternal(it, mainColourCode) }
-                .map { (k,v) -> if (enableAVC) k to TMLocale.buildLocaleFromExternal(
-                    k,
-                    rootFolderLocation,
-                    mainColourCode,
-                    v
-                ) else k to v }
-                .toList()
-                .toMap()
-            val lowercasePreferred = preferredLocale.lowercase()
+fun buildLocale(
+    mainColourCode: String,
+    preferredLocale: String,
+    rootFolderLocation: String,
+    enableAVC: Boolean,
+): TMLocale {
 
-            val activeTypes = if (forceLocale) mapOf(lowercasePreferred to allLocales.getOrDefault(lowercasePreferred, allLocales["en_ca"]!!)) else allLocales
-            val fallback = activeTypes.getOrDefault(lowercasePreferred, allLocales["en_ca"]!!)
-            val consoleLocaleS = activeTypes.getOrDefault(consoleLocale.lowercase(), fallback)
+    val selectedLocale = preferredLocale.lowercase()
+        .takeIf(supportedLocales::contains) ?: "en_ca"
 
-            return LocaleHandler(activeTypes, fallback, consoleLocaleS)
-        }
-    }
-
-    fun getOrDefault(type: String): TMLocale {
-        val lowercased = type.lowercase()
-        return activeTypes[lowercased] ?: activeTypes[supportedLocales.first { type.startsWith(lowercased.split("_")[0])}] ?: fallbackType
-    }
-
-    //= activeTypes[type.lowercase()] ?: activeTypes.get(supportedLocales.first) ?: fallbackType//activeTypes.getOrDefault(type.lowercase(), fallbackType)
-    fun getCommandBases() = if (activeTypes.isEmpty()) setOf(fallbackType.commandBase) else activeTypes.map { it.value.commandBase }.toSet()
+    val internalLocaleBuild = TMLocale.buildLocaleFromInternal(selectedLocale, mainColourCode)
+    return if (enableAVC) TMLocale.buildLocaleFromExternal(selectedLocale, rootFolderLocation, mainColourCode, internalLocaleBuild)
+        else internalLocaleBuild
 }
