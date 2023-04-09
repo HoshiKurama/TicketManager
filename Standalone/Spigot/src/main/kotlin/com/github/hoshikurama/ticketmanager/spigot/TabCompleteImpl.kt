@@ -1,8 +1,8 @@
 package com.github.hoshikurama.ticketmanager.spigot
 
-import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.platform.TabComplete
+import com.github.hoshikurama.ticketmanager.commonse.old.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.TabComplete
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender

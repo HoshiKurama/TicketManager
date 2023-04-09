@@ -4,8 +4,8 @@ import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent
 import com.github.hoshikurama.ticketmanager.common.Proxy2Server
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
-import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
-import com.github.hoshikurama.ticketmanager.commonse.misc.ConfigParameters
+import com.github.hoshikurama.ticketmanager.commonse.old.TMPlugin
+import com.github.hoshikurama.ticketmanager.commonse.old.misc.ConfigParameters
 import org.bstats.bukkit.Metrics
 import org.bstats.charts.SimplePie
 import org.bstats.charts.SingleLineChart

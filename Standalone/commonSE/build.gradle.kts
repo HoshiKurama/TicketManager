@@ -35,9 +35,23 @@ dependencies {
 }
 
 tasks {
+    // https://github.com/johnrengelman/shadow/blob/d530cff65c086e1cdd666bf3b12663949ae7ffcc/src/docs/changes/README.md Note on ConfigureShadowRelocation
+
+    //.https://github.com/johnrengelman/shadow/issues/44
     shadowJar {
+        isEnableRelocation = true
+        relocationPrefix = "com.github.hoshikurama.ticketmanager.shaded"
+
         dependencies {
-            include(project(":common"))
+            //include(project(":common"))
+
+            exclude(dependency("net.luckperms:api:5.4"))
+
+            // Exclude Kyori API
+            exclude(dependency("net.kyori:adventure-api:4.13.0"))
+            exclude(dependency("net.kyori:"))
+            exclude(dependency("net.kyori:"))
+            exclude(dependency("net.kyori:"))
         }
     }
 }

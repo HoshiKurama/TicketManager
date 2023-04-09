@@ -1,12 +1,12 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.commonse.data.GlobalPluginState
-import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.commonse.pipeline.HybridPipeline
-import com.github.hoshikurama.ticketmanager.commonse.pipeline.Pipeline
-import com.github.hoshikurama.ticketmanager.commonse.pipeline.PurePipeline
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
+import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalPluginState
+import com.github.hoshikurama.ticketmanager.commonse.old.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.commonse.old.pipeline.HybridPipeline
+import com.github.hoshikurama.ticketmanager.commonse.old.pipeline.Pipeline
+import com.github.hoshikurama.ticketmanager.commonse.old.pipeline.PurePipeline
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.Sender
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender

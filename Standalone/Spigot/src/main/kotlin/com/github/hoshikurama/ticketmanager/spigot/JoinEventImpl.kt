@@ -1,9 +1,9 @@
 package com.github.hoshikurama.ticketmanager.spigot
 
-import com.github.hoshikurama.ticketmanager.commonse.data.GlobalPluginState
-import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
+import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalPluginState
+import com.github.hoshikurama.ticketmanager.commonse.old.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlayerJoinEvent
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener

@@ -1,9 +1,9 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.commonse.data.GlobalPluginState
-import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
+import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalPluginState
+import com.github.hoshikurama.ticketmanager.commonse.old.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlayerJoinEvent
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler

@@ -2,8 +2,8 @@ package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.platform.Console
-import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.Console
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit

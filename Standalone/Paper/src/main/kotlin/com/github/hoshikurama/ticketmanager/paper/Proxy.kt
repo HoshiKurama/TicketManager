@@ -2,10 +2,10 @@ package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.randServerIdentifier
-import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.commonse.misc.decodeRequestTP
-import com.github.hoshikurama.ticketmanager.commonse.pipeline.Notification
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.old.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.commonse.old.misc.decodeRequestTP
+import com.github.hoshikurama.ticketmanager.commonse.old.pipeline.Notification
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.ticket.User
 import com.google.common.io.ByteStreams
 import org.bukkit.entity.Player

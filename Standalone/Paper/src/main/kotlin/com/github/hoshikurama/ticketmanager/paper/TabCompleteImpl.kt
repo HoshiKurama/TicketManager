@@ -1,10 +1,10 @@
 package com.github.hoshikurama.ticketmanager.paper
 
 import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent
-import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
-import com.github.hoshikurama.ticketmanager.commonse.platform.TabComplete
+import com.github.hoshikurama.ticketmanager.commonse.old.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.Sender
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.TabComplete
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 

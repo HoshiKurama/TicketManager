@@ -2,18 +2,16 @@ package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.misc.encodeRequestTP
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
-import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
+import com.github.hoshikurama.ticketmanager.commonse.old.misc.encodeRequestTP
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.OnlinePlayer
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.Sender
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
-import net.luckperms.api.LuckPerms
 import net.luckperms.api.LuckPermsProvider
 import org.bukkit.Bukkit
 import org.bukkit.Location
-import org.bukkit.OfflinePlayer
 import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
 import java.util.*

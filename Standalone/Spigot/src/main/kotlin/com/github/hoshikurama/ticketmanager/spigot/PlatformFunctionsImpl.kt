@@ -2,9 +2,9 @@ package com.github.hoshikurama.ticketmanager.spigot
 
 import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
-import com.github.hoshikurama.ticketmanager.commonse.platform.Sender
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.OnlinePlayer
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.old.platform.Sender
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
