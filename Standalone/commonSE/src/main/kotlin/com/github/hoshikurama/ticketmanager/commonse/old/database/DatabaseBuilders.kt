@@ -1,9 +1,9 @@
 package com.github.hoshikurama.ticketmanager.commonse.old.database
 
-import com.github.hoshikurama.ticketmanager.NEWAPPLICATION.impl.CachedH2
-import com.github.hoshikurama.ticketmanager.NEWAPPLICATION.impl.H2
 import com.github.hoshikurama.ticketmanager.NEWAPPLICATION.impl.Memory
 import com.github.hoshikurama.ticketmanager.NEWAPPLICATION.impl.MySQL
+import com.github.hoshikurama.ticketmanager.commonse.api.impl.database.CachedH2
+import com.github.hoshikurama.ticketmanager.commonse.api.impl.database.H2
 
 interface DatabaseBuilder {
     fun build(): AsyncDatabase

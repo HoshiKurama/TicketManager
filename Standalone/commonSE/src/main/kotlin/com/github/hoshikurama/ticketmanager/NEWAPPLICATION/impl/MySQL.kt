@@ -437,16 +437,6 @@ class MySQL(
             }
     }
 
-    /*
-        override fun insertTicketForMigration(other: AsyncDatabase) {
-            connectionPool.sendPreparedStatement("SELECT ID FROM TicketManager_V8_Tickets;")
-                .asDeferredThenAwait()
-                .rows.map { it.getLong(0)!! }
-                .mapNotNull { getTicketOrNullAsync(it) }
-                .forEach { other.insertNewTicketAsync(it) }
-        }
-     */
-
     // PRIVATE FUNCTIONS
     private fun tableNotExists(table: String): CompletableFuture<Boolean> {
         return connectionPool.sendQuery("SHOW TABLES;")

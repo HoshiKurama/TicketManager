@@ -1,4 +1,4 @@
-package com.github.hoshikurama.ticketmanager.NEWAPPLICATION.impl
+package com.github.hoshikurama.ticketmanager.commonse.api.impl.database
 
 import com.github.hoshikurama.ticketmanager.commonse.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.commonse.database.SearchConstraint

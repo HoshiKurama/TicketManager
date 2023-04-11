@@ -6,9 +6,15 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * This data must be kept around, even between plugin reloads
  */
-class GlobalPluginState {
+object GlobalPluginState {
     val coroutineJobCount = AtomicInteger(0)
     val pluginLocked = AtomicBoolean(true)
-    val isDatabaseLoaded = AtomicBoolean(false)
+
+    var isDatabaseLoaded: Boolean
+        get() = isDatabaseLoadedInternal.get()
+        set(value) = isDatabaseLoadedInternal.set(value)
+
+    private val isDatabaseLoadedInternal = AtomicBoolean(false)
+
     val ticketCountMetrics = AtomicInteger(0)
 }

@@ -20,8 +20,8 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.0-Beta")
-    implementation("com.mysql:mysql-connector-j:8.0.32")
-    implementation("com.github.jasync-sql:jasync-mysql:2.1.23")
+    implementation("com.mysql:mysql-connector-j:8.0.32") //TODO EXPORT
+    implementation("com.github.jasync-sql:jasync-mysql:2.1.23") //TODO EXPORT
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("net.kyori:adventure-api:4.13.0")
     implementation("net.kyori:adventure-extra-kotlin:4.13.0")
@@ -43,15 +43,14 @@ tasks {
         relocationPrefix = "com.github.hoshikurama.ticketmanager.shaded"
 
         dependencies {
-            //include(project(":common"))
+            include(project(":common"))
 
-            exclude(dependency("net.luckperms:api:5.4"))
+            exclude(dependency("net.luckperms:api"))
 
             // Exclude Kyori API
-            exclude(dependency("net.kyori:adventure-api:4.13.0"))
-            exclude(dependency("net.kyori:"))
-            exclude(dependency("net.kyori:"))
-            exclude(dependency("net.kyori:"))
+            exclude(dependency("net.kyori:adventure-api"))
+            exclude(dependency("net.kyori:examination-api"))
+            exclude(dependency("net.kyori:examination-string"))
         }
     }
 }

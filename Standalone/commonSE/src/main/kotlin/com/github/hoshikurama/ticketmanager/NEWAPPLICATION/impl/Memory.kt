@@ -28,6 +28,7 @@ import kotlin.io.path.createFile
 import kotlin.io.path.exists
 import kotlin.io.path.notExists
 
+//TODO: This will be moved to an extension
 class Memory(
     private val filePath: String,
     private val backupFrequency: Long,
