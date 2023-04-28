@@ -82,7 +82,7 @@ Page_Format: '<back_button><dark_gray>...............<dark_aqua>(<cur_page> of <
 # ========================================
 #                 Messages
 # ========================================
-#
+#TODO SPLIT BETWEEN BRIGADIER AND NOT BRIGADIER
 # Warnings (Accepts Formatting):
 Warning_Header: '<red>[TicketManager]'
 Warning_Locked: '%Header% Commands are currently locked! Please try again later'

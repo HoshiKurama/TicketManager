@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalPluginState
+import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
 import com.github.hoshikurama.ticketmanager.commonse.old.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlayerJoinEvent
@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
 val proxyJoinMap = ConcurrentHashMap<String, Ticket.TicketLocation>()
 
 class JoinEventImpl(
-    globalState: GlobalPluginState,
+    globalState: GlobalState,
     instanceState: InstancePluginState,
     platformFunctions: PlatformFunctions,
 ) : PlayerJoinEvent(globalState, platformFunctions, instanceState), Listener {

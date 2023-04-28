@@ -2,9 +2,9 @@ package com.github.hoshikurama.ticketmanager.spigot
 
 import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.old.platform.OnlinePlayer
+import com.github.hoshikurama.ticketmanager.commonse.commands.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.old.platform.Sender
+import com.github.hoshikurama.ticketmanager.commonse.commands.CommandSender
 import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
@@ -79,7 +79,7 @@ class PlatformFunctionsImpl(
         Bukkit.getLogger().log(Level.SEVERE, message)
     }
 
-    override fun getOnlineSeenPlayerNames(sender: Sender): List<String> {
+    override fun getOnlineSeenPlayerNames(sender: CommandSender): List<String> {
         return if (sender is SpigotPlayer) {
             val player = sender.sPlayer
             Bukkit.getOnlinePlayers()

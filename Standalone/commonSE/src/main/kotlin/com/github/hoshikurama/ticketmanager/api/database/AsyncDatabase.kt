@@ -1,7 +1,6 @@
 package com.github.hoshikurama.ticketmanager.api.database
 
-import com.github.hoshikurama.ticketmanager.api.ticket.Creator
-import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.api.ticket.*
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -21,7 +20,7 @@ interface AsyncDatabase {
      * @param assignment Assignment value. Null indicates an assignment of nobody
      * @return CompletableFuture indicating when the task is complete
      */
-    fun setAssignmentAsync(ticketID: Long, assignment: String?): CompletableFuture<Void>
+    fun setAssignmentAsync(ticketID: Long, assignment: TicketAssignmentType): CompletableFuture<Void>
 
     /**
      * Asynchronously set the value indicating if the creator has seen the most recent action.
@@ -56,7 +55,7 @@ interface AsyncDatabase {
      * @param action Action to append
      * @return CompletableFuture indicating when the task is complete
      */
-    fun insertActionAsync(id: Long, action: Ticket.Action): CompletableFuture<Void>
+    fun insertActionAsync(id: Long, action: TicketAction): CompletableFuture<Void>
 
     /**
      * Asynchronously add an initial ticket to the plugin. Tickets inserted with this function do not have a proper
@@ -100,7 +99,7 @@ interface AsyncDatabase {
      * @return See Result for specific returned information.
      * @see DBResult
      */
-    fun getOpenTicketsAssignedToAsync(page: Int, pageSize: Int, assignment: String, unfixedGroupAssignment: List<String>): CompletableFuture<DBResult>
+    fun getOpenTicketsAssignedToAsync(page: Int, pageSize: Int, assignment: TicketAssignmentType, unfixedGroupAssignment: List<String>): CompletableFuture<DBResult>
 
     /**
      * Asynchronously retrieve a paginated list of tickets which have an open status and assigned to nobody.
@@ -124,7 +123,7 @@ interface AsyncDatabase {
      * @param ticketLoc Location where Creator made the ticket modification
      * @return CompletableFuture indicating when action is complete.
      */
-    fun massCloseTicketsAsync(lowerBound: Long, upperBound: Long, actor: Creator, ticketLoc: Ticket.CreationLocation): CompletableFuture<Void>
+    fun massCloseTicketsAsync(lowerBound: Long, upperBound: Long, actor: TicketCreator, ticketLoc: TicketCreationLocation): CompletableFuture<Void>
 
     // Counting
     /**
@@ -164,14 +163,23 @@ interface AsyncDatabase {
      * @param creator creator of the tickets
      * @return list of ticket IDs
      */
-    fun getTicketIDsWithUpdatesForAsync(creator: Creator): CompletableFuture<List<Long>>
+    fun getTicketIDsWithUpdatesForAsync(creator: TicketCreator): CompletableFuture<List<Long>>
 
     /**
      * Asynchronously retrieve all ticket IDs of tickets owned by a particular Creator
      * @param creator Ticket creator
      * @return list of ticket IDs
      */
-    fun getOwnedTicketIDsAsync(creator: Creator): CompletableFuture<List<Long>>
+    fun getOwnedTicketIDsAsync(creator: TicketCreator): CompletableFuture<List<Long>>
+
+    /**
+     * Asynchronously retrieve all ticket IDs of tickets currently open
+     * @return list of ticket IDs
+     */
+    fun getOpenTicketIDsAsync(): CompletableFuture<List<Long>>
+
+    //TODO DOCUMENTATION
+    fun getOpenTicketIDsForUser(creator: TicketCreator): CompletableFuture<List<Long>>
 
 
     // Internal Database Functions
@@ -187,11 +195,3 @@ interface AsyncDatabase {
      */
     fun initializeDatabase()
 }
-
-interface DBResult {
-    val filteredResults: List<Ticket>
-    val totalPages: Int
-    val totalResults: Int
-    val returnedPage: Int
-}
-

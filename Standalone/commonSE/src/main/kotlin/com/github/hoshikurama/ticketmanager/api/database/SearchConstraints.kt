@@ -1,7 +1,8 @@
 package com.github.hoshikurama.ticketmanager.api.database
 
-import com.github.hoshikurama.ticketmanager.api.ticket.Creator
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketAssignmentType
 import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
 
 /**
  * Search Constraints are how TicketManager forwards search criteria to database extensions. Each property is encapsulated
@@ -24,24 +25,23 @@ import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
  * @property keywords search by tickets with a particular keyword in any of its comments or in its opening statement.
  */
 
-interface SearchConstraints {
-    val creator: Option<Creator>?
-    val assigned: Option<String?>?
-    val priority: Option<Ticket.Priority>?
-    val status: Option<Ticket.Status>?
-    val closedBy: Option<Creator>?
-    val lastClosedBy: Option<Creator>?
-    val world: Option<String>?
-    val creationTime: Option<Long>?
-    val keywords: Option<List<String>>?
-}
+class SearchConstraints(
+    val creator: Option<TicketCreator>? = null,
+    val assigned: Option<TicketAssignmentType>? = null,
+    val priority: Option<Ticket.Priority>? = null,
+    val status: Option<Ticket.Status>? = null,
+    val closedBy: Option<TicketCreator>? = null,
+    val lastClosedBy: Option<TicketCreator>? = null,
+    val world: Option<String>? = null,
+    val creationTime: Option<Long>? = null,
+    val keywords: Option<List<String>>? = null,
+)
 
 /**
- * Option is used exclusively by the SearchConstraints type. It allows for a differentiation between null values (no search)
- * and values which search for null. See SearchConstraints for more information
+ * Option is used exclusively by the SearchConstraints type. It allows for a differentiation between null values
+ * (no search) and values which search for null. See SearchConstraints for more information
  * @see SearchConstraints
  */
+@JvmInline
+value class Option<T>(val value: T)
 
-interface Option<T> {
-    val value: T
-}

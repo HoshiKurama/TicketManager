@@ -20,8 +20,7 @@
 #   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
 #                                                Localization Settings                                                #
 #   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
-#   TicketManager supports real-time localization on a per-client basis. Minecraft clients using a supported          #
-#   language can                                                                                                      #
+#   TicketManager supports localization into other languages. Minecraft clients will:                                 #                                                                                                     #
 #       • See translated messages                                                                                     #
 #       • Use translated commands                                                                                     #
 #       • Receive translated tab-completions.                                                                         #
@@ -30,27 +29,23 @@
 #       • Player names                                                                                                #
 #       • Ticket comments.                                                                                            #
 #                                                                                                                     #
+#   Note: In the past, TicketManager supported simultaneous localization, where multiple localizations were loaded    #
+#         and used on a per-client basis. This feature has been removed to reduce complexity. Any users adversely     #
+#         impacted by this change should join the Discord server and express your desire to see the feature return.   #
+#                                                                                                                     #
 #                                              Supported Localizations:                                               #
 #                                     ╔═══════════╤══════════════════════════════╗                                    #
 #                                     ║   Value   │           Language           ║                                    #
 #                                     ╠═══════════╪══════════════════════════════╣                                    #
-#                                     ║  'de_DE'  │ German                       ║                                    #
-#                                     ║  'en_CA'  │ Canadian English             ║                                    #
-#                                     ║  'en_UK'  │ UK English                   ║                                    #
-#                                     ║  'en_US'  │ US English                   ║                                    #
+#                                     ║  'de_de'  │ German                       ║                                    #
+#                                     ║  'en_ca'  │ Canadian English             ║                                    #
+#                                     ║  'en_uk'  │ UK English                   ║                                    #
+#                                     ║  'en_us'  │ US English                   ║                                    #
 #                                     ╚═══════════╧══════════════════════════════╝                                    #
 #                                                                                                                     #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Force_Locale: false                                                                                                   #
-#   Force TicketManager to use one language only. This effectively disables real-time localization.                   #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Preferred_Locale: 'en_CA'                                                                                             #
-#   Fallback locale used when the client locale is not found. This value internally defaults to Canadian English      #
-#   for invalid localizations.                                                                                        #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Console_Locale: 'en_CA'
-#   Locale both Console and Discord Bot (if enabled) will attempt to use. This value internally defaults to           #
-#   Preferred_Value for invalid localizations.                                                                        #
+#   Locale that TicketManager will use.                                                                               #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 #                                                                                                                     #
 #                                                                                                                     #

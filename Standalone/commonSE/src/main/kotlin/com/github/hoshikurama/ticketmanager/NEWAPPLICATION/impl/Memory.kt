@@ -3,9 +3,11 @@ package com.github.hoshikurama.ticketmanager.NEWAPPLICATION.impl
 import com.github.hoshikurama.ticketmanager.api.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.database.DBResult
 import com.github.hoshikurama.ticketmanager.api.database.SearchConstraints
-import com.github.hoshikurama.ticketmanager.api.ticket.Creator
-import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
-import com.github.hoshikurama.ticketmanager.commonse.api.impl.DBResultSTD
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketAssignmentType
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketAction
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketInterface
+import com.github.hoshikurama.ticketmanager.commonse.api.impl.database.misc.DBResultSTD
 import com.github.hoshikurama.ticketmanager.commonse.api.impl.TicketSTD
 import com.github.hoshikurama.ticketmanager.commonse.old.misc.*
 
@@ -27,14 +29,14 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.createFile
 import kotlin.io.path.exists
 import kotlin.io.path.notExists
-
+// TODO FIX ANYTHING THAT USES ASSIGNMENT
 //TODO: This will be moved to an extension
 class Memory(
     private val filePath: String,
     private val backupFrequency: Long,
 ) : AsyncDatabase {
 
-    private val ticketMap: ConcurrentHashMap<Long, Ticket>
+    private val ticketMap: ConcurrentHashMap<Long, TicketInterface>
     private val nextTicketID: AtomicLong
     private val fileIOOccurring = AtomicBoolean(false)
 
@@ -47,7 +49,7 @@ class Memory(
         val path = Path.of("$filePath/TicketManager-Database8-Memory.ticketmanager")
 
         // Builds custom gson serializer for Creator
-        val serializer = JsonSerializer<Creator> { src, _, _ ->
+        val serializer = JsonSerializer<TicketCreator> { src, _, _ ->
             JsonObject().apply { addProperty("creator", src.asString()) }
         }
         val deserializer = JsonDeserializer { json, _, _ ->
@@ -57,8 +59,8 @@ class Memory(
                 .let { mapToCreatorOrNull(it) ?: throw Exception("Unsupported Creator Type: $it") }
         }
         customGson = GsonBuilder()
-            .registerTypeAdapter(Creator::class.java, serializer)
-            .registerTypeAdapter(Creator::class.java, deserializer)
+            .registerTypeAdapter(TicketCreator::class.java, serializer)
+            .registerTypeAdapter(TicketCreator::class.java, deserializer)
             .create()
 
         // File logic
@@ -87,7 +89,7 @@ class Memory(
         backupScheduler.schedule(::scheduleBackup, backupFrequency, TimeUnit.SECONDS)
     }
 
-    override fun setAssignmentAsync(ticketID: Long, assignment: String?): CompletableFuture<Void> {
+    override fun setAssignmentAsync(ticketID: Long, assignment: TicketAssignmentType): CompletableFuture<Void> {
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = TicketSTD(t.id, t.creator, t.priority, t.status, assignment, t.creatorStatusUpdate, t.actions)
         return CompletableFuture.completedFuture(null)
@@ -99,24 +101,24 @@ class Memory(
         return CompletableFuture.completedFuture(null)
     }
 
-    override fun setPriorityAsync(ticketID: Long, priority: Ticket.Priority): CompletableFuture<Void> {
+    override fun setPriorityAsync(ticketID: Long, priority: TicketInterface.Priority): CompletableFuture<Void> {
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = TicketSTD(t.id, t.creator, priority, t.status, t.assignedTo, t.creatorStatusUpdate, t.actions)
         return CompletableFuture.completedFuture(null)
     }
 
-    override fun setStatusAsync(ticketID: Long, status: Ticket.Status): CompletableFuture<Void> {
+    override fun setStatusAsync(ticketID: Long, status: TicketInterface.Status): CompletableFuture<Void> {
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = TicketSTD(t.id, t.creator, t.priority, status, t.assignedTo, t.creatorStatusUpdate, t.actions)
         return CompletableFuture.completedFuture(null)
     }
 
-    override fun insertActionAsync(id: Long, action: Ticket.Action): CompletableFuture<Void> {
+    override fun insertActionAsync(id: Long, action: TicketAction): CompletableFuture<Void> {
         ticketMap[id] = ticketMap[id]!! + action
         return CompletableFuture.completedFuture(null)
     }
 
-    override fun insertNewTicketAsync(ticket: Ticket): CompletableFuture<Long> {
+    override fun insertNewTicketAsync(ticket: TicketInterface): CompletableFuture<Long> {
         val newID = nextTicketID.getAndIncrement()
         val newTicket = TicketSTD(newID, ticket.creator, ticket.priority, ticket.status, ticket.assignedTo, ticket.creatorStatusUpdate, ticket.actions)
 
@@ -124,30 +126,30 @@ class Memory(
         return CompletableFuture.completedFuture(newID)
     }
 
-    private fun getTicketsAsync(ids: List<Long>): List<Ticket> {
+    private fun getTicketsAsync(ids: List<Long>): List<TicketInterface> {
         return ids.asParallelStream().map(ticketMap::get).filterNotNull().toList()
     }
 
-    override fun getTicketOrNullAsync(id: Long): CompletableFuture<Ticket?> {
+    override fun getTicketOrNullAsync(id: Long): CompletableFuture<TicketInterface?> {
         return CompletableFuture.completedFuture(ticketMap[id])
     }
 
     override fun getOpenTicketsAsync(page: Int, pageSize: Int): CompletableFuture<DBResult> {
-        return getTicketsFilteredBy(page, pageSize) { it.status == Ticket.Status.OPEN }
+        return getTicketsFilteredBy(page, pageSize) { it.status == TicketInterface.Status.OPEN }
     }
 
     override fun getOpenTicketsAssignedToAsync(
         page: Int,
         pageSize: Int,
-        assignment: String,
+        assignment: TicketAssignmentType,
         unfixedGroupAssignment: List<String>
     ): CompletableFuture<DBResult> {
         val assignments = unfixedGroupAssignment.map { "::$it" } + assignment
-        return getTicketsFilteredBy(page, pageSize) { it.status == Ticket.Status.OPEN && it.assignedTo in assignments }
+        return getTicketsFilteredBy(page, pageSize) { it.status == TicketInterface.Status.OPEN && it.assignedTo in assignments }
     }
 
     override fun getOpenTicketsNotAssignedAsync(page: Int, pageSize: Int): CompletableFuture<DBResult> {
-        return getTicketsFilteredBy(page, pageSize) { it.status == Ticket.Status.OPEN && it.assignedTo == null }
+        return getTicketsFilteredBy(page, pageSize) { it.status == TicketInterface.Status.OPEN && it.assignedTo == null }
     }
 
     private fun getTicketsFilteredBy(page: Int, pageSize: Int, f: TicketPredicate): CompletableFuture<DBResult> = CompletableFuture.supplyAsync {
@@ -158,7 +160,7 @@ class Memory(
             .asParallelStream()
             .filter(f)
             .toList()
-            .sortedWith(compareByDescending<Ticket> { it.priority.level }.thenByDescending { it.id })
+            .sortedWith(compareByDescending<TicketInterface> { it.priority.level }.thenByDescending { it.id })
             .apply { totalSize = count() }
             .run { if (pageSize == 0 || isEmpty()) listOf(this) else chunked(pageSize) }
             .apply { totalPages = count() }
@@ -177,24 +179,24 @@ class Memory(
         )
     }
 
-    override fun massCloseTicketsAsync(lowerBound: Long, upperBound: Long, actor: Creator, ticketLoc: Ticket.CreationLocation): CompletableFuture<Void> = CompletableFuture.runAsync {
+    override fun massCloseTicketsAsync(lowerBound: Long, upperBound: Long, actor: TicketCreator, ticketLoc: TicketInterface.CreationLocation): CompletableFuture<Void> = CompletableFuture.runAsync {
         val curTime = Instant.now().epochSecond
 
         (lowerBound..upperBound).asSequence()
             .asParallelStream()
             .mapNotNull { ticketMap[it] }
-            .filter { it.status == Ticket.Status.OPEN }
+            .filter { it.status == TicketInterface.Status.OPEN }
             .toList()
             .forEach {
                 val action = TicketSTD.ActionSTD(TicketSTD.ActionSTD.MassCloseSTD, actor, timestamp = curTime, location = ticketLoc)
-                ticketMap[it.id] = TicketSTD(it.id, it.creator, it.priority, Ticket.Status.CLOSED, it.assignedTo, it.creatorStatusUpdate, it.actions + action)
+                ticketMap[it.id] = TicketSTD(it.id, it.creator, it.priority, TicketInterface.Status.CLOSED, it.assignedTo, it.creatorStatusUpdate, it.actions + action)
             }
     }
 
     override fun countOpenTicketsAsync(): CompletableFuture<Long> = CompletableFuture.supplyAsync {
         ticketMap.values.toList()
             .asParallelStream()
-            .filter { it.status == Ticket.Status.OPEN }
+            .filter { it.status == TicketInterface.Status.OPEN }
             .count()
     }
 
@@ -206,7 +208,7 @@ class Memory(
 
         ticketMap.values.toList()
             .asParallelStream()
-            .filter { it.status == Ticket.Status.OPEN && it.assignedTo in assignments }
+            .filter { it.status == TicketInterface.Status.OPEN && it.assignedTo in assignments }
             .count()
     }
 
@@ -219,28 +221,28 @@ class Memory(
 
         constraints.run {
             // Builds Constraints
-            val closeVariations = listOf(Ticket.Action.Type.TypeEnum.CLOSE, Ticket.Action.Type.TypeEnum.MASS_CLOSE)
+            val closeVariations = listOf(TicketInterface.Action.Type.TypeEnum.CLOSE, TicketInterface.Action.Type.TypeEnum.MASS_CLOSE)
 
-            status?.run {{ t: Ticket -> t.status == value }}?.apply(functions::add)
-            priority?.run {{ t: Ticket -> t.priority == value }}?.apply(functions::add)
-            creator?.run {{ t: Ticket -> t.creator == value }}?.apply(functions::add)
-            assigned?.run {{ t: Ticket -> t.assignedTo == value }}?.apply(functions::add)
-            creationTime?.run {{ t: Ticket -> t.actions[0].timestamp >= value}}?.apply(functions::add)
-            world?.run {{ t: Ticket -> t.actions[0].location.world?.equals(value) ?: false }}?.apply(functions::add)
-            closedBy?.run {{ t: Ticket -> t.actions.any { it.type.getTypeEnum() in closeVariations && it.user == value }}}?.apply(functions::add)
-            lastClosedBy?.run {{ t: Ticket -> t.actions.lastOrNull { it.type.getTypeEnum() in closeVariations }?.run { user == value } ?: false }}?.apply(functions::add)
+            status?.run {{ t: TicketInterface -> t.status == value }}?.apply(functions::add)
+            priority?.run {{ t: TicketInterface -> t.priority == value }}?.apply(functions::add)
+            creator?.run {{ t: TicketInterface -> t.creator == value }}?.apply(functions::add)
+            assigned?.run {{ t: TicketInterface -> t.assignedTo == value }}?.apply(functions::add)
+            creationTime?.run {{ t: TicketInterface -> t.actions[0].timestamp >= value}}?.apply(functions::add)
+            world?.run {{ t: TicketInterface -> t.actions[0].location.world?.equals(value) ?: false }}?.apply(functions::add)
+            closedBy?.run {{ t: TicketInterface -> t.actions.any { it.type.getTypeEnum() in closeVariations && it.user == value }}}?.apply(functions::add)
+            lastClosedBy?.run {{ t: TicketInterface -> t.actions.lastOrNull { it.type.getTypeEnum() in closeVariations }?.run { user == value } ?: false }}?.apply(functions::add)
 
-            keywords?.run {{ t: Ticket ->
+            keywords?.run {{ t: TicketInterface ->
                 val comments = t.actions
-                    .filter { it.type is Ticket.Action.Type.OPEN || it.type is Ticket.Action.Type.COMMENT }
+                    .filter { it.type is TicketInterface.Action.Type.OPEN || it.type is TicketInterface.Action.Type.COMMENT }
                     .map { it.type.getMessage()!! }
                 value.map { w -> comments.any { it.lowercase().contains(w.lowercase()) } }
                     .all { it }
             }}?.apply(functions::add)
         }
 
-        val combinedFunction = if (functions.isNotEmpty()) { t: Ticket -> functions.all { it(t) }}
-        else { _: Ticket -> true }
+        val combinedFunction = if (functions.isNotEmpty()) { t: TicketInterface -> functions.all { it(t) }}
+        else { _: TicketInterface -> true }
 
         val totalSize: Int
         val maxPages: Int
@@ -274,7 +276,7 @@ class Memory(
             .toList()
     }
 
-    override fun getTicketIDsWithUpdatesForAsync(creator: Creator): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
+    override fun getTicketIDsWithUpdatesForAsync(creator: TicketCreator): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
         ticketMap.values.toList()
             .asParallelStream()
             .filter { it.creatorStatusUpdate && it.creator == creator }
@@ -282,7 +284,7 @@ class Memory(
             .toList()
     }
 
-    override fun getOwnedTicketIDsAsync(creator: Creator): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
+    override fun getOwnedTicketIDsAsync(creator: TicketCreator): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
         ticketMap.values.toList()
             .asParallelStream()
             .filter { it.creator equalTo creator }
@@ -332,10 +334,10 @@ class Memory(
     }
 }
 
-private fun Ticket.Action.Type.getMessage(): String? = when (this) {
-    is Ticket.Action.Type.OPEN -> message
-    is Ticket.Action.Type.ASSIGN -> assignment
-    is Ticket.Action.Type.COMMENT -> comment
-    is Ticket.Action.Type.SET_PRIORITY -> priority.level.toString()
+private fun TicketInterface.Action.Type.getMessage(): String? = when (this) {
+    is TicketInterface.Action.Type.OPEN -> message
+    is TicketInterface.Action.Type.ASSIGN -> assignment
+    is TicketInterface.Action.Type.COMMENT -> comment
+    is TicketInterface.Action.Type.SET_PRIORITY -> priority.level.toString()
     else -> null
 }

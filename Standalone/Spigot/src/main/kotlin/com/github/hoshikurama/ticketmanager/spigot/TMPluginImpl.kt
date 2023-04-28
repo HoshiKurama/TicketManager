@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.spigot
 
 import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
-import com.github.hoshikurama.ticketmanager.commonse.old.TMPlugin
+import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.old.misc.ConfigParameters
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import org.bstats.bukkit.Metrics

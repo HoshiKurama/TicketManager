@@ -1,33 +1,28 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.old.platform.Console
-import com.github.hoshikurama.ticketmanager.commonse.old.platform.OnlinePlayer
-import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
+
+import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 
 class PaperPlayer(
     internal val pPlayer: org.bukkit.entity.Player,
-    localeHandler: LocaleHandler,
     serverName: String?,
-) : OnlinePlayer(
+) : CommandSender.Active.OnlinePlayer(
     serverName = serverName,
-    uniqueID = pPlayer.uniqueId,
-    name = pPlayer.name,
-    locale = localeHandler.getOrDefault(pPlayer.locale().toString()),
+    uuid = pPlayer.uniqueId,
+    username = pPlayer.name,
 ) {
-    override fun getLocAsTicketLoc(): Ticket.TicketLocation {
-        return pPlayer.location.run { Ticket.TicketLocation(serverName, world.name, blockX, blockY, blockZ) }
+    override fun getLocAsTicketLoc(): TicketCreationLocation {
+        return pPlayer.location.run { TicketCreationLocation.FromPlayer(serverName, world.name, blockX, blockY, blockZ) }
     }
 
     override fun sendMessage(component: Component) = pPlayer.sendMessage(component)
 }
 
 class PaperConsole(
-    locale: TMLocale,
     serverName: String?,
-) : Console(locale, serverName) {
+) : CommandSender.Active.OnlineConsole(serverName) {
     override fun sendMessage(component: Component) = Bukkit.getConsoleSender().sendMessage(component)
 }

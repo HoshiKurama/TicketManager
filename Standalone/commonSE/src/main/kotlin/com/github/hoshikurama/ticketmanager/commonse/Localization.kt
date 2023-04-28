@@ -2,15 +2,16 @@ package com.github.hoshikurama.ticketmanager.commonse
 
 import com.github.hoshikurama.ticketmanager.common.CommonKeywords
 import com.github.hoshikurama.ticketmanager.common.supportedLocales
-import org.yaml.snakeyaml.Yaml
+import com.github.hoshikurama.ticketmanager.shaded.org.yaml.snakeyaml.Yaml
+import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.io.path.inputStream
 
 class TMLocale(
 // Core locale file fields
     // Miscellaneous
-    override val consoleName: String,
-    override val miscNobody: String,
+    val consoleName: String,
+    val miscNobody: String,
     val wikiLink: String,
 
     // Command Types
@@ -86,11 +87,11 @@ class TMLocale(
 
 // Visual Player-Modifiable Values
     // Priority
-    override val priorityLowest: String,
-    override val priorityLow: String,
-    override val priorityNormal: String,
-    override val priorityHigh: String,
-    override val priorityHighest: String,
+    val priorityLowest: String,
+    val priorityLow: String,
+    val priorityNormal: String,
+    val priorityHigh: String,
+    val priorityHighest: String,
     val priorityColourLowestHex: String,
     val priorityColourLowHex: String,
     val priorityColourNormalHex: String,
@@ -143,6 +144,13 @@ class TMLocale(
     val warningsInvalidConfig: String,
     val warningsInternalError: String,
 
+    //Brigadier Warnings
+    val brigadierNotYourTicket: String,
+    val brigadierInvalidID: String,
+    val brigadierTicketAlreadyClosed: String,
+    val brigadierNoPermission2Modify: String,
+
+    //TODO REMOVE
     // Discord Notifications
     override val discordOnAssign: String,
     override val discordOnClose: String,
@@ -260,9 +268,9 @@ class TMLocale(
     val notifyTicketReopenEvent: String,
     val notifyTicketSetPrioritySuccess: String,
     val notifyTicketSetPriorityEvent: String,
-    override val notifyPluginUpdate: String,
+    val notifyPluginUpdate: String,
     val notifyProxyUpdate: String,
-) : CommonKeywords {
+) {
     companion object {
         private fun loadYMLFrom(location: String): Map<String, String> =
             this::class.java.classLoader
@@ -310,7 +318,8 @@ class TMLocale(
             val warningHeader = visuals["Warning_Header"]!!
 
             fun readAndPrime(key: String) = inlinePlaceholders(visuals[key]!!, uniformHeader, colour)
-            fun inlineWarningHeader(key: String) = inlinePlaceholders(visuals[key]!!.replace("%Header%", warningHeader), uniformHeader, colour)
+            fun inlineWarningHeader(key: String) = visuals[key]//inlinePlaceholders(visuals[key]!!.replace("%Header%", warningHeader), uniformHeader, colour)
+            //TODO THIS IS UNDONE FOR NOW AS I'M DOING STUFF WITH BRIGADIER
 
             return TMLocale(
                 // Core Aspects
@@ -527,12 +536,15 @@ class TMLocale(
                 notifyTicketSetPriorityEvent = readAndPrime("Notify_Event_SetPriority")!!,
                 notifyPluginUpdate = readAndPrime("Notify_Event_PluginUpdate")!!,
                 notifyProxyUpdate = readAndPrime("Notify_Event_ProxyUpdate")!!,
+                brigadierNotYourTicket = core["Brigadier_NotYourTicket"]!!,
+                brigadierInvalidID = core["Brigadier_InvalidID"]!!,
+                brigadierTicketAlreadyClosed = core["Brigadier_TicketAlreadyClosed"]!!,
             )
         }
 
-        fun buildLocaleFromExternal(localeID: String, rootFileLocation: String, colour: String, internalVersion: TMLocale): TMLocale {
+        fun buildLocaleFromExternal(localeID: String, localesFolderPath: Path, colour: String, internalVersion: TMLocale): TMLocale {
             val visuals: Map<String, String> = try {
-                Paths.get("$rootFileLocation/locales/$localeID.yml")
+                localesFolderPath.resolve("$localeID.yml")
                     .inputStream()
                     .let { Yaml().load(it) }
             } catch (e: Exception) { mapOf() }
@@ -612,6 +624,9 @@ class TMLocale(
                 consoleErrorScheduledNotifications = internalVersion.consoleErrorScheduledNotifications,
                 consoleErrorCommandExecution = internalVersion.consoleErrorCommandExecution,
                 consoleErrorDBConversion = internalVersion.consoleErrorDBConversion,
+                brigadierNotYourTicket = internalVersion.brigadierNotYourTicket,
+                brigadierInvalidID = internalVersion.brigadierInvalidID,
+                brigadierTicketAlreadyClosed = internalVersion.brigadierTicketAlreadyClosed,
                 // Visual Aspects
                 priorityLowest = visuals["Priority_Lowest"] ?: internalVersion.priorityLowest,
                 priorityLow = visuals["Priority_Low"] ?: internalVersion.priorityLow,
@@ -767,14 +782,13 @@ class TMLocale(
 fun buildLocale(
     mainColourCode: String,
     preferredLocale: String,
-    rootFolderLocation: String,
+    localesFolderPath: Path,
     enableAVC: Boolean,
 ): TMLocale {
-
     val selectedLocale = preferredLocale.lowercase()
         .takeIf(supportedLocales::contains) ?: "en_ca"
 
     val internalLocaleBuild = TMLocale.buildLocaleFromInternal(selectedLocale, mainColourCode)
-    return if (enableAVC) TMLocale.buildLocaleFromExternal(selectedLocale, rootFolderLocation, mainColourCode, internalLocaleBuild)
+    return if (enableAVC) TMLocale.buildLocaleFromExternal(selectedLocale, localesFolderPath, mainColourCode, internalLocaleBuild)
         else internalLocaleBuild
 }

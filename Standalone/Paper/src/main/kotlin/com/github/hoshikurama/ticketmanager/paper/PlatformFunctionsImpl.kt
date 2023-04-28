@@ -1,12 +1,7 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.old.misc.encodeRequestTP
-import com.github.hoshikurama.ticketmanager.commonse.old.platform.OnlinePlayer
-import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.old.platform.Sender
-import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
 import net.luckperms.api.LuckPermsProvider
@@ -22,7 +17,7 @@ class PlatformFunctionsImpl(
     private val serverName: String?,
 ) : PlatformFunctions {
 
-    override fun massNotify(localeHandler: LocaleHandler, permission: String, localeMsg: (TMLocale) -> Component) {
+    override fun massNotify(locale, permission: String, localeMsg: (TMLocale) -> Component) {
         Bukkit.getConsoleSender().sendMessage(localeMsg(localeHandler.consoleLocale))
         val lpUserAdapter = LuckPermsProvider.get().getPlayerAdapter(Player::class.java)
 
@@ -38,7 +33,7 @@ class PlatformFunctionsImpl(
     }
 
     override fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<OnlinePlayer> {
-        return Bukkit.getOnlinePlayers().map { PaperPlayer(it, localeHandler, serverName) }
+        return Bukkit.getOnlinePlayers().map { PaperPlayer(it, serverName) }
     }
 
     override fun offlinePlayerNameToUUIDOrNull(name: String): UUID? {
@@ -84,7 +79,7 @@ class PlatformFunctionsImpl(
         Bukkit.getLogger().log(Level.SEVERE, message)
     }
 
-    override fun getOnlineSeenPlayerNames(sender: Sender): List<String> {
+    override fun getOnlineSeenPlayerNames(sender: CommandSender): List<String> {
         return if (sender is PaperPlayer) {
             val player = sender.pPlayer
             Bukkit.getOnlinePlayers()

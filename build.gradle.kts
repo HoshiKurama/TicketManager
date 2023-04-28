@@ -25,4 +25,8 @@ subprojects {
         kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
     }
 
+    tasks.withType<JavaCompile>() {
+        sourceCompatibility = "17"
+        targetCompatibility = "17"
+    }
 }

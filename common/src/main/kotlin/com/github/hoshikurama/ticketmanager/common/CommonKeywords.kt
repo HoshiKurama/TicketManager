@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common
 
+//todo this can go away
 interface CommonKeywords {
     val consoleName: String
     val miscNobody: String

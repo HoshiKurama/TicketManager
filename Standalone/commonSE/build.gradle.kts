@@ -16,22 +16,26 @@ repositories {
 }
 
 dependencies {
+    // Included by shading
     implementation(project(":common"))
+    implementation(project(":Standalone:commonSE:ShadedDependencies", "shadow"))
+
+    // Not included in shade but needed for shading later
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.0-Beta")
-    implementation("com.mysql:mysql-connector-j:8.0.32") //TODO EXPORT
-    implementation("com.github.jasync-sql:jasync-mysql:2.1.23") //TODO EXPORT
     implementation("com.github.seratch:kotliquery:1.9.0")
-    implementation("net.kyori:adventure-api:4.13.0")
-    implementation("net.kyori:adventure-extra-kotlin:4.13.0")
-    implementation("net.kyori:adventure-text-minimessage:4.13.0")
-    implementation("org.yaml:snakeyaml:2.0")
-    implementation("joda-time:joda-time:2.12.5")
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("com.h2database:h2:2.1.214")
-    implementation("com.google.guava:guava:31.1-jre")
+    implementation("net.kyori:adventure-extra-kotlin:4.13.1")
+
+    // Not included but shaded later only on certain platforms
+    implementation("net.kyori:adventure-text-minimessage:4.13.1")
+
+    // Not included and not shaded later
     compileOnly("net.luckperms:api:5.4")
+    implementation("net.kyori:adventure-api:4.13.1")
+
+    //TODO CATEGORIZE
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
 }
 
 tasks {
@@ -39,18 +43,15 @@ tasks {
 
     //.https://github.com/johnrengelman/shadow/issues/44
     shadowJar {
-        isEnableRelocation = true
-        relocationPrefix = "com.github.hoshikurama.ticketmanager.shaded"
-
         dependencies {
             include(project(":common"))
-
-            exclude(dependency("net.luckperms:api"))
-
-            // Exclude Kyori API
-            exclude(dependency("net.kyori:adventure-api"))
-            exclude(dependency("net.kyori:examination-api"))
-            exclude(dependency("net.kyori:examination-string"))
+            include(project(":Standalone:commonSE:ShadedDependencies"))
         }
     }
 }
+/*
+// Exclude Kyori API
+            exclude(dependency("net.kyori:adventure-api"))
+            exclude(dependency("net.kyori:examination-api"))
+            exclude(dependency("net.kyori:examination-string"))
+ */

@@ -1,10 +1,10 @@
 package com.github.hoshikurama.ticketmanager.spigot
 
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketInterface
 import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.old.platform.Console
-import com.github.hoshikurama.ticketmanager.commonse.old.platform.OnlinePlayer
-import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.commonse.commands.Console
+import com.github.hoshikurama.ticketmanager.commonse.commands.OnlinePlayer
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
 
@@ -18,8 +18,8 @@ class SpigotPlayer(
     locale = localeHandler.getOrDefault(sPlayer.locale),
     serverName = null,
 ) {
-    override fun getLocAsTicketLoc(): Ticket.TicketLocation {
-        return sPlayer.location.run { Ticket.TicketLocation(null, world?.name, blockX, blockY, blockZ) }
+    override fun getLocAsTicketLoc(): TicketInterface.CreationLocation {
+        return sPlayer.location.run { TicketInterface.TicketLocation(null, world?.name, blockX, blockY, blockZ) }
     }
 
     override fun sendMessage(component: Component) {

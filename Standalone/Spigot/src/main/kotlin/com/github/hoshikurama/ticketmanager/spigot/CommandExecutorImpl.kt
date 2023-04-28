@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.spigot
 
-import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalPluginState
+import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
 import com.github.hoshikurama.ticketmanager.commonse.old.data.InstancePluginState
 import com.github.hoshikurama.ticketmanager.commonse.old.pipeline.PurePipeline
 import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
@@ -12,7 +12,7 @@ import org.bukkit.command.CommandSender
 class CommandExecutorImpl(
     platform: PlatformFunctions,
     instanceState: InstancePluginState,
-    globalState: GlobalPluginState,
+    globalState: GlobalState,
     private val adventure: BukkitAudiences,
 ) : CommandExecutor, PurePipeline(platform, instanceState, globalState) {
 

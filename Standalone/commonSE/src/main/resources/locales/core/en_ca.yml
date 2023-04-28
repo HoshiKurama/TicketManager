@@ -73,3 +73,8 @@ ConsoleError_DatabaseInitialize: '[TicketManager] An error occurred during datab
 ConsoleError_DiscordInitialize: '[TicketManager] An error occurred during initialization of the Discord bot!'
 ConsoleError_ScheduledNotifications: '[TicketManager] An error occurred while performing scheduled notifications!'
 ConsoleWarning_InvalidConfigNode: '[TicketManager] An error occurred while reading configuration node "%node%"! Defaulting to: %default%'
+#
+# Brigadier/CommandAPI Warnings
+Brigadier_NotYourTicket: 'You do not have permission to modify this ticket'
+Brigadier_InvalidID: 'No ticket exists with this ID'
+Brigadier_TicketAlreadyClosed: 'Ticket with matching ID is closed and may not be modified'
