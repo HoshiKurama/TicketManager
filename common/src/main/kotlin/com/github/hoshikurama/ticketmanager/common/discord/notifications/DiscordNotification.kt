@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common.discord.notifications
 
+/*
 import com.github.hoshikurama.ticketmanager.common.CommonKeywords
 import com.github.hoshikurama.ticketmanager.common.discord.decodeToDiscordTarget
 import com.google.common.io.ByteArrayDataOutput
@@ -66,3 +67,5 @@ interface DiscordNotification {
 inline fun createByteArrayMessage(f: ByteArrayDataOutput.() -> Unit): ByteArray = ByteStreams.newDataOutput()
     .apply(f)
     .run(ByteArrayDataOutput::toByteArray)
+
+ */

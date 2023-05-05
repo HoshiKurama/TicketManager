@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common.discord
 
-import com.github.hoshikurama.ticketmanager.common.CommonKeywords
+/*
 import com.github.hoshikurama.ticketmanager.common.discord.notifications.DiscordNotification
 import discord4j.common.util.Snowflake
 import discord4j.core.DiscordClient
@@ -37,3 +37,5 @@ class Discord(
             .subscribe()
     }
 }
+
+ */

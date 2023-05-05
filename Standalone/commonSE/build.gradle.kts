@@ -1,5 +1,5 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    //id("com.github.johnrengelman.shadow") version "8.1.1"
     id("com.github.ben-manes.versions") version "0.46.0" // https://github.com/ben-manes/gradle-versions-plugin
     kotlin("jvm")
     java
@@ -16,20 +16,13 @@ repositories {
 }
 
 dependencies {
-    // Included by shading
-    implementation(project(":common"))
-    implementation(project(":Standalone:commonSE:ShadedDependencies", "shadow"))
-
-    // Not included in shade but needed for shading later
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
-    runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.0-Beta")
-    implementation("com.github.seratch:kotliquery:1.9.0")
-    implementation("net.kyori:adventure-extra-kotlin:4.13.1")
 
     // Not included but shaded later only on certain platforms
     implementation("net.kyori:adventure-text-minimessage:4.13.1")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.0-Beta")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
 
     // Not included and not shaded later
     compileOnly("net.luckperms:api:5.4")
@@ -42,15 +35,12 @@ tasks {
 
     //.https://github.com/johnrengelman/shadow/issues/44
     shadowJar {
-        dependencies {
-            include(project(":common"))
-            include(project(":Standalone:commonSE:ShadedDependencies"))
-        }
+        dependencies {}
     }
 }
 /*
 // Exclude Kyori API
-            exclude(dependency("net.kyori:adventure-api"))
-            exclude(dependency("net.kyori:examination-api"))
-            exclude(dependency("net.kyori:examination-string"))
+    exclude(dependency("net.kyori:adventure-api"))
+    exclude(dependency("net.kyori:examination-api"))
+    exclude(dependency("net.kyori:examination-string"))
  */

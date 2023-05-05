@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common.discord
 
+/*
 import com.github.hoshikurama.ticketmanager.common.CommonKeywords
 
 sealed interface DiscordTarget {
@@ -36,3 +37,5 @@ fun decodeToDiscordTarget(keywords: CommonKeywords, str: String): DiscordTarget 
         DiscordTarget.Type.NO_ONE -> DiscordNoOne(keywords)
     }
 }
+
+ */

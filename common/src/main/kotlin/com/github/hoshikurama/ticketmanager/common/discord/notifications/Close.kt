@@ -1,5 +1,5 @@
 package com.github.hoshikurama.ticketmanager.common.discord.notifications
-
+/*
 import com.github.hoshikurama.ticketmanager.common.discord.DiscordTarget
 import com.github.hoshikurama.ticketmanager.common.CommonKeywords
 import discord4j.core.spec.EmbedCreateFields
@@ -27,3 +27,5 @@ class Close(
         )
     }
 }
+
+ */
