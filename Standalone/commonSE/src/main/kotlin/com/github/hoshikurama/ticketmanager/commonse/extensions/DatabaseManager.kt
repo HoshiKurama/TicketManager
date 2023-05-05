@@ -38,6 +38,7 @@ object DatabaseManager : DatabaseRegistryJava, DatabaseRegistryKotlin {
         desiredDatabase: String,
         platformFunctions: PlatformFunctions,
         configState: ConfigState,
+        activeLocale: TMLocale,
     ): Deferred<AsyncDatabase> = coroutineScope {
         // Wait for up to 30 seconds before the plugin is forced to accept a default Cached_H2 implementation
         // Check each second for if the desired databaseBuilder is in the map
@@ -53,7 +54,7 @@ object DatabaseManager : DatabaseRegistryJava, DatabaseRegistryKotlin {
             try {
                 map[desiredDatabase]?.invoke() ?: map[defaultDatabase]!!.invoke()
             } catch (e: Exception) {
-                pushErrors(platformFunctions, configState, e, TMLocale::consoleErrorBadDatabase)
+                pushErrors(platformFunctions, configState, activeLocale, e, TMLocale::consoleErrorBadDatabase)
                 map[defaultDatabase]!!.invoke()
             }
         }

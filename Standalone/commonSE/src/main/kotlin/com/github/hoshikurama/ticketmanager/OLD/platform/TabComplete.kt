@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.OLD.platform
 
+/*
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.commands.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.commands.CommandSender
@@ -330,4 +331,7 @@ private object Optimizer {
             }
         }
     }
+ */
+
+
  */

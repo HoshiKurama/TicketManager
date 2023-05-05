@@ -5,6 +5,7 @@ import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
 import com.github.hoshikurama.ticketmanager.commonse.TMCoroutine
+import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
 import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
@@ -19,6 +20,7 @@ import kotlinx.coroutines.async
 abstract class PlayerJoinEvent(
     protected val platformFunctions: PlatformFunctions,
     protected val configState: ConfigState,
+    protected val locale: TMLocale,
 ) {
 
     fun whenPlayerJoinsAsync(player: CommandSender.Active.OnlinePlayer, serverCount: Int) {
@@ -33,7 +35,7 @@ abstract class PlayerJoinEvent(
                             ?: return@launchSupervised // Only present if newer version is available and plugin can check
                         if (!player.has("ticketmanager.notify.pluginUpdate")) return@launchSupervised
 
-                        GlobalState.activeLocale.notifyPluginUpdate.parseMiniMessage(
+                        locale.notifyPluginUpdate.parseMiniMessage(
                             "current" templated mainPluginVersion,
                             "latest" templated newerVersion,
                         ).run(player::sendMessage)
@@ -55,7 +57,7 @@ abstract class PlayerJoinEvent(
                         }
 
                         val (curVer, latestVer) = configState.proxyUpdate!!
-                        GlobalState.activeLocale.notifyProxyUpdate.parseMiniMessage(
+                        locale.notifyProxyUpdate.parseMiniMessage(
                             "current" templated curVer,
                             "latest" templated latestVer,
                         ).run(player::sendMessage)
@@ -70,7 +72,7 @@ abstract class PlayerJoinEvent(
                     if (ids.isEmpty()) return@launchSupervised
 
                     val template =
-                        if (ids.size == 1) GlobalState.activeLocale.notifyUnreadUpdateSingle else GlobalState.activeLocale.notifyUnreadUpdateMulti
+                        if (ids.size == 1) locale.notifyUnreadUpdateSingle else locale.notifyUnreadUpdateMulti
                     val tickets = ids.joinToString(", ")
 
                     template.parseMiniMessage("num" templated tickets).run(player::sendMessage)
@@ -89,14 +91,14 @@ abstract class PlayerJoinEvent(
                     }
 
                     if (openCF.await() != 0L)
-                        GlobalState.activeLocale.notifyOpenAssigned.parseMiniMessage(
+                        locale.notifyOpenAssigned.parseMiniMessage(
                             "open" templated openCF.await().toString(),
                             "assigned" templated assignedCF.await().toString()
                         ).run(player::sendMessage)
                 }
             }
         } catch (e: Exception) {
-            pushErrors(platformFunctions, configState, e) { "An error occurred when a player joined!" }
+            pushErrors(platformFunctions, configState, locale, e) { "An error occurred when a player joined!" }
             //TODO: LOCALIZE THIS EVENTUALLY
         }
     }

@@ -156,7 +156,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
         val totalSize: Int
         val totalPages: Int
 
-        val results = ticketMap.values.toList()
+        val results = ticketMap.values
             .asParallelStream()
             .filter(f)
             .toList()
@@ -211,8 +211,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
     }
 
     override fun countOpenTicketsAsync(): CompletableFuture<Long> {
-       return ticketMap.values.toList()
-            .asParallelStream()
+       return ticketMap.values.asParallelStream()
             .filter { it.status == Ticket.Status.OPEN }
             .count()
            .let { CompletableFuture.completedFuture(it) }
@@ -224,8 +223,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
         unfixedGroupAssignment: List<String>
     ): CompletableFuture<Long> {
         val assignments = unfixedGroupAssignment.map { TicketAssignmentType.Other("::$it" ) } + assignment
-        return ticketMap.values.toList()
-            .asParallelStream()
+        return ticketMap.values.asParallelStream()
             .filter { it.status == Ticket.Status.OPEN && it.assignedTo in assignments }
             .count()
             .let { CompletableFuture.completedFuture(it) }
@@ -265,7 +263,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
 
         val totalSize: Int
         val maxPages: Int
-        val results = ticketMap.values.toList().asParallelStream()
+        val results = ticketMap.values.asParallelStream()
             .filter(combinedFunction)
             .toList()
             .apply { totalSize = count() }
@@ -290,8 +288,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
     }
 
     override fun getTicketIDsWithUpdatesAsync(): CompletableFuture<List<Long>> {
-        return ticketMap.values.toList()
-            .asParallelStream()
+        return ticketMap.values.asParallelStream()
             .filter { it.creatorStatusUpdate }
             .map(Ticket::id)
             .toList()
@@ -299,8 +296,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
     }
 
     override fun getTicketIDsWithUpdatesForAsync(creator: TicketCreator): CompletableFuture<List<Long>> {
-        return ticketMap.values.toList()
-            .asParallelStream()
+        return ticketMap.values.asParallelStream()
             .filter { it.creatorStatusUpdate && it.creator == creator }
             .map(Ticket::id)
             .toList()
@@ -308,16 +304,22 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
     }
 
     override fun getOwnedTicketIDsAsync(creator: TicketCreator): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
-        ticketMap.values.toList()
-            .asParallelStream()
+        ticketMap.values.asParallelStream()
             .filter { it.creator == creator }
             .map(Ticket::id)
             .toList()
     }
 
     override fun getOpenTicketIDsAsync(): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
-        ticketMap.values.toList()
-            .asParallelStream()
+        ticketMap.values.asParallelStream()
+            .filter { it.status == Ticket.Status.OPEN }
+            .map(Ticket::id)
+            .toList()
+    }
+
+    override fun getOpenTicketIDsForUser(creator: TicketCreator): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
+        ticketMap.values.asParallelStream()
+            .filter { it.creator == creator }
             .filter { it.status == Ticket.Status.OPEN }
             .map(Ticket::id)
             .toList()

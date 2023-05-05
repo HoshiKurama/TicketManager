@@ -10,13 +10,12 @@ import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 
-
-
 //TODO SPLIT PROXY FROM TICKETCREATOR
 inline fun executeNotificationsAsync(
     platform: PlatformFunctions,
     configState: ConfigState,
     commandSender: CommandSender.Active,
+    activeLocale: TMLocale,
     crossinline command: suspend () -> MessageNotification<CommandSender.Active>,
 ) {
     TMCoroutine.launchSupervised {
@@ -34,15 +33,15 @@ inline fun executeNotificationsAsync(
                             massNotifyPerm
                         )
                     )
-                        generateCreatorMSG().run(creatorPlayer::sendMessage)
+                        generateCreatorMSG(activeLocale).run(creatorPlayer::sendMessage)
                 }
 
                 if (sendMassNotify)
-                    platform.massNotify(massNotifyPerm, generateMassNotify())
+                    platform.massNotify(massNotifyPerm, generateMassNotify(activeLocale))
             }
         } catch (e: Exception) {
-            pushErrors(platform, configState, e, TMLocale::consoleErrorCommandExecution)
-            commandSender.sendMessage(GlobalState.activeLocale.warningsUnexpectedError)
+            pushErrors(platform, configState, activeLocale, e, TMLocale::consoleErrorCommandExecution)
+            commandSender.sendMessage(activeLocale.warningsUnexpectedError)
         }
     }
 }

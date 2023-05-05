@@ -535,7 +535,7 @@ class CommandTasks(
             if (results.isNotEmpty()) {
                 results.forEach { t ->
                     val id = "${t.id}"
-                    val status = t.status.toLocaledWord()
+                    val status = t.status.toLocaledWord(locale)
                     val comment = trimCommentToSize(
                         comment = (t.actions[0].type as TicketAction.Open).message,
                         preSize = id.length + status.length + locale.historyFormattingSize,
@@ -543,7 +543,7 @@ class CommandTasks(
                     )
 
                     val entry = locale.historyEntry
-                        .replace("%SCC%", t.status.getHexColour())
+                        .replace("%SCC%", t.status.getHexColour(locale))
                         .parseMiniMessage(
                             "id" templated id,
                             "status" templated status,
@@ -589,7 +589,7 @@ class CommandTasks(
             // Adds entries
             if (results.isNotEmpty()) {
                 results.forEach {
-                    val time = it.actions[0].timestamp.toLargestRelativeTime()
+                    val time = it.actions[0].timestamp.toLargestRelativeTime(locale)
                     val comment = trimCommentToSize(
                         comment = (it.actions[0].type as TicketAction.Open).message,
                         preSize = locale.searchFormattingSize + time.length,
@@ -597,13 +597,13 @@ class CommandTasks(
                     )
 
                     locale.searchEntry
-                        .replace("%PCC%", it.priority.getHexColour())
-                        .replace("%SCC%", it.status.getHexColour())
+                        .replace("%PCC%", it.priority.getHexColour(locale))
+                        .replace("%SCC%", it.status.getHexColour(locale))
                         .parseMiniMessage(
                             "id" templated "${it.id}",
-                            "status" templated it.status.toLocaledWord(),
+                            "status" templated it.status.toLocaledWord(locale),
                             "creator" templated it.creator.attemptName(),
-                            "assignment" templated it.assignedTo.toLocalizedName(),
+                            "assignment" templated it.assignedTo.toLocalizedName(locale),
                             "world" templated ((it.actions[0].location as? TicketCreationLocation.FromPlayer)?.world ?: ""),
                             "time" templated time,
                             "comment" templated comment,
@@ -758,11 +758,11 @@ class CommandTasks(
 
         fun formatDeepAction(action: TicketAction): List<Component> {
             val templatedUser = "user" templated action.user.attemptName()
-            val templatedTime = "time" templated action.timestamp.toLargestRelativeTime()
+            val templatedTime = "time" templated action.timestamp.toLargestRelativeTime(locale)
 
             return when(action.type) {
                 is TicketAction.Open -> listOf(locale.viewDeepComment.parseMiniMessage(templatedUser, templatedTime, "comment" templated action.type.message))
-                is TicketAction.Assign -> listOf(locale.viewDeepAssigned.parseMiniMessage(templatedUser, templatedTime, "assignment" templated action.type.assignment.toLocalizedName()))
+                is TicketAction.Assign -> listOf(locale.viewDeepAssigned.parseMiniMessage(templatedUser, templatedTime, "assignment" templated action.type.assignment.toLocalizedName(locale)))
                 is TicketAction.CloseWithComment -> listOf(
                     locale.viewDeepComment.parseMiniMessage(templatedUser, templatedTime, "comment" templated action.type.comment),
                     locale.viewDeepClose.parseMiniMessage(templatedUser, templatedTime))
@@ -771,8 +771,8 @@ class CommandTasks(
                 is TicketAction.MassClose -> listOf(locale.viewDeepMassClose.parseMiniMessage(templatedUser, templatedTime))
                 is TicketAction.Reopen -> listOf(locale.viewDeepReopen.parseMiniMessage(templatedUser, templatedTime))
                 is TicketAction.SetPriority -> listOf(
-                    locale.viewDeepSetPriority.replace("%PCC%", action.type.priority.getHexColour())
-                        .parseMiniMessage(templatedUser,templatedTime, "priority" templated action.type.priority.toLocaledWord())
+                    locale.viewDeepSetPriority.replace("%PCC%", action.type.priority.getHexColour(locale))
+                        .parseMiniMessage(templatedUser,templatedTime, "priority" templated action.type.priority.toLocaledWord(locale))
                 )
             }
         }
@@ -886,13 +886,13 @@ class CommandTasks(
         append(locale.viewSep1.parseMiniMessage())
         append(locale.viewCreator.parseMiniMessage("creator" templated ticket.creator.attemptName()))
         append(locale.viewAssignedTo.parseMiniMessage("assignment" templated
-                ticket.assignedTo.let { if (it is TicketAssignmentType.Nobody) "" else it.toLocalizedName() })
+                ticket.assignedTo.let { if (it is TicketAssignmentType.Nobody) "" else it.toLocalizedName(locale) })
         )
-        locale.viewPriority.replace("%PCC%", ticket.priority.getHexColour())
-            .parseMiniMessage("priority" templated ticket.priority.toLocaledWord())
+        locale.viewPriority.replace("%PCC%", ticket.priority.getHexColour(locale))
+            .parseMiniMessage("priority" templated ticket.priority.toLocaledWord(locale))
             .let(this::append)
-        locale.viewStatus.replace("%SCC%", ticket.status.getHexColour())
-            .parseMiniMessage("status" templated ticket.status.toLocaledWord())
+        locale.viewStatus.replace("%SCC%", ticket.status.getHexColour(locale))
+            .parseMiniMessage("status" templated ticket.status.toLocaledWord(locale))
             .let(this::append)
 
         val locationString = ticket.actions[0].location.let {
@@ -993,8 +993,8 @@ class CommandTasks(
     ): Component {
         val id = "${ticket.id}"
         val creatorName = ticket.creator.attemptName()
-        val fixedAssign = ticket.assignedTo.let { if (it is TicketAssignmentType.Nobody) "" else it.toLocalizedName() }
-        val pcc = ticket.priority.getHexColour()
+        val fixedAssign = ticket.assignedTo.let { if (it is TicketAssignmentType.Nobody) "" else it.toLocalizedName(locale) }
+        val pcc = ticket.priority.getHexColour(locale)
 
         val fixedComment = trimCommentToSize(
             comment = (ticket.actions[0].type as TicketAction.Open).message,

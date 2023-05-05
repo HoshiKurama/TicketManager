@@ -22,6 +22,7 @@ dependencies {
 
     // Not included in shade but needed for shading later
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.0-Beta")
     implementation("com.github.seratch:kotliquery:1.9.0")
@@ -34,8 +35,6 @@ dependencies {
     compileOnly("net.luckperms:api:5.4")
     implementation("net.kyori:adventure-api:4.13.1")
 
-    //TODO CATEGORIZE
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
 }
 
 tasks {

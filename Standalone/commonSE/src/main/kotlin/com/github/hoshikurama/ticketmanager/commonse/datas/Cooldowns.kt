@@ -18,7 +18,9 @@ class Cooldown(
 ) {
     private val map = ConcurrentHashMap<UUID, Pair<Long, Job>>()
 
-    fun underCooldown(uuid: UUID) = map[uuid]?.first?.let { it <= Instant.now().epochSecond } ?: false
+    private fun underCooldown(uuid: UUID) = map[uuid]?.first?.let { it <= Instant.now().epochSecond } ?: false
+
+    fun notUnderCooldown(uuid: UUID) = !underCooldown(uuid)
 
     fun add(uuid: UUID) {
         map[uuid] = (Instant.now().epochSecond + duration) to TMCoroutine.launchGlobal {

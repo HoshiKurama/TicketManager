@@ -1,6 +1,7 @@
 package com.github.hoshikurama.ticketmanager.api.commands
 
 import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
+import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import net.kyori.adventure.text.Component
@@ -33,9 +34,9 @@ sealed interface CommandSender {
         /**
          * Represents basic information for a console sender.
          */
-        open class Console() : Info {
+        open class Console(private val locale: TMLocale) : Info {
             final override val username: String
-                get() = GlobalState.activeLocale.consoleName
+                get() = locale.consoleName
         }
     }
 
@@ -79,7 +80,10 @@ sealed interface CommandSender {
         /**
          * Actively represents Console. Implementations will be built during command execution.
          */
-        abstract class OnlineConsole(final override val serverName: String?) : Active, Info.Console() {
+        abstract class OnlineConsole(
+            final override val serverName: String?,
+            locale: TMLocale,
+        ) : Active, Info.Console(locale) {
             final override fun has(permission: String): Boolean = true
             final override fun getLocAsTicketLoc() = TicketCreationLocation.FromConsole(serverName)
         }

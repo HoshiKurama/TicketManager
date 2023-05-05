@@ -9,6 +9,8 @@ import java.util.concurrent.CompletableFuture
 fun <T> List<T>.asParallelStream() = asTypeSafeStream().parallel()
 @Suppress("Unused")
 fun <T> Sequence<T>.asParallelStream() = asTypeSafeStream().parallel()
+@Suppress("Unused")
+fun <T> MutableCollection<T>.asParallelStream() = asTypeSafeStream().parallel()
 
 fun <T: Any> Optional<T?>.unwrapOrNull(): T? = if (isPresent) get() else null
 fun <T: Any> Optional<T?>.tK(): T? = unwrapOrNull()

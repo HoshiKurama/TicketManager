@@ -148,17 +148,6 @@ class TMLocale(
     val brigadierNotYourTicket: String,
     val brigadierInvalidID: String,
     val brigadierTicketAlreadyClosed: String,
-    val brigadierNoPermission2Modify: String,
-
-    //TODO REMOVE
-    // Discord Notifications
-    override val discordOnAssign: String,
-    override val discordOnClose: String,
-    override val discordOnCloseAll: String,
-    override val discordOnComment: String,
-    override val discordOnCreate: String,
-    override val discordOnReopen: String,
-    override val discordOnPriorityChange: String,
 
     // View and Deep View
     val viewHeader: String,
@@ -318,8 +307,7 @@ class TMLocale(
             val warningHeader = visuals["Warning_Header"]!!
 
             fun readAndPrime(key: String) = inlinePlaceholders(visuals[key]!!, uniformHeader, colour)
-            fun inlineWarningHeader(key: String) = visuals[key]//inlinePlaceholders(visuals[key]!!.replace("%Header%", warningHeader), uniformHeader, colour)
-            //TODO THIS IS UNDONE FOR NOW AS I'M DOING STUFF WITH BRIGADIER
+            fun inlineWarningHeader(key: String) = inlinePlaceholders(visuals[key]!!.replace("%Header%", warningHeader), uniformHeader, colour)
 
             return TMLocale(
                 // Core Aspects
@@ -436,13 +424,6 @@ class TMLocale(
                 warningsLongTaskDuringReload = inlineWarningHeader("Warning_LongTaskDuringReload")!!,
                 warningsInvalidConfig = inlineWarningHeader("Warning_InvalidConfig")!!,
                 warningsInternalError = inlineWarningHeader("Warning_InternalError")!!,
-                discordOnAssign = visuals["Discord_OnAssign"]!!,
-                discordOnClose = visuals["Discord_OnClose"]!!,
-                discordOnCloseAll = visuals["Discord_OnCloseAll"]!!,
-                discordOnComment = visuals["Discord_OnComment"]!!,
-                discordOnCreate = visuals["Discord_OnCreate"]!!,
-                discordOnReopen = visuals["Discord_OnReopen"]!!,
-                discordOnPriorityChange = visuals["Discord_OnPriorityChange"]!!,
                 viewHeader = readAndPrime("ViewFormat_Header")!!,
                 viewSep1 = readAndPrime("ViewFormat_Sep1")!!,
                 viewCreator = readAndPrime("ViewFormat_InfoCreator")!!,
@@ -674,13 +655,6 @@ class TMLocale(
                 warningsLongTaskDuringReload = inlineWarningHeader("Warning_LongTaskDuringReload") ?: internalVersion.warningsLongTaskDuringReload,
                 warningsInvalidConfig = inlineWarningHeader("Warning_InvalidConfig") ?: internalVersion.warningsInvalidConfig,
                 warningsInternalError = inlineWarningHeader("Warning_InternalError") ?: internalVersion.warningsInternalError,
-                discordOnAssign = visuals["Discord_OnAssign"] ?: internalVersion.discordOnAssign,
-                discordOnClose = visuals["Discord_OnClose"] ?: internalVersion.discordOnClose,
-                discordOnCloseAll = visuals["Discord_OnCloseAll"] ?: internalVersion.discordOnCloseAll,
-                discordOnComment = visuals["Discord_OnComment"] ?: internalVersion.discordOnComment,
-                discordOnCreate = visuals["Discord_OnCreate"] ?: internalVersion.discordOnCreate,
-                discordOnReopen = visuals["Discord_OnReopen"] ?: internalVersion.discordOnReopen,
-                discordOnPriorityChange = visuals["Discord_OnPriorityChange"] ?: internalVersion.discordOnPriorityChange,
                 viewHeader = readAndPrime("ViewFormat_Header") ?: internalVersion.viewHeader,
                 viewSep1 = readAndPrime("ViewFormat_Sep1") ?: internalVersion.viewSep1,
                 viewCreator = readAndPrime("ViewFormat_InfoCreator") ?: internalVersion.viewCreator,

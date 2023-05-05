@@ -22,7 +22,6 @@ import dev.jorel.commandapi.arguments.*
 import dev.jorel.commandapi.arguments.CustomArgument.CustomArgumentException
 import dev.jorel.commandapi.executors.CommandExecutor
 import dev.jorel.commandapi.executors.ExecutorType
-import net.luckperms.api.LuckPermsProvider
 import org.bukkit.command.ConsoleCommandSender
 
 typealias BukkitPlayer = org.bukkit.entity.Player
@@ -93,7 +92,7 @@ class CommandAPIRunner {
         val hasOwn = sender.has("$basePerm.own")
 
         val canRunCommand = hasAll || (hasOwn && ticket.creator == sender.asCreator())
-        if (!canRunCommand) throw CustomArgumentException(locale.brigadierNoPermission2Modify)
+        if (!canRunCommand) throw CustomArgumentException(locale.brigadierNotYourTicket)
     }
 
 
@@ -127,18 +126,15 @@ class CommandAPIRunner {
 
     // Requirements
     private fun notUnderCooldownReq(bukkitSender: BukkitCommandSender): Boolean {
-        if (bukkitSender !is BukkitPlayer || cooldown == null) return true
-        
-        val playerHasOverridePerm = LuckPermsProvider.get()
-            .getPlayerAdapter(BukkitPlayer::class.java)
-            .getUser(bukkitSender)
-            .cachedData
-            .permissionData
-            .checkPermission("ticketmanager.commandArg.cooldown.override")
-            .asBoolean()
-        if (playerHasOverridePerm) return true
-        
-        return cooldown?.underCooldown(bukkitSender.uniqueId) ?: false
+        if (cooldown == null) return true
+
+        val sender = bukkitSender.toTMSender()
+        if (sender.has("ticketmanager.commandArg.cooldown.override")) return true
+
+        return when (sender) {
+            is CommandSender.Active.OnlineConsole -> true
+            is CommandSender.Active.OnlinePlayer -> cooldown!!.notUnderCooldown(sender.uuid)
+        }
     }
 
     private fun silentPermissionReq(bukkitSender: BukkitCommandSender): Boolean {
@@ -372,7 +368,7 @@ class CommandAPIRunner {
     ): CommandAPICommand {
         return this.executes(CommandExecutor { bukkitSender, args ->
             TMCoroutine.launchSupervised { 
-                executeNotificationsAsync(platform, configState, bukkitSender.toTMSender()) {
+                executeNotificationsAsync(platform, configState, bukkitSender.toTMSender(), locale) {
                     msgGenerator(bukkitSender.toTMSender(), bukkitSender, args)
                 }
             }
@@ -385,10 +381,6 @@ fun BukkitCommandSender.toTicketCreator(): TicketCreator = when (this) {
     is BukkitPlayer -> TicketCreator.User(uniqueId)
     else -> throw Exception("Unsupported Entity Type!")
 }
-
-// NOTE: TODO Database MUST be loaded first before allowed to run
-// Solution:
-
 
 // /ticket closeall <Lower ID> <Upper ID>
 // /ticket comment <ID> <Comment…>

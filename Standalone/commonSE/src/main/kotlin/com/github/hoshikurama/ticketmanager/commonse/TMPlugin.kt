@@ -48,6 +48,15 @@ abstract class TMPlugin(
         lpGroupNames: List<String>,
         platformFunctions: PlatformFunctions,
     )
+    abstract fun platformUpdateOnReload(
+        cooldown: Cooldown?,
+        activeLocale: TMLocale,
+        database: AsyncDatabase,
+        configState: ConfigState,
+        joinEvent: PlayerJoinEvent,
+        lpGroupNames: List<String>,
+        platformFunctions: PlatformFunctions,
+    )
 
     // Config Functions
     abstract fun configExists(): Boolean
@@ -70,7 +79,7 @@ abstract class TMPlugin(
         val errors = mutableListOf<Pair<String, String>>()
         val (coreItems, config) = loadCoreItems(errors)
         val (cooldown, activeLocale, configState, joinEvent, platformFunctions) = coreItems
-        val database = runBlocking { loadDatabase(configState, config, platformFunctions, errors).await() }
+        val database = runBlocking { loadDatabase(configState, config, platformFunctions, errors, activeLocale).await() }
         lpGroupNames = runBlocking { lpGroupNamesDeferred.await() }
 
         platformRunSyncAfterCoreLaunch(
@@ -107,28 +116,24 @@ abstract class TMPlugin(
         TMCoroutine.cancelTasks("Plugin shutting down!")
 
         // Startup
-        val lpGroupNamesDeferred = loadLPGroupNames()
+        val lpGroupNamesAsync = loadLPGroupNames()
         val errors = mutableListOf<Pair<String, String>>()
         val (coreItems, config) = loadCoreItems(errors)
         val (cooldown, activeLocale, configState, joinEvent, platformFunctions) = coreItems
-        val database =
-        /*
-        val database = runBlocking { loadDatabase(configState, config, platformFunctions, errors).await() }
-        lpGroupNames = runBlocking { lpGroupNamesDeferred.await() }
+        val databaseAsync = loadDatabase(configState, config, platformFunctions, errors, activeLocale)
 
-        platformRunSyncAfterCoreLaunch(
+        platformUpdateOnReload(
             cooldown = cooldown,
-            database = database,
+            database = databaseAsync.await(),
             joinEvent = joinEvent,
             configState = configState,
             activeLocale = activeLocale,
             platformFunctions = platformFunctions,
+            lpGroupNames = lpGroupNamesAsync.await()
         )
-
-        // Startup is now async...
-        performRemainingTasksAsync(activeLocale, config, configState, platformFunctions, errors)
+        lpGroupNames = lpGroupNamesAsync.await()
+        performRemainingTasksAsync(activeLocale, configState, platformFunctions, errors)
         GlobalState.isPluginLocked = false
-         */
     }
 
 // Locale stuff...
@@ -239,12 +244,13 @@ abstract class TMPlugin(
         configParameters: ConfigParameters,
         platformFunctions: PlatformFunctions,
         errors: MutableList<Pair<String, String>>,
+        locale: TMLocale,
     ): Deferred<AsyncDatabase> {
         fun <T> T.addToErrors(location: String, toString: (T) -> String): T =
             this.also { errors.add(location to toString(it)) }
 
         val databaseName = configParameters.dbTypeAsStr ?: defaultDatabase.addToErrors("Database_Mode") { it }
-        return DatabaseManager.activateNewDatabase(databaseName.lowercase(), platformFunctions, configState)
+        return DatabaseManager.activateNewDatabase(databaseName.lowercase(), platformFunctions, configState, locale)
     }
 
     private fun loadLPGroupNames(): Deferred<List<String>> = TMCoroutine.asyncGlobal {
@@ -265,7 +271,6 @@ abstract class TMPlugin(
             this.also { errors.add(location to toString(it)) }
 
         // Launch Continuous Update Checker
-        //TODO THIS SHOULD BE SPLIT BETWEEN NOTIFICATIONS AND STUFF THAT SHOULD BE DONE BEFORE PLAYERS JOIN
         if (configState.pluginUpdate.canCheck) {
             TMCoroutine.launchSupervised {
                 val pluginUpdateFreq = config.pluginUpdateFrequency

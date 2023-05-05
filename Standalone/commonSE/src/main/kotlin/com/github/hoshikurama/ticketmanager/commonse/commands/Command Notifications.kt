@@ -51,8 +51,8 @@ class StandardParams<out T: InfoSender>(
             )
         }
 
-        fun build(activeRef: ByteArrayDataInput) = StandardParams(
-            commandSender = activeRef.readUTF().asCommandCapableInfo(),
+        fun build(activeRef: ByteArrayDataInput, activeLocale: TMLocale) = StandardParams(
+            commandSender = activeRef.readUTF().asCommandCapableInfo(activeLocale),
             ticketCreator = activeRef.readUTF().asTicketCreator(),
             sendCreatorMSG = activeRef.readBoolean(),
             sendSenderMSG = activeRef.readBoolean(),
@@ -145,8 +145,8 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
                 return Assign(standardParams, assignment, ticketID)
             }
 
-            fun decode(input: ByteArrayDataInput): Assign<CommandSender.Info> {
-                val standardParams = StandardParams.build(input)
+            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): Assign<CommandSender.Info> {
+                val standardParams = StandardParams.build(input, activeLocale)
                 return Assign(standardParams,
                     assignment = input.readUTF().asAssignmentType(),
                     ticketID = input.readLong(),
@@ -207,8 +207,8 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
                 return CloseWithComment(standardParams, closingMessage, ticketID)
             }
 
-            fun decode(input: ByteArrayDataInput): CloseWithComment<CommandSender.Info> {
-                val standardParams = StandardParams.build(input)
+            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): CloseWithComment<CommandSender.Info> {
+                val standardParams = StandardParams.build(input, activeLocale)
                 return CloseWithComment(standardParams,
                     ticketID = input.readLong(),
                     closingMessage = input.readUTF(),
@@ -265,8 +265,8 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
                 return CloseWithoutComment(standardParams, ticketID)
             }
 
-            fun decode(input: ByteArrayDataInput): CloseWithoutComment<CommandSender.Info> {
-                val standardParams = StandardParams.build(input)
+            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): CloseWithoutComment<CommandSender.Info> {
+                val standardParams = StandardParams.build(input, activeLocale)
                 return CloseWithoutComment(standardParams, input.readLong())
             }
         }
@@ -330,8 +330,8 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
                 return MassClose(standardParams, lowerBound, upperBound)
             }
 
-            fun decode(input: ByteArrayDataInput): MassClose<InfoSender> {
-                val standardParams = StandardParams.build(input)
+            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): MassClose<InfoSender> {
+                val standardParams = StandardParams.build(input, activeLocale)
                 return MassClose(standardParams,
                     lowerBound = input.readLong(),
                     upperBound = input.readLong(),
@@ -392,8 +392,8 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
                 return Comment(standardParams, ticketID, comment)
             }
 
-            fun decode(input: ByteArrayDataInput): Comment<CommandSender.Info> {
-                val standardParams = StandardParams.build(input)
+            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): Comment<CommandSender.Info> {
+                val standardParams = StandardParams.build(input, activeLocale)
                 return Comment(standardParams,
                     ticketID = input.readLong(),
                     comment = input.readUTF(),
@@ -453,8 +453,8 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
                 return Create(standardParams, ticketID, message)
             }
 
-            fun decode(input: ByteArrayDataInput): Create<CommandSender.Info> {
-                val standardParams = StandardParams.build(input)
+            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): Create<CommandSender.Info> {
+                val standardParams = StandardParams.build(input, activeLocale)
                 return Create(standardParams,
                     ticketID = input.readLong(),
                     message = input.readUTF(),
@@ -511,8 +511,8 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
                 return Reopen(standardParams, ticketID)
             }
 
-            fun decode(input: ByteArrayDataInput): Reopen<CommandSender.Info> {
-                val standardParams = StandardParams.build(input)
+            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): Reopen<CommandSender.Info> {
+                val standardParams = StandardParams.build(input, activeLocale)
                 return Reopen(standardParams, input.readLong())
             }
         }
@@ -572,8 +572,8 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
                 return SetPriority(standardParams, ticketID, ticketPriority)
             }
 
-            fun decode(input: ByteArrayDataInput): SetPriority<CommandSender.Info> {
-                val standardParams = StandardParams.build(input)
+            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): SetPriority<CommandSender.Info> {
+                val standardParams = StandardParams.build(input, activeLocale)
                 return SetPriority(standardParams,
                     ticketID = input.readLong(),
                     priority = input.readByte().toPriority(),

@@ -9,6 +9,7 @@ class TypeSafeStream<T>(val stream: Stream<T>) {
     companion object {
         @Suppress("UNUSED") fun <T> List<T>.asTypeSafeStream() = TypeSafeStream(stream())
         @Suppress("UNUSED") fun <T> Sequence<T>.asTypeSafeStream() = TypeSafeStream(asStream())
+        @Suppress("UNUSED") fun <T> MutableCollection<T>.asTypeSafeStream() = TypeSafeStream(stream())
     }
 
     // Stream type and Stream conversions
