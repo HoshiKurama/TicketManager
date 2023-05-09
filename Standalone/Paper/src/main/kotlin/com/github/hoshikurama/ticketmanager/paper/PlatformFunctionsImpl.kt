@@ -1,6 +1,9 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
+import com.github.hoshikurama.ticketmanager.commonse.misc.encodeRequestTP
+import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
@@ -17,22 +20,20 @@ class PlatformFunctionsImpl(
     private val serverName: String?,
 ) : PlatformFunctions {
 
-    override fun massNotify(locale, permission: String, localeMsg: (TMLocale) -> Component) {
-        Bukkit.getConsoleSender().sendMessage(localeMsg(localeHandler.consoleLocale))
+    override fun massNotify(permission: String, message: Component) {
+        Bukkit.getConsoleSender().sendMessage(message)
         val lpUserAdapter = LuckPermsProvider.get().getPlayerAdapter(Player::class.java)
 
         Bukkit.getOnlinePlayers()
             .filter { lpUserAdapter.getPermissionData(it).checkPermission(permission).asBoolean() }
-            .map { it to localeHandler.getOrDefault(it.locale().toString()) }
-            .forEach { (p, locale) -> localeMsg(locale).run(p::sendMessage) }
-
+            .forEach { it.sendMessage(message) }
     }
 
-    override fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): OnlinePlayer? {
-        return Bukkit.getPlayer(uuid)?.run { PaperPlayer(this, localeHandler, serverName) }
+    override fun buildPlayer(uuid: UUID): OnlinePlayer? {
+        return Bukkit.getPlayer(uuid)?.run { PaperPlayer(this, serverName) }
     }
 
-    override fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<OnlinePlayer> {
+    override fun getAllOnlinePlayers(): List<OnlinePlayer> {
         return Bukkit.getOnlinePlayers().map { PaperPlayer(it, serverName) }
     }
 
@@ -41,21 +42,16 @@ class PlatformFunctionsImpl(
             ?.run { uniqueId }
     }
 
-    override fun nameFromUUID(uuid: UUID): String {
-        return uuid.run(Bukkit::getOfflinePlayer).name ?: "UUID"
+    override fun nameFromUUIDOrNull(uuid: UUID): String? {
+        return uuid.run(Bukkit::getOfflinePlayer).name
     }
 
-    override fun teleportToTicketLocSameServer(player: OnlinePlayer, loc: Ticket.TicketLocation) {
-        val world = Bukkit.getWorld(loc.world!!)
-        val paperPlayer = player as PaperPlayer
-
-        world?.run {
-            val location = Location(this, loc.x!!.toDouble(), loc.y!!.toDouble(), loc.z!!.toDouble())
-            Bukkit.getScheduler().runTask(plugin, Runnable { paperPlayer.pPlayer.teleport(location) })
-        }
+    override fun teleportToTicketLocSameServer(player: OnlinePlayer, loc: TicketCreationLocation.FromPlayer) {
+        val location = Location(Bukkit.getWorld(loc.world), loc.x.toDouble(), loc.y.toDouble(), loc.z.toDouble())
+        Bukkit.getScheduler().runTask(plugin, Runnable { (player as PaperPlayer).pPlayer.teleport(location) })
     }
 
-    override fun teleportToTicketLocDiffServer(player: OnlinePlayer, loc: Ticket.TicketLocation) {
+    override fun teleportToTicketLocDiffServer(player: OnlinePlayer, loc: TicketCreationLocation.FromPlayer) {
         plugin.server.sendPluginMessage(plugin, "ticketmanager:server_to_proxy_tp", encodeRequestTP(player, loc))
     }
 
@@ -79,7 +75,7 @@ class PlatformFunctionsImpl(
         Bukkit.getLogger().log(Level.SEVERE, message)
     }
 
-    override fun getOnlineSeenPlayerNames(sender: CommandSender): List<String> {
+    override fun getOnlineSeenPlayerNames(sender: CommandSender.Active): List<String> {
         return if (sender is PaperPlayer) {
             val player = sender.pPlayer
             Bukkit.getOnlinePlayers()

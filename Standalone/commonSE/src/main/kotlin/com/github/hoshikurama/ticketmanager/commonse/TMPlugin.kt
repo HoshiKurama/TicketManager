@@ -1,6 +1,5 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
-import com.github.hoshikurama.ticketmanager.OLD.platform.PlayerJoinEvent
 import com.github.hoshikurama.ticketmanager.api.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.ticket.TicketAssignmentType
 import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
@@ -10,14 +9,18 @@ import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
 import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
 import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.extensions.defaultDatabase
-import com.github.hoshikurama.ticketmanager.commonse.misc.*
+import com.github.hoshikurama.ticketmanager.commonse.misc.ConfigParameters
+import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
+import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
+import com.github.hoshikurama.ticketmanager.commonse.misc.templated
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asDeferredThenAwait
 import kotlinx.coroutines.*
 import net.luckperms.api.LuckPermsProvider
 import net.luckperms.api.model.group.Group
 import java.nio.file.Files
-import java.util.UUID
+import java.util.*
 import kotlin.io.path.exists
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -25,7 +28,7 @@ import kotlin.time.toDuration
 //TODO MESSAGE CONSOLE WITH WHEN PLUGIN IS WAITING AND HAS FOUND DATABASE
 
 abstract class TMPlugin(
-    private val buildPlatformFunctions: (TMLocale) -> PlatformFunctions,
+    private val buildPlatformFunctions: (String) -> PlatformFunctions,
     private val buildJoinEvent: (ConfigState, PlatformFunctions) -> PlayerJoinEvent,
     private val cooldownAfterRemoval: suspend (UUID) -> Unit,
 ) {
@@ -184,7 +187,7 @@ abstract class TMPlugin(
         )
 
         // Platform Functions...
-        val platformFunctions = buildPlatformFunctions(activeLocale)
+        val platformFunctions = buildPlatformFunctions(activeLocale) //TODO FIX
 
         // Config State...
         val configState = kotlin.run {

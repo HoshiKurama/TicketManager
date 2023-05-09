@@ -1,7 +1,6 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("com.github.ben-manes.versions") version "0.46.0" // https://github.com/ben-manes/gradle-versions-plugin
-    kotlin("jvm")
     java
     application
 }
@@ -21,8 +20,6 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.google.guava:guava:31.1-jre")
     implementation("com.h2database:h2:2.1.214")
-    implementation("com.github.seratch:kotliquery:1.9.0")
-    implementation("net.kyori:adventure-extra-kotlin:4.13.1")
 }
 
 tasks {
@@ -35,6 +32,8 @@ tasks {
         relocate("com", "com.github.hoshikurama.ticketmanager.shaded.com") {
             exclude("%regex[^(?!.*com\\.github\\.hoshikurama\\.ticketmanager).*]")
         }
+
+        /*
         relocate("a", "com.github.hoshikurama.ticketmanager.shaded.a")
         relocate("b", "com.github.hoshikurama.ticketmanager.shaded.b")
         relocate("d", "com.github.hoshikurama.ticketmanager.shaded.d")
@@ -60,10 +59,14 @@ tasks {
         relocate("x", "com.github.hoshikurama.ticketmanager.shaded.x")
         relocate("y", "com.github.hoshikurama.ticketmanager.shaded.y")
         relocate("z", "com.github.hoshikurama.ticketmanager.shaded.z")
-
+         */
+        relocate("javax", "com.github.hoshikurama.ticketmanager.shaded.javax")
         relocate("com.google", "com.github.hoshikurama.ticketmanager.shaded.com.google")
-        relocate("com.zaxxer", "com.github.hoshikurama.ticketmanager.shaded.com.zaxxer")
+        relocate("org", "com.github.hoshikurama.ticketmanager.shaded.org")
 
-        dependencies {}
+        dependencies {
+            exclude(project(":common"))
+            exclude(dependency("org.jetbrains.kotlin:"))
+        }
     }
 }

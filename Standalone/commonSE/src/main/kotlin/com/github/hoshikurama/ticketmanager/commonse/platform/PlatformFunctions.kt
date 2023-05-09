@@ -1,8 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse.platform
 
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
 import java.util.*
@@ -15,8 +14,8 @@ interface PlatformFunctions {
     fun getAllOnlinePlayers(): List<OnlinePlayer>
     fun offlinePlayerNameToUUIDOrNull(name: String): UUID?
     fun nameFromUUIDOrNull(uuid: UUID): String?
-    fun teleportToTicketLocSameServer(player: OnlinePlayer, loc: TicketCreationLocation)
-    fun teleportToTicketLocDiffServer(player: OnlinePlayer, loc: TicketCreationLocation)
+    fun teleportToTicketLocSameServer(player: OnlinePlayer, loc: TicketCreationLocation.FromPlayer)
+    fun teleportToTicketLocDiffServer(player: OnlinePlayer, loc: TicketCreationLocation.FromPlayer)
     fun relayMessageToProxy(channel: String, encodedMessage: ByteArray)
 
     // Console Messages

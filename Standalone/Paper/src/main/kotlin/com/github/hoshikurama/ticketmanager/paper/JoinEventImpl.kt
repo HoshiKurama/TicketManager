@@ -1,20 +1,20 @@
 package com.github.hoshikurama.ticketmanager.paper
 
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
+import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
-import com.github.hoshikurama.ticketmanager.commonse.old.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlayerJoinEvent
-import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import java.util.concurrent.ConcurrentHashMap
 
-val proxyJoinMap = ConcurrentHashMap<String, Ticket.TicketLocation>()
+val proxyJoinMap = ConcurrentHashMap<String, TicketCreationLocation>()
 
 class JoinEventImpl(
     globalState: GlobalState,
-    instanceState: InstancePluginState,
+    instanceState: ConfigState,
     platformFunctions: PlatformFunctions,
 ) : PlayerJoinEvent(globalState, platformFunctions, instanceState), Listener {
 

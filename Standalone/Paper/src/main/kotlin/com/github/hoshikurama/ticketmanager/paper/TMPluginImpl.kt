@@ -1,25 +1,18 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent
-import com.github.hoshikurama.ticketmanager.common.Proxy2Server
-import com.github.hoshikurama.ticketmanager.common.Server2Proxy
-import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
-import com.github.hoshikurama.ticketmanager.commonse.old.misc.ConfigParameters
-import org.bstats.bukkit.Metrics
-import org.bstats.charts.SimplePie
-import org.bstats.charts.SingleLineChart
-import org.bukkit.Bukkit
-import org.bukkit.command.CommandExecutor
-import org.bukkit.event.Listener
-import org.bukkit.event.player.PlayerJoinEvent
-import org.bukkit.plugin.java.JavaPlugin
-import java.io.File
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.util.concurrent.TimeUnit
 
+class TMPluginImpl(
+    private val paperPlugin: PaperPlugin
+) : TMPlugin(
+    buildPlatformFunctions = { PlatformFunctionsImpl(paperPlugin, it) },
+    buildJoinEvent = { global, platform -> JoinEventImpl(global, platform) },
+    cooldownAfterRemoval = {  }
+) {
 
+}
+
+/*
 class TMPluginImpl(
     private val paperPlugin: PaperPlugin,
 ) : TMPlugin(
@@ -58,6 +51,34 @@ class TMPluginImpl(
 
     override fun performAsyncTaskTimer(frequency: Long, duration: TimeUnit, action: () -> Unit) {
         Bukkit.getScheduler().runTaskTimerAsynchronously(paperPlugin, Runnable { action() }, 0, duration.toSeconds(frequency) * 20L)
+    }
+
+    override fun platformRunFirst() {
+        TODO("Not yet implemented")
+    }
+
+    override fun platformRunSyncAfterCoreLaunch(
+        cooldown: Cooldown?,
+        activeLocale: TMLocale,
+        database: AsyncDatabase,
+        configState: ConfigState,
+        joinEvent: com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent,
+        lpGroupNames: List<String>,
+        platformFunctions: PlatformFunctions
+    ) {
+        TODO("Not yet implemented")
+    }
+
+    override fun platformUpdateOnReload(
+        cooldown: Cooldown?,
+        activeLocale: TMLocale,
+        database: AsyncDatabase,
+        configState: ConfigState,
+        joinEvent: com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent,
+        lpGroupNames: List<String>,
+        platformFunctions: PlatformFunctions
+    ) {
+        TODO("Not yet implemented")
     }
 
     override fun configExists(): Boolean {
