@@ -13,20 +13,24 @@ import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
 import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.misc.asCreator
+import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.commonse.misc.toLocalizedName
 import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPICommand
+import dev.jorel.commandapi.SuggestionInfo
 import dev.jorel.commandapi.arguments.*
 import dev.jorel.commandapi.arguments.CustomArgument.CustomArgumentException
 import dev.jorel.commandapi.executors.CommandExecutor
 import dev.jorel.commandapi.executors.ExecutorType
+import dev.jorel.commandapi.kotlindsl.*
 import org.bukkit.command.ConsoleCommandSender
 
 typealias BukkitPlayer = org.bukkit.entity.Player
 typealias BukkitCommandSender = org.bukkit.command.CommandSender
 
+// Note: This needs to be set
 object ReloadObjectCommand {
     @Volatile internal lateinit var configState: ConfigState
     @Volatile internal lateinit var platform: PlatformFunctions
@@ -51,25 +55,23 @@ class CommandAPIRunner {
     private val locale: TMLocale
         get() = ReloadObjectCommand.locale
 
-            // Arguments
-    private fun ticketFromIdArg(vararg otherChecks: (Ticket, CommandSender.Active) -> Unit): CustomArgument<Ticket, Long> {
-        return CustomArgument(LongArgument(locale.parameterID)) { info ->
 
+    // Arguments
+    private fun CommandAPICommand.argumentTicketFromID(
+        vararg otherChecks: (Ticket, CommandSender.Active) -> Unit,
+        otherFunctions: Argument<*>.() -> Unit
+    ) = argument(
+        CustomArgument(LongArgument(locale.parameterID)) { info ->
             val ticket = DatabaseManager.activeDatabase
                 .getTicketOrNullAsync(info.currentInput)
                 .join() //TODO HMM, SHOULD I WORRY ABOUT THIS?
-                ?: throw CustomArgumentException("${locale.brigadierInvalidID}: ${info.currentInput}")
+                ?: throw CustomArgumentException.fromString("${locale.brigadierInvalidID}: ${info.currentInput}")
 
             val tmSender = info.sender.toTMSender()
             otherChecks.forEach { it.invoke(ticket, tmSender) }
-            return@CustomArgument ticket
+            ticket
         }
-    }
-
-    private fun ticketFromIdArg(otherChecks: (Ticket) -> Unit): CustomArgument<Ticket, Long> {
-        val adapter = { ticket: Ticket, _: CommandSender.Active -> otherChecks(ticket) }
-        return ticketFromIdArg(adapter)
-    }
+    ) { otherFunctions(this) }
 
     private fun assignmentArg(): CustomArgument<TicketAssignmentType, String> {
         return CustomArgument(GreedyStringArgument(locale.parameterAssignment)) { info ->
@@ -84,28 +86,31 @@ class CommandAPIRunner {
 
     // Errors
     private fun ticketAlreadyClosedError(ticket: Ticket, ignored: CommandSender.Active) {
-        if (ticket.status == Ticket.Status.CLOSED) throw CustomArgumentException(locale.brigadierTicketAlreadyClosed)
+        if (ticket.status == Ticket.Status.CLOSED) throw CustomArgumentException.fromString(locale.brigadierTicketAlreadyClosed)
     }
 
+    private fun ticketAlreadyOpenError(ticket: Ticket, ignored: CommandSender.Active) {
+        if (ticket.status == Ticket.Status.OPEN) throw CustomArgumentException.fromString(locale.brigadierTicketAlreadyOpen)
+    }
     private fun userDualityError(basePerm: String): (Ticket, CommandSender.Active) -> Unit = { ticket, sender ->
         val hasAll = sender.has("$basePerm.all")
         val hasOwn = sender.has("$basePerm.own")
 
         val canRunCommand = hasAll || (hasOwn && ticket.creator == sender.asCreator())
-        if (!canRunCommand) throw CustomArgumentException(locale.brigadierNotYourTicket)
+        if (!canRunCommand) throw CustomArgumentException.fromString(locale.brigadierNotYourTicket)
     }
 
 
     // Argument Suggestions
-    private val ownedTicketIDsAsync: ArgumentSuggestions = ArgumentSuggestions.stringsAsync { info ->
+    private val ownedTicketIDsAsync = ArgumentSuggestions.stringsAsync { info ->
         DatabaseManager.activeDatabase.getOwnedTicketIDsAsync(info.sender.toTicketCreator())
             .thenApplyAsync { it.map(Long::toString).toTypedArray() }
     }
-    private val openTicketIDsAsync: ArgumentSuggestions = ArgumentSuggestions.stringsAsync {
+    private val openTicketIDsAsync = ArgumentSuggestions.stringsAsync { _: SuggestionInfo<BukkitCommandSender> ->
         DatabaseManager.activeDatabase.getOpenTicketIDsAsync()
             .thenApplyAsync { it.map(Long::toString).toTypedArray() }
     }
-    private val assignmentSuggest: ArgumentSuggestions = ArgumentSuggestions.stringCollection { info ->
+    private val assignmentSuggest = ArgumentSuggestions.stringCollection { info ->
         val suggestions = mutableListOf<String>()
         suggestions.addAll(lpGroupNames.map { "::$it" })
         suggestions.addAll(info.sender.toTMSender().run(platform::getOnlineSeenPlayerNames))
@@ -113,8 +118,7 @@ class CommandAPIRunner {
         suggestions.add(TicketAssignmentType.Nobody.toLocalizedName(locale))
         suggestions.sorted()
     }
-
-    private fun dualityOpenIDsAsync(basePerm: String): ArgumentSuggestions = ArgumentSuggestions.stringsAsync { info ->
+    private fun dualityOpenIDsAsync(basePerm: String) = ArgumentSuggestions.stringsAsync { info ->
         val tmSender = info.sender.toTMSender()
 
         val results = if (tmSender.has("$basePerm.all")) DatabaseManager.activeDatabase.getOpenTicketIDsAsync()
@@ -123,9 +127,8 @@ class CommandAPIRunner {
         results.thenApplyAsync { it.map(Long::toString).toTypedArray() }
     }
 
-
     // Requirements
-    private fun notUnderCooldownReq(bukkitSender: BukkitCommandSender): Boolean {
+    private fun notUnderCooldown(bukkitSender: BukkitCommandSender): Boolean {
         if (cooldown == null) return true
 
         val sender = bukkitSender.toTMSender()
@@ -136,8 +139,7 @@ class CommandAPIRunner {
             is CommandSender.Active.OnlinePlayer -> cooldown!!.notUnderCooldown(sender.uuid)
         }
     }
-
-    private fun silentPermissionReq(bukkitSender: BukkitCommandSender): Boolean {
+    private fun hasSilentPermission(bukkitSender: BukkitCommandSender): Boolean {
         return when (val tmSender = bukkitSender.toTMSender()) {
             is OnlinePlayer -> tmSender.has("ticketmanager.commandArg.silence")
             is CommandSender.Active.OnlineConsole -> true
@@ -150,12 +152,10 @@ class CommandAPIRunner {
         if (bukkitSender is BukkitPlayer)
             CommandAPI.updateRequirements(bukkitSender)
     }
-
     private fun hasOneDualityPermission(user: BukkitCommandSender, basePerm: String): Boolean {
         val tmSender = user.toTMSender()
         return tmSender.has("$basePerm.all") || tmSender.has("$basePerm.own")
     }
-
     private fun Cooldown.performCommandDuties(bukkitSender: BukkitCommandSender) {
         if (bukkitSender !is BukkitPlayer) return
 
@@ -166,213 +166,452 @@ class CommandAPIRunner {
 
     // Command generator
     fun generateCommands() {
-        /*
-        val safeSuggestOpenTicketsAsync: SafeSuggestions<Long> = SafeSuggestions.suggestAsync { info ->
-            DatabaseManager.activeDatabase.getOpenTicketsAsync(1, 0)
-                .thenApplyAsync { r -> r.filteredResults
-                    .map(Ticket::id)
-                    .filter { "$it".startsWith(info.currentArg) }
-                    .toTypedArray()
-                }
+
+        // /ticket create <Comment...>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordCreate) {
+                withPermission("ticketmanager.command.create")
+                withRequirement(::notUnderCooldown)
+            }
+            greedyStringArgument(locale.parameterComment)
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.create(tmSender,
+                    message = args[0] as String
+                )
+            }
         }
 
-        val underCooldown = { sender: BukkitCommandSender ->
-            val uuid = (sender as? BukkitPlayer)?.player?.uniqueId
-            if (uuid != null && cooldown != null) !cooldown.underCooldown(uuid) else true
+        // /ticket assign <ID> <Assignment...>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordAssign) {
+                withPermission("ticketmanager.command.assign")
+                withRequirement(::notUnderCooldown)
+            }
+            argumentTicketFromID(::ticketAlreadyClosedError) { replaceSuggestions(openTicketIDsAsync) }
+            argument(assignmentArg()) { replaceSuggestions(assignmentSuggest) }
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.assign(tmSender,
+                    assignment = args[1] as TicketAssignmentType,
+                    ticket = args[0] as Ticket,
+                    silent = false,
+                )
+            }
         }
 
-         */
-
-        // /ticket assign/s.assign || <ID> <Assignment...>
-        fun CommandAPICommand.assignmentGeneration() = this
-            .withArguments(ticketFromIdArg(::ticketAlreadyClosedError)
-                .replaceSuggestions(openTicketIDsAsync))
-            .withArguments(assignmentArg()
-                .replaceSuggestions(assignmentSuggest))
-        fun CommandAPICommand.executeAssignAsync(isSilent: Boolean) = tmExecuteWithMsgAsync { tmSender, bukkitSender, args ->
-            cooldown?.performCommandDuties(bukkitSender)
-            commandTasks.assign(
-                sender = tmSender,
-                assignment = args[1] as TicketAssignmentType,
-                ticket = args[0] as Ticket,
-                silent = isSilent,
-            )
+        // /ticket s.assign <ID> <Assignment...>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordSilentAssign) {
+                withPermission("ticketmanager.command.assign")
+                withRequirement(::notUnderCooldown)
+                withRequirement(::hasSilentPermission)
+            }
+            argumentTicketFromID(::ticketAlreadyClosedError) { replaceSuggestions(openTicketIDsAsync) }
+            argument(assignmentArg()) { replaceSuggestions(assignmentSuggest) }
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.assign(tmSender,
+                    assignment = args[1] as TicketAssignmentType,
+                    ticket = args[0] as Ticket,
+                    silent = true,
+                )
+            }
         }
-
-        // /ticket claim/s.claim || <ID>
-        fun CommandAPICommand.executeClaimAsync(isSilent: Boolean) = tmExecuteWithMsgAsync { tmSender, bukkitSender, args ->
-            cooldown?.performCommandDuties(bukkitSender)
-            commandTasks.claim(
-                sender = tmSender,
-                ticket = args[0] as Ticket,
-                silent = isSilent,
-            )
-        }
-
-        // /ticket unassign/s.unassign <ID>
-        fun CommandAPICommand.executeUnassignAsync(isSilent: Boolean) = tmExecuteWithMsgAsync { tmSender, bukkitSender, args ->
-            cooldown?.performCommandDuties(bukkitSender)
-            commandTasks.unAssign(
-                sender = tmSender,
-                ticket = args[0] as Ticket,
-                silent = isSilent
-            )
-        }
-
-        // /ticket close/s.close <ID> [Comment...]
-        fun CommandAPICommand.closeIDGeneration() = this
-            .withArguments(
-                ticketFromIdArg(
-                    ::ticketAlreadyClosedError,
-                    userDualityError("ticketmanager.command.close")
-                ).replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
-            )
-        fun CommandAPICommand.executeCloseNoCommentAsync(isSilent: Boolean) = tmExecuteWithMsgAsync { tmSender, bukkitSender, args ->
-            cooldown?.performCommandDuties(bukkitSender)
-            commandTasks.closeWithoutComment(
-                sender = tmSender,
-                ticket = args[0] as Ticket,
-                silent = isSilent
-            )
-        }
-        fun CommandAPICommand.executeCloseWithCommentAsync(isSilent: Boolean) = tmExecuteWithMsgAsync { tmSender, bukkitSender, args ->
-            cooldown?.performCommandDuties(bukkitSender)
-            commandTasks.closeWithComment(
-                sender = tmSender,
-                ticket = args[0] as Ticket,
-                comment = args[1] as String,
-                silent = isSilent
-            )
-        }
-
-    // Actual Commands
-
-        // /ticket assign <ID> <Assignment>
-        CommandAPICommand(locale.commandBase)
-            .withArguments(LiteralArgument(locale.commandWordAssign)
-                .withPermission("ticketmanager.command.assign")
-                .withRequirement(::notUnderCooldownReq))
-            .assignmentGeneration()
-            .executeAssignAsync(false)
-            .register()
-
-        // /ticket s.assign <ID> <Assignment>
-        CommandAPICommand(locale.commandBase)
-            .withArguments(LiteralArgument(locale.commandWordSilentAssign)
-                .withPermission("ticketmanager.command.assign")
-                .withRequirement(::notUnderCooldownReq)
-                .withRequirement(::silentPermissionReq))
-            .assignmentGeneration()
-            .executeAssignAsync(false)
-            .register()
-
-        // /ticket claim <ID>
-        CommandAPICommand(locale.commandBase)
-            .withArguments(LiteralArgument(locale.commandWordClaim)
-                .withPermission("ticketmanager.command.assign")
-                .withRequirement(::notUnderCooldownReq))
-            .withArguments(ticketFromIdArg(::ticketAlreadyClosedError)
-                .replaceSuggestions(openTicketIDsAsync))
-            .executeClaimAsync(false)
-            .register()
-
-        // /ticket s.claim <ID>
-        CommandAPICommand(locale.commandBase)
-            .withArguments(LiteralArgument(locale.commandWordSilentClaim)
-                .withPermission("ticketmanager.command.assign")
-                .withRequirement(::notUnderCooldownReq)
-                .withRequirement(::silentPermissionReq))
-            .withArguments(ticketFromIdArg(::ticketAlreadyClosedError)
-                .replaceSuggestions(openTicketIDsAsync))
-            .executeClaimAsync(true)
-            .register()
 
         // /ticket unassign <ID>
-        CommandAPICommand(locale.commandBase)
-            .withArguments(LiteralArgument(locale.commandWordUnassign)
-                .withPermission("ticketmanager.command.assign")
-                .withRequirement(::notUnderCooldownReq)
-            )
-            .withArguments(ticketFromIdArg(::ticketAlreadyClosedError)
-                .replaceSuggestions(openTicketIDsAsync))
-            .executeUnassignAsync(false)
-            .register()
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordUnassign) {
+                withPermission("ticketmanager.command.assign")
+                withRequirement(::notUnderCooldown)
+            }
+            argumentTicketFromID(::ticketAlreadyClosedError) {
+                replaceSuggestions(openTicketIDsAsync)
+            }
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.unAssign(tmSender,
+                    ticket = args[0] as Ticket,
+                    silent = false,
+                )
+            }
+        }
 
         // /ticket s.unassign <ID>
-        CommandAPICommand(locale.commandBase)
-            .withArguments(LiteralArgument(locale.commandWordSilentUnassign)
-                .withPermission("ticketmanager.command.assign")
-                .withRequirement(::notUnderCooldownReq)
-                .withRequirement(::silentPermissionReq))
-            .withArguments(ticketFromIdArg(::ticketAlreadyClosedError)
-                .replaceSuggestions(openTicketIDsAsync))
-            .executeUnassignAsync(true)
-            .register()
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordSilentUnassign) {
+                withPermission("ticketmanager.command.assign")
+                withRequirement(::notUnderCooldown)
+                withRequirement(::hasSilentPermission)
+            }
+            argumentTicketFromID(::ticketAlreadyClosedError) {
+                replaceSuggestions(openTicketIDsAsync)
+            }
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.unAssign(tmSender,
+                    ticket = args[0] as Ticket,
+                    silent = true
+                )
+            }
+        }
 
-        // /ticket close <ID>       (No Comment)
-        CommandAPICommand(locale.commandBase)
-            .withArguments(LiteralArgument(locale.commandWordClose)
-                .withRequirement { hasOneDualityPermission(it, "ticketmanager.command.close") }
-                .withRequirement(::notUnderCooldownReq))
-            .closeIDGeneration()
-            .executeCloseNoCommentAsync(false)
-            .register()
+        // /ticket claim <ID>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordClaim) {
+                withPermission("ticketmanager.command.assign")
+                withRequirement(::notUnderCooldown)
+            }
+            argumentTicketFromID(::ticketAlreadyClosedError) {
+                replaceSuggestions(openTicketIDsAsync)
+            }
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.claim(tmSender,
+                    ticket = args[0] as Ticket,
+                    silent = false
+                )
+            }
+        }
 
-        // /ticket s.close <ID>       (No Comment)
-        CommandAPICommand(locale.commandBase)
-            .withArguments(LiteralArgument(locale.commandWordClose)
-                .withRequirement { hasOneDualityPermission(it, "ticketmanager.command.close") }
-                .withRequirement(::notUnderCooldownReq)
-                .withRequirement(::silentPermissionReq))
-            .closeIDGeneration()
-            .executeCloseNoCommentAsync(true)
-            .register()
+        // /ticket s.claim <ID>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordSilentClaim) {
+                withPermission("ticketmanager.command.assign")
+                withRequirement(::notUnderCooldown)
+                withRequirement(::hasSilentPermission)
+            }
+            argumentTicketFromID(::ticketAlreadyClosedError) {
+                replaceSuggestions(openTicketIDsAsync)
+            }
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.claim(tmSender,
+                    ticket = args[0] as Ticket,
+                    silent = true
+                )
+            }
+        }
 
-        // /ticket close <ID> <Comment..>
-        CommandAPICommand(locale.commandBase)
-            .withArguments(LiteralArgument(locale.commandWordClose)
-                .withRequirement { hasOneDualityPermission(it, "ticketmanager.command.close") }
-                .withRequirement(::notUnderCooldownReq))
-            .closeIDGeneration()
-            .withArguments(GreedyStringArgument(locale.commandWordComment))
-            .executeCloseWithCommentAsync(false)
-            .register()
+        // /ticket close <ID>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordClose) {
+                withRequirement { hasOneDualityPermission(it, "ticketmanager.command.close") }
+                withRequirement(::notUnderCooldown)
+            }
+            argumentTicketFromID(::ticketAlreadyClosedError, userDualityError("ticketmanager.command.close")) {
+                replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
+            }
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.closeWithoutComment(tmSender,
+                    ticket = args[0] as Ticket,
+                    silent = false
+                )
+            }
+        }
 
-        // /ticket s.close <ID> <Comment...>
-        CommandAPICommand(locale.commandBase)
-            .withArguments(LiteralArgument(locale.commandWordClose)
-                .withRequirement { hasOneDualityPermission(it, "ticketmanager.command.close") }
-                .withRequirement(::notUnderCooldownReq)
-                .withRequirement(::silentPermissionReq))
-            .closeIDGeneration()
-            .withArguments(GreedyStringArgument(locale.commandWordComment))
-            .executeCloseWithCommentAsync(true)
-            .register()
+        // /ticket s.close <ID>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordSilentClose) {
+                withRequirement { hasOneDualityPermission(it, "ticketmanager.command.close") }
+                withRequirement(::hasSilentPermission)
+                withRequirement(::notUnderCooldown)
+            }
+            argumentTicketFromID(::ticketAlreadyClosedError, userDualityError("ticketmanager.command.close")) {
+                replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
+            }
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.closeWithoutComment(tmSender,
+                    ticket = args[0] as Ticket,
+                    silent = true
+                )
+            }
+        }
 
+        // /ticket close <ID> [Comment...]
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordClose) {
+                withRequirement { hasOneDualityPermission(it, "ticketmanager.command.close") }
+                withRequirement(::notUnderCooldown)
+            }
+            argumentTicketFromID(::ticketAlreadyClosedError, userDualityError("ticketmanager.command.close")) {
+                replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
+            }
+            greedyStringArgument(locale.parameterComment)
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.closeWithComment(tmSender,
+                    ticket = args[0] as Ticket,
+                    comment = args[1] as String,
+                    silent = false
+                )
+            }
+        }
+
+        // /ticket s.close <ID> [Comment...]
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordSilentClose) {
+                withRequirement { hasOneDualityPermission(it, "ticketmanager.command.close") }
+                withRequirement(::notUnderCooldown)
+                withRequirement(::hasSilentPermission)
+            }
+            argumentTicketFromID(::ticketAlreadyClosedError, userDualityError("ticketmanager.command.close")) {
+                replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
+            }
+            greedyStringArgument(locale.parameterComment)
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.closeWithComment(tmSender,
+                    ticket = args[0] as Ticket,
+                    comment = args[1] as String,
+                    silent = true
+                )
+            }
+        }
+
+        // /ticket closeall <Lower ID> <Upper ID>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordCloseAll) {
+                withPermission("ticketmanager.command.closeAll")
+                withRequirement(::notUnderCooldown)
+            }
+            longArgument(locale.parameterLowerID)
+            longArgument(locale.parameterUpperID)
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.closeAll(tmSender,
+                    lowerBound = args[0] as Long,
+                    upperBound = args[1] as Long,
+                    silent = false
+                )
+            }
+        }
+
+        // /ticket s.closeall <Lower ID> <Upper ID>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordSilentCloseAll) {
+                withPermission("ticketmanager.command.closeAll")
+                withRequirement(::notUnderCooldown)
+                withRequirement(::hasSilentPermission)
+            }
+            longArgument(locale.parameterLowerID)
+            longArgument(locale.parameterUpperID)
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.closeAll(tmSender,
+                    lowerBound = args[0] as Long,
+                    upperBound = args[1] as Long,
+                    silent = true
+                )
+            }
+        }
+
+        // /ticket comment <ID> <Comment…>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordComment) {
+                withRequirement { hasOneDualityPermission(it, "ticketmanager.command.comment") }
+                withRequirement(::notUnderCooldown)
+            }
+            argumentTicketFromID(::ticketAlreadyClosedError, userDualityError("ticketmanager.command.comment")) {
+                replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.comment"))
+            }
+            greedyStringArgument(locale.parameterComment)
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.comment(tmSender,
+                    ticket = args[0] as Ticket,
+                    comment = args[1] as String,
+                    silent = false
+                )
+            }
+        }
+
+        // /ticket s.comment <ID> <Comment…>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordSilentComment) {
+                withRequirement { hasOneDualityPermission(it, "ticketmanager.command.comment") }
+                withRequirement(::notUnderCooldown)
+                withRequirement(::hasSilentPermission)
+            }
+            argumentTicketFromID(::ticketAlreadyClosedError, userDualityError("ticketmanager.command.comment")) {
+                replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.comment"))
+            }
+            greedyStringArgument(locale.parameterComment)
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.comment(tmSender,
+                    ticket = args[0] as Ticket,
+                    comment = args[1] as String,
+                    silent = true
+                )
+            }
+        }
+
+        // /ticket list [Page]
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordList) {
+                withPermission("ticketmanager.command.list")
+            }
+            integerArgument(locale.parameterPage)
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.list(tmSender,
+                    requestedPage = args[0] as Int,
+                )
+                null
+            }
+        }
+
+        // /ticket list
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordList) {
+                withPermission("ticketmanager.command.list")
+            }
+            executeAndRegisterTMMessage { tmSender, _ ->
+                commandTasks.list(tmSender, 1)
+                null
+            }
+        }
+
+        // /ticket listassigned [Page]
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordListAssigned) {
+                withPermission("ticketmanager.command.list")
+            }
+            integerArgument(locale.parameterPage)
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.listAssigned(tmSender,
+                    requestedPage = args[0] as Int,
+                )
+                null
+            }
+        }
+
+        // /ticket listassigned [Page]
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordListAssigned) {
+                withPermission("ticketmanager.command.list")
+            }
+            executeAndRegisterTMMessage { tmSender, _ ->
+                commandTasks.listAssigned(tmSender, 1)
+                null
+            }
+        }
+
+        // /ticket listunassigned [Page]
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordListUnassigned) {
+                withPermission("ticketmanager.command.list")
+            }
+            integerArgument(locale.parameterPage)
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.listUnassigned(tmSender,
+                    requestedPage = args[0] as Int,
+                )
+                null
+            }
+        }
+
+        // /ticket listunassigned
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordListUnassigned) {
+                withPermission("ticketmanager.command.list")
+            }
+            executeAndRegisterTMMessage { tmSender, _ ->
+                commandTasks.listUnassigned(tmSender, 1)
+                null
+            }
+        }
+
+        // /ticket help
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordHelp) {
+                withPermission("ticketmanager.command.help")
+            }
+            executeAndRegisterTMMessage { tmSender, _ ->
+                commandTasks.help(tmSender)
+                null
+            }
+        }
+
+        // /ticket reopen <ID>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordReopen) {
+                withPermission("ticketmanager.command.reopen")
+                withRequirement(::notUnderCooldown)
+            }
+            argumentTicketFromID(::ticketAlreadyOpenError) {}
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.reopen(tmSender,
+                    ticket = args[0] as Ticket,
+                    silent = false
+                )
+            }
+        }
+
+        // /ticket s.reopen <ID>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordSilentReopen) {
+                withPermission("ticketmanager.command.reopen")
+                withRequirement(::notUnderCooldown)
+                withRequirement(::hasSilentPermission)
+            }
+            argumentTicketFromID(::ticketAlreadyOpenError) {}
+            executeAndRegisterTMMessage { tmSender, args ->
+                commandTasks.reopen(tmSender,
+                    ticket = args[0] as Ticket,
+                    silent = true
+                )
+            }
+        }
+
+        // /ticket version
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordVersion)
+            executeAndRegisterTMMessage { tmSender, _ ->
+                commandTasks.version(tmSender)
+                null
+            }
+        }
 
         /*
-
-        */
-    }
-
-    private fun BukkitCommandSender.toTMSender(): CommandSender.Active {
-        return when (this) {
-            is ConsoleCommandSender -> PaperConsole(configState.proxyServerName)
-            is BukkitPlayer-> PaperPlayer(this, configState.proxyServerName)
-            else -> throw Exception("Unsupported Entity Type!")
-        }
-    }
-
-    private inline fun CommandAPICommand.tmExecuteWithMsgAsync(
-        crossinline msgGenerator: suspend (CommandSender.Active, BukkitCommandSender, Array<out Any>) -> MessageNotification<CommandSender.Active>
-    ): CommandAPICommand {
-        return this.executes(CommandExecutor { bukkitSender, args ->
-            TMCoroutine.launchSupervised { 
-                executeNotificationsAsync(platform, configState, bukkitSender.toTMSender(), locale) {
-                    msgGenerator(bukkitSender.toTMSender(), bukkitSender, args)
+        // /ticket teleport <ID>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordTeleport) {
+                withRequirement {
+                    it.toTMSender().has("ticketmanager.command.teleport") ||
+                    it.toTMSender().has("ticketmanager.command.proxyteleport")
                 }
             }
-        }, ExecutorType.CONSOLE, ExecutorType.PLAYER)
+
+            //TODO
+            argumentTicketFromID({ ticket, active ->
+                if (ticket.actions[0].location.server == configState.proxyServerName) {
+                    throw CustomArgumentException.fromString("")
+                }
+
+
+                if (ticket.actions[0].location !is TicketCreationLocation.FromPlayer)
+                    throw CustomArgumentException.fromString("You ca")
+            }) {
+
+            }
+        }
+         */
+
+
+//TODO REWRITE ALL CUSTOM ARGUEMENT EXCEPTIONS USING KYORI MINIMESSAGE
+// TODO: I SHOULD MAKE THE COMMAND STUFF SEAMLESS! MAKE SURE THAT GREEDY STRINGS USE CUSTOM ERROR MESSAGE (How???)
+    }
+
+    private fun BukkitCommandSender.toTMSender(): CommandSender.Active = when (this) {
+        is ConsoleCommandSender -> PaperConsole(locale, configState.proxyServerName)
+        is BukkitPlayer-> PaperPlayer(this, configState.proxyServerName)
+        else -> throw Exception("Unsupported Entity Type!")
+    }
+
+    private inline fun CommandAPICommand.executeAndRegisterTMMessage(
+        crossinline commandTask: suspend (tmSender: CommandSender.Active, args: Array<out Any>) -> MessageNotification<CommandSender.Active>?
+    ) {
+        return this.executes(CommandExecutor { bukkitSender, args ->
+            TMCoroutine.launchSupervised {
+                try {
+                    val tmSender = bukkitSender.toTMSender()
+                    val message = commandTask(tmSender, args.args())
+
+                    cooldown?.performCommandDuties(bukkitSender)
+                    message?.run { executeNotificationsAsync(platform, configState, tmSender, locale, this) }
+                } catch(e: Exception) {
+                    pushErrors(platform, configState, locale, e, TMLocale::warningsUnexpectedError)
+                }
+            }
+        }, ExecutorType.CONSOLE, ExecutorType.PLAYER).register()
     }
 }
 
@@ -382,17 +621,11 @@ fun BukkitCommandSender.toTicketCreator(): TicketCreator = when (this) {
     else -> throw Exception("Unsupported Entity Type!")
 }
 
-// /ticket closeall <Lower ID> <Upper ID>
-// /ticket comment <ID> <Comment…>
-// /ticket create <Message…>
-// /ticket list [Page]
-// /ticket listassigned [Page]
-// /ticket listunassigned [Page]
-// /ticket help
+
+// /ticket setpriority <ID> <Priority>
 // /ticket history [User] [Page]
 // /ticket search <Params>
 // /ticket teleport <ID>
-// /ticket version
 // /ticket view <ID>
 // /ticket viewdeep <ID>
 

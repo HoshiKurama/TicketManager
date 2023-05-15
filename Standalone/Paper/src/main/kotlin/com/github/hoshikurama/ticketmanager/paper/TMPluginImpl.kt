@@ -1,84 +1,132 @@
 package com.github.hoshikurama.ticketmanager.paper
 
+import com.github.hoshikurama.ticketmanager.common.Proxy2Server
+import com.github.hoshikurama.ticketmanager.common.Server2Proxy
+import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
+import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
+import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
+import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
+import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
+import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
+import com.github.hoshikurama.ticketmanager.commonse.misc.ConfigParameters
+import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
+import dev.jorel.commandapi.CommandAPI
+import dev.jorel.commandapi.CommandAPIBukkitConfig
+import kotlinx.coroutines.runBlocking
+import org.bstats.bukkit.Metrics
+import org.bstats.charts.SimplePie
+import org.bstats.charts.SingleLineChart
+import org.bukkit.Bukkit
+import org.bukkit.event.Listener
+import org.bukkit.plugin.java.JavaPlugin
+import java.io.File
+import java.io.InputStream
+import java.io.InputStreamReader
+
+typealias TMPlayerJoinEvent = com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
+typealias BukkitPlayerJoinEvent = org.bukkit.event.player.PlayerJoinEvent
 
 class TMPluginImpl(
     private val paperPlugin: PaperPlugin
 ) : TMPlugin(
     buildPlatformFunctions = { PlatformFunctionsImpl(paperPlugin, it) },
-    buildJoinEvent = { global, platform -> JoinEventImpl(global, platform) },
-    cooldownAfterRemoval = {  }
+    buildJoinEvent = { config, platform, locale -> JoinEventImpl(locale, config, platform) },
+    cooldownAfterRemoval = { it.run(Bukkit::getPlayer)?.run(CommandAPI::updateRequirements) }
 ) {
 
-}
-
-/*
-class TMPluginImpl(
-    private val paperPlugin: PaperPlugin,
-) : TMPlugin(
-    buildPlatformFunctions = { PlatformFunctionsImpl(paperPlugin, it) },
-    buildPipeline = { platform, instance, global ->
-        CommandExecutorImpl(
-            platform,
-            instance,
-            global,
-        )
-    },
-    buildTabComplete = { platform, instance -> TabCompleteImpl(platform, instance) },
-    buildJoinEvent = { global, instance, platform -> JoinEventImpl(global, instance, platform) },
-)  {
     private lateinit var metrics: Metrics
-
     private var proxy: Proxy? = null
 
-    override fun performSyncBefore() {
+    override fun platformRunFirst() {
         // Launch Metrics
         metrics = Metrics(paperPlugin, bukkitMetricsKey)
         metrics.addCustomChart(
             SingleLineChart("tickets_made") {
-                globalPluginState.ticketCountMetrics.getAndSet(0)
+                runBlocking {
+                    GlobalState.ticketCounter.getAndReset()
+                }
             }
         )
         metrics.addCustomChart(
             SimplePie("database_type") {
-                try { instancePluginState.database.type.name }
-                catch (e: Exception) { "ERROR" }
+                GlobalState.databaseType?: "UNINITIALIZED"
             }
         )
 
         metrics.addCustomChart(SimplePie("plugin_platform") { "Paper" })
-    }
 
-    override fun performAsyncTaskTimer(frequency: Long, duration: TimeUnit, action: () -> Unit) {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(paperPlugin, Runnable { action() }, 0, duration.toSeconds(frequency) * 20L)
-    }
-
-    override fun platformRunFirst() {
-        TODO("Not yet implemented")
+        // LuckPerms???
     }
 
     override fun platformRunSyncAfterCoreLaunch(
         cooldown: Cooldown?,
         activeLocale: TMLocale,
-        database: AsyncDatabase,
         configState: ConfigState,
-        joinEvent: com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent,
+        joinEvent: TMPlayerJoinEvent,
         lpGroupNames: List<String>,
         platformFunctions: PlatformFunctions
     ) {
-        TODO("Not yet implemented")
+        nonCommandStuff(cooldown, activeLocale, configState, joinEvent, lpGroupNames, platformFunctions)
+        // Register Commands
+        CommandAPI.onLoad(CommandAPIBukkitConfig(paperPlugin))
+        CommandAPI.onEnable()
+        CommandAPIRunner().generateCommands()
+    }
+
+    private fun nonCommandStuff(
+        cooldown: Cooldown?,
+        activeLocale: TMLocale,
+        configState: ConfigState,
+        joinEvent: TMPlayerJoinEvent,
+        lpGroupNames: List<String>,
+        platformFunctions: PlatformFunctions
+    ) {
+        // Update Command References
+        ReloadObjectCommand.cooldown = cooldown
+        ReloadObjectCommand.locale = activeLocale
+        ReloadObjectCommand.configState = configState
+        ReloadObjectCommand.lpGroupNames = lpGroupNames
+        ReloadObjectCommand.platform = platformFunctions
+        ReloadObjectCommand.commandTasks = CommandTasks(
+            eventBuilder = EventBuilderImpl(),
+            configState = configState,
+            platform = platformFunctions,
+            locale = activeLocale,
+        )
+
+        // Register Proxy listeners if necessary
+        if (configState.enableProxyMode) {
+            proxy = Proxy(platformFunctions, configState, activeLocale)
+            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.NotificationSharing.waterfallString())
+            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, Proxy2Server.NotificationSharing.waterfallString(), proxy!!)
+            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.Teleport.waterfallString())
+            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, Proxy2Server.Teleport.waterfallString(), proxy!!)
+            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.ProxyVersionRequest.waterfallString())
+            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, Proxy2Server.ProxyVersionRequest.waterfallString(), proxy!!)
+            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.DiscordMessage.waterfallString())
+        }
+
+        // Registers player join event
+        paperPlugin.server.pluginManager.registerEvents(joinEvent as Listener, paperPlugin)
     }
 
     override fun platformUpdateOnReload(
         cooldown: Cooldown?,
         activeLocale: TMLocale,
-        database: AsyncDatabase,
         configState: ConfigState,
-        joinEvent: com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent,
+        joinEvent: TMPlayerJoinEvent,
         lpGroupNames: List<String>,
         platformFunctions: PlatformFunctions
     ) {
-        TODO("Not yet implemented")
+        // Unregister Player join event
+        BukkitPlayerJoinEvent.getHandlerList().unregister(paperPlugin)
+    // TODO REGISTER SERVICE
+        // Unregister proxy events
+        paperPlugin.server.messenger.unregisterIncomingPluginChannel(paperPlugin)
+        paperPlugin.server.messenger.unregisterOutgoingPluginChannel(paperPlugin)
+
+        nonCommandStuff(cooldown, activeLocale, configState, joinEvent, lpGroupNames, platformFunctions)
     }
 
     override fun configExists(): Boolean {
@@ -96,32 +144,14 @@ class TMPluginImpl(
     override fun readConfig(): ConfigParameters {
         return paperPlugin.config.run {
             ConfigParameters(
-                mySQLHost = getString("MySQL_Host"),
-                mySQLPort = getString("MySQL_Port"),
-                mySQLDBName = getString("MySQL_DBName"),
-                mySQLUsername = getString("MySQL_Username"),
-                mySQLPassword = getString("MySQL_Password"),
-                pluginFolderPath = paperPlugin.dataFolder.absolutePath,
-                memoryFrequency = getLong("Memory_Backup_Frequency"),
+                pluginFolderPath = paperPlugin.dataFolder.toPath(),
                 dbTypeAsStr = getString("Database_Mode"),
                 allowCooldowns = getBoolean("Use_Cooldowns"),
                 cooldownSeconds = getLong("Cooldown_Time"),
-                localeHandlerColourCode = getString("Colour_Code"),
-                localeHandlerPreferredLocale = getString("Preferred_Locale"),
-                localeHandlerConsoleLocale = getString("Console_Locale"),
-                localeHandlerForceLocale = getBoolean("Force_Locale"),
+                localedColourCode = getString("Colour_Code"),
+                selectedLocale = getString("Preferred_Locale"),
                 allowUnreadTicketUpdates = getBoolean("Allow_Unread_Ticket_Updates"),
                 checkForPluginUpdates = getBoolean("Allow_UpdateChecking"),
-                enableDiscord = getBoolean("Use_Discord_Bot"),
-                discordNotifyOnAssign = getBoolean("Discord_Notify_On_Assign"),
-                discordNotifyOnClose = getBoolean("Discord_Notify_On_Close"),
-                discordNotifyOnCloseAll = getBoolean("Discord_Notify_On_Close_All"),
-                discordNotifyOnComment = getBoolean("Discord_Notify_On_Comment"),
-                discordNotifyOnCreate = getBoolean("Discord_Notify_On_Create"),
-                discordNotifyOnReopen = getBoolean("Discord_Notify_On_Reopen"),
-                discordNotifyOnPriorityChange = getBoolean("Discord_Notify_On_Priority_Change"),
-                discordToken = getString("Discord_Bot_Token"),
-                discordChannelID = getLong("Discord_Channel_ID"),
                 printModifiedStacktrace = getBoolean("Print_Modified_Stacktrace"),
                 printFullStacktrace = getBoolean("Print_Full_Stacktrace"),
                 enableAdvancedVisualControl = getBoolean("Enable_Advanced_Visual_Control"),
@@ -131,7 +161,6 @@ class TMPluginImpl(
                 allowProxyUpdateChecks = getBoolean("Allow_Proxy_UpdateChecking"),
                 proxyUpdateFrequency = getLong("Proxy_Update_Check_Frequency"),
                 pluginUpdateFrequency = getLong("Plugin_Update_Check_Frequency"),
-                forwardDiscordToProxy = getBoolean("Discord_Bot_On_Proxy"),
             )
         }
     }
@@ -166,41 +195,4 @@ class TMPluginImpl(
         writer.close()
     }
 
-    override fun registerProcesses() {
-        // Register Commands
-        instancePluginState.localeHandler.getCommandBases().forEach {
-            paperPlugin.getCommand(it)?.setExecutor(commandPipeline as CommandExecutor)
-            // Remember to register any keyword in paper-plugin.yml
-        }
-        // Registers Tab Completion
-        paperPlugin.server.pluginManager.registerEvents(tabComplete as Listener, paperPlugin)
-
-        // Registers player join event
-        paperPlugin.server.pluginManager.registerEvents(joinEvent as Listener, paperPlugin)
-
-        // Register Velocity listeners if necessary
-        if (instancePluginState.enableProxyMode) {
-            proxy = Proxy(platformFunctions, instancePluginState)
-            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.NotificationSharing.waterfallString())
-            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, Proxy2Server.NotificationSharing.waterfallString(), proxy!!)
-            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.Teleport.waterfallString())
-            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, Proxy2Server.Teleport.waterfallString(), proxy!!)
-            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.ProxyVersionRequest.waterfallString())
-            paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, Proxy2Server.ProxyVersionRequest.waterfallString(), proxy!!)
-            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.DiscordMessage.waterfallString())
-        }
-    }
-
-    override fun unregisterProcesses() {
-        // Removes current task timers
-        paperPlugin.server.scheduler.cancelTasks(paperPlugin)
-
-        // Unregisters events
-        AsyncTabCompleteEvent.getHandlerList().unregister(paperPlugin)
-        PlayerJoinEvent.getHandlerList().unregister(paperPlugin)
-
-        // Unregister proxy events
-        paperPlugin.server.messenger.unregisterIncomingPluginChannel(paperPlugin)
-        paperPlugin.server.messenger.unregisterOutgoingPluginChannel(paperPlugin)
-    }
 }

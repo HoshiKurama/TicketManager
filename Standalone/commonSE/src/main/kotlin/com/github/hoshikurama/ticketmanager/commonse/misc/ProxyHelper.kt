@@ -1,8 +1,8 @@
 package com.github.hoshikurama.ticketmanager.commonse.misc
 
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
 import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.shaded.com.google.common.io.ByteStreams
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
+import com.google.common.io.ByteStreams
 import java.util.*
 
 fun encodeRequestTP(player: CommandSender.Active.OnlinePlayer, location: TicketCreationLocation.FromPlayer): ByteArray {

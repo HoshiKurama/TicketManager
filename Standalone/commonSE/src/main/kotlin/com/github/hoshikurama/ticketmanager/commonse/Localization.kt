@@ -1,10 +1,8 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
-import com.github.hoshikurama.ticketmanager.common.CommonKeywords
 import com.github.hoshikurama.ticketmanager.common.supportedLocales
-import com.github.hoshikurama.ticketmanager.shaded.org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.Yaml
 import java.nio.file.Path
-import java.nio.file.Paths
 import kotlin.io.path.inputStream
 
 class TMLocale(
@@ -148,6 +146,7 @@ class TMLocale(
     val brigadierNotYourTicket: String,
     val brigadierInvalidID: String,
     val brigadierTicketAlreadyClosed: String,
+    val brigadierTicketAlreadyOpen: String,
 
     // View and Deep View
     val viewHeader: String,
@@ -520,6 +519,7 @@ class TMLocale(
                 brigadierNotYourTicket = core["Brigadier_NotYourTicket"]!!,
                 brigadierInvalidID = core["Brigadier_InvalidID"]!!,
                 brigadierTicketAlreadyClosed = core["Brigadier_TicketAlreadyClosed"]!!,
+                brigadierTicketAlreadyOpen = core["Brigadier_TicketAlreadyOpen"]!!,
             )
         }
 
@@ -608,6 +608,7 @@ class TMLocale(
                 brigadierNotYourTicket = internalVersion.brigadierNotYourTicket,
                 brigadierInvalidID = internalVersion.brigadierInvalidID,
                 brigadierTicketAlreadyClosed = internalVersion.brigadierTicketAlreadyClosed,
+                brigadierTicketAlreadyOpen = internalVersion.brigadierTicketAlreadyOpen,
                 // Visual Aspects
                 priorityLowest = visuals["Priority_Lowest"] ?: internalVersion.priorityLowest,
                 priorityLow = visuals["Priority_Low"] ?: internalVersion.priorityLow,

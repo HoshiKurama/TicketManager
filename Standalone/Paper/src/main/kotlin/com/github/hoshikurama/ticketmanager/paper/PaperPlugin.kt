@@ -15,6 +15,6 @@ class PaperPlugin : JavaPlugin() {
     }
 
     override fun onDisable() {
-        tmPlugin.disablePlugin()
+        tmPlugin.disableTicketManager()
     }
 }

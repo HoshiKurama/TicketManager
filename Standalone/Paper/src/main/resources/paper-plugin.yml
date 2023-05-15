@@ -1,27 +1,13 @@
 name: TicketManager
-version: 9.0.0
+version: 10.0.0
 main: com.github.hoshikurama.ticketmanager.paper.PaperPlugin
-api-version: 1.18
+api-version: 1.19
 authors: [HoshiKurama]
 folia-supported: true
 dependencies:
   - name: LuckPerms
     required: true
     bootstrap: false
-libraries:
-  - org.jetbrains.kotlin:kotlin-stdlib:1.8.20
-  - org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta
-  - org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.0-Beta
-  - com.mysql:mysql-connector-j:8.0.32
-  - com.github.jasync-sql:jasync-mysql:2.1.23
-  - com.github.seratch:kotliquery:1.9.0
-  - net.kyori:adventure-extra-kotlin:4.13.0
-  - joda-time:joda-time:2.12.5
-  - com.discord4j:discord4j-core:3.2.3
-  - com.h2database:h2:2.1.214
-commands:
-  ticket:
-    description: Base for all TicketManager commands
 permissions:
   ticketmanager.command.assign:
     description: Assign a ticket
@@ -94,9 +80,6 @@ permissions:
     default: false
   ticketmanager.commandArg.silence:
     description: Ability to perform silent variations
-    default: false
-  ticketmanager.commandArg.autotab:
-    description: Allows autotabbing (must have permission for command too)
     default: false
   ticketmanager.notify.openTickets.onJoin:
     description: See open and assigned ticket count on login
@@ -233,7 +216,6 @@ permissions:
       ticketmanager.command.*: true
       ticketmanager.commandArg.cooldown.override: true
       ticketmanager.commandArg.silence: true
-      ticketmanager.commandArg.autotab: true
     default: op
   ticketmanager.basic:
     description: Preset for normal users
@@ -244,7 +226,6 @@ permissions:
       ticketmanager.command.help: true
       ticketmanager.command.history.own: true
       ticketmanager.command.view.own: true
-      ticketmanager.commandArg.autotab: true
       ticketmanager.notify.unreadUpdates.onJoin: true
       ticketmanager.notify.unreadUpdates.scheduled: true
       ticketmanager.notify.change.*: true

@@ -1,12 +1,14 @@
 package com.github.hoshikurama.ticketmanager.paper
 
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
+import com.github.hoshikurama.ticketmanager.common.Proxy2Server
 import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.randServerIdentifier
-import com.github.hoshikurama.ticketmanager.commonse.old.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.commonse.old.misc.decodeRequestTP
-import com.github.hoshikurama.ticketmanager.commonse.old.pipeline.Notification
-import com.github.hoshikurama.ticketmanager.commonse.old.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.ticket.User
+import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.commands.MessageNotification
+import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
+import com.github.hoshikurama.ticketmanager.commonse.misc.decodeRequestTP
+import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.google.common.io.ByteStreams
 import org.bukkit.entity.Player
 import org.bukkit.plugin.messaging.PluginMessageListener
@@ -14,51 +16,52 @@ import java.util.*
 
 class Proxy(
     private val platform: PlatformFunctions,
-    private val instanceState: InstancePluginState
+    private val configState: ConfigState,
+    private val activeLocale: TMLocale,
 ): PluginMessageListener {
 
     override fun onPluginMessageReceived(channel: String, player: Player, message: ByteArray) {
         when (channel) {
 
-            "ticketmanager:relayed_message" -> {
+            Proxy2Server.NotificationSharing.name -> {
                 @Suppress("UnstableApiUsage")
                 val input = ByteStreams.newDataInput(message)
 
                 // Filters out same server
                 if (input.readUTF().run(UUID::fromString).equals(randServerIdentifier)) return
 
-                val notification = when (input.readUTF().run(Notification.MessageType::valueOf)) {
-                    Notification.MessageType.ASSIGN -> Notification.Assign.fromByteArray(input)
-                    Notification.MessageType.CLOSEWITHCOMMENT -> Notification.CloseWithComment.fromByteArray(input)
-                    Notification.MessageType.CLOSEWITHOUTCOMMENT -> Notification.CloseWithoutComment.fromByteArray(input)
-                    Notification.MessageType.MASSCLOSE -> Notification.MassClose.fromByteArray(input)
-                    Notification.MessageType.COMMENT -> Notification.Comment.fromByteArray(input)
-                    Notification.MessageType.CREATE -> Notification.Create.fromByteArray(input)
-                    Notification.MessageType.REOPEN -> Notification.Reopen.fromByteArray(input)
-                    Notification.MessageType.SETPRIORITY -> Notification.SetPriority.fromByteArray(input)
+                val notification = when (input.readUTF().run(MessageNotification.MessageType::valueOf)) {
+                    MessageNotification.MessageType.ASSIGN -> MessageNotification.Assign.decode(input, activeLocale)
+                    MessageNotification.MessageType.CLOSEWITHCOMMENT -> MessageNotification.CloseWithComment.decode(input, activeLocale)
+                    MessageNotification.MessageType.CLOSEWITHOUTCOMMENT -> MessageNotification.CloseWithoutComment.decode(input, activeLocale)
+                    MessageNotification.MessageType.MASSCLOSE -> MessageNotification.MassClose.decode(input, activeLocale)
+                    MessageNotification.MessageType.COMMENT -> MessageNotification.Comment.decode(input, activeLocale)
+                    MessageNotification.MessageType.CREATE -> MessageNotification.Create.decode(input, activeLocale)
+                    MessageNotification.MessageType.REOPEN -> MessageNotification.Reopen.decode(input, activeLocale)
+                    MessageNotification.MessageType.SETPRIORITY -> MessageNotification.SetPriority.decode(input, activeLocale)
                 }
 
                 notification.run {
-                    if (sendCreatorMSG && creator is User) {
-                        val creatorPlayer = platform.buildPlayer((creator as User).uuid, instanceState.localeHandler)
+                    if (sendCreatorMSG && ticketCreator is TicketCreator.User) {
+                        val creatorPlayer = platform.buildPlayer((ticketCreator as TicketCreator.User).uuid)
 
                         if (creatorPlayer != null && creatorPlayer.has(creatorAlertPerm) && !creatorPlayer.has(massNotifyPerm))
-                            generateCreatorMSG(creatorPlayer.locale).run(creatorPlayer::sendMessage)
+                            generateCreatorMSG(activeLocale).run(creatorPlayer::sendMessage)
                     }
 
                     if (sendMassNotify)
-                        platform.massNotify(instanceState.localeHandler, massNotifyPerm, generateMassNotify)
+                        platform.massNotify(massNotifyPerm, generateMassNotify(activeLocale))
                 }
             }
 
-            "ticketmanager:proxy_to_server_tp" -> {
+            Proxy2Server.Teleport.name -> {
                 val (uuid, location) = decodeRequestTP(message)
                 proxyJoinMap[uuid.toString()] = location
             }
 
-            "ticketmanager:p2s_proxy_update" -> {
+            Proxy2Server.ProxyVersionRequest.name -> {
                 val (curVer, latestVer) = ProxyUpdate.decodeServerMsg(message)
-                instanceState.cachedProxyUpdate.set(curVer to latestVer)
+                configState.proxyUpdate = curVer to latestVer
             }
         }
     }

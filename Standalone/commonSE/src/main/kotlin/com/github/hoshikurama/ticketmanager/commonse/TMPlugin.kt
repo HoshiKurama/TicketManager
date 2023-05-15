@@ -1,6 +1,5 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
-import com.github.hoshikurama.ticketmanager.api.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.ticket.TicketAssignmentType
 import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
 import com.github.hoshikurama.ticketmanager.common.*
@@ -9,6 +8,7 @@ import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
 import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
 import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.extensions.defaultDatabase
+import com.github.hoshikurama.ticketmanager.commonse.h2database.CachedH2
 import com.github.hoshikurama.ticketmanager.commonse.misc.ConfigParameters
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
@@ -21,6 +21,7 @@ import net.luckperms.api.LuckPermsProvider
 import net.luckperms.api.model.group.Group
 import java.nio.file.Files
 import java.util.*
+import kotlin.io.path.absolutePathString
 import kotlin.io.path.exists
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -28,8 +29,8 @@ import kotlin.time.toDuration
 //TODO MESSAGE CONSOLE WITH WHEN PLUGIN IS WAITING AND HAS FOUND DATABASE
 
 abstract class TMPlugin(
-    private val buildPlatformFunctions: (String) -> PlatformFunctions,
-    private val buildJoinEvent: (ConfigState, PlatformFunctions) -> PlayerJoinEvent,
+    private val buildPlatformFunctions: (String?) -> PlatformFunctions,
+    private val buildJoinEvent: (ConfigState, PlatformFunctions, TMLocale) -> PlayerJoinEvent,
     private val cooldownAfterRemoval: suspend (UUID) -> Unit,
 ) {
     companion object {
@@ -45,7 +46,6 @@ abstract class TMPlugin(
     abstract fun platformRunSyncAfterCoreLaunch(
         cooldown: Cooldown?,
         activeLocale: TMLocale,
-        database: AsyncDatabase,
         configState: ConfigState,
         joinEvent: PlayerJoinEvent,
         lpGroupNames: List<String>,
@@ -54,7 +54,6 @@ abstract class TMPlugin(
     abstract fun platformUpdateOnReload(
         cooldown: Cooldown?,
         activeLocale: TMLocale,
-        database: AsyncDatabase,
         configState: ConfigState,
         joinEvent: PlayerJoinEvent,
         lpGroupNames: List<String>,
@@ -74,20 +73,28 @@ abstract class TMPlugin(
 
 // Non-Abstract Functions
     fun enableTicketManager() {
-        GlobalState.isPluginLocked = true
+        GlobalState.dataInitializationComplete = false
+        GlobalState.databaseSelected = false
 
-        // This part runs sync for things which require active initialization
+        // This part runs sync for initial startup
         platformRunFirst()
         val lpGroupNamesDeferred = loadLPGroupNames()
         val errors = mutableListOf<Pair<String, String>>()
         val (coreItems, config) = loadCoreItems(errors)
         val (cooldown, activeLocale, configState, joinEvent, platformFunctions) = coreItems
-        val database = runBlocking { loadDatabase(configState, config, platformFunctions, errors, activeLocale).await() }
+
+        // Database Handling
+        println("Waiting for Database") //TODO PROPERLY IMPLEMENT
+        DatabaseManager.register(defaultDatabase) { CachedH2(config.pluginFolderPath.absolutePathString()) }
+        TMCoroutine.launchGlobal { loadDatabase(configState, config, platformFunctions, errors, activeLocale) {
+            println("Database Selected!") //TODO PROPERLY IMPLEMENT
+            GlobalState.databaseSelected = true
+        } }
+
         lpGroupNames = runBlocking { lpGroupNamesDeferred.await() }
 
         platformRunSyncAfterCoreLaunch(
             cooldown = cooldown,
-            database = database,
             joinEvent = joinEvent,
             configState = configState,
             activeLocale = activeLocale,
@@ -97,11 +104,13 @@ abstract class TMPlugin(
 
         // Startup is now async...
         performRemainingTasksAsync(activeLocale, configState, platformFunctions, errors)
-        GlobalState.isPluginLocked = false
+        loadUpdateCheckersAsync(config, configState, platformFunctions, errors)
+        GlobalState.dataInitializationComplete = true
     }
 
     fun disableTicketManager() {
-        GlobalState.isPluginLocked = true
+        GlobalState.dataInitializationComplete = false
+        GlobalState.databaseSelected = false
 
         // Cancels periodic coroutine tasks
         cooldown?.shutdown()
@@ -123,11 +132,12 @@ abstract class TMPlugin(
         val errors = mutableListOf<Pair<String, String>>()
         val (coreItems, config) = loadCoreItems(errors)
         val (cooldown, activeLocale, configState, joinEvent, platformFunctions) = coreItems
-        val databaseAsync = loadDatabase(configState, config, platformFunctions, errors, activeLocale)
+
+        DatabaseManager.register(defaultDatabase) { CachedH2(config.pluginFolderPath.absolutePathString()) }
+        loadDatabase(configState, config, platformFunctions, errors, activeLocale)
 
         platformUpdateOnReload(
             cooldown = cooldown,
-            database = databaseAsync.await(),
             joinEvent = joinEvent,
             configState = configState,
             activeLocale = activeLocale,
@@ -136,7 +146,6 @@ abstract class TMPlugin(
         )
         lpGroupNames = lpGroupNamesAsync.await()
         performRemainingTasksAsync(activeLocale, configState, platformFunctions, errors)
-        GlobalState.isPluginLocked = false
     }
 
 // Locale stuff...
@@ -186,9 +195,6 @@ abstract class TMPlugin(
             localesFolderPath = config.pluginFolderPath,
         )
 
-        // Platform Functions...
-        val platformFunctions = buildPlatformFunctions(activeLocale) //TODO FIX
-
         // Config State...
         val configState = kotlin.run {
 
@@ -204,7 +210,7 @@ abstract class TMPlugin(
                 enableProxyMode = enableProxyMode,
                 proxyServerName = proxyServerName,
                 allowProxyUpdatePings = enableProxyMode && config.allowProxyUpdateChecks
-                        ?: true.addToErrors("Allow_Proxy_UpdateChecking", Boolean::toString),
+                    ?: true.addToErrors("Allow_Proxy_UpdateChecking", Boolean::toString),
                 allowUnreadTicketUpdates = config.allowUnreadTicketUpdates
                     ?: true.addToErrors("Allow_Unread_Ticket_Updates", Boolean::toString),
                 printModifiedStacktrace = config.printModifiedStacktrace
@@ -224,6 +230,8 @@ abstract class TMPlugin(
             runAfterRemoval = cooldownAfterRemoval
         ).takeIf { config.allowCooldowns ?: false.addToErrors("Use_Cooldowns", Boolean::toString) }
 
+        // Platform Functions...
+        val platformFunctions = buildPlatformFunctions(configState.proxyServerName)
 
         // Error Pushing...
         TMCoroutine.launchGlobal {
@@ -238,7 +246,7 @@ abstract class TMPlugin(
             cooldown,
             activeLocale,
             configState,
-            buildJoinEvent(configState, platformFunctions),
+            buildJoinEvent(configState, platformFunctions, activeLocale),
             platformFunctions) to config
     }
 
@@ -248,12 +256,14 @@ abstract class TMPlugin(
         platformFunctions: PlatformFunctions,
         errors: MutableList<Pair<String, String>>,
         locale: TMLocale,
-    ): Deferred<AsyncDatabase> {
+        afterLoad: (() -> Unit)? = null,
+    ) {
         fun <T> T.addToErrors(location: String, toString: (T) -> String): T =
             this.also { errors.add(location to toString(it)) }
 
-        val databaseName = configParameters.dbTypeAsStr ?: defaultDatabase.addToErrors("Database_Mode") { it }
-        return DatabaseManager.activateNewDatabase(databaseName.lowercase(), platformFunctions, configState, locale)
+        GlobalState.databaseType = configParameters.dbTypeAsStr ?: defaultDatabase.addToErrors("Database_Mode") { it }
+        DatabaseManager.activateNewDatabase(GlobalState.databaseType!!, platformFunctions, configState, locale)
+        afterLoad?.invoke()
     }
 
     private fun loadLPGroupNames(): Deferred<List<String>> = TMCoroutine.asyncGlobal {
@@ -263,7 +273,7 @@ abstract class TMPlugin(
         }
     }
 
-    private fun loadUpdateCheckers(
+    private fun loadUpdateCheckersAsync(
         config: ConfigParameters,
         configState: ConfigState,
         platformFunctions: PlatformFunctions,
@@ -398,7 +408,6 @@ abstract class TMPlugin(
                 ).run(platformFunctions.getConsoleAudience()::sendMessage)
             }
         }
-        GlobalState.isPluginLocked = false
     }
 }
 

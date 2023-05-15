@@ -4,12 +4,13 @@ import com.github.hoshikurama.ticketmanager.api.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.database.DBResult
 import com.github.hoshikurama.ticketmanager.api.database.SearchConstraints
 import com.github.hoshikurama.ticketmanager.api.ticket.*
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation.*
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation.FromConsole
+import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation.FromPlayer
 import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asParallelStream
 import com.github.hoshikurama.ticketmanager.commonse.utilities.mapNotNull
-import com.github.hoshikurama.ticketmanager.shaded.org.h2.jdbcx.JdbcConnectionPool
 import kotliquery.*
+import org.h2.jdbcx.JdbcConnectionPool
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap

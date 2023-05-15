@@ -26,6 +26,8 @@ class IntActor {
 
     suspend fun reset(): Unit = actor.send(NumberOperations.Reset)
 
+    suspend fun getAndReset(): Int = get().also { reset() }
+
     suspend fun get(): Int {
         val msg = NumberOperations.Get(CompletableDeferred())
         actor.send(msg)

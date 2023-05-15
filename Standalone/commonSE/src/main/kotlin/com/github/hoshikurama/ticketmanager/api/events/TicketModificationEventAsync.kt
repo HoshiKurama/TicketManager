@@ -1,8 +1,8 @@
 package com.github.hoshikurama.ticketmanager.api.events
 
+import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
 import com.github.hoshikurama.ticketmanager.api.ticket.TicketAction
 import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
-import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
 
 /**
  * This event represents any successful ticket modification request. Most developers are interested in this
@@ -14,11 +14,10 @@ import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
  *
  * Event fires once the command successfully begins execution.
  */
-abstract class TicketModificationEventAsync(
-    val commandSender: CommandSender.Active,
-    val ticketCreator: TicketCreator,
-    val modification: TicketAction,
-    val wasSilent: Boolean,
-) {
-    abstract fun callEvent()
+interface TicketModificationEventAsync {
+    val commandSender: CommandSender.Active
+    val ticketCreator: TicketCreator
+    val modification: TicketAction
+    val wasSilent: Boolean
+    fun callEventTM()
 }

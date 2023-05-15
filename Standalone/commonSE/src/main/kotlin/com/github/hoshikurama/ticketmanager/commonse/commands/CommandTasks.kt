@@ -6,13 +6,12 @@ import com.github.hoshikurama.ticketmanager.api.database.Option
 import com.github.hoshikurama.ticketmanager.api.database.SearchConstraints
 import com.github.hoshikurama.ticketmanager.api.ticket.*
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
-import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.TMCoroutine
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
 import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.misc.*
-import com.github.hoshikurama.ticketmanager.commonse.misc.getHexColour
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.buildComponent
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.onHover
 import com.github.hoshikurama.ticketmanager.commonse.platform.EventBuilder
@@ -91,7 +90,7 @@ class CommandTasks(
             ).joinAll()
 
             // Calls DatabaseWriteCompleteEventAsync
-            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticket.id).callEvent()
+            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticket.id).callEventTM()
         }
 
         return MessageNotification.CloseWithComment.newActive(
@@ -129,7 +128,7 @@ class CommandTasks(
             ).joinAll()
 
             // Calls DatabaseWriteCompleteEventAsync
-            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticket.id).callEvent()
+            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticket.id).callEventTM()
         }
 
         return MessageNotification.CloseWithoutComment.newActive(
@@ -152,7 +151,7 @@ class CommandTasks(
 
         // Launch Ticket Modification Event
         TMCoroutine.launchGlobal {
-            eventBuilder.buildTicketModificationEvent(sender, TicketCreator.DummyCreator, action, silent).callEvent()
+            eventBuilder.buildTicketModificationEvent(sender, TicketCreator.DummyCreator, action, silent).callEventTM()
         }
 
         TMCoroutine.launchSupervised {
@@ -160,11 +159,11 @@ class CommandTasks(
                 .massCloseTicketsAsync(lowerBound, upperBound, sender.asCreator(), sender.getLocAsTicketLoc())
                 .join()
 
-            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticketID = -1).callEvent()
+            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticketID = -1).callEventTM()
         }
 
         return MessageNotification.MassClose.newActive(
-            isSilent = true,
+            isSilent = silent,
             commandSender = sender,
             lowerBound = lowerBound,
             upperBound = upperBound,
@@ -224,8 +223,8 @@ class CommandTasks(
 
         // Launch both events simultaneously
         TMCoroutine.launchGlobal {
-            launch { eventBuilder.buildTicketModificationEvent(sender, initTicket.creator, initTicket.actions[0], false).callEvent() }
-            launch { eventBuilder.buildDatabaseWriteCompleteEvent(sender, initTicket.actions[0], id).callEvent() }
+            launch { eventBuilder.buildTicketModificationEvent(sender, initTicket.creator, initTicket.actions[0], false).callEventTM() }
+            launch { eventBuilder.buildDatabaseWriteCompleteEvent(sender, initTicket.actions[0], id).callEventTM() }
         }
 
         return MessageNotification.Create.newActive(
@@ -506,7 +505,7 @@ class CommandTasks(
             ).joinAll()
 
             // Send event
-            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticket.id).callEvent()
+            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticket.id).callEventTM()
         }
 
         return MessageNotification.Reopen.newActive(silent, sender, ticket.creator, ticket.id)
@@ -867,7 +866,7 @@ class CommandTasks(
             ).joinAll()
 
             // Calls DatabaseWriteCompleteEventAsync
-            eventBuilder.buildDatabaseWriteCompleteEvent(sender, insertedAction, ticketID).callEvent()
+            eventBuilder.buildDatabaseWriteCompleteEvent(sender, insertedAction, ticketID).callEventTM()
         }
 
         return MessageNotification.Assign.newActive(
@@ -922,7 +921,7 @@ class CommandTasks(
         isSilent: Boolean,
     ) {
         TMCoroutine.launchGlobal {
-            eventBuilder.buildTicketModificationEvent(commandSender, ticketCreator, action, isSilent).callEvent()
+            eventBuilder.buildTicketModificationEvent(commandSender, ticketCreator, action, isSilent).callEventTM()
         }
     }
 
