@@ -4,11 +4,10 @@ import com.github.hoshikurama.ticketmanager.api.ticket.TicketAssignmentType
 import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
 import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
 import java.util.*
 
 // Ticket.Priority
-internal fun Byte.toPriority(): Ticket.Priority = when (this.toInt()) {
+fun Byte.toPriority(): Ticket.Priority = when (this.toInt()) {
     1 -> Ticket.Priority.LOWEST
     2 -> Ticket.Priority.LOW
     3 -> Ticket.Priority.NORMAL
@@ -25,7 +24,7 @@ internal fun Ticket.Priority.getHexColour(activeLocale: TMLocale): String = when
     Ticket.Priority.HIGHEST -> activeLocale.priorityColourHighestHex
 }
 
-internal fun Ticket.Priority.toLocaledWord(activeLocale: TMLocale) = when (this) {
+fun Ticket.Priority.toLocaledWord(activeLocale: TMLocale) = when (this) {
     Ticket.Priority.LOWEST -> activeLocale.priorityLowest
     Ticket.Priority.LOW -> activeLocale.priorityLow
     Ticket.Priority.NORMAL -> activeLocale.priorityNormal
@@ -34,7 +33,7 @@ internal fun Ticket.Priority.toLocaledWord(activeLocale: TMLocale) = when (this)
 }
 
 // Ticket.Status
-internal fun Ticket.Status.getHexColour(activeLocale: TMLocale): String = when (this) {
+ fun Ticket.Status.getHexColour(activeLocale: TMLocale): String = when (this) {
     Ticket.Status.OPEN -> activeLocale.statusColourOpenHex
     Ticket.Status.CLOSED -> activeLocale.statusColourClosedHex
 }
@@ -70,7 +69,7 @@ fun String.asAssignmentType(): TicketAssignmentType {
 // TicketCreator
 fun TicketCreator.asString(): String = when (this) {
     is TicketCreator.Console -> "CONSOLE"
-    is TicketCreator.InvalidUUID -> "INVALID_UUID"
+    is TicketCreator.UUIDNoMatch -> "INVALID_UUID"
     is TicketCreator.User -> "USER.$uuid"
     is TicketCreator.DummyCreator -> "DUMMY"
 }
@@ -80,7 +79,7 @@ fun String.asTicketCreator() : TicketCreator {
     return when (split[0]) {
         "USER" -> split[1].run(UUID::fromString).run(TicketCreator::User)
         "CONSOLE" -> TicketCreator.Console
-        "INVALID_UUID" -> TicketCreator.InvalidUUID
+        "INVALID_UUID" -> TicketCreator.UUIDNoMatch
         else -> throw Exception("Invalid TicketCreator type: ${split[0]}")
     }
 }

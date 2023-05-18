@@ -73,6 +73,7 @@ class TMLocale(
     val parameterUser: String,
     val parameterTargetDB: String,
     val parameterConstraints: String,
+    val parameterNewSearchIndicator: String,
 
     // Console Logging Messages
     val consoleErrorBadDiscord: String,
@@ -520,6 +521,7 @@ class TMLocale(
                 brigadierInvalidID = core["Brigadier_InvalidID"]!!,
                 brigadierTicketAlreadyClosed = core["Brigadier_TicketAlreadyClosed"]!!,
                 brigadierTicketAlreadyOpen = core["Brigadier_TicketAlreadyOpen"]!!,
+                parameterNewSearchIndicator = core["Parameter_NewSearch_Indicator"]!!,
             )
         }
 
@@ -609,6 +611,7 @@ class TMLocale(
                 brigadierInvalidID = internalVersion.brigadierInvalidID,
                 brigadierTicketAlreadyClosed = internalVersion.brigadierTicketAlreadyClosed,
                 brigadierTicketAlreadyOpen = internalVersion.brigadierTicketAlreadyOpen,
+                parameterNewSearchIndicator = internalVersion.parameterNewSearchIndicator,
                 // Visual Aspects
                 priorityLowest = visuals["Priority_Lowest"] ?: internalVersion.priorityLowest,
                 priorityLow = visuals["Priority_Low"] ?: internalVersion.priorityLow,

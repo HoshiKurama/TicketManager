@@ -64,6 +64,7 @@ Parameters_Level: 'Level'
 Parameters_User: 'User'
 Parameters_Target_Database: 'Target Database'
 Parameters_Constraints: 'Constraints'
+Parameter_NewSearch_Indicator: 'where'
 #
 # Console Logging Messages
 Console_InitializationComplete: '[TicketManager] Data initialization complete!'

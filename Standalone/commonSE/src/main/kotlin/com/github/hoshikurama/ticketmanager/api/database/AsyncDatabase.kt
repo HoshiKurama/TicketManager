@@ -149,7 +149,7 @@ interface AsyncDatabase {
      * @see SearchConstraints
      * @see DBResult
      */
-    fun searchDatabaseAsync(constraints: SearchConstraints, page: Int, pageSize: Int): CompletableFuture<DBResult>
+    fun searchDatabaseAsync(constraints: SearchConstraints, pageSize: Int): CompletableFuture<DBResult>
 
     // ID Acquisition
     /**

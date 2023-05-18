@@ -8,6 +8,7 @@ import com.github.hoshikurama.ticketmanager.api.ticket.*
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
 import com.github.hoshikurama.ticketmanager.commonse.TMCoroutine
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
 import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
@@ -18,6 +19,7 @@ import com.github.hoshikurama.ticketmanager.commonse.platform.EventBuilder
 import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asDeferredThenAwait
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import net.kyori.adventure.text.Component
@@ -517,9 +519,11 @@ class CommandTasks(
         checkedCreator: TicketCreator,
         requestedPage: Int,
     ) {
-
         val search = DatabaseManager.activeDatabase
-            .searchDatabaseAsync(SearchConstraints(creator = Option(checkedCreator)), requestedPage, 9)
+            .searchDatabaseAsync(SearchConstraints(
+                creator = Option(SearchConstraints.Symbol.EQUALS, checkedCreator),
+                requestedPage = requestedPage,
+            ), 9)
         val targetName = checkedCreator.attemptName()
         val (results, pageCount, resultCount, returnedPage) = search.asDeferredThenAwait()
 
@@ -570,15 +574,16 @@ class CommandTasks(
     suspend fun search(
         sender: CommandSender.Active,
         searchParameters: SearchConstraints,
-        requestedPage: Int,
-        rawArgs: List<String>,
+        useNewFormat: Boolean,
+        newRawArgumentString: String? = null,    // Always not-null when used
+        oldRawArgs: List<String>? = null,   // Always not-null when used
     ) {
         // Beginning of execution
         sender.sendMessage(locale.searchQuerying.parseMiniMessage())
 
         // Results calculation and destructuring
         val (results, pageCount, resultCount, returnedPage) =
-            DatabaseManager.activeDatabase.searchDatabaseAsync(searchParameters, requestedPage, 9)
+            DatabaseManager.activeDatabase.searchDatabaseAsync(searchParameters, 9)
                 .asDeferredThenAwait()
 // Component Builder...
         val sentComponent = buildComponent {
@@ -615,12 +620,19 @@ class CommandTasks(
                 // Implement pages if needed
                 if (pageCount > 1) {
                     buildPageComponent(returnedPage, pageCount, kotlin.run {
-                        val constraintCmdArgs = rawArgs
-                            .map { it.split(":", limit = 2) }
-                            .filter { it[0] != locale.searchPage }
-                            .joinToString(" ") { (k, v) -> "$k:$v" }
 
-                        "/${locale.commandBase} ${locale.commandWordSearch} $constraintCmdArgs ${locale.searchPage}:"
+                        if (useNewFormat) {
+                            val argsFilterPage = newRawArgumentString!!.replace("&& ${locale.searchPage} = \\d+".toRegex(), "")
+                            "/${locale.commandBase} ${locale.searchPage} ${locale.parameterNewSearchIndicator} $argsFilterPage && page = "
+                        } else {
+                            val constraintCmdArgs = oldRawArgs!!
+                                .map { it.split(":", limit = 2) }
+                                .filter { it[0] != locale.searchPage }
+                                .joinToString(" ") { (k, v) -> "$k:$v" }
+
+                            "/${locale.commandBase} ${locale.commandWordSearch} $constraintCmdArgs ${locale.searchPage}:"
+
+                        }
                     }).let(this::append)
                 }
             }
@@ -784,67 +796,54 @@ class CommandTasks(
             .run(sender::sendMessage)
     }
 
-    //TODO IMPLEMENT THE RELOAD
-    /*
-    // /ticket reload
-    private suspend fun reload(
-        sender: CommandSender
-    ) {
+    suspend fun reload(sender: CommandSender.Active) {
+        GlobalState.dataInitializationComplete = false
+        GlobalState.databaseSelected = false
+
+        // Announce Intentions
+        platform.massNotify(
+            permission = "ticketmanager.notify.info",
+            message = locale.informationReloadInitiated.parseMiniMessage("user" templated sender.username)
+        )
+
+        // Give time for things to complete
+        var counter = 0
+        while (TMCoroutine.getSupervisedJobCount() < 1) {
+            if (counter > 29) {
+                TMCoroutine.cancelTasks("User ${sender.username} requested a plugin restart and 1+ tasks is taking too long")
+                platform.massNotify(
+                    "ticketmanager.notify.warning",
+                    locale.warningsLongTaskDuringReload.parseMiniMessage()
+                )
+            }
+
+            delay(1000)
+            counter++
+        }
+
+        // Closed...
+        platform.massNotify("ticketmanager.notify.info",
+            locale.informationReloadTasksDone.parseMiniMessage()
+        )
+
         try {
-            // Lock Plugin
-            globalState.pluginLocked.set(true)
-
-            // Announce Intentions
-            platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
-                it.informationReloadInitiated.parseMiniMessage("user" templated sender.name)
-            }
-
-            // Give time for things to complete
-            TMCoroutine.run {
-                var counter = 0
-
-                while (activeJobCount != 0) {
-
-                    if (counter > 29) {
-                        cancelTasks("User ${sender.name} requested a plugin restart and 1+ tasks is taking too long")
-                        platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.warning") {
-                            it.warningsLongTaskDuringReload.parseMiniMessage()
-                        }
-                    }
-
-                    delay(1000)
-                    counter++
-                }
-            }
-
-            // Closed...
-            platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
-                it.informationReloadTasksDone.parseMiniMessage()
-            }
-
-            instanceState.database.closeDatabase()
-            TMCoroutine.beginNewScope()
-
-            // I REALLY HATE THIS STATIC VARIABLE, BUT IT WILL WORK FOR NOW SINCE I ONLY USE IT HERE
-            com.github.hoshikurama.ticketmanager.commonse.TMPlugin.activeInstance.unregisterProcesses()
-            com.github.hoshikurama.ticketmanager.commonse.TMPlugin.activeInstance.initializeData() // Also re-registers things
+            TMPlugin.activeInstance.reloadTicketManager()
 
             // Notifications
-            platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
-                it.informationReloadSuccess.parseMiniMessage()
-            }
+            platform.massNotify("ticketmanager.notify.info", locale.informationReloadSuccess.parseMiniMessage())
 
             if (!sender.has("ticketmanager.notify.info"))
-                sender.sendMessage(sender.locale.informationReloadSuccess)
+                sender.sendMessage(locale.informationReloadSuccess.parseMiniMessage())
 
         } catch (e: Exception) {
-            platform.massNotify(instanceState.localeHandler, "ticketmanager.notify.info") {
-                it.informationReloadFailure.parseMiniMessage()
-            }
-            throw e
-        } finally { globalState.pluginLocked.set(false) }
+            platform.massNotify(
+                "ticketmanager.notify.info",
+                locale.informationReloadFailure.parseMiniMessage()
+            )
+            GlobalState.dataInitializationComplete = true
+            GlobalState.databaseSelected = true
+        }
     }
-     */
 
     private fun assignVariationWriter(
         sender: CommandSender.Active,

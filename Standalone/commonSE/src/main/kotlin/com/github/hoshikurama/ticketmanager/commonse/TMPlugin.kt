@@ -27,6 +27,7 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 //TODO MESSAGE CONSOLE WITH WHEN PLUGIN IS WAITING AND HAS FOUND DATABASE
+//TODO REWRITE WAITING FOR DATABASE AND FOUND MESSAGES. Make sure the initialization complete msg runs at the right time
 
 abstract class TMPlugin(
     private val buildPlatformFunctions: (String?) -> PlatformFunctions,
@@ -34,9 +35,11 @@ abstract class TMPlugin(
     private val cooldownAfterRemoval: suspend (UUID) -> Unit,
 ) {
     companion object {
-        @Volatile internal lateinit var lpGroupNames: List<String> private set
+        @Volatile
+        lateinit var lpGroupNames: List<String> private set
         @Volatile internal var cooldown: Cooldown? = null
             private set
+        @Volatile internal lateinit var activeInstance: TMPlugin
     }
 
     private val periodicTasks = mutableListOf<Job>()

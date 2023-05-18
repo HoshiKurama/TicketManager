@@ -232,7 +232,6 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
 
     override fun searchDatabaseAsync(
         constraints: SearchConstraints,
-        page: Int,
         pageSize: Int
     ): CompletableFuture<DBResult> {
         val functions = mutableListOf<TicketPredicate>()
@@ -273,8 +272,8 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
             .apply { maxPages = count() }
 
         val fixedPage = when {
-            maxPages == 0 || page < 1 -> 1
-            page in 1..maxPages -> page
+            maxPages == 0 || constraints.requestedPage < 1 -> 1
+            constraints.requestedPage in 1..maxPages -> constraints.requestedPage
             else -> maxPages
         }
 

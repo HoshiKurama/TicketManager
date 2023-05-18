@@ -61,7 +61,7 @@ fun relTimeToEpochSecond(relTime: String, activeLocale: TMLocale): Long {
     return Instant.now().epochSecond - seconds
 }
 
-fun stringToStatusOrNull(str: String) = tryOrNull { Ticket.Status.valueOf(str) }
+fun stringToStatusOrNull(str: String) = tryOrNull { Ticket.Status.valueOf(str) } //TODO ????
 
 // MiniMessage helper functions
 fun String.parseMiniMessage(vararg template: TagResolver) = MiniMessage.miniMessage().deserialize(this, *template)

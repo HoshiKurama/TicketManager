@@ -35,7 +35,7 @@ sealed interface TicketCreator {
     /**
      * Internal dummy value used when TicketManager is unable to find an accurate User or Console object
      */
-    object InvalidUUID : TicketCreator
+    object UUIDNoMatch : TicketCreator
 
     /**
      * Ticket type is used for types which contain an instance of TicketCreator but is not

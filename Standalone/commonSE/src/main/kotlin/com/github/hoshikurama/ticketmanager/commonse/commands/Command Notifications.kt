@@ -52,7 +52,7 @@ class StandardParams<out T: InfoSender>(
         }
 
         fun build(activeRef: ByteArrayDataInput, activeLocale: TMLocale) = StandardParams(
-            commandSender = activeRef.readUTF().asCommandCapableInfo(activeLocale),
+            commandSender = activeRef.readUTF().asCommandSender(activeLocale),
             ticketCreator = activeRef.readUTF().asTicketCreator(),
             sendCreatorMSG = activeRef.readBoolean(),
             sendSenderMSG = activeRef.readBoolean(),

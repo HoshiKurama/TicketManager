@@ -23,6 +23,7 @@ import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
  * @property world search by tickets created in a certain world
  * @property creationTime search by tickets newer than a specific epoch time
  * @property keywords search by tickets with a particular keyword in any of its comments or in its opening statement.
+ * @property requestedPage Page requested by user. Default to closest value if request falls outside of possible range.
  */
 
 class SearchConstraints(
@@ -35,13 +36,23 @@ class SearchConstraints(
     val world: Option<String>? = null,
     val creationTime: Option<Long>? = null,
     val keywords: Option<List<String>>? = null,
-)
+    val requestedPage: Int,
+) {
+    /**
+     * Ticket searches can use up to 4 different symbols in searches. In practice, however, this is usually limited to only two.
+     * As the name implies, this is the symbol a user enters and represents all possible types.
+     */
+    enum class Symbol {
+        EQUALS, NOT_EQUALS, LESS_THAN, GREATER_THAN
+    }
+}
 
 /**
  * Option is used exclusively by the SearchConstraints type. It allows for a differentiation between null values
- * (no search) and values which search for null. See SearchConstraints for more information
+ * (no search) and values which search for null. It also carries the appropriate symbol.
+ * See SearchConstraints for more information
  * @see SearchConstraints
  */
-@JvmInline
-value class Option<T>(val value: T)
+
+class Option<T>(val symbol: SearchConstraints.Symbol, val value: T)
 
