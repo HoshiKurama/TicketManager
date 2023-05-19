@@ -30,6 +30,7 @@ import dev.jorel.commandapi.executors.CommandArguments
 import dev.jorel.commandapi.executors.CommandExecutor
 import dev.jorel.commandapi.executors.ExecutorType
 import dev.jorel.commandapi.kotlindsl.*
+import java.util.concurrent.CompletableFuture
 import com.github.hoshikurama.ticketmanager.api.database.SearchConstraints.Symbol as SCSymbol
 import org.bukkit.command.ConsoleCommandSender as BukkitConsole
 
@@ -75,7 +76,7 @@ class CommandAPIRunner {
 
             val tmSender = info.sender.toTMSender()
             otherChecks.forEach { it.invoke(ticket, tmSender) }
-            ticket
+            return@CustomArgument ticket
         }
     ) { otherFunctions(this) }
     private fun assignmentArg(): CustomArgument<TicketAssignmentType, String> {
@@ -652,19 +653,6 @@ class CommandAPIRunner {
             }
         }
 
-        //TODO DEBUG ONLY MAKE A BUG REPORT
-        commandAPICommand("buggedCommand") {
-            argument(GreedyStringArgument("constraints")
-                .replaceSuggestions(ArgumentSuggestions.stringCollection {
-                    val currentLength = it.currentArg.length.toString()
-                    println(currentLength)
-                    return@stringCollection listOf(currentLength)
-                }
-            ))
-            executes(CommandExecutor { _, _ ->  })
-            register()
-        }
-
         // /ticket search where <Params...>
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordSearch) {
@@ -672,7 +660,8 @@ class CommandAPIRunner {
             }
             literalArgument(locale.parameterNewSearchIndicator)
             argument(CustomArgument(GreedyStringArgument(locale.parameterConstraints)) { info ->
-                if (info.currentInput.isBlank() || info.currentInput.trimEnd().endsWith("&&")) return@CustomArgument // This prevents random check at beginning
+                if (info.currentInput.isBlank() || info.currentInput.trimEnd().endsWith("&&"))
+                    return@CustomArgument SearchConstraints(requestedPage = 1) // This prevents random check at beginning
 
                 // Temp variables to assign
                 var creator: Option<TicketCreator>? = null
@@ -765,10 +754,11 @@ class CommandAPIRunner {
                         }
                     }
 
-                SearchConstraints(creator, assigned, priority, status, closedBy, lastClosedBy, world, creationTime, keywords, page)
+                return@CustomArgument SearchConstraints(creator, assigned, priority, status, closedBy, lastClosedBy, world, creationTime, keywords, page)
             }) {
-                replaceSuggestions(ArgumentSuggestions.stringCollection { args -> // Remove everything behind last &&
+                replaceSuggestions { args, builder -> CompletableFuture.supplyAsync { // Remove everything behind last &&
                     val curArgsSet = args.currentArg.split(" && ").last().split(" ")
+                    val newBuilder = builder.createOffset(args.currentArg.lastIndexOf(" "))
                     val keywordList = listOf(
                         locale.searchAssigned,
                         locale.searchCreator,
@@ -782,15 +772,13 @@ class CommandAPIRunner {
                     )
 
                     if (curArgsSet.size > 2 && curArgsSet[0] in keywordList) {
-                        return@stringCollection when (curArgsSet[0]) {
+                        when (curArgsSet[0]) {
 
                             locale.searchCreator, locale.searchClosedBy, locale.searchLastClosedBy ->
                                 platform.getOnlineSeenPlayerNames(args.sender.toTMSender())
-                                    .filter { it.startsWith(curArgsSet[2]) }
 
                             locale.searchAssigned ->
                                 (TMPlugin.lpGroupNames.map { "::$it" } + platform.getOnlineSeenPlayerNames(args.sender.toTMSender()))
-                                    .filter { it.startsWith(curArgsSet.subList(2, curArgsSet.size).joinToString(" ")) }
 
                             locale.searchPriority ->
                                 listOf("1", "2", "3", "4", "5", locale.priorityLowest, locale.priorityLow,
@@ -813,12 +801,12 @@ class CommandAPIRunner {
 
                             else -> throw Exception("Impossible")
                             //TODO GO BACK AND MAKE SURE TO ADD && CLAUSES
-                        }
-                }
+                        }.forEach(newBuilder::suggest)
+                    }
 
                     // "somethingHere "
-                    if (curArgsSet.size == 2 && curArgsSet[0] in keywordList) {
-                        return@stringCollection when (curArgsSet[0]) {
+                    else if (curArgsSet.size == 2 && curArgsSet[0] in keywordList) {
+                        when (curArgsSet[0]) {
                             locale.searchCreator,
                             locale.searchAssigned,
                             locale.searchLastClosedBy,
@@ -829,17 +817,20 @@ class CommandAPIRunner {
                             locale.searchPriority -> listOf("=", "!=", "<", ">")
                             locale.searchTime -> listOf("<", ">")
                             else -> throw Exception("Reach Impossible")
-                        }.filter { it.startsWith(curArgsSet[1]) }
+                        }.forEach(newBuilder::suggest)
                     }
 
                     // "" or "somethingHere"
+                    /*
                     if (curArgsSet.first().isBlank() || curArgsSet.size == 1) {
-                        val starter = curArgsSet.getOrNull(0) ?: ""
-                        return@stringCollection keywordList.filter { it.startsWith(starter) }
+
                     }
 
-                    return@stringCollection listOf("SHOULDN'T GET HERE!")
-                })
+                     */
+                    else keywordList.forEach(newBuilder::suggest)
+
+                    newBuilder.build()
+                }}
             }
             executeRegisterTMGetArgs { tmSender, args ->
                 commandTasks.search(tmSender,

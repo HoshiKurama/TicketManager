@@ -15,6 +15,7 @@ repositories {
     maven { url = uri("https://papermc.io/repo/repository/maven-public/") }
     maven { url = uri("https://repo.codemc.org/repository/maven-public/") }
     maven { url = uri("https://jitpack.io") }
+    maven { url = uri("https://libraries.minecraft.net") }
 }
 
 dependencies {
@@ -27,6 +28,7 @@ dependencies {
     compileOnly("net.kyori:adventure-text-minimessage:4.13.1")
     //compileOnly("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
 
+    implementation("com.mojang:brigadier:1.0.18")
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("com.h2database:h2:2.1.214")
     implementation("dev.jorel:commandapi-bukkit-core:9.0.1")
@@ -62,6 +64,7 @@ tasks {
 
             // Excludes for Adventure
             exclude { it.moduleGroup == "net.kyori" && it.moduleName != "adventure-extra-kotlin"}
+            //TODO PROVIDE AND RESHADE BRIGADIER
         }
 
         // Relocators
