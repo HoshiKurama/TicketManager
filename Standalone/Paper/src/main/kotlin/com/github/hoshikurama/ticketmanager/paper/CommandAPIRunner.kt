@@ -16,10 +16,11 @@ import com.github.hoshikurama.ticketmanager.commonse.commands.executeNotificatio
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
 import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
-import com.github.hoshikurama.ticketmanager.commonse.misc.*
+import com.github.hoshikurama.ticketmanager.commonse.misc.asCreator
+import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
+import com.github.hoshikurama.ticketmanager.commonse.misc.toLocalizedName
 import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.utilities.tryOrNull
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPICommand
 import dev.jorel.commandapi.SuggestionInfo
@@ -29,8 +30,8 @@ import dev.jorel.commandapi.executors.CommandArguments
 import dev.jorel.commandapi.executors.CommandExecutor
 import dev.jorel.commandapi.executors.ExecutorType
 import dev.jorel.commandapi.kotlindsl.*
-import org.bukkit.command.ConsoleCommandSender as BukkitConsole
 import com.github.hoshikurama.ticketmanager.api.database.SearchConstraints.Symbol as SCSymbol
+import org.bukkit.command.ConsoleCommandSender as BukkitConsole
 
 typealias BukkitPlayer = org.bukkit.entity.Player
 typealias BukkitCommandSender = org.bukkit.command.CommandSender
@@ -85,11 +86,6 @@ class CommandAPIRunner {
                 else -> TicketAssignmentType.Other(info.currentInput)
             }
         }
-    }
-    private fun getPriority(): CustomArgument<Ticket.Priority, String> {
-        return CustomArgument(MultiLiteralArgument(locale.priorityLowest, locale.priorityLow,
-            locale.priorityNormal, locale.priorityHigh, locale.priorityHighest, "1", "2", "3", "4", "5")
-        ) { info -> numberOrWordToPriority(info.currentInput) }
     }
 
     // Errors
@@ -559,7 +555,7 @@ class CommandAPIRunner {
             }
         }
 
-        // /ticket teleport <ID> TODO TEST
+        // /ticket teleport <ID>
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordTeleport) {
                 withRequirement {
@@ -591,7 +587,7 @@ class CommandAPIRunner {
             }
         }
 
-        // /ticket view <ID> TODO TEST
+        // /ticket view <ID>
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordView) {
                 withRequirement { hasOneDualityPermission(it, "ticketmanager.command.view") }
@@ -604,7 +600,7 @@ class CommandAPIRunner {
             }
         }
 
-        // /ticket viewdeep <ID> TODO TEST
+        // /ticket viewdeep <ID>
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordView) {
                 withRequirement { hasOneDualityPermission(it, "ticketmanager.command.viewdeep") }
@@ -616,8 +612,8 @@ class CommandAPIRunner {
                 )
             }
         }
-
-        // /ticket setpriority <ID> <Priority> TODO TEST
+//TODO MAKE EVERYTHING RUN WITH THE CF
+        // /ticket setpriority <ID> <Priority>
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordSetPriority) {
                 withPermission("ticketmanager.command.setPriority")
@@ -625,17 +621,18 @@ class CommandAPIRunner {
             argumentTicketFromID(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
-            argument(getPriority())
+            multiLiteralArgument(locale.priorityLowest, locale.priorityLow,
+                locale.priorityNormal, locale.priorityHigh, locale.priorityHighest, "1", "2", "3", "4", "5")
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.setPriority(tmSender,
                     ticket = args[0] as Ticket,
-                    priority = args[1] as Ticket.Priority,
+                    priority = numberOrWordToPriority(args[1] as String),
                     silent = false
                 )
             }
         }
 
-        // /ticket s.setpriority <ID> <Priority> TODO TEST
+        // /ticket s.setpriority <ID> <Priority>
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordSilentSetPriority) {
                 withPermission("ticketmanager.command.setPriority")
@@ -644,14 +641,28 @@ class CommandAPIRunner {
             argumentTicketFromID(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
-            argument(getPriority())
+            multiLiteralArgument(locale.priorityLowest, locale.priorityLow,
+                locale.priorityNormal, locale.priorityHigh, locale.priorityHighest, "1", "2", "3", "4", "5")
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.setPriority(tmSender,
                     ticket = args[0] as Ticket,
-                    priority = args[1] as Ticket.Priority,
+                    priority = numberOrWordToPriority(args[1] as String),
                     silent = true
                 )
             }
+        }
+
+        //TODO DEBUG ONLY MAKE A BUG REPORT
+        commandAPICommand("buggedCommand") {
+            argument(GreedyStringArgument("constraints")
+                .replaceSuggestions(ArgumentSuggestions.stringCollection {
+                    val currentLength = it.currentArg.length.toString()
+                    println(currentLength)
+                    return@stringCollection listOf(currentLength)
+                }
+            ))
+            executes(CommandExecutor { _, _ ->  })
+            register()
         }
 
         // /ticket search where <Params...>
@@ -757,7 +768,7 @@ class CommandAPIRunner {
                 SearchConstraints(creator, assigned, priority, status, closedBy, lastClosedBy, world, creationTime, keywords, page)
             }) {
                 replaceSuggestions(ArgumentSuggestions.stringCollection { args -> // Remove everything behind last &&
-                    val curArgsSet = args.currentArg.split("&& ").last().split(" ")
+                    val curArgsSet = args.currentArg.split(" && ").last().split(" ")
                     val keywordList = listOf(
                         locale.searchAssigned,
                         locale.searchCreator,
@@ -820,6 +831,7 @@ class CommandAPIRunner {
                             else -> throw Exception("Reach Impossible")
                         }.filter { it.startsWith(curArgsSet[1]) }
                     }
+
                     // "" or "somethingHere"
                     if (curArgsSet.first().isBlank() || curArgsSet.size == 1) {
                         val starter = curArgsSet.getOrNull(0) ?: ""
