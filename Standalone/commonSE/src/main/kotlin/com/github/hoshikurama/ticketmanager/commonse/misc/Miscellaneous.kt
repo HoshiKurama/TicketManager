@@ -1,8 +1,8 @@
 package com.github.hoshikurama.ticketmanager.commonse.misc
 
-import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.buildComponent
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asParallelStream
@@ -73,7 +73,7 @@ operator fun Component.plus(other: Component) = append(other)
 // Other
 fun generateModifiedStacktrace(e: Exception, activeLocale: TMLocale) = buildComponent {
     val cause = e.cause
-
+//todo fix
     // Builds Header
     append(activeLocale.stacktraceLine1.parseMiniMessage())
     append(activeLocale.stacktraceLine2.parseMiniMessage("exception" templated (cause?.javaClass?.simpleName ?: "???")))

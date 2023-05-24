@@ -35,6 +35,10 @@ class TMPluginImpl(
     cooldownAfterRemoval = { it.run(Bukkit::getPlayer)?.run(CommandAPI::updateRequirements) }
 ) {
 
+    init {
+        activeInstance = this
+    }
+
     private lateinit var metrics: Metrics
     private var proxy: Proxy? = null
 

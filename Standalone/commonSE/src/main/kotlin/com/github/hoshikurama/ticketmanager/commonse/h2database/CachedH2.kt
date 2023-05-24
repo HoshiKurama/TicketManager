@@ -9,6 +9,7 @@ import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation.Fr
 import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asParallelStream
 import com.github.hoshikurama.ticketmanager.commonse.utilities.mapNotNull
+import com.github.hoshikurama.ticketmanager.commonse.utilities.notEquals
 import kotliquery.*
 import org.h2.jdbcx.JdbcConnectionPool
 import java.time.Instant
@@ -240,22 +241,90 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
             // Builds Constraints
             val closeVariations = listOf(TicketAction.Type.AsEnum.CLOSE, TicketAction.Type.AsEnum.MASS_CLOSE)
 
-            status?.run {{ t: Ticket -> t.status == value }}?.apply(functions::add)
-            priority?.run {{ t: Ticket -> t.priority == value }}?.apply(functions::add)
-            creator?.run {{ t: Ticket -> t.creator == value }}?.apply(functions::add)
-            assigned?.run {{ t: Ticket -> t.assignedTo == value }}?.apply(functions::add)
-            creationTime?.run {{ t: Ticket -> t.actions[0].timestamp >= value}}?.apply(functions::add)
-            world?.run {{ t: Ticket -> (t.actions[0].location as? FromPlayer)?.world?.equals(value) ?: false }}?.apply(functions::add)
-            closedBy?.run {{ t: Ticket -> t.actions.any { it.type.asEnum in closeVariations && it.user == value }}}?.apply(functions::add)
-            lastClosedBy?.run {{ t: Ticket -> t.actions.lastOrNull { it.type.asEnum in closeVariations }?.run { user == value } ?: false }}?.apply(functions::add)
+            status?.run {
+                when (symbol) {
+                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> t.status == value }
+                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> t.status != value }
+                    else -> throw Exception("Invalid type attempted in status search: ${symbol.name}")
+                }
+            }?.apply(functions::add)
 
-            keywords?.run {{ t: Ticket ->
-                val comments = t.actions
-                    .filter { it.type is TicketAction.Open || it.type is TicketAction.Comment || it.type is TicketAction.CloseWithComment }
-                    .map { it.type.getMessage()!! }
-                value.map { w -> comments.any { it.lowercase().contains(w.lowercase()) } }
-                    .all { it }
-            }}?.apply(functions::add)
+            priority?.run {
+                when (symbol) {
+                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> t.priority == value }
+                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> t.priority != value }
+                    SearchConstraints.Symbol.GREATER_THAN -> { t: Ticket -> t.priority.level > value.level }
+                    SearchConstraints.Symbol.LESS_THAN -> { t: Ticket -> t.priority.level < value.level }
+                }
+            }?.apply(functions::add)
+
+            creator?.run {
+                when (symbol) {
+                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> t.creator == value }
+                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> t.creator != value }
+                    else -> throw Exception("Invalid type attempted in creaor search: ${symbol.name}")
+                }
+            }?.apply(functions::add)
+
+            assigned?.run {
+                when (symbol) {
+                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> t.assignedTo == value }
+                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> t.assignedTo != value }
+                    else -> throw Exception("Invalid type attempted in assignment search: ${symbol.name}")
+                }
+            }?.apply(functions::add)
+
+            creationTime?.run {
+                when (symbol) {
+                    SearchConstraints.Symbol.LESS_THAN -> { t: Ticket -> t.actions[0].timestamp >= value}
+                    SearchConstraints.Symbol.GREATER_THAN -> { t: Ticket -> t.actions[0].timestamp <= value}
+                    else -> throw Exception("Invalid type attempted in creation time search: ${symbol.name}")
+                }
+            }?.apply(functions::add)
+
+            world?.run {
+                when (symbol) {
+                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> (t.actions[0].location as? FromPlayer)?.world?.equals(value) ?: false }
+                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> (t.actions[0].location as? FromPlayer)?.world?.notEquals(value) ?: true }
+                    else -> throw Exception("Invalid type attempted in world search: ${symbol.name}")
+                }
+            }?.apply(functions::add)
+
+            closedBy?.run {
+                when (symbol) {
+                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> t.actions.any { it.type.asEnum in closeVariations && it.user == value }}
+                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> t.actions.none { it.type.asEnum in closeVariations && it.user == value }}
+                    else -> throw Exception("Invalid type attempted in closedBy search: ${symbol.name}")
+                }
+            }?.apply(functions::add)
+
+            lastClosedBy?.run {
+                when (symbol) {
+                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> t.actions.lastOrNull { it.type.asEnum in closeVariations }?.run { user == value } ?: false }
+                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> t.actions.lastOrNull { it.type.asEnum in closeVariations }?.run { user != value } ?: true }
+                    else -> throw Exception("Invalid type attempted in lastClosedBy search: ${symbol.name}")
+                }
+            }?.apply(functions::add)
+
+            keywords?.run {
+                when (symbol) {
+                    SearchConstraints.Symbol.EQUALS -> { t: Ticket ->
+                        val comments = t.actions
+                            .filter { it.type is TicketAction.Open || it.type is TicketAction.Comment || it.type is TicketAction.CloseWithComment }
+                            .map { it.type.getMessage()!! }
+                        value.map { w -> comments.any { it.lowercase().contains(w.lowercase()) } }
+                            .all { it }
+                    }
+                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket ->
+                        val comments = t.actions
+                            .filter { it.type is TicketAction.Open || it.type is TicketAction.Comment || it.type is TicketAction.CloseWithComment }
+                            .map { it.type.getMessage()!! }
+                        value.map { w -> comments.none { it.lowercase().contains(w.lowercase()) } }
+                            .all { it }
+                    }
+                    else -> throw Exception("Invalid type attempted in  search: ${symbol.name}")
+                }
+            }?.apply(functions::add)
         }
 
         val combinedFunction = if (functions.isNotEmpty()) { t: Ticket -> functions.all { it(t) }}

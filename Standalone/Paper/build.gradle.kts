@@ -61,6 +61,7 @@ tasks {
             exclude(dependency("javax.inject:.*:.*"))
             exclude(dependency("org.eclipse.sisu:.*:.*"))
             exclude(dependency("org.jetbrains:annotations:.*"))
+            exclude(dependency("com.mojang.brigadier:.*"))
 
             // Excludes for Adventure
             exclude { it.moduleGroup == "net.kyori" && it.moduleName != "adventure-extra-kotlin"}

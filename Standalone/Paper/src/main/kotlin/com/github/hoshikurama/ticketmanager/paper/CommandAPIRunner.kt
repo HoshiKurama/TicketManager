@@ -653,6 +653,61 @@ class CommandAPIRunner {
             }
         }
 
+        // /ticket reload
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordReload) {
+                withPermission("ticketmanager.command.reload")
+            }
+            executeRegisterTMAction { tmSender, _ -> commandTasks.reload(tmSender) }
+        }
+
+        // /ticket history
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordHistory) {
+                withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
+            }
+            executeRegisterTMAction { tmSender, args ->
+                commandTasks.history(tmSender, tmSender.asCreator(), 1)
+            }
+        }
+
+        // /ticket history <User>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordHistory) {
+                withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
+            }
+            argument(CustomArgument(PlayerArgument(locale.parameterUser)) { info ->
+                if (!info.sender.hasPermission("ticketmanager.command.history.all") && !(info.sender.hasPermission("ticketmanager.command.history.own") && info.sender == info.currentInput))
+                    throw CustomArgumentException.fromString("You do not have permission to check the history of other people")
+                TicketCreator.User(info.currentInput.uniqueId)
+            })
+            executeRegisterTMAction { tmSender, args ->
+                commandTasks.history(tmSender,
+                    checkedCreator = (args[0] as BukkitPlayer).toTMSender().asCreator(),
+                    requestedPage = 1
+                )
+            }
+        }
+
+        // /ticket history <User> <Page>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordHistory) {
+                withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
+            }
+            argument(CustomArgument(PlayerArgument(locale.parameterUser)) { info ->
+                if (!info.sender.hasPermission("ticketmanager.command.history.all") && !(info.sender.hasPermission("ticketmanager.command.history.own") && info.sender == info.currentInput))
+                    throw CustomArgumentException.fromString("You do not have permission to check the history of other people")
+                TicketCreator.User(info.currentInput.uniqueId)
+            })
+            integerArgument(locale.parameterPage)
+            executeRegisterTMAction { tmSender, args ->
+                commandTasks.history(tmSender,
+                    checkedCreator = (args[0] as BukkitPlayer).toTMSender().asCreator(),
+                    requestedPage = args[1] as Int
+                )
+            }
+        }
+
         // /ticket search where <Params...>
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordSearch) {
@@ -722,10 +777,10 @@ class CommandAPIRunner {
                                 }
                             }
                             locale.searchPriority -> priority = when (symbol) {
-                                    "=" -> Option(SCSymbol.EQUALS, numberOrWordToPriority(info.currentInput))
-                                    "!=" -> Option(SCSymbol.NOT_EQUALS, numberOrWordToPriority(info.currentInput))
-                                    "<" -> Option(SCSymbol.LESS_THAN, numberOrWordToPriority(info.currentInput))
-                                    ">" -> Option(SCSymbol.GREATER_THAN, numberOrWordToPriority(info.currentInput))
+                                    "=" -> Option(SCSymbol.EQUALS, numberOrWordToPriority(value))
+                                    "!=" -> Option(SCSymbol.NOT_EQUALS, numberOrWordToPriority(value))
+                                    "<" -> Option(SCSymbol.LESS_THAN, numberOrWordToPriority(value))
+                                    ">" -> Option(SCSymbol.GREATER_THAN, numberOrWordToPriority(value))
                                     else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Valid types are: =, !=, <, or >")
                                 }
                             locale.searchKeywords -> {
@@ -758,7 +813,9 @@ class CommandAPIRunner {
             }) {
                 replaceSuggestions { args, builder -> CompletableFuture.supplyAsync { // Remove everything behind last &&
                     val curArgsSet = args.currentArg.split(" && ").last().split(" ")
-                    val newBuilder = builder.createOffset(args.currentArg.lastIndexOf(" "))
+
+
+                    val newBuilder = builder.createOffset(builder.start + args.currentArg.lastIndexOf(" ") + 1)
                     val keywordList = listOf(
                         locale.searchAssigned,
                         locale.searchCreator,
@@ -775,33 +832,46 @@ class CommandAPIRunner {
                         when (curArgsSet[0]) {
 
                             locale.searchCreator, locale.searchClosedBy, locale.searchLastClosedBy ->
-                                platform.getOnlineSeenPlayerNames(args.sender.toTMSender())
+                                if (curArgsSet.size == 3)
+                                    platform.getOnlineSeenPlayerNames(args.sender.toTMSender()) + listOf(locale.consoleName)
+                                else listOf("&&")
 
                             locale.searchAssigned ->
-                                (TMPlugin.lpGroupNames.map { "::$it" } + platform.getOnlineSeenPlayerNames(args.sender.toTMSender()))
+                                if (curArgsSet.size == 3)
+                                    TMPlugin.lpGroupNames.map { "::$it" } + platform.getOnlineSeenPlayerNames(args.sender.toTMSender()) + listOf(locale.consoleName, locale.miscNobody)
+                                else listOf("&&")
 
                             locale.searchPriority ->
-                                listOf("1", "2", "3", "4", "5", locale.priorityLowest, locale.priorityLow,
-                                    locale.priorityNormal, locale.priorityHigh, locale.priorityHighest,
-                                ).filter { it.startsWith(curArgsSet[2]) }
+                                if (curArgsSet.size == 3) {
+                                    listOf("1", "2", "3", "4", "5", locale.priorityLowest, locale.priorityLow,
+                                        locale.priorityNormal, locale.priorityHigh, locale.priorityHighest,
+                                    )
+                                } else listOf("&&")
 
-                            locale.searchStatus -> listOf(locale.statusOpen, locale.statusClosed)
-                                .filter { it.startsWith(curArgsSet[2]) }
+                            locale.searchStatus ->
+                                if (curArgsSet.size == 3)
+                                    listOf(locale.statusOpen, locale.statusClosed)
+                                else listOf("&&")
 
-                            locale.searchWorld -> platform.getWorldNames().filter { it.startsWith(curArgsSet[2]) }
+                            locale.searchWorld ->
+                                if (curArgsSet.size == 3)
+                                    platform.getWorldNames()
+                                else listOf("&&")
 
                             locale.searchTime ->
-                                if (curArgsSet.size % 2 == 0) { // timeUnit entry
-                                    listOf(locale.timeSeconds, locale.timeMinutes, locale.timeHours,
-                                        locale.timeDays, locale.timeWeeks, locale.timeYears,
-                                    ).filter { it.startsWith(curArgsSet[curArgsSet.lastIndex]) }
-                                } else listOf("&&").filter { it.startsWith(curArgsSet[curArgsSet.lastIndex]) }
+                                if (curArgsSet.size % 2 == 1)
+                                    if (curArgsSet.size > 4)
+                                        listOf("&&", "<${locale.searchTime}>")
+                                    else listOf( "<${locale.searchTime}>")
+                                else listOf(locale.timeSeconds.trimStart(), locale.timeMinutes.trimStart(), locale.timeHours.trimStart(),
+                                    locale.timeDays.trimStart(), locale.timeWeeks.trimStart(), locale.timeYears.trimStart(),
+                                )
 
-                            locale.searchKeywords -> listOf("||", "&&").filter { it.startsWith(curArgsSet[curArgsSet.lastIndex]) }
-
+                            locale.searchKeywords -> listOf("||", "&&", "<${locale.searchKeywords}>")
                             else -> throw Exception("Impossible")
-                            //TODO GO BACK AND MAKE SURE TO ADD && CLAUSES
-                        }.forEach(newBuilder::suggest)
+                        }
+                            .filter { it.startsWith(curArgsSet.last()) }
+                            .forEach(newBuilder::suggest)
                     }
 
                     // "somethingHere "
@@ -817,17 +887,13 @@ class CommandAPIRunner {
                             locale.searchPriority -> listOf("=", "!=", "<", ">")
                             locale.searchTime -> listOf("<", ">")
                             else -> throw Exception("Reach Impossible")
-                        }.forEach(newBuilder::suggest)
+                        }
+                            .filter { it.startsWith(curArgsSet.last()) }
+                            .forEach(newBuilder::suggest)
                     }
-
-                    // "" or "somethingHere"
-                    /*
-                    if (curArgsSet.first().isBlank() || curArgsSet.size == 1) {
-
-                    }
-
-                     */
-                    else keywordList.forEach(newBuilder::suggest)
+                    else keywordList
+                        .filter { it.startsWith(curArgsSet.last()) }
+                        .forEach(newBuilder::suggest)
 
                     newBuilder.build()
                 }}
@@ -909,12 +975,12 @@ class CommandAPIRunner {
     }
 
     private fun timeUnitToMultiplier(timeUnit: String) = when (timeUnit) {
-        locale.searchTimeSecond -> 1L
-        locale.searchTimeMinute -> 60L
-        locale.searchTimeHour -> 3600L
-        locale.searchTimeDay -> 86400L
-        locale.searchTimeWeek -> 604800L
-        locale.searchTimeYear -> 31556952L
+        locale.timeSeconds.trimStart() -> 1L
+        locale.timeMinutes.trimStart() -> 60L
+        locale.timeHours.trimStart() -> 3600L
+        locale.timeDays.trimStart() -> 86400L
+        locale.timeWeeks.trimStart() -> 604800L
+        locale.timeYears.trimStart() -> 31556952L
         else -> throw CustomArgumentException.fromString("Invalid time unit: $timeUnit")
     }
 

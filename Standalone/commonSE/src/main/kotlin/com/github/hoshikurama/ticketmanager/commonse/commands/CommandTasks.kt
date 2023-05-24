@@ -623,7 +623,7 @@ class CommandTasks(
 
                         if (useNewFormat) {
                             val argsFilterPage = newRawArgumentString!!.replace("&& ${locale.searchPage} = \\d+".toRegex(), "")
-                            "/${locale.commandBase} ${locale.searchPage} ${locale.parameterNewSearchIndicator} $argsFilterPage && page = "
+                            "$argsFilterPage && page = "
                         } else {
                             val constraintCmdArgs = oldRawArgs!!
                                 .map { it.split(":", limit = 2) }
@@ -808,7 +808,7 @@ class CommandTasks(
 
         // Give time for things to complete
         var counter = 0
-        while (TMCoroutine.getSupervisedJobCount() < 1) {
+        while (TMCoroutine.getSupervisedJobCount() < 2) {
             if (counter > 29) {
                 TMCoroutine.cancelTasks("User ${sender.username} requested a plugin restart and 1+ tasks is taking too long")
                 platform.massNotify(
@@ -826,22 +826,26 @@ class CommandTasks(
             locale.informationReloadTasksDone.parseMiniMessage()
         )
 
-        try {
-            TMPlugin.activeInstance.reloadTicketManager()
+        TMCoroutine.launchGlobal {
+            try {
+                TMPlugin.activeInstance.reloadTicketManager()
 
-            // Notifications
-            platform.massNotify("ticketmanager.notify.info", locale.informationReloadSuccess.parseMiniMessage())
+                // Notifications
+                platform.massNotify("ticketmanager.notify.info", locale.informationReloadSuccess.parseMiniMessage())
 
-            if (!sender.has("ticketmanager.notify.info"))
-                sender.sendMessage(locale.informationReloadSuccess.parseMiniMessage())
+                if (!sender.has("ticketmanager.notify.info"))
+                    sender.sendMessage(locale.informationReloadSuccess.parseMiniMessage())
 
-        } catch (e: Exception) {
-            platform.massNotify(
-                "ticketmanager.notify.info",
-                locale.informationReloadFailure.parseMiniMessage()
-            )
-            GlobalState.dataInitializationComplete = true
-            GlobalState.databaseSelected = true
+            } catch (e: Exception) {
+                platform.massNotify("ticketmanager.notify.info",
+                    locale.informationReloadFailure.parseMiniMessage()
+                )
+                pushErrors(platform, configState, locale, e, TMLocale::warningsUnexpectedError)
+                generateModifiedStacktrace(e, locale)
+
+                GlobalState.dataInitializationComplete = true
+                GlobalState.databaseSelected = true
+            }
         }
     }
 

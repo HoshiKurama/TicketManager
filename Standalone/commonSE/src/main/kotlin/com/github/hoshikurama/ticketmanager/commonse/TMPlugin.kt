@@ -39,7 +39,7 @@ abstract class TMPlugin(
         lateinit var lpGroupNames: List<String> private set
         @Volatile internal var cooldown: Cooldown? = null
             private set
-        @Volatile internal lateinit var activeInstance: TMPlugin
+        @Volatile lateinit var activeInstance: TMPlugin
     }
 
     private val periodicTasks = mutableListOf<Job>()
@@ -128,7 +128,9 @@ abstract class TMPlugin(
         cooldown?.shutdown()
         periodicTasks.forEach(Job::cancel)
         DatabaseManager.activeDatabase.closeDatabase()
-        TMCoroutine.cancelTasks("Plugin shutting down!")
+
+        try { TMCoroutine.cancelTasks("Plugin shutting down!") }
+        catch (ignored: Exception) {}
 
         // Startup
         val lpGroupNamesAsync = loadLPGroupNames()
