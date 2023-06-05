@@ -1,6 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse.platform
 
 import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
 import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
@@ -9,7 +10,6 @@ import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
 import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
-import com.github.hoshikurama.ticketmanager.commonse.misc.asCreator
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.commonse.misc.templated
@@ -84,8 +84,7 @@ abstract class PlayerJoinEvent(
                     val openCF = async { DatabaseManager.activeDatabase.countOpenTicketsAsync().asDeferredThenAwait() }
                     val assignedCF = async {
                         DatabaseManager.activeDatabase.countOpenTicketsAssignedToAsync(
-                            player.username,
-                            player.permissionGroups
+                            player.permissionGroups.map(Assignment::PermissionGroup) + Assignment.Player(player.username)
                         )
                     }
 

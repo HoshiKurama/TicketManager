@@ -28,6 +28,7 @@ dependencies {
     compileOnly("net.kyori:adventure-text-minimessage:4.13.1")
     //compileOnly("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
 
+    implementation("com.github.HoshiKurama:TicketManager_API:10.0.0-RC16")
     implementation("com.mojang:brigadier:1.0.18")
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("com.h2database:h2:2.1.214")
@@ -41,6 +42,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.21")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+
     implementation(project(":Standalone:commonSE"))
     implementation(project(":common"))
 }
@@ -65,7 +67,6 @@ tasks {
 
             // Excludes for Adventure
             exclude { it.moduleGroup == "net.kyori" && it.moduleName != "adventure-extra-kotlin"}
-            //TODO PROVIDE AND RESHADE BRIGADIER
         }
 
         // Relocators

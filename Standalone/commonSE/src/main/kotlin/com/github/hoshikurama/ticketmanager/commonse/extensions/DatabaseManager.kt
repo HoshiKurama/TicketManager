@@ -1,8 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse.extensions
 
 import com.github.hoshikurama.ticketmanager.api.database.AsyncDatabase
-import com.github.hoshikurama.ticketmanager.api.services.DatabaseRegistryJava
-import com.github.hoshikurama.ticketmanager.api.services.DatabaseRegistryKotlin
+import com.github.hoshikurama.ticketmanager.api.services.DatabaseRegistry
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
@@ -16,7 +15,7 @@ const val defaultDatabase = "CACHED_H2"
 
 
 // Note: Safe to use at any point
-object DatabaseManager : DatabaseRegistryJava, DatabaseRegistryKotlin {
+object DatabaseManager : DatabaseRegistry {
 
     private val map: ConcurrentHashMap<String, () -> AsyncDatabase> = ConcurrentHashMap()
     @Volatile lateinit var activeDatabase: AsyncDatabase internal set

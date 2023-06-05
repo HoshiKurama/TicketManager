@@ -1,6 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse.utilities
 
 import com.github.hoshikurama.ticketmanager.commonse.utilities.TypeSafeStream.Companion.asTypeSafeStream
+import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.future.asDeferred
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -25,3 +26,5 @@ inline fun <T> tryOrNull(function: () -> T): T? =
     catch (e: Exception) { e.printStackTrace(); null }
 
 suspend inline fun <T> CompletableFuture<T>.asDeferredThenAwait(): T = asDeferred().await()
+
+fun <T> List<T>.toImmutableList(): ImmutableList<T> = ImmutableList.copyOf(iterator())

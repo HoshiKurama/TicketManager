@@ -15,10 +15,11 @@ import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.buildComponent
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.onHover
-import com.github.hoshikurama.ticketmanager.commonse.platform.EventBuilder
+import com.github.hoshikurama.ticketmanager.commonse.platform.events.EventBuilder
 import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asDeferredThenAwait
+import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -44,7 +45,7 @@ class CommandTasks(
     // /ticket assign <ID> <Assignment>
     fun assign(
         sender: CommandSender.Active,
-        assignment: TicketAssignmentType,
+        assignment: Assignment,
         ticket: Ticket,
         silent: Boolean,
     ): MessageNotification<CommandSender.Active> {
@@ -57,13 +58,7 @@ class CommandTasks(
         ticket: Ticket,
         silent: Boolean,
     ): MessageNotification<CommandSender.Active> {
-        sender.asCreator()
-        val assignment = when (sender) {
-            is CommandSender.Active.OnlineConsole -> TicketAssignmentType.Console
-            is CommandSender.Active.OnlinePlayer -> TicketAssignmentType.Other(sender.username)
-        }
-
-        return assignVariationWriter(sender, assignment, ticket.creator, ticket.id, silent)
+        return assignVariationWriter(sender, sender.asAssignment(), ticket.creator, ticket.id, silent)
     }
 
     // /ticket close <ID> [Comment...]
@@ -73,7 +68,7 @@ class CommandTasks(
         comment: String,
         silent: Boolean,
     ): MessageNotification<CommandSender.Active> {
-        val action = TicketAction(TicketAction.CloseWithComment(comment), sender)
+        val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).CloseWithComment(comment)
 
         // Call TicketModificationEventAsync
         launchTicketModificationEventAsync(sender, ticket.creator, action, silent)
@@ -99,7 +94,7 @@ class CommandTasks(
             isSilent = silent,
             commandSender = sender,
             ticketCreator = ticket.creator,
-            closingMessage = (action.type as TicketAction.CloseWithComment).comment,
+            closingMessage = action.comment,
             ticketID = ticket.id,
         )
     }
@@ -111,7 +106,7 @@ class CommandTasks(
         ticket: Ticket,
         silent: Boolean,
     ): MessageNotification<CommandSender.Active> {
-        val action = TicketAction(TicketAction.CloseWithoutComment, sender)
+        val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).CloseWithoutComment()
 
         // Call TicketModificationEventAsync
         launchTicketModificationEventAsync(sender, ticket.creator, action, silent)
@@ -149,11 +144,11 @@ class CommandTasks(
         upperBound: Long,
         silent: Boolean,
     ): MessageNotification<CommandSender.Active> {
-        val action = TicketAction(TicketAction.MassClose, sender)
+        val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).MassClose()
 
         // Launch Ticket Modification Event
         TMCoroutine.launchGlobal {
-            eventBuilder.buildTicketModificationEvent(sender, TicketCreator.DummyCreator, action, silent).callEventTM()
+            eventBuilder.buildTicketModificationEvent(sender, Creator.DummyCreator, action, silent).callEventTM()
         }
 
         TMCoroutine.launchSupervised {
@@ -179,7 +174,7 @@ class CommandTasks(
         silent: Boolean,
         comment: String,
     ): MessageNotification<CommandSender.Active> {
-        val action = TicketAction(TicketAction.Comment(comment), sender)
+        val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Comment(comment)
 
         // Launch Ticket Modification Event
         launchTicketModificationEventAsync(sender, ticket.creator, action, silent)
@@ -215,8 +210,13 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
 
         val initTicket = Ticket(
+            id = -1L,
             creator = sender.asCreator(),
-            actions = listOf(TicketAction(TicketAction.Open(message), sender))
+            actions = ImmutableList.of(ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Open(message)),
+            priority = Ticket.Priority.NORMAL,
+            status = Ticket.Status.OPEN,
+            assignedTo = Assignment.Nobody,
+            creatorStatusUpdate = false,
         )
 
         // Inserts ticket and receives ID
@@ -253,10 +253,12 @@ class CommandTasks(
         sender: CommandSender.Active,
         requestedPage: Int,
     ) {
-        val groups: List<String> = if (sender is OnlinePlayer) sender.permissionGroups else listOf()
+        val groups = if (sender is OnlinePlayer)
+            sender.permissionGroups.map(Assignment::PermissionGroup)
+        else listOf()
 
         val tickets = DatabaseManager.activeDatabase
-            .getOpenTicketsAssignedToAsync(requestedPage,8, sender.asTicketAssignmentType(), groups)
+            .getOpenTicketsAssignedToAsync(requestedPage,8, listOf(sender.asAssignment()) + groups)
             .asDeferredThenAwait()
 
         createGeneralList(locale.listAssignedHeader, tickets, locale.run { "/$commandBase $commandWordListAssigned " })
@@ -489,7 +491,7 @@ class CommandTasks(
         silent: Boolean,
         ticket: Ticket,
     ): MessageNotification<CommandSender.Active> {
-        val action = TicketAction(TicketAction.Reopen, sender)
+        val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Reopen()
 
         // launch event
         launchTicketModificationEventAsync(sender, ticket.creator, action, silent)
@@ -516,7 +518,7 @@ class CommandTasks(
     // /ticket history [User] [Page]
     suspend fun history(
         sender: CommandSender.Active,
-        checkedCreator: TicketCreator,
+        checkedCreator: Creator,
         requestedPage: Int,
     ) {
         val search = DatabaseManager.activeDatabase
@@ -540,7 +542,7 @@ class CommandTasks(
                     val id = "${t.id}"
                     val status = t.status.toLocaledWord(locale)
                     val comment = trimCommentToSize(
-                        comment = (t.actions[0].type as TicketAction.Open).message,
+                        comment = (t.actions[0] as ActionInfo.Open).message,
                         preSize = id.length + status.length + locale.historyFormattingSize,
                         maxSize = locale.historyMaxLineSize
                     )
@@ -595,7 +597,7 @@ class CommandTasks(
                 results.forEach {
                     val time = it.actions[0].timestamp.toLargestRelativeTime(locale)
                     val comment = trimCommentToSize(
-                        comment = (it.actions[0].type as TicketAction.Open).message,
+                        comment = (it.actions[0] as ActionInfo.Open).message,
                         preSize = locale.searchFormattingSize + time.length,
                         maxSize = locale.searchMaxLineSize,
                     )
@@ -608,7 +610,7 @@ class CommandTasks(
                             "status" templated it.status.toLocaledWord(locale),
                             "creator" templated it.creator.attemptName(),
                             "assignment" templated it.assignedTo.toLocalizedName(locale),
-                            "world" templated ((it.actions[0].location as? TicketCreationLocation.FromPlayer)?.world ?: ""),
+                            "world" templated ((it.actions[0].location as? ActionLocation.FromPlayer)?.world ?: ""),
                             "time" templated time,
                             "comment" templated comment,
                         )
@@ -647,7 +649,7 @@ class CommandTasks(
         ticket: Ticket,
         silent: Boolean,
     ): MessageNotification<CommandSender.Active> {
-        val action = TicketAction(TicketAction.SetPriority(priority), sender)
+        val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).SetPriority(priority)
 
         // Call event
         launchTicketModificationEventAsync(sender, ticket.creator, action, silent)
@@ -670,7 +672,7 @@ class CommandTasks(
     fun teleport(sender: CommandSender.Active, ticket: Ticket) {
         val location = ticket.actions[0].location
 
-        if (sender is CommandSender.Active.OnlinePlayer && location is TicketCreationLocation.FromPlayer) {
+        if (sender is CommandSender.Active.OnlinePlayer && location is ActionLocation.FromPlayer) {
             // Was made on a different server...
             if (location.server != null && location.server != configState.proxyServerName) {
                 if (configState.enableProxyMode) platform.teleportToTicketLocDiffServer(sender, location)
@@ -685,7 +687,7 @@ class CommandTasks(
         ticket: Ticket,
         silent: Boolean,
     ) : MessageNotification<CommandSender.Active> {
-        return assignVariationWriter(sender, TicketAssignmentType.Nobody, ticket.creator, ticket.id, silent)
+        return assignVariationWriter(sender, Assignment.Nobody, ticket.creator, ticket.id, silent)
     }
 
     // /ticket version
@@ -739,14 +741,14 @@ class CommandTasks(
             TMCoroutine.launchSupervised { DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, false) }
 
         val entries = ticket.actions.asSequence()
-            .filter { it.type is TicketAction.Comment || it.type is TicketAction.Open || it.type is TicketAction.CloseWithComment }
+            .filter { it is ActionInfo.Comment || it is ActionInfo.Open || it is ActionInfo.CloseWithComment }
             .map {
                 locale.viewComment.parseMiniMessage(
                     "user" templated it.user.attemptName(),
-                    "comment" templated when (it.type) {
-                        is TicketAction.Comment -> it.type.comment
-                        is TicketAction.Open -> it.type.message
-                        is TicketAction.CloseWithComment -> it.type.comment
+                    "comment" templated when (it) {
+                        is ActionInfo.Comment -> it.comment
+                        is ActionInfo.Open -> it.message
+                        is ActionInfo.CloseWithComment -> it.comment
                         else -> throw Exception("Impossible to reach")
                     }
                 )
@@ -767,23 +769,23 @@ class CommandTasks(
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
             TMCoroutine.launchSupervised { DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, false) }
 
-        fun formatDeepAction(action: TicketAction): List<Component> {
+        fun formatDeepAction(action: Action): List<Component> {
             val templatedUser = "user" templated action.user.attemptName()
             val templatedTime = "time" templated action.timestamp.toLargestRelativeTime(locale)
 
-            return when(action.type) {
-                is TicketAction.Open -> listOf(locale.viewDeepComment.parseMiniMessage(templatedUser, templatedTime, "comment" templated action.type.message))
-                is TicketAction.Assign -> listOf(locale.viewDeepAssigned.parseMiniMessage(templatedUser, templatedTime, "assignment" templated action.type.assignment.toLocalizedName(locale)))
-                is TicketAction.CloseWithComment -> listOf(
-                    locale.viewDeepComment.parseMiniMessage(templatedUser, templatedTime, "comment" templated action.type.comment),
+            return when(action) {
+                is ActionInfo.Open -> listOf(locale.viewDeepComment.parseMiniMessage(templatedUser, templatedTime, "comment" templated action.message))
+                is ActionInfo.Assign -> listOf(locale.viewDeepAssigned.parseMiniMessage(templatedUser, templatedTime, "assignment" templated action.assignment.toLocalizedName(locale)))
+                is ActionInfo.CloseWithComment -> listOf(
+                    locale.viewDeepComment.parseMiniMessage(templatedUser, templatedTime, "comment" templated action.comment),
                     locale.viewDeepClose.parseMiniMessage(templatedUser, templatedTime))
-                is TicketAction.CloseWithoutComment -> listOf(locale.viewDeepClose.parseMiniMessage(templatedUser, templatedTime))
-                is TicketAction.Comment -> listOf(locale.viewDeepComment.parseMiniMessage(templatedUser, templatedTime, "comment" templated action.type.comment))
-                is TicketAction.MassClose -> listOf(locale.viewDeepMassClose.parseMiniMessage(templatedUser, templatedTime))
-                is TicketAction.Reopen -> listOf(locale.viewDeepReopen.parseMiniMessage(templatedUser, templatedTime))
-                is TicketAction.SetPriority -> listOf(
-                    locale.viewDeepSetPriority.replace("%PCC%", action.type.priority.getHexColour(locale))
-                        .parseMiniMessage(templatedUser,templatedTime, "priority" templated action.type.priority.toLocaledWord(locale))
+                is ActionInfo.CloseWithoutComment -> listOf(locale.viewDeepClose.parseMiniMessage(templatedUser, templatedTime))
+                is ActionInfo.Comment -> listOf(locale.viewDeepComment.parseMiniMessage(templatedUser, templatedTime, "comment" templated action.comment))
+                is ActionInfo.MassClose -> listOf(locale.viewDeepMassClose.parseMiniMessage(templatedUser, templatedTime))
+                is ActionInfo.Reopen -> listOf(locale.viewDeepReopen.parseMiniMessage(templatedUser, templatedTime))
+                is ActionInfo.SetPriority -> listOf(
+                    locale.viewDeepSetPriority.replace("%PCC%", action.priority.getHexColour(locale))
+                        .parseMiniMessage(templatedUser,templatedTime, "priority" templated action.priority.toLocaledWord(locale))
                 )
             }
         }
@@ -803,14 +805,14 @@ class CommandTasks(
         // Announce Intentions
         platform.massNotify(
             permission = "ticketmanager.notify.info",
-            message = locale.informationReloadInitiated.parseMiniMessage("user" templated sender.username)
+            message = locale.informationReloadInitiated.parseMiniMessage("user" templated sender.getUsername(locale))
         )
 
         // Give time for things to complete
         var counter = 0
         while (TMCoroutine.getSupervisedJobCount() < 2) {
             if (counter > 29) {
-                TMCoroutine.cancelTasks("User ${sender.username} requested a plugin restart and 1+ tasks is taking too long")
+                TMCoroutine.cancelTasks("User ${sender.getUsername(locale)} requested a plugin restart and 1+ tasks is taking too long")
                 platform.massNotify(
                     "ticketmanager.notify.warning",
                     locale.warningsLongTaskDuringReload.parseMiniMessage()
@@ -851,15 +853,15 @@ class CommandTasks(
 
     private fun assignVariationWriter(
         sender: CommandSender.Active,
-        assignment: TicketAssignmentType,
-        ticketCreator: TicketCreator,
+        assignment: Assignment,
+        Creator: Creator,
         ticketID: Long,
         silent: Boolean,
     ): MessageNotification<CommandSender.Active> {
-        val insertedAction = TicketAction(TicketAction.Assign(assignment), sender)
+        val insertedAction = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Assign(assignment)
 
         // Launch TicketModificationEventAsync
-        launchTicketModificationEventAsync(sender, ticketCreator, insertedAction, silent)
+        launchTicketModificationEventAsync(sender, Creator, insertedAction, silent)
 
         // Writes to database
         TMCoroutine.launchSupervised {
@@ -876,7 +878,7 @@ class CommandTasks(
             isSilent = silent,
             assignment = assignment,
             commandSender = sender,
-            ticketCreator = ticketCreator,
+            ticketCreator = Creator,
             ticketID = ticketID
         )
     }
@@ -888,7 +890,7 @@ class CommandTasks(
         append(locale.viewSep1.parseMiniMessage())
         append(locale.viewCreator.parseMiniMessage("creator" templated ticket.creator.attemptName()))
         append(locale.viewAssignedTo.parseMiniMessage("assignment" templated
-                ticket.assignedTo.let { if (it is TicketAssignmentType.Nobody) "" else it.toLocalizedName(locale) })
+                ticket.assignedTo.let { if (it is Assignment.Nobody) "" else it.toLocalizedName(locale) })
         )
         locale.viewPriority.replace("%PCC%", ticket.priority.getHexColour(locale))
             .parseMiniMessage("priority" templated ticket.priority.toLocaledWord(locale))
@@ -907,7 +909,7 @@ class CommandTasks(
         }
         locale.viewLocation.parseMiniMessage("location" templated locationString)
             .let {
-                if (ticket.actions[0].location is TicketCreationLocation.FromPlayer) // If it is a player ticket
+                if (ticket.actions[0].location is ActionLocation.FromPlayer) // If it is a player ticket
                     it.hoverEvent(showText(Component.text(locale.clickTeleport)))
                         .clickEvent(ClickEvent.runCommand(locale.run { "/$commandBase $commandWordTeleport ${ticket.id}" }))
                 else it
@@ -919,12 +921,12 @@ class CommandTasks(
 
     private fun launchTicketModificationEventAsync(
         commandSender: CommandSender.Active,
-        ticketCreator: TicketCreator,
-        action: TicketAction,
+        Creator: Creator,
+        action: Action,
         isSilent: Boolean,
     ) {
         TMCoroutine.launchGlobal {
-            eventBuilder.buildTicketModificationEvent(commandSender, ticketCreator, action, isSilent).callEventTM()
+            eventBuilder.buildTicketModificationEvent(commandSender, Creator, action, isSilent).callEventTM()
         }
     }
 
@@ -995,11 +997,11 @@ class CommandTasks(
     ): Component {
         val id = "${ticket.id}"
         val creatorName = ticket.creator.attemptName()
-        val fixedAssign = ticket.assignedTo.let { if (it is TicketAssignmentType.Nobody) "" else it.toLocalizedName(locale) }
+        val fixedAssign = ticket.assignedTo.let { if (it is Assignment.Nobody) "" else it.toLocalizedName(locale) }
         val pcc = ticket.priority.getHexColour(locale)
 
         val fixedComment = trimCommentToSize(
-            comment = (ticket.actions[0].type as TicketAction.Open).message,
+            comment = (ticket.actions[0] as ActionInfo.Open).message,
             preSize = locale.listFormattingSize + id.length + creatorName.length + fixedAssign.length,
             maxSize = 58,
         )
@@ -1015,9 +1017,9 @@ class CommandTasks(
             .clickEvent(ClickEvent.runCommand(locale.run { "/$commandBase $commandWordView ${ticket.id}" }))
     }
 
-    private fun TicketCreator.attemptName() = when (this) {
-        is TicketCreator.User -> platform.nameFromUUIDOrNull(uuid) ?: "???"
-        is TicketCreator.Console -> locale.consoleName
+    private fun Creator.attemptName() = when (this) {
+        is Creator.User -> platform.nameFromUUIDOrNull(uuid) ?: "???"
+        is Creator.Console -> locale.consoleName
         else -> "???"
     }
 }

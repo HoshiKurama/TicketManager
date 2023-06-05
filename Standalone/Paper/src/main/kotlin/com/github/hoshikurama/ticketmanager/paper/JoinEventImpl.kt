@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
+import com.github.hoshikurama.ticketmanager.implapi.ticket.TicketCreationLocation
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions

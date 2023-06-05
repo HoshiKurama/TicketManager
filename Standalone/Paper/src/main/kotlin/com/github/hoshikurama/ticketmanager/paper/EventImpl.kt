@@ -1,11 +1,11 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.events.DatabaseWriteCompleteEventAsync
-import com.github.hoshikurama.ticketmanager.api.events.TicketModificationEventAsync
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketAction
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
-import com.github.hoshikurama.ticketmanager.commonse.platform.EventBuilder
+import com.github.hoshikurama.ticketmanager.implapi.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.implapi.events.DatabaseWriteCompleteEventAsync
+import com.github.hoshikurama.ticketmanager.implapi.events.TicketModificationEventAsync
+import com.github.hoshikurama.ticketmanager.implapi.ticket.TicketAction
+import com.github.hoshikurama.ticketmanager.implapi.ticket.TicketCreator
+import com.github.hoshikurama.ticketmanager.commonse.platform.events.EventBuilder
 import org.bukkit.event.Event
 import org.bukkit.event.HandlerList
 

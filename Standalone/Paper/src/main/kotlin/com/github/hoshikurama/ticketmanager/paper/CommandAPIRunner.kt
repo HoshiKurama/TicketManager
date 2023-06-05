@@ -1,12 +1,14 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.database.Option
-import com.github.hoshikurama.ticketmanager.api.database.SearchConstraints
 import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketAssignmentType
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
+import com.github.hoshikurama.ticketmanager.api.ticket.impl.CommandSender
+import com.github.hoshikurama.ticketmanager.implapi.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.implapi.database.Option
+import com.github.hoshikurama.ticketmanager.implapi.database.SearchConstraints
+import com.github.hoshikurama.ticketmanager.implapi.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.implapi.ticket.TicketAssignmentType
+import com.github.hoshikurama.ticketmanager.implapi.ticket.TicketCreationLocation
+import com.github.hoshikurama.ticketmanager.implapi.ticket.TicketCreator
 import com.github.hoshikurama.ticketmanager.commonse.TMCoroutine
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
@@ -31,7 +33,7 @@ import dev.jorel.commandapi.executors.CommandExecutor
 import dev.jorel.commandapi.executors.ExecutorType
 import dev.jorel.commandapi.kotlindsl.*
 import java.util.concurrent.CompletableFuture
-import com.github.hoshikurama.ticketmanager.api.database.SearchConstraints.Symbol as SCSymbol
+import com.github.hoshikurama.ticketmanager.implapi.database.SearchConstraints.Symbol as SCSymbol
 import org.bukkit.command.ConsoleCommandSender as BukkitConsole
 
 typealias BukkitPlayer = org.bukkit.entity.Player
@@ -61,7 +63,7 @@ class CommandAPIRunner {
         get() = ReloadObjectCommand.commandTasks
     private val locale: TMLocale
         get() = ReloadObjectCommand.locale
-
+    // TODO: /ticket assign player/group/phrase <VALUE>
 
     // Arguments
     private inline fun CommandAPICommand.argumentTicketFromID(

@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.spigot
 
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketInterface
+import com.github.hoshikurama.ticketmanager.implapi.ticket.TicketInterface
 import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.commands.Console

@@ -4,12 +4,12 @@ import com.github.hoshikurama.ticketmanager.api.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.database.DBResult
 import com.github.hoshikurama.ticketmanager.api.database.SearchConstraints
 import com.github.hoshikurama.ticketmanager.api.ticket.*
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation.FromConsole
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation.FromPlayer
 import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asParallelStream
 import com.github.hoshikurama.ticketmanager.commonse.utilities.mapNotNull
 import com.github.hoshikurama.ticketmanager.commonse.utilities.notEquals
+import com.github.hoshikurama.ticketmanager.commonse.utilities.toImmutableList
+import com.google.common.collect.ImmutableList
 import kotliquery.*
 import org.h2.jdbcx.JdbcConnectionPool
 import java.time.Instant
@@ -36,7 +36,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
         using(sessionOf(sqlPool)) { f(it) }
     }
 
-    override fun setAssignmentAsync(ticketID: Long, assignment: TicketAssignmentType): CompletableFuture<Void> {
+    override fun setAssignmentAsync(ticketID: Long, assignment: Assignment): CompletableFuture<Void> {
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = Ticket(t.id, t.creator, t.priority, t.status, assignment, t.creatorStatusUpdate, t.actions)
 
@@ -54,7 +54,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = Ticket(t.id, t.creator, priority, t.status, t.assignedTo, t.creatorStatusUpdate, t.actions)
 
-        return sendQuery { update(queryOf("UPDATE \"TicketManager_V8_Tickets\" SET PRIORITY = ? WHERE ID = ?;", priority.level, ticketID)) }
+        return sendQuery { update(queryOf("UPDATE \"TicketManager_V8_Tickets\" SET PRIORITY = ? WHERE ID = ?;", priority.asByte(), ticketID)) }
     }
 
     override fun setStatusAsync(ticketID: Long, status: Ticket.Status): CompletableFuture<Void> {
@@ -64,22 +64,23 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
         return sendQuery { update(queryOf("UPDATE \"TicketManager_V8_Tickets\" SET STATUS = ? WHERE ID = ?;", status.name, ticketID)) }
     }
 
-    override fun insertActionAsync(id: Long, action: TicketAction): CompletableFuture<Void> {
+    override fun insertActionAsync(id: Long, action: Action): CompletableFuture<Void> {
+
         ticketMap[id] = ticketMap[id]!! + action
 
         return sendQuery {
             execute(
                 queryOf("INSERT INTO \"TicketManager_V8_Actions\" (TICKET_ID, ACTION_TYPE, CREATOR, MESSAGE, EPOCH_TIME, SERVER, WORLD, WORLD_X, WORLD_Y, WORLD_Z) VALUES (?,?,?,?,?,?,?,?,?,?);",
                     id,
-                    action.type.asEnum.name,
+                    action.getEnumForDB().name,
                     action.user.asString(),
-                    action.type.getMessage(),
+                    action.getMessage(),
                     action.timestamp,
                     action.location.server,
-                    action.location.let { if (it is FromPlayer) it.world else null },
-                    action.location.let { if (it is FromPlayer) it.x else null },
-                    action.location.let { if (it is FromPlayer) it.y else null },
-                    action.location.let { if (it is FromPlayer) it.z else null },
+                    action.location.let { if (it is ActionLocation.FromPlayer) it.world else null },
+                    action.location.let { if (it is ActionLocation.FromPlayer) it.x else null },
+                    action.location.let { if (it is ActionLocation.FromPlayer) it.y else null },
+                    action.location.let { if (it is ActionLocation.FromPlayer) it.z else null },
                 )
             )
         }
@@ -96,7 +97,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
                 queryOf("INSERT INTO \"TicketManager_V8_Tickets\" (ID, CREATOR, PRIORITY, STATUS, ASSIGNED_TO, STATUS_UPDATE_FOR_CREATOR) VALUES(?,?,?,?,?,?);",
                     newTicket.id,
                     newTicket.creator.asString(),
-                    newTicket.priority.level,
+                    newTicket.priority.asByte(),
                     newTicket.status.name,
                     newTicket.assignedTo.asString(),
                     newTicket.creatorStatusUpdate
@@ -110,15 +111,15 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
                 update(
                     queryOf("INSERT INTO \"TicketManager_V8_Actions\" (TICKET_ID, ACTION_TYPE, CREATOR, MESSAGE, EPOCH_TIME, SERVER, WORLD, WORLD_X, WORLD_Y, WORLD_Z) VALUES (?,?,?,?,?,?,?,?,?,?);",
                         newTicket.id,
-                        it.type.asEnum.name,
+                        it.getEnumForDB().name,
                         it.user.asString(),
-                        it.type.getMessage(),
+                        it.getMessage(),
                         it.timestamp,
                         it.location.server,
-                        it.location.let { if (it is FromPlayer) it.world else null },
-                        it.location.let { if (it is FromPlayer) it.x else null },
-                        it.location.let { if (it is FromPlayer) it.y else null },
-                        it.location.let { if (it is FromPlayer) it.z else null },
+                        it.location.let { if (it is ActionLocation.FromPlayer) it.world else null },
+                        it.location.let { if (it is ActionLocation.FromPlayer) it.x else null },
+                        it.location.let { if (it is ActionLocation.FromPlayer) it.y else null },
+                        it.location.let { if (it is ActionLocation.FromPlayer) it.z else null },
                     )
                 )
             }
@@ -142,15 +143,13 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
     override fun getOpenTicketsAssignedToAsync(
         page: Int,
         pageSize: Int,
-        assignment: TicketAssignmentType,
-        unfixedGroupAssignment: List<String>
+        assignments: List<Assignment>,
     ): CompletableFuture<DBResult> {
-        val assignments = unfixedGroupAssignment.map { TicketAssignmentType.Other("::$it") } + assignment
         return getTicketsFilteredBy(page, pageSize) { it.status == Ticket.Status.OPEN && it.assignedTo in assignments }
     }
 
     override fun getOpenTicketsNotAssignedAsync(page: Int, pageSize: Int): CompletableFuture<DBResult> {
-        return getTicketsFilteredBy(page, pageSize) { it.status == Ticket.Status.OPEN && it.assignedTo == TicketAssignmentType.Nobody }
+        return getTicketsFilteredBy(page, pageSize) { it.status == Ticket.Status.OPEN && it.assignedTo == Assignment.Nobody }
     }
 
     private fun getTicketsFilteredBy(page: Int, pageSize: Int, f: TicketPredicate): CompletableFuture<DBResult> {
@@ -162,7 +161,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
             .asParallelStream()
             .filter(f)
             .toList()
-            .sortedWith(compareByDescending<Ticket> { it.priority.level }.thenByDescending { it.id })
+            .sortedWith(compareByDescending<Ticket> { it.priority.asByte() }.thenByDescending { it.id })
             .apply { totalSize = count() }
             .run { if (pageSize == 0 || isEmpty()) listOf(this) else chunked(pageSize) }
             .apply { totalPages = count() }
@@ -175,7 +174,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
 
         return CompletableFuture.completedFuture(
             DBResult(
-                filteredResults = results.getOrElse(fixedPage-1) { listOf() },
+                filteredResults = results.getOrElse(fixedPage-1) { listOf() }.toImmutableList(),
                 totalPages = totalPages,
                 totalResults = totalSize,
                 returnedPage = fixedPage,
@@ -183,7 +182,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
         )
     }
 
-    override fun massCloseTicketsAsync(lowerBound: Long, upperBound: Long, actor: TicketCreator, ticketLoc: TicketCreationLocation): CompletableFuture<Void> {
+    override fun massCloseTicketsAsync(lowerBound: Long, upperBound: Long, actor: Creator, ticketLoc: ActionLocation): CompletableFuture<Void> {
         val curTime = Instant.now().epochSecond
 
         // Memory Operations
@@ -193,20 +192,20 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
             .filter { it.status == Ticket.Status.OPEN }
             .map {
                 // Side effects occur here intentionally
-                val action = TicketAction(TicketAction.MassClose, actor, timestamp = curTime, location = ticketLoc)
-                val newTicket = Ticket(it.id, it.creator, it.priority, Ticket.Status.CLOSED, it.assignedTo, it.creatorStatusUpdate, it.actions + action)
+                val action = ActionInfo(actor, ticketLoc, curTime).MassClose()
+                val newTicket = Ticket(it.id, it.creator, it.priority, Ticket.Status.CLOSED, it.assignedTo, it.creatorStatusUpdate,
+                    ImmutableList.copyOf(arrayOf(*it.actions.toTypedArray(), action)))
                 ticketMap[it.id] = newTicket
                 newTicket
             }
 
+
         // SQL operations
         val ticketIds = ticketStream.map(Ticket::id).toList()
-        val action = TicketAction(
-            type = TicketAction.MassClose,
+        val action = ActionInfo(
             user = actor,
-            timestamp = Instant.now().epochSecond,
-            location = ticketLoc
-        )
+            location = ticketLoc,
+        ).MassClose()
 
         sendQuery { update(queryOf("UPDATE \"TicketManager_V8_Tickets\" SET STATUS = ? WHERE ID IN (${ticketIds.joinToString(", ")});", Ticket.Status.CLOSED.name)) }
         return sendQuery { ticketIds.map { insertActionAsync(it, action) }.flatten() }
@@ -220,13 +219,10 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
 
     }
 
-    override fun countOpenTicketsAssignedToAsync(
-        assignment: String,
-        unfixedGroupAssignment: List<String>
-    ): CompletableFuture<Long> {
-        val assignments = unfixedGroupAssignment.map { TicketAssignmentType.Other("::$it" ) } + assignment
+    override fun countOpenTicketsAssignedToAsync(assignments: List<Assignment>): CompletableFuture<Long> {
         return ticketMap.values.asParallelStream()
-            .filter { it.status == Ticket.Status.OPEN && it.assignedTo in assignments }
+            .filter { it.status == Ticket.Status.OPEN }
+            .filter { it.assignedTo in assignments }
             .count()
             .let { CompletableFuture.completedFuture(it) }
     }
@@ -239,7 +235,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
 
         constraints.run {
             // Builds Constraints
-            val closeVariations = listOf(TicketAction.Type.AsEnum.CLOSE, TicketAction.Type.AsEnum.MASS_CLOSE)
+            val closeVariations = listOf(ActionAsEnum.CLOSE, ActionAsEnum.MASS_CLOSE)
 
             status?.run {
                 when (symbol) {
@@ -253,8 +249,8 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
                 when (symbol) {
                     SearchConstraints.Symbol.EQUALS -> { t: Ticket -> t.priority == value }
                     SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> t.priority != value }
-                    SearchConstraints.Symbol.GREATER_THAN -> { t: Ticket -> t.priority.level > value.level }
-                    SearchConstraints.Symbol.LESS_THAN -> { t: Ticket -> t.priority.level < value.level }
+                    SearchConstraints.Symbol.GREATER_THAN -> { t: Ticket -> t.priority.asByte() > value.asByte() }
+                    SearchConstraints.Symbol.LESS_THAN -> { t: Ticket -> t.priority.asByte() < value.asByte() }
                 }
             }?.apply(functions::add)
 
@@ -284,24 +280,24 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
 
             world?.run {
                 when (symbol) {
-                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> (t.actions[0].location as? FromPlayer)?.world?.equals(value) ?: false }
-                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> (t.actions[0].location as? FromPlayer)?.world?.notEquals(value) ?: true }
+                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> (t.actions[0].location as? ActionLocation.FromPlayer)?.world?.equals(value) ?: false }
+                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> (t.actions[0].location as? ActionLocation.FromPlayer)?.world?.notEquals(value) ?: true }
                     else -> throw Exception("Invalid type attempted in world search: ${symbol.name}")
                 }
             }?.apply(functions::add)
 
             closedBy?.run {
                 when (symbol) {
-                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> t.actions.any { it.type.asEnum in closeVariations && it.user == value }}
-                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> t.actions.none { it.type.asEnum in closeVariations && it.user == value }}
+                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> t.actions.any { it.getEnumForDB() in closeVariations && it.user == value }}
+                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> t.actions.none { it.getEnumForDB() in closeVariations && it.user == value }}
                     else -> throw Exception("Invalid type attempted in closedBy search: ${symbol.name}")
                 }
             }?.apply(functions::add)
 
             lastClosedBy?.run {
                 when (symbol) {
-                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> t.actions.lastOrNull { it.type.asEnum in closeVariations }?.run { user == value } ?: false }
-                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> t.actions.lastOrNull { it.type.asEnum in closeVariations }?.run { user != value } ?: true }
+                    SearchConstraints.Symbol.EQUALS -> { t: Ticket -> t.actions.lastOrNull { it.getEnumForDB() in closeVariations }?.run { user == value } ?: false }
+                    SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket -> t.actions.lastOrNull { it.getEnumForDB() in closeVariations }?.run { user != value } ?: true }
                     else -> throw Exception("Invalid type attempted in lastClosedBy search: ${symbol.name}")
                 }
             }?.apply(functions::add)
@@ -310,15 +306,15 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
                 when (symbol) {
                     SearchConstraints.Symbol.EQUALS -> { t: Ticket ->
                         val comments = t.actions
-                            .filter { it.type is TicketAction.Open || it.type is TicketAction.Comment || it.type is TicketAction.CloseWithComment }
-                            .map { it.type.getMessage()!! }
+                            .filter { it is ActionInfo.Open || it is ActionInfo.Comment || it is ActionInfo.CloseWithComment }
+                            .map { it.getMessage()!! }
                         value.map { w -> comments.any { it.lowercase().contains(w.lowercase()) } }
                             .all { it }
                     }
                     SearchConstraints.Symbol.NOT_EQUALS -> { t: Ticket ->
                         val comments = t.actions
-                            .filter { it.type is TicketAction.Open || it.type is TicketAction.Comment || it.type is TicketAction.CloseWithComment }
-                            .map { it.type.getMessage()!! }
+                            .filter { it is ActionInfo.Open || it is ActionInfo.Comment || it is ActionInfo.CloseWithComment }
+                            .map { it.getMessage()!! }
                         value.map { w -> comments.none { it.lowercase().contains(w.lowercase()) } }
                             .all { it }
                     }
@@ -348,7 +344,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
 
         return CompletableFuture.completedFuture(
             DBResult(
-                filteredResults = results.getOrElse(fixedPage-1) { listOf() },
+                filteredResults = results.getOrElse(fixedPage-1) { listOf() }.toImmutableList(),
                 totalPages = maxPages,
                 totalResults = totalSize,
                 returnedPage = fixedPage,
@@ -356,42 +352,42 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
         )
     }
 
-    override fun getTicketIDsWithUpdatesAsync(): CompletableFuture<List<Long>> {
+    override fun getTicketIDsWithUpdatesAsync(): CompletableFuture<ImmutableList<Long>> {
         return ticketMap.values.asParallelStream()
             .filter { it.creatorStatusUpdate }
             .map(Ticket::id)
-            .toList()
+            .toImmutableList()
             .let { CompletableFuture.completedFuture(it) }
     }
 
-    override fun getTicketIDsWithUpdatesForAsync(creator: TicketCreator): CompletableFuture<List<Long>> {
+    override fun getTicketIDsWithUpdatesForAsync(creator: Creator): CompletableFuture<ImmutableList<Long>> {
         return ticketMap.values.asParallelStream()
             .filter { it.creatorStatusUpdate && it.creator == creator }
             .map(Ticket::id)
-            .toList()
+            .toImmutableList()
             .let { CompletableFuture.completedFuture(it) }
     }
 
-    override fun getOwnedTicketIDsAsync(creator: TicketCreator): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
+    override fun getOwnedTicketIDsAsync(creator: Creator): CompletableFuture<ImmutableList<Long>> = CompletableFuture.supplyAsync {
         ticketMap.values.asParallelStream()
             .filter { it.creator == creator }
             .map(Ticket::id)
-            .toList()
+            .toImmutableList()
     }
 
-    override fun getOpenTicketIDsAsync(): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
+    override fun getOpenTicketIDsAsync(): CompletableFuture<ImmutableList<Long>> = CompletableFuture.supplyAsync {
         ticketMap.values.asParallelStream()
             .filter { it.status == Ticket.Status.OPEN }
             .map(Ticket::id)
-            .toList()
+            .toImmutableList()
     }
 
-    override fun getOpenTicketIDsForUser(creator: TicketCreator): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
+    override fun getOpenTicketIDsForUser(creator: Creator): CompletableFuture<ImmutableList<Long>> = CompletableFuture.supplyAsync {
         ticketMap.values.asParallelStream()
             .filter { it.creator == creator }
             .filter { it.status == Ticket.Status.OPEN }
             .map(Ticket::id)
-            .toList()
+            .toImmutableList()
     }
 
     override fun closeDatabase() {
@@ -474,33 +470,19 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
         if (ticketMap.isNotEmpty()) nextTicketID.set(ticketMap.values.maxOf { it.id } + 1L)
     }
 
-    private fun sortActions(actions: List<TicketAction>) = actions.sortedBy(TicketAction::timestamp)
+    private fun sortActions(actions: List<Action>) = actions.sortedBy(Action::timestamp)
 }
 
-private fun Row.toAction(): TicketAction {
-    return TicketAction(
-        type = kotlin.run {
-            val typeEnum = TicketAction.Type.AsEnum.valueOf(string(3))
-            val msg = stringOrNull(5)
+private fun Row.toAction(): Action {
 
-            when (typeEnum) {
-                TicketAction.Type.AsEnum.ASSIGN -> TicketAction.Assign(msg?.asAssignmentType() ?: TicketAssignmentType.Nobody)
-                TicketAction.Type.AsEnum.CLOSE -> TicketAction.CloseWithoutComment
-                TicketAction.Type.AsEnum.COMMENT -> TicketAction.Comment(msg!!)
-                TicketAction.Type.AsEnum.OPEN -> TicketAction.Open(msg!!)
-                TicketAction.Type.AsEnum.REOPEN -> TicketAction.Reopen
-                TicketAction.Type.AsEnum.SET_PRIORITY -> TicketAction.SetPriority(msg!!.toByte().toPriority())
-                TicketAction.Type.AsEnum.MASS_CLOSE -> TicketAction.MassClose
-                TicketAction.Type.AsEnum.CLOSE_WITH_COMMENT -> TicketAction.CloseWithComment(msg!!)
-            }
-        },
-        user = string(4).asTicketCreator(),
+    val actionInfo = ActionInfo(
+        user = CreatorString(string(4)).asTicketCreator(),
         timestamp = long(6),
         location = kotlin.run {
             val x = intOrNull(9)
 
-            if (x == null) FromConsole(server = stringOrNull(7))
-            else FromPlayer(
+            if (x == null) ActionLocation.FromConsole(server = stringOrNull(7))
+            else ActionLocation.FromPlayer(
                 server = stringOrNull(7),
                 world = string(8),
                 x = int(9),
@@ -509,24 +491,52 @@ private fun Row.toAction(): TicketAction {
             )
         }
     )
+
+    val msg = stringOrNull(5)
+    return when (ActionAsEnum.valueOf(string(3))) {
+        ActionAsEnum.OPEN -> actionInfo.Open(msg!!)
+        ActionAsEnum.COMMENT -> actionInfo.Comment(msg!!)
+        ActionAsEnum.CLOSE -> actionInfo.CloseWithoutComment()
+        ActionAsEnum.CLOSE_WITH_COMMENT -> actionInfo.CloseWithComment(msg!!)
+        ActionAsEnum.ASSIGN -> actionInfo.Assign(msg?.run(::AssignmentString)?.asAssignmentType() ?: Assignment.Nobody)
+        ActionAsEnum.REOPEN -> actionInfo.Reopen()
+        ActionAsEnum.SET_PRIORITY -> actionInfo.SetPriority(msg!!.toByte().toPriority())
+        ActionAsEnum.MASS_CLOSE -> actionInfo.MassClose()
+    }
 }
 
 private fun Row.toTicket(): Ticket {
     return Ticket(
         id = long(1),
-        creator = string(2).asTicketCreator(),
+        creator = CreatorString(string(2)).asTicketCreator(),
         priority = byte(3).toPriority(),
         status = Ticket.Status.valueOf(string(4)),
-        assignedTo = stringOrNull(5)?.asAssignmentType() ?: TicketAssignmentType.Nobody,
+        assignedTo = stringOrNull(5)?.run(::AssignmentString)?.asAssignmentType() ?: Assignment.Nobody,
         creatorStatusUpdate = boolean(6),
+        actions = ImmutableList.of()
     )
 }
 
-private fun TicketAction.Type.getMessage(): String? = when (this) {
-    is TicketAction.Open -> message
-    is TicketAction.Assign -> assignment.asString()
-    is TicketAction.Comment -> comment
-    is TicketAction.CloseWithComment -> comment
-    is TicketAction.SetPriority -> priority.level.toString()
+private fun Action.getMessage(): String? = when (this) {
+    is ActionInfo.Assign -> assignment.asString()
+    is ActionInfo.CloseWithComment -> comment
+    is ActionInfo.Open -> message
+    is ActionInfo.Comment -> comment
+    is ActionInfo.SetPriority -> priority.asByte().toString()
     else -> null
+}
+
+private enum class ActionAsEnum {
+    ASSIGN, CLOSE, CLOSE_WITH_COMMENT, COMMENT, OPEN, REOPEN, SET_PRIORITY, MASS_CLOSE
+}
+
+private fun Action.getEnumForDB(): ActionAsEnum = when (this) {
+    is ActionInfo.Assign -> ActionAsEnum.ASSIGN
+    is ActionInfo.CloseWithComment -> ActionAsEnum.CLOSE_WITH_COMMENT
+    is ActionInfo.CloseWithoutComment -> ActionAsEnum.CLOSE
+    is ActionInfo.Comment -> ActionAsEnum.COMMENT
+    is ActionInfo.MassClose -> ActionAsEnum.MASS_CLOSE
+    is ActionInfo.Open -> ActionAsEnum.OPEN
+    is ActionInfo.Reopen -> ActionAsEnum.REOPEN
+    is ActionInfo.SetPriority -> ActionAsEnum.SET_PRIORITY
 }

@@ -18,13 +18,14 @@ repositories {
 dependencies {
 
     implementation(project(":common"))
+    implementation("com.github.HoshiKurama:TicketManager_API:10.0.0-RC16")
     // Not included but shaded later only on certain platforms
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("net.kyori:adventure-text-minimessage:4.13.1")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.0-Beta")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.20")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.1")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.21")
 
     // Not included and not shaded later
     compileOnly("net.luckperms:api:5.4")
