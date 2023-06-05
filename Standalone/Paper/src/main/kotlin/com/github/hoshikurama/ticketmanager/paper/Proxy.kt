@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
+import com.github.hoshikurama.ticketmanager.api.ticket.Creator
 import com.github.hoshikurama.ticketmanager.common.Proxy2Server
 import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.randServerIdentifier
@@ -31,19 +31,23 @@ class Proxy(
                 if (input.readUTF().run(UUID::fromString).equals(randServerIdentifier)) return
 
                 val notification = when (input.readUTF().run(MessageNotification.MessageType::valueOf)) {
-                    MessageNotification.MessageType.ASSIGN -> MessageNotification.Assign.decode(input, activeLocale)
-                    MessageNotification.MessageType.CLOSEWITHCOMMENT -> MessageNotification.CloseWithComment.decode(input, activeLocale)
-                    MessageNotification.MessageType.CLOSEWITHOUTCOMMENT -> MessageNotification.CloseWithoutComment.decode(input, activeLocale)
-                    MessageNotification.MessageType.MASSCLOSE -> MessageNotification.MassClose.decode(input, activeLocale)
-                    MessageNotification.MessageType.COMMENT -> MessageNotification.Comment.decode(input, activeLocale)
-                    MessageNotification.MessageType.CREATE -> MessageNotification.Create.decode(input, activeLocale)
-                    MessageNotification.MessageType.REOPEN -> MessageNotification.Reopen.decode(input, activeLocale)
-                    MessageNotification.MessageType.SETPRIORITY -> MessageNotification.SetPriority.decode(input, activeLocale)
+                    MessageNotification.MessageType.ASSIGN -> MessageNotification.Assign.decode(input)
+                    MessageNotification.MessageType.CLOSEWITHCOMMENT -> MessageNotification.CloseWithComment.decode(
+                        input
+                    )
+                    MessageNotification.MessageType.CLOSEWITHOUTCOMMENT -> MessageNotification.CloseWithoutComment.decode(
+                        input
+                    )
+                    MessageNotification.MessageType.MASSCLOSE -> MessageNotification.MassClose.decode(input)
+                    MessageNotification.MessageType.COMMENT -> MessageNotification.Comment.decode(input)
+                    MessageNotification.MessageType.CREATE -> MessageNotification.Create.decode(input)
+                    MessageNotification.MessageType.REOPEN -> MessageNotification.Reopen.decode(input)
+                    MessageNotification.MessageType.SETPRIORITY -> MessageNotification.SetPriority.decode(input)
                 }
 
                 notification.run {
-                    if (sendCreatorMSG && ticketCreator is TicketCreator.User) {
-                        val creatorPlayer = platform.buildPlayer((ticketCreator as TicketCreator.User).uuid)
+                    if (sendCreatorMSG && ticketCreator is Creator.User) {
+                        val creatorPlayer = platform.buildPlayer((ticketCreator as Creator.User).uuid)
 
                         if (creatorPlayer != null && creatorPlayer.has(creatorAlertPerm) && !creatorPlayer.has(massNotifyPerm))
                             generateCreatorMSG(activeLocale).run(creatorPlayer::sendMessage)

@@ -1,12 +1,10 @@
 package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.database.Option
 import com.github.hoshikurama.ticketmanager.api.database.SearchConstraints
+import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
+import com.github.hoshikurama.ticketmanager.api.ticket.Creator
 import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketAssignmentType
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
 import com.github.hoshikurama.ticketmanager.commonse.TMCoroutine
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
@@ -16,7 +14,6 @@ import com.github.hoshikurama.ticketmanager.commonse.commands.executeNotificatio
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
 import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
-import com.github.hoshikurama.ticketmanager.commonse.misc.asCreator
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.commonse.misc.toLocalizedName
 import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
@@ -61,9 +58,11 @@ class CommandAPIRunner {
         get() = ReloadObjectCommand.commandTasks
     private val locale: TMLocale
         get() = ReloadObjectCommand.locale
-
+    // TODO: /ticket assign player/group/phrase <VALUE>
 
     // Arguments
+
+    //TODO REDO THIS WITH THE NEW FORMATTING
     private inline fun CommandAPICommand.argumentTicketFromID(
         vararg otherChecks: (Ticket, CommandSender.Active) -> Unit,
         otherFunctions: Argument<*>.() -> Unit
@@ -79,12 +78,12 @@ class CommandAPIRunner {
             return@CustomArgument ticket
         }
     ) { otherFunctions(this) }
-    private fun assignmentArg(): CustomArgument<TicketAssignmentType, String> {
+    private fun assignmentArg(): CustomArgument<Assignment, String> {
         return CustomArgument(GreedyStringArgument(locale.parameterAssignment)) { info ->
             when (info.currentInput) {
-                TicketAssignmentType.Nobody.toLocalizedName(locale) -> TicketAssignmentType.Nobody
-                TicketAssignmentType.Console.toLocalizedName(locale) -> TicketAssignmentType.Console
-                else -> TicketAssignmentType.Other(info.currentInput)
+                Assignment.Nobody.toLocalizedName(locale) -> Assignment.Nobody
+                Assignment.Console.toLocalizedName(locale) -> Assignment.Console
+                else -> Assignment.Pl(info.currentInput)
             }
         }
     }
@@ -107,7 +106,7 @@ class CommandAPIRunner {
 
     // Argument Suggestions
     private val ownedTicketIDsAsync = ArgumentSuggestions.stringsAsync { info ->
-        DatabaseManager.activeDatabase.getOwnedTicketIDsAsync(info.sender.toTicketCreator())
+        DatabaseManager.activeDatabase.getOwnedTicketIDsAsync(info.sender.toCreator())
             .thenApplyAsync { it.map(Long::toString).toTypedArray() }
     }
     private val openTicketIDsAsync = ArgumentSuggestions.stringsAsync { _: SuggestionInfo<BukkitCommandSender> ->
@@ -118,8 +117,8 @@ class CommandAPIRunner {
         val suggestions = mutableListOf<String>()
         suggestions.addAll(lpGroupNames.map { "::$it" })
         suggestions.addAll(info.sender.toTMSender().run(platform::getOnlineSeenPlayerNames))
-        suggestions.add(TicketAssignmentType.Console.toLocalizedName(locale))
-        suggestions.add(TicketAssignmentType.Nobody.toLocalizedName(locale))
+        suggestions.add(Assignment.Console.toLocalizedName(locale))
+        suggestions.add(Assignment.Nobody.toLocalizedName(locale))
         suggestions.sorted()
     }
     private fun dualityOpenIDsAsync(basePerm: String) = ArgumentSuggestions.stringsAsync { info ->
@@ -195,7 +194,7 @@ class CommandAPIRunner {
             argument(assignmentArg()) { replaceSuggestions(assignmentSuggest) }
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.assign(tmSender,
-                    assignment = args[1] as TicketAssignmentType,
+                    assignment = args[1] as Assignment,
                     ticket = args[0] as Ticket,
                     silent = false,
                 )
@@ -213,7 +212,7 @@ class CommandAPIRunner {
             argument(assignmentArg()) { replaceSuggestions(assignmentSuggest) }
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.assign(tmSender,
-                    assignment = args[1] as TicketAssignmentType,
+                    assignment = args[1] as Assignment,
                     ticket = args[0] as Ticket,
                     silent = true,
                 )
@@ -679,7 +678,7 @@ class CommandAPIRunner {
             argument(CustomArgument(PlayerArgument(locale.parameterUser)) { info ->
                 if (!info.sender.hasPermission("ticketmanager.command.history.all") && !(info.sender.hasPermission("ticketmanager.command.history.own") && info.sender == info.currentInput))
                     throw CustomArgumentException.fromString("You do not have permission to check the history of other people")
-                TicketCreator.User(info.currentInput.uniqueId)
+                Creator.User(info.currentInput.uniqueId)
             })
             executeRegisterTMAction { tmSender, args ->
                 commandTasks.history(tmSender,
@@ -697,7 +696,7 @@ class CommandAPIRunner {
             argument(CustomArgument(PlayerArgument(locale.parameterUser)) { info ->
                 if (!info.sender.hasPermission("ticketmanager.command.history.all") && !(info.sender.hasPermission("ticketmanager.command.history.own") && info.sender == info.currentInput))
                     throw CustomArgumentException.fromString("You do not have permission to check the history of other people")
-                TicketCreator.User(info.currentInput.uniqueId)
+                Creator.User(info.currentInput.uniqueId)
             })
             integerArgument(locale.parameterPage)
             executeRegisterTMAction { tmSender, args ->
@@ -719,12 +718,12 @@ class CommandAPIRunner {
                     return@CustomArgument SearchConstraints(requestedPage = 1) // This prevents random check at beginning
 
                 // Temp variables to assign
-                var creator: Option<TicketCreator>? = null
-                var assigned: Option<TicketAssignmentType>? = null
+                var creator: Option<Creator>? = null
+                var assigned: Option<Assignment>? = null
                 var priority: Option<Ticket.Priority>? = null
                 var status: Option<Ticket.Status>? = null
-                var closedBy: Option<TicketCreator>? = null
-                var lastClosedBy: Option<TicketCreator>? = null
+                var closedBy: Option<Creator>? = null
+                var lastClosedBy: Option<Creator>? = null
                 var world: Option<String>? = null
                 var creationTime: Option<Long>? = null
                 var keywords: Option<List<String>>? = null
@@ -740,8 +739,8 @@ class CommandAPIRunner {
                     .forEach { (keyword, symbol, value) ->
                         when (keyword) {
                             locale.searchCreator -> creator = when (symbol) {
-                                "=" -> Option(SCSymbol.EQUALS, value.attemptNameToTicketCreator())
-                                "!=" -> Option(SCSymbol.NOT_EQUALS, value.attemptNameToTicketCreator())
+                                "=" -> Option(SCSymbol.EQUALS, value.attemptNameToCreator())
+                                "!=" -> Option(SCSymbol.NOT_EQUALS, value.attemptNameToCreator())
                                 else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Please use = or !=")
                             }
                             locale.searchAssigned -> assigned = when (symbol) {
@@ -750,13 +749,13 @@ class CommandAPIRunner {
                                 else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Please use = or !=")
                             }
                             locale.searchLastClosedBy -> lastClosedBy = when (symbol) {
-                                "=" -> Option(SCSymbol.EQUALS, value.attemptNameToTicketCreator())
-                                "!=" -> Option(SCSymbol.NOT_EQUALS, value.attemptNameToTicketCreator())
+                                "=" -> Option(SCSymbol.EQUALS, value.attemptNameToCreator())
+                                "!=" -> Option(SCSymbol.NOT_EQUALS, value.attemptNameToCreator())
                                 else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Please use = or !=")
                             }
                             locale.searchClosedBy -> closedBy = when (symbol) {
-                                "=" -> Option(SCSymbol.EQUALS, value.attemptNameToTicketCreator())
-                                "!=" -> Option(SCSymbol.NOT_EQUALS, value.attemptNameToTicketCreator())
+                                "=" -> Option(SCSymbol.EQUALS, value.attemptNameToCreator())
+                                "!=" -> Option(SCSymbol.NOT_EQUALS, value.attemptNameToCreator())
                                 else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Please use = or !=")
                             }
                             locale.searchWorld -> world = when (symbol) {
@@ -961,18 +960,21 @@ class CommandAPIRunner {
 
 
 
-    private fun String.attemptNameToTicketCreator(): TicketCreator {
-        return if (this == locale.consoleName) TicketCreator.Console
+    private fun String.attemptNameToTicketCreator(): Creator {
+        return if (this == locale.consoleName) Creator.Console
         else platform.offlinePlayerNameToUUIDOrNull(this)
-            ?.run(TicketCreator::User)
-            ?: TicketCreator.UUIDNoMatch
+            ?.run(Creator::User)
+            ?: Creator.UUIDNoMatch
     }
 
-    private fun String.attemptToAssignmentType(): TicketAssignmentType = when (this) {
-        locale.miscNobody -> TicketAssignmentType.Nobody
-        locale.consoleName -> TicketAssignmentType.Console
-        else -> TicketAssignmentType.Other(this)
+    /*(
+    private fun String.attemptToAssignmentType(): Assignment = when (this) {
+        locale.miscNobody -> Assignment.Nobody
+        locale.consoleName -> Assignment.Console
+        else -> Assignment.Other(this)
     }
+
+     */
 
     private fun timeUnitToMultiplier(timeUnit: String) = when (timeUnit) {
         locale.timeSeconds.trimStart() -> 1L
@@ -994,9 +996,9 @@ class CommandAPIRunner {
     }
 }
 
-fun BukkitCommandSender.toTicketCreator(): TicketCreator = when (this) {
-    is BukkitConsole -> TicketCreator.Console
-    is BukkitPlayer -> TicketCreator.User(uniqueId)
+fun BukkitCommandSender.toCreator(): Creator = when (this) {
+    is BukkitConsole -> Creator.Console
+    is BukkitPlayer -> Creator.User(uniqueId)
     else -> throw Exception("Unsupported Entity Type!")
 }
 

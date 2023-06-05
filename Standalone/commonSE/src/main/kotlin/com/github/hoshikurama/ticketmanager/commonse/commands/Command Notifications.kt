@@ -1,9 +1,9 @@
 package com.github.hoshikurama.ticketmanager.commonse.commands
 
 import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
+import com.github.hoshikurama.ticketmanager.api.ticket.Creator
 import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketAssignmentType
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
 import com.github.hoshikurama.ticketmanager.common.randServerIdentifier
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.misc.*
@@ -21,7 +21,7 @@ sealed interface NotifyParams<out T: InfoSender> {
     val sendMassNotify: Boolean
 
     val commandSender: T
-    val ticketCreator: TicketCreator
+    val ticketCreator: Creator
 }
 
 class StandardParams<out T: InfoSender>(
@@ -29,14 +29,14 @@ class StandardParams<out T: InfoSender>(
     override val sendSenderMSG: Boolean,
     override val sendMassNotify: Boolean,
     override val commandSender: T,
-    override val ticketCreator: TicketCreator,
+    override val ticketCreator: Creator,
 ) : NotifyParams<T> {
 
     companion object {
         // For Composition
         fun build(
             isSilent: Boolean,
-            ticketCreator: TicketCreator,
+            ticketCreator: Creator,
             commandSender: CommandSender.Active,
             massNotifyPerm: String,
         ): StandardParams<CommandSender.Active> {
@@ -44,16 +44,16 @@ class StandardParams<out T: InfoSender>(
                 sendMassNotify = !isSilent,
                 sendSenderMSG = !commandSender.has(massNotifyPerm) || isSilent,
                 sendCreatorMSG = commandSender.asCreator() != ticketCreator
-                        && ticketCreator !is TicketCreator.Console
+                        && ticketCreator !is Creator.Console
                         && !isSilent,
                 commandSender = commandSender,
                 ticketCreator = ticketCreator,
             )
         }
 
-        fun build(activeRef: ByteArrayDataInput, activeLocale: TMLocale) = StandardParams(
-            commandSender = activeRef.readUTF().asCommandSender(activeLocale),
-            ticketCreator = activeRef.readUTF().asTicketCreator(),
+        fun build(activeRef: ByteArrayDataInput) = StandardParams(
+            commandSender = InfoCSString(activeRef.readUTF()).asCommandSender(),
+            ticketCreator = CreatorString(activeRef.readUTF()).asTicketCreator(),
             sendCreatorMSG = activeRef.readBoolean(),
             sendSenderMSG = activeRef.readBoolean(),
             sendMassNotify = activeRef.readBoolean(),
@@ -93,7 +93,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
 
     class Assign<out T: InfoSender>(
         private val standardParams: StandardParams<T>,
-        private val assignment: TicketAssignmentType,
+        private val assignment: Assignment,
         private val ticketID: Long
     ) : MessageNotification<T>, NotifyParams<T> by standardParams {
 
@@ -104,7 +104,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
 
         override fun generateMassNotify(activeLocale: TMLocale): Component {
             return activeLocale.notifyTicketAssignEvent.parseMiniMessage(
-                "user" templated commandSender.username,
+                "user" templated commandSender.getUsername(activeLocale),
                 "id" templated "$ticketID",
                 "assigned" templated assignment.toLocalizedName(activeLocale),
             )
@@ -136,19 +136,19 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
 
             fun newActive(
                 isSilent: Boolean,
-                assignment: TicketAssignmentType,
+                assignment: Assignment,
                 commandSender: CommandSender.Active,
-                ticketCreator: TicketCreator,
+                ticketCreator: Creator,
                 ticketID: Long,
             ): Assign<CommandSender.Active> {
                 val standardParams = StandardParams.build(isSilent, ticketCreator, commandSender, massNotifyPerm)
                 return Assign(standardParams, assignment, ticketID)
             }
 
-            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): Assign<CommandSender.Info> {
-                val standardParams = StandardParams.build(input, activeLocale)
+            fun decode(input: ByteArrayDataInput): Assign<CommandSender.Info> {
+                val standardParams = StandardParams.build(input)
                 return Assign(standardParams,
-                    assignment = input.readUTF().asAssignmentType(),
+                    assignment = AssignmentString(input.readUTF()).asAssignmentType(),
                     ticketID = input.readLong(),
                 )
             }
@@ -173,7 +173,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
 
         override fun generateMassNotify(activeLocale: TMLocale): Component {
             return activeLocale.notifyTicketCloseWCommentEvent.parseMiniMessage(
-                "user" templated commandSender.username,
+                "user" templated commandSender.getUsername(activeLocale),
                 "id" templated "$ticketID",
                 "message" templated closingMessage,
             )
@@ -199,7 +199,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
             fun newActive(
                 isSilent: Boolean,
                 commandSender: CommandSender.Active,
-                ticketCreator: TicketCreator,
+                ticketCreator: Creator,
                 closingMessage: String,
                 ticketID: Long,
             ): CloseWithComment<CommandSender.Active> {
@@ -207,8 +207,8 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
                 return CloseWithComment(standardParams, closingMessage, ticketID)
             }
 
-            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): CloseWithComment<CommandSender.Info> {
-                val standardParams = StandardParams.build(input, activeLocale)
+            fun decode(input: ByteArrayDataInput): CloseWithComment<CommandSender.Info> {
+                val standardParams = StandardParams.build(input)
                 return CloseWithComment(standardParams,
                     ticketID = input.readLong(),
                     closingMessage = input.readUTF(),
@@ -234,7 +234,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
 
         override fun generateMassNotify(activeLocale: TMLocale): Component {
             return activeLocale.notifyTicketCloseEvent.parseMiniMessage(
-                "user" templated commandSender.username,
+                "user" templated commandSender.getUsername(activeLocale),
                 "id" templated "$ticketID",
             )
         }
@@ -258,15 +258,15 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
             fun newActive(
                 isSilent: Boolean,
                 commandSender: CommandSender.Active,
-                ticketCreator: TicketCreator,
+                ticketCreator: Creator,
                 ticketID: Long,
             ): CloseWithoutComment<CommandSender.Active> {
                 val standardParams = StandardParams.build(isSilent, ticketCreator, commandSender, massNotifyPerm)
                 return CloseWithoutComment(standardParams, ticketID)
             }
 
-            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): CloseWithoutComment<CommandSender.Info> {
-                val standardParams = StandardParams.build(input, activeLocale)
+            fun decode(input: ByteArrayDataInput): CloseWithoutComment<CommandSender.Info> {
+                val standardParams = StandardParams.build(input)
                 return CloseWithoutComment(standardParams, input.readLong())
             }
         }
@@ -285,7 +285,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
 
         override fun generateMassNotify(activeLocale: TMLocale): Component {
             return activeLocale.notifyTicketMassCloseEvent.parseMiniMessage(
-                "user" templated commandSender.username,
+                "user" templated commandSender.getUsername(activeLocale),
                 "lower" templated "$lowerBound",
                 "upper" templated "$upperBound",
             )
@@ -323,15 +323,15 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
             ): MassClose<CommandSender.Active> {
                 val standardParams = StandardParams.build(
                     isSilent,
-                    TicketCreator.DummyCreator,
+                    Creator.DummyCreator,
                     commandSender,
                     massNotifyPerm
                 )
                 return MassClose(standardParams, lowerBound, upperBound)
             }
 
-            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): MassClose<InfoSender> {
-                val standardParams = StandardParams.build(input, activeLocale)
+            fun decode(input: ByteArrayDataInput): MassClose<InfoSender> {
+                val standardParams = StandardParams.build(input)
                 return MassClose(standardParams,
                     lowerBound = input.readLong(),
                     upperBound = input.readLong(),
@@ -353,7 +353,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
 
         override fun generateMassNotify(activeLocale: TMLocale): Component {
             return activeLocale.notifyTicketCommentEvent.parseMiniMessage(
-                "user" templated commandSender.username,
+                "user" templated commandSender.getUsername(activeLocale),
                 "id" templated "$ticketID",
                 "message" templated comment,
             )
@@ -384,7 +384,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
             fun newActive(
                 isSilent: Boolean,
                 commandSender: CommandSender.Active,
-                ticketCreator: TicketCreator,
+                ticketCreator: Creator,
                 ticketID: Long,
                 comment: String,
             ): Comment<CommandSender.Active> {
@@ -392,8 +392,8 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
                 return Comment(standardParams, ticketID, comment)
             }
 
-            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): Comment<CommandSender.Info> {
-                val standardParams = StandardParams.build(input, activeLocale)
+            fun decode(input: ByteArrayDataInput): Comment<CommandSender.Info> {
+                val standardParams = StandardParams.build(input)
                 return Comment(standardParams,
                     ticketID = input.readLong(),
                     comment = input.readUTF(),
@@ -414,7 +414,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
 
         override fun generateMassNotify(activeLocale: TMLocale): Component {
             return activeLocale.notifyTicketCreationEvent.parseMiniMessage(
-                "user" templated commandSender.username,
+                "user" templated commandSender.getUsername(activeLocale),
                 "id" templated "$ticketID",
                 "message" templated message,
             )
@@ -445,7 +445,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
             fun newActive(
                 isSilent: Boolean,
                 commandSender: CommandSender.Active,
-                ticketCreator: TicketCreator,
+                ticketCreator: Creator,
                 ticketID: Long,
                 message: String,
             ): Create<CommandSender.Active> {
@@ -453,8 +453,8 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
                 return Create(standardParams, ticketID, message)
             }
 
-            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): Create<CommandSender.Info> {
-                val standardParams = StandardParams.build(input, activeLocale)
+            fun decode(input: ByteArrayDataInput): Create<CommandSender.Info> {
+                val standardParams = StandardParams.build(input)
                 return Create(standardParams,
                     ticketID = input.readLong(),
                     message = input.readUTF(),
@@ -475,7 +475,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
 
         override fun generateMassNotify(activeLocale: TMLocale): Component {
             return activeLocale.notifyTicketReopenEvent.parseMiniMessage(
-                "user" templated commandSender.username,
+                "user" templated commandSender.getUsername(activeLocale),
                 "id" templated "$ticketID",
             )
         }
@@ -504,15 +504,15 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
             fun newActive(
                 isSilent: Boolean,
                 commandSender: CommandSender.Active,
-                ticketCreator: TicketCreator,
+                ticketCreator: Creator,
                 ticketID: Long,
             ): Reopen<CommandSender.Active> {
                 val standardParams = StandardParams.build(isSilent, ticketCreator, commandSender, massNotifyPerm)
                 return Reopen(standardParams, ticketID)
             }
 
-            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): Reopen<CommandSender.Info> {
-                val standardParams = StandardParams.build(input, activeLocale)
+            fun decode(input: ByteArrayDataInput): Reopen<CommandSender.Info> {
+                val standardParams = StandardParams.build(input)
                 return Reopen(standardParams, input.readLong())
             }
         }
@@ -533,7 +533,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
             return activeLocale.notifyTicketSetPriorityEvent
                 .replace("%PCC%", priority.getHexColour(activeLocale))
                 .parseMiniMessage(
-                    "user" templated commandSender.username,
+                    "user" templated commandSender.getUsername(activeLocale),
                     "id" templated "$ticketID",
                     "priority" templated priority.toLocaledWord(activeLocale),
                 )
@@ -553,7 +553,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
         override fun encodeForProxy(): ByteArray {
             val output = standardParams.encodeStandard(MessageType.SETPRIORITY)
             output.writeLong(ticketID)
-            output.writeByte(priority.level.toInt())
+            output.writeByte(priority.asByte().toInt())
             return output.toByteArray()
         }
 
@@ -564,7 +564,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
             fun newActive(
                 isSilent: Boolean,
                 commandSender: CommandSender.Active,
-                ticketCreator: TicketCreator,
+                ticketCreator: Creator,
                 ticketID: Long,
                 ticketPriority: Ticket.Priority
             ): SetPriority<CommandSender.Active> {
@@ -572,8 +572,8 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
                 return SetPriority(standardParams, ticketID, ticketPriority)
             }
 
-            fun decode(input: ByteArrayDataInput, activeLocale: TMLocale): SetPriority<CommandSender.Info> {
-                val standardParams = StandardParams.build(input, activeLocale)
+            fun decode(input: ByteArrayDataInput): SetPriority<CommandSender.Info> {
+                val standardParams = StandardParams.build(input)
                 return SetPriority(standardParams,
                     ticketID = input.readLong(),
                     priority = input.readByte().toPriority(),

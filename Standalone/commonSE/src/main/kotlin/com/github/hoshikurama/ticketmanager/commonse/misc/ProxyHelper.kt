@@ -1,11 +1,11 @@
 package com.github.hoshikurama.ticketmanager.commonse.misc
 
 import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
+import com.github.hoshikurama.ticketmanager.api.ticket.ActionLocation
 import com.google.common.io.ByteStreams
 import java.util.*
 
-fun encodeRequestTP(player: CommandSender.Active.OnlinePlayer, location: TicketCreationLocation.FromPlayer): ByteArray {
+fun encodeRequestTP(player: CommandSender.Active.OnlinePlayer, location: ActionLocation.FromPlayer): ByteArray {
     val output = ByteStreams.newDataOutput()
 
     output.writeUTF(location.server!!)
@@ -18,7 +18,7 @@ fun encodeRequestTP(player: CommandSender.Active.OnlinePlayer, location: TicketC
     return output.toByteArray()
 }
 
-fun decodeRequestTP(array: ByteArray): Pair<UUID, TicketCreationLocation.FromPlayer> {
+fun decodeRequestTP(array: ByteArray): Pair<UUID, ActionLocation.FromPlayer> {
     val input = ByteStreams.newDataInput(array)
 
     val server = input.readUTF()
@@ -28,5 +28,5 @@ fun decodeRequestTP(array: ByteArray): Pair<UUID, TicketCreationLocation.FromPla
     val y = input.readInt()
     val z = input.readInt()
 
-    return uuid to TicketCreationLocation.FromPlayer(server, world, x, y, z)
+    return uuid to ActionLocation.FromPlayer(server, world, x, y, z)
 }

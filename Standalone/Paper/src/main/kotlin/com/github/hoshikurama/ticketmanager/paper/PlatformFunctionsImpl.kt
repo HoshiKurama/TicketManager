@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
+import com.github.hoshikurama.ticketmanager.api.ticket.ActionLocation
 import com.github.hoshikurama.ticketmanager.commonse.misc.encodeRequestTP
 import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
@@ -46,12 +46,12 @@ class PlatformFunctionsImpl(
         return uuid.run(Bukkit::getOfflinePlayer).name
     }
 
-    override fun teleportToTicketLocSameServer(player: OnlinePlayer, loc: TicketCreationLocation.FromPlayer) {
+    override fun teleportToTicketLocSameServer(player: OnlinePlayer, loc: ActionLocation.FromPlayer) {
         val location = Location(Bukkit.getWorld(loc.world), loc.x.toDouble(), loc.y.toDouble(), loc.z.toDouble())
         Bukkit.getScheduler().runTask(plugin, Runnable { (player as PaperPlayer).pPlayer.teleport(location) })
     }
 
-    override fun teleportToTicketLocDiffServer(player: OnlinePlayer, loc: TicketCreationLocation.FromPlayer) {
+    override fun teleportToTicketLocDiffServer(player: OnlinePlayer, loc: ActionLocation.FromPlayer) {
         plugin.server.sendPluginMessage(plugin, "ticketmanager:server_to_proxy_tp", encodeRequestTP(player, loc))
     }
 

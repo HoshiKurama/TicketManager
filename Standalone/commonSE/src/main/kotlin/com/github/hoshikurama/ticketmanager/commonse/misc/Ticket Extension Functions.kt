@@ -1,12 +1,22 @@
 package com.github.hoshikurama.ticketmanager.commonse.misc
 
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketAssignmentType
+import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
+import com.github.hoshikurama.ticketmanager.api.ticket.Creator
 import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import java.util.*
 
-// Ticket.Priority
+private const val ASSIGNMENT_CONSOLE = "CONSOLE"
+private const val ASSIGNMENT_NOBODY = "NOBODY"
+private const val ASSIGNMENT_PLAYER = "PLAYER"
+private const val ASSIGNMENT_GROUP = "GROUP"
+private const val ASSIGNMENT_PHRASE = "PHRASE"
+private const val CREATOR_USER = "USER"
+private const val CREATOR_CONSOLE = "CONSOLE"
+private const val CREATOR_INVALID_UUID = "INVALID_UUID"
+private const val CREATOR_DUMMY = "DUMMY"
+
+
 fun Byte.toPriority(): Ticket.Priority = when (this.toInt()) {
     1 -> Ticket.Priority.LOWEST
     2 -> Ticket.Priority.LOW
@@ -16,6 +26,15 @@ fun Byte.toPriority(): Ticket.Priority = when (this.toInt()) {
     else -> throw Exception("Invalid Priority Level: $this")
 }
 
+internal fun Ticket.Priority.asByte(): Byte = when (this) {
+    Ticket.Priority.LOWEST -> 1
+    Ticket.Priority.LOW -> 2
+    Ticket.Priority.NORMAL -> 3
+    Ticket.Priority.HIGH -> 4
+    Ticket.Priority.HIGHEST -> 5
+}
+
+
 internal fun Ticket.Priority.getHexColour(activeLocale: TMLocale): String = when (this) {
     Ticket.Priority.LOWEST -> activeLocale.priorityColourLowestHex
     Ticket.Priority.LOW -> activeLocale.priorityColourLowHex
@@ -23,6 +42,12 @@ internal fun Ticket.Priority.getHexColour(activeLocale: TMLocale): String = when
     Ticket.Priority.HIGH -> activeLocale.priorityColourHighHex
     Ticket.Priority.HIGHEST -> activeLocale.priorityColourHighestHex
 }
+
+fun Ticket.Status.getHexColour(activeLocale: TMLocale): String = when (this) {
+    Ticket.Status.OPEN -> activeLocale.statusColourOpenHex
+    Ticket.Status.CLOSED -> activeLocale.statusColourClosedHex
+}
+
 
 fun Ticket.Priority.toLocaledWord(activeLocale: TMLocale) = when (this) {
     Ticket.Priority.LOWEST -> activeLocale.priorityLowest
@@ -32,54 +57,62 @@ fun Ticket.Priority.toLocaledWord(activeLocale: TMLocale) = when (this) {
     Ticket.Priority.HIGHEST -> activeLocale.priorityHighest
 }
 
-// Ticket.Status
- fun Ticket.Status.getHexColour(activeLocale: TMLocale): String = when (this) {
-    Ticket.Status.OPEN -> activeLocale.statusColourOpenHex
-    Ticket.Status.CLOSED -> activeLocale.statusColourClosedHex
-}
-
 internal fun Ticket.Status.toLocaledWord(activeLocale: TMLocale) = when (this) {
     Ticket.Status.OPEN ->  activeLocale.statusOpen
     Ticket.Status.CLOSED -> activeLocale.statusClosed
 }
 
-// AssignmentType
-fun TicketAssignmentType.asString() = when (this) {
-    is TicketAssignmentType.Console -> "CONSOLE"
-    is TicketAssignmentType.Nobody -> "NOBODY"
-    is TicketAssignmentType.Other -> "OTHER.$assignment"
+
+fun Assignment.asString() = when (this) {
+    is Assignment.Console -> ASSIGNMENT_CONSOLE
+    is Assignment.Nobody -> ASSIGNMENT_NOBODY
+    is Assignment.Player -> "$ASSIGNMENT_PLAYER.$username"
+    is Assignment.PermissionGroup -> "$ASSIGNMENT_GROUP.$permissionGroup"
+    is Assignment.Phrase -> "$ASSIGNMENT_PHRASE.$phrase"
 }
 
-fun TicketAssignmentType.toLocalizedName(activeLocale: TMLocale) = when(this) {
-    is TicketAssignmentType.Other -> this.assignment
-    TicketAssignmentType.Console -> activeLocale.consoleName
-    TicketAssignmentType.Nobody -> activeLocale.miscNobody
+fun Creator.asString(): String = when (this) {
+    is Creator.Console -> CREATOR_CONSOLE
+    is Creator.UUIDNoMatch -> CREATOR_INVALID_UUID
+    is Creator.User -> "$CREATOR_USER.$uuid"
+    is Creator.DummyCreator -> CREATOR_DUMMY
 }
 
-fun String.asAssignmentType(): TicketAssignmentType {
-    val split = split(".", limit = 2)
+
+fun Assignment.toLocalizedName(activeLocale: TMLocale) = when (this) {
+    is Assignment.Player -> this.username
+    is Assignment.Console -> activeLocale.consoleName
+    is Assignment.Nobody -> activeLocale.miscNobody
+    is Assignment.PermissionGroup -> this.permissionGroup
+    is Assignment.Phrase -> this.phrase
+}
+
+
+fun AssignmentString.asAssignmentType(): Assignment { //TODO IF NOT USED ELSEWHERE, MAYBE MOVE AROUND
+    val split = value.split(".", limit = 2)
     return when (split[0]) {
-        "CONSOLE" -> TicketAssignmentType.Console
-        "NOBODY" -> TicketAssignmentType.Nobody
-        "OTHER" -> TicketAssignmentType.Other(split[1])
+        ASSIGNMENT_CONSOLE -> Assignment.Console
+        ASSIGNMENT_NOBODY -> Assignment.Nobody
+        ASSIGNMENT_PLAYER -> Assignment.Player(split[1])
+        ASSIGNMENT_GROUP -> Assignment.PermissionGroup(split[1])
+        ASSIGNMENT_PHRASE, "OTHER" -> Assignment.Phrase(split[1]) // note: "OTHER" is grandfathered from prev versions
         else -> throw Exception("Invalid Assignment Type String: $this")
     }
 }
 
-// TicketCreator
-fun TicketCreator.asString(): String = when (this) {
-    is TicketCreator.Console -> "CONSOLE"
-    is TicketCreator.UUIDNoMatch -> "INVALID_UUID"
-    is TicketCreator.User -> "USER.$uuid"
-    is TicketCreator.DummyCreator -> "DUMMY"
-}
-
-fun String.asTicketCreator() : TicketCreator {
-    val split = this.split(".", limit = 2)
+fun CreatorString.asTicketCreator() : Creator {
+    val split = value.split(".", limit = 2)
     return when (split[0]) {
-        "USER" -> split[1].run(UUID::fromString).run(TicketCreator::User)
-        "CONSOLE" -> TicketCreator.Console
-        "INVALID_UUID" -> TicketCreator.UUIDNoMatch
+        CREATOR_CONSOLE -> Creator.Console
+        CREATOR_DUMMY -> Creator.DummyCreator
+        CREATOR_INVALID_UUID -> Creator.UUIDNoMatch
+        CREATOR_USER -> split[1].run(UUID::fromString).run(Creator::User)
         else -> throw Exception("Invalid TicketCreator type: ${split[0]}")
     }
 }
+
+@JvmInline
+value class CreatorString(val value: String)
+
+@JvmInline
+value class AssignmentString(val value: String)

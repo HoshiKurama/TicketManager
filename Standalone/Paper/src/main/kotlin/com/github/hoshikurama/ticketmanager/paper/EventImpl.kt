@@ -1,11 +1,11 @@
 package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.events.DatabaseWriteCompleteEventAsync
-import com.github.hoshikurama.ticketmanager.api.events.TicketModificationEventAsync
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketAction
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
-import com.github.hoshikurama.ticketmanager.commonse.platform.EventBuilder
+import com.github.hoshikurama.ticketmanager.api.ticket.Action
+import com.github.hoshikurama.ticketmanager.api.ticket.Creator
+import com.github.hoshikurama.ticketmanager.commonse.platform.events.DatabaseWriteCompleteEventAsyncCallable
+import com.github.hoshikurama.ticketmanager.commonse.platform.events.EventBuilder
+import com.github.hoshikurama.ticketmanager.commonse.platform.events.TicketModificationAsyncEventCallable
 import org.bukkit.event.Event
 import org.bukkit.event.HandlerList
 
@@ -16,27 +16,31 @@ class EventBuilderImpl: EventBuilder() {
 
     override fun buildDatabaseWriteCompleteEvent(
         activeCommandSender: CommandSender.Active,
-        ticketAction: TicketAction,
+        ticketAction: Action,
         ticketID: Long
-    ): DatabaseWriteCompleteEventAsync {
+    ): DatabaseWriteCompleteEventAsyncCallable {
         return DBWriteCompleteEventAsyncImpl(activeCommandSender, ticketAction, ticketID)
     }
 
     override fun buildTicketModificationEvent(
         activeCommandSender: CommandSender.Active,
-        ticketCreator: TicketCreator,
-        modification: TicketAction,
+        ticketCreator: Creator,
+        modification: Action,
         wasSilent: Boolean
-    ): TicketModificationEventAsync {
+    ): TicketModificationAsyncEventCallable {
         return TicketModificationEventAsyncImpl(activeCommandSender, ticketCreator, modification, wasSilent)
+    }
+
+    override fun callEventTM() {
+        TODO("Not yet implemented")
     }
 }
 
 class DBWriteCompleteEventAsyncImpl(
     override val activeCommandSender: CommandSender.Active,
-    override val ticketAction: TicketAction,
+    override val ticketAction: Action,
     override val ticketID: Long
-): Event(true), DatabaseWriteCompleteEventAsync {
+): Event(true), DatabaseWriteCompleteEventAsyncCallable {
     companion object {
         val handlerList = HandlerList()
     }
@@ -49,10 +53,10 @@ class DBWriteCompleteEventAsyncImpl(
 
 class TicketModificationEventAsyncImpl(
     override val commandSender: CommandSender.Active,
-    override val ticketCreator: TicketCreator,
-    override val modification: TicketAction,
+    override val ticketCreator: Creator,
+    override val modification: Action,
     override val wasSilent: Boolean
-): Event(true), TicketModificationEventAsync {
+): Event(true), TicketModificationAsyncEventCallable {
     companion object {
         val handlerList = HandlerList()
     }

@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreationLocation
+import com.github.hoshikurama.ticketmanager.api.ticket.ActionLocation
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
@@ -10,7 +10,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import java.util.concurrent.ConcurrentHashMap
 
-val proxyJoinMap = ConcurrentHashMap<String, TicketCreationLocation.FromPlayer>()
+val proxyJoinMap = ConcurrentHashMap<String, ActionLocation.FromPlayer>()
 
 class JoinEventImpl(
     activeLocale: TMLocale,

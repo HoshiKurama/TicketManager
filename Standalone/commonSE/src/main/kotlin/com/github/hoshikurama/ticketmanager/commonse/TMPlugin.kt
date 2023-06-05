@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketAssignmentType
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
+import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
+import com.github.hoshikurama.ticketmanager.api.ticket.Creator
 import com.github.hoshikurama.ticketmanager.common.*
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
@@ -338,7 +338,7 @@ abstract class TMPlugin(
                         .filter { it.has("ticketmanager.notify.unreadUpdates.scheduled") }
                         .forEach {
                             val ids = DatabaseManager.activeDatabase
-                                .getTicketIDsWithUpdatesForAsync(TicketCreator.User(it.uuid))
+                                .getTicketIDsWithUpdatesForAsync(Creator.User(it.uuid))
                                 .asDeferredThenAwait()
                             val tickets = ids.joinToString(", ")
 
@@ -361,9 +361,9 @@ abstract class TMPlugin(
                         platformFunctions.getAllOnlinePlayers()
                             .filter { it.has("ticketmanager.notify.openTickets.scheduled") }
                             .forEach { p ->
-                                val groups = p.permissionGroups.map { TicketAssignmentType.Other("::$it") }
+                                val groups = p.permissionGroups.map(Assignment::PermissionGroup)
                                 val assignedCount = openTickets.count {
-                                    it.assignedTo == TicketAssignmentType.Other(p.username)
+                                    it.assignedTo == Assignment.Player(p.username)
                                             || it.assignedTo in groups
                                 }
 

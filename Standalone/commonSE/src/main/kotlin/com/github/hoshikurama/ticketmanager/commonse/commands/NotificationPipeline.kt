@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse.commands
 
 import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.ticket.TicketCreator
+import com.github.hoshikurama.ticketmanager.api.ticket.Creator
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.commonse.TMCoroutine
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
@@ -27,8 +27,8 @@ fun executeNotificationsAsync(
                 if (sendSenderMSG)
                     generateSenderMSG(activeLocale).run(commandSender::sendMessage)
 
-                if (sendCreatorMSG && ticketCreator is TicketCreator.User) {
-                    val creatorPlayer = platform.buildPlayer((ticketCreator as TicketCreator.User).uuid)
+                if (sendCreatorMSG && ticketCreator is Creator.User) {
+                    val creatorPlayer = platform.buildPlayer((ticketCreator as Creator.User).uuid)
 
                     if (creatorPlayer != null && creatorPlayer.has(creatorAlertPerm) && !creatorPlayer.has(massNotifyPerm))
                         generateCreatorMSG(activeLocale).run(creatorPlayer::sendMessage)

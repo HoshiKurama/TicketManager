@@ -72,16 +72,14 @@ operator fun Component.plus(other: Component) = append(other)
 
 // Other
 fun generateModifiedStacktrace(e: Exception, activeLocale: TMLocale) = buildComponent {
-    val cause = e.cause
-//todo fix
     // Builds Header
     append(activeLocale.stacktraceLine1.parseMiniMessage())
-    append(activeLocale.stacktraceLine2.parseMiniMessage("exception" templated (cause?.javaClass?.simpleName ?: "???")))
-    append(activeLocale.stacktraceLine3.parseMiniMessage("message" templated (cause?.message ?: "?")))
+    append(activeLocale.stacktraceLine2.parseMiniMessage("exception" templated (e.javaClass.simpleName ?: "???")))
+    append(activeLocale.stacktraceLine3.parseMiniMessage("message" templated (e.message ?: "?")))
     append(activeLocale.stacktraceLine4.parseMiniMessage())
 
     // Adds stacktrace entries
-    cause?.stackTrace
+    e.stackTrace
         ?.filter { it.className.contains("com.github.hoshikurama.ticketmanager") }
         ?.map {
             activeLocale.stacktraceEntry.parseMiniMessage(
