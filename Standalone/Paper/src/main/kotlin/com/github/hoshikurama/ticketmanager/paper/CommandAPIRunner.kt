@@ -1,28 +1,25 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
-import com.github.hoshikurama.ticketmanager.api.ticket.impl.CommandSender
-import com.github.hoshikurama.ticketmanager.implapi.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.implapi.database.Option
-import com.github.hoshikurama.ticketmanager.implapi.database.SearchConstraints
-import com.github.hoshikurama.ticketmanager.implapi.ticket.Ticket
-import com.github.hoshikurama.ticketmanager.implapi.ticket.TicketAssignmentType
-import com.github.hoshikurama.ticketmanager.implapi.ticket.TicketCreationLocation
-import com.github.hoshikurama.ticketmanager.implapi.ticket.TicketCreator
+import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.common.database.Option
+import com.github.hoshikurama.ticketmanager.api.common.database.SearchConstraints
+import com.github.hoshikurama.ticketmanager.api.common.ticket.ActionLocation
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Assignment
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Creator
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Ticket
 import com.github.hoshikurama.ticketmanager.commonse.TMCoroutine
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
 import com.github.hoshikurama.ticketmanager.commonse.commands.MessageNotification
 import com.github.hoshikurama.ticketmanager.commonse.commands.executeNotificationsAsync
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
 import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
-import com.github.hoshikurama.ticketmanager.commonse.misc.asCreator
+import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
-import com.github.hoshikurama.ticketmanager.commonse.misc.toLocalizedName
-import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
+import com.github.hoshikurama.ticketmanager.commonse.misc.templated
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.utilities.asDeferredThenAwait
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPICommand
 import dev.jorel.commandapi.SuggestionInfo
@@ -32,8 +29,9 @@ import dev.jorel.commandapi.executors.CommandArguments
 import dev.jorel.commandapi.executors.CommandExecutor
 import dev.jorel.commandapi.executors.ExecutorType
 import dev.jorel.commandapi.kotlindsl.*
+import org.bukkit.OfflinePlayer
 import java.util.concurrent.CompletableFuture
-import com.github.hoshikurama.ticketmanager.implapi.database.SearchConstraints.Symbol as SCSymbol
+import com.github.hoshikurama.ticketmanager.api.common.database.SearchConstraints.Symbol as SCSymbol
 import org.bukkit.command.ConsoleCommandSender as BukkitConsole
 
 typealias BukkitPlayer = org.bukkit.entity.Player
@@ -63,67 +61,60 @@ class CommandAPIRunner {
         get() = ReloadObjectCommand.commandTasks
     private val locale: TMLocale
         get() = ReloadObjectCommand.locale
-    // TODO: /ticket assign player/group/phrase <VALUE>
 
     // Arguments
-    private inline fun CommandAPICommand.argumentTicketFromID(
+    private inline fun CommandAPICommand.argumentTicketFromIDAsync(
         vararg otherChecks: (Ticket, CommandSender.Active) -> Unit,
         otherFunctions: Argument<*>.() -> Unit
     ) = argument(
         CustomArgument(LongArgument(locale.parameterID)) { info ->
-            val ticket = DatabaseManager.activeDatabase
-                .getTicketOrNullAsync(info.currentInput)
-                .join() //TODO HMM, SHOULD I WORRY ABOUT THIS? NOTE: IF THIS IS A PROBLEM, PASS DOWN COMPLETEABLEFUTURE
-                ?: throw CustomArgumentException.fromString("${locale.brigadierInvalidID}: ${info.currentInput}")
+            return@CustomArgument try {
+                DatabaseManager.activeDatabase
+                    .getTicketOrNullAsync(info.currentInput)
+                    .thenApplyAsync { ticketorNull ->
+                        // Filter invalid ticket
+                        val ticket = ticketorNull ?: throw CustomArgumentException.fromAdventureComponent(
+                            locale.brigadierInvalidID.parseMiniMessage(
+                                "id" templated info.currentInput.toString()
+                            )
+                        )
 
-            val tmSender = info.sender.toTMSender()
-            otherChecks.forEach { it.invoke(ticket, tmSender) }
-            return@CustomArgument ticket
+                        // Filter out other checks
+                        val tmSender = info.sender.toTMSender()
+                        otherChecks.forEach { it.invoke(ticket, tmSender) }
+                        ticket
+                    }
+            } catch (e: Exception) { throw e.cause!! } // Throws CustomArgumentEvent instead of CF Exception
         }
     ) { otherFunctions(this) }
-    private fun assignmentArg(): CustomArgument<TicketAssignmentType, String> {
-        return CustomArgument(GreedyStringArgument(locale.parameterAssignment)) { info ->
-            when (info.currentInput) {
-                TicketAssignmentType.Nobody.toLocalizedName(locale) -> TicketAssignmentType.Nobody
-                TicketAssignmentType.Console.toLocalizedName(locale) -> TicketAssignmentType.Console
-                else -> TicketAssignmentType.Other(info.currentInput)
-            }
-        }
-    }
 
     // Errors
+    @Suppress("UNUSED_PARAMETER") // Note: allows method reference
     private fun ticketIsOpen(ticket: Ticket, ignored: CommandSender.Active) {
-        if (ticket.status != Ticket.Status.OPEN) throw CustomArgumentException.fromString(locale.brigadierTicketAlreadyClosed)
+        if (ticket.status != Ticket.Status.OPEN) throw CustomArgumentException
+            .fromAdventureComponent(locale.brigadierTicketAlreadyClosed.parseMiniMessage())
     }
+    @Suppress("UNUSED_PARAMETER") // Note: allows method reference
     private fun ticketIsClosed(ticket: Ticket, ignored: CommandSender.Active) {
-        if (ticket.status != Ticket.Status.CLOSED) throw CustomArgumentException.fromString(locale.brigadierTicketAlreadyOpen)
+        if (ticket.status != Ticket.Status.CLOSED) throw CustomArgumentException
+            .fromAdventureComponent(locale.brigadierTicketAlreadyOpen.parseMiniMessage())
     }
     private fun userDualityError(basePerm: String): (Ticket, CommandSender.Active) -> Unit = { ticket, sender ->
         val hasAll = sender.has("$basePerm.all")
         val hasOwn = sender.has("$basePerm.own")
 
         val canRunCommand = hasAll || (hasOwn && ticket.creator == sender.asCreator())
-        if (!canRunCommand) throw CustomArgumentException.fromString(locale.brigadierNotYourTicket)
+        if (!canRunCommand) throw CustomArgumentException
+            .fromAdventureComponent(locale.brigadierNotYourTicket.parseMiniMessage())
     }
 
 
     // Argument Suggestions
-    private val ownedTicketIDsAsync = ArgumentSuggestions.stringsAsync { info ->
-        DatabaseManager.activeDatabase.getOwnedTicketIDsAsync(info.sender.toTicketCreator())
-            .thenApplyAsync { it.map(Long::toString).toTypedArray() }
-    }
     private val openTicketIDsAsync = ArgumentSuggestions.stringsAsync { _: SuggestionInfo<BukkitCommandSender> ->
         DatabaseManager.activeDatabase.getOpenTicketIDsAsync()
             .thenApplyAsync { it.map(Long::toString).toTypedArray() }
     }
-    private val assignmentSuggest = ArgumentSuggestions.stringCollection { info ->
-        val suggestions = mutableListOf<String>()
-        suggestions.addAll(lpGroupNames.map { "::$it" })
-        suggestions.addAll(info.sender.toTMSender().run(platform::getOnlineSeenPlayerNames))
-        suggestions.add(TicketAssignmentType.Console.toLocalizedName(locale))
-        suggestions.add(TicketAssignmentType.Nobody.toLocalizedName(locale))
-        suggestions.sorted()
-    }
+
     private fun dualityOpenIDsAsync(basePerm: String) = ArgumentSuggestions.stringsAsync { info ->
         val tmSender = info.sender.toTMSender()
 
@@ -147,7 +138,7 @@ class CommandAPIRunner {
     }
     private fun hasSilentPermission(bukkitSender: BukkitCommandSender): Boolean {
         return when (val tmSender = bukkitSender.toTMSender()) {
-            is OnlinePlayer -> tmSender.has("ticketmanager.commandArg.silence")
+            is CommandSender.Active.OnlinePlayer -> tmSender.has("ticketmanager.commandArg.silence")
             is CommandSender.Active.OnlineConsole -> true
         }
     }
@@ -187,36 +178,130 @@ class CommandAPIRunner {
             }
         }
 
-        // /ticket assign <ID> <Assignment...>
+        // /ticket assign <ID> player <Player>
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordAssign) {
                 withPermission("ticketmanager.command.assign")
                 withRequirement(::notUnderCooldown)
             }
-            argumentTicketFromID(::ticketIsOpen) { replaceSuggestions(openTicketIDsAsync) }
-            argument(assignmentArg()) { replaceSuggestions(assignmentSuggest) }
+            argumentTicketFromIDAsync(::ticketIsOpen) {
+                replaceSuggestions(openTicketIDsAsync)
+            }
+            literalArgument(locale.parameterLiteralPlayer)
+            offlinePlayerArgument(locale.parameterLiteralPlayer)
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.assign(tmSender,
-                    assignment = args[1] as TicketAssignmentType,
-                    ticket = args[0] as Ticket,
+                    assignment = (args[1] as BukkitPlayer)
+                        .run(OfflinePlayer::getName)
+                        ?.run(Assignment::Player)
+                        ?: Assignment.Nobody,
+                    ticket = awaitTicket(args[0]),
                     silent = false,
                 )
             }
         }
 
-        // /ticket s.assign <ID> <Assignment...>
+        // /ticket assign <ID> group <Group>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordAssign) {
+                withPermission("ticketmanager.command.assign")
+                withRequirement(::notUnderCooldown)
+            }
+            argumentTicketFromIDAsync(::ticketIsOpen) {
+                replaceSuggestions(openTicketIDsAsync)
+            }
+            literalArgument(locale.parameterLiteralGroup)
+            multiLiteralArgument(locale.parameterLiteralGroup,lpGroupNames)
+            executeRegisterTMMessage { tmSender, args ->
+                commandTasks.assign(tmSender,
+                    assignment = Assignment.PermissionGroup((args[1] as String)),
+                    ticket = awaitTicket(args[0]),
+                    silent = false,
+                )
+            }
+        }
+
+        // /ticket assign <ID> phrase <phrase...>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordAssign) {
+                withPermission("ticketmanager.command.assign")
+                withRequirement(::notUnderCooldown)
+            }
+            argumentTicketFromIDAsync(::ticketIsOpen) {
+                replaceSuggestions(openTicketIDsAsync)
+            }
+            literalArgument(locale.parameterLiteralPhrase)
+            greedyStringArgument(locale.parameterLiteralPhrase)
+            executeRegisterTMMessage { tmSender, args ->
+                commandTasks.assign(tmSender,
+                    assignment = Assignment.Phrase((args[1] as String)),
+                    ticket = awaitTicket(args[0]),
+                    silent = false,
+                )
+            }
+        }
+
+        // /ticket s.assign <ID> player <Player>
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordSilentAssign) {
                 withPermission("ticketmanager.command.assign")
                 withRequirement(::notUnderCooldown)
                 withRequirement(::hasSilentPermission)
             }
-            argumentTicketFromID(::ticketIsOpen) { replaceSuggestions(openTicketIDsAsync) }
-            argument(assignmentArg()) { replaceSuggestions(assignmentSuggest) }
+            argumentTicketFromIDAsync(::ticketIsOpen) {
+                replaceSuggestions(openTicketIDsAsync)
+            }
+            literalArgument(locale.parameterLiteralPlayer)
+            offlinePlayerArgument(locale.parameterLiteralPlayer)
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.assign(tmSender,
-                    assignment = args[1] as TicketAssignmentType,
-                    ticket = args[0] as Ticket,
+                    assignment = (args[1] as OfflinePlayer)
+                        .run(OfflinePlayer::getName)
+                        ?.run(Assignment::Player)
+                        ?: Assignment.Nobody,
+                    ticket = awaitTicket(args[0]),
+                    silent = true,
+                )
+            }
+        }
+
+        // /ticket s.assign <ID> group <Group>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordAssign) {
+                withPermission("ticketmanager.command.assign")
+                withRequirement(::notUnderCooldown)
+                withRequirement(::hasSilentPermission)
+            }
+            argumentTicketFromIDAsync(::ticketIsOpen) {
+                replaceSuggestions(openTicketIDsAsync)
+            }
+            literalArgument(locale.parameterLiteralGroup)
+            multiLiteralArgument(locale.parameterLiteralGroup,lpGroupNames)
+            executeRegisterTMMessage { tmSender, args ->
+                commandTasks.assign(tmSender,
+                    assignment = Assignment.PermissionGroup((args[1] as String)),
+                    ticket = awaitTicket(args[0]),
+                    silent = true,
+                )
+            }
+        }
+
+        // /ticket s.assign <ID> phrase <phrase...>
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordAssign) {
+                withPermission("ticketmanager.command.assign")
+                withRequirement(::notUnderCooldown)
+                withRequirement(::hasSilentPermission)
+            }
+            argumentTicketFromIDAsync(::ticketIsOpen) {
+                replaceSuggestions(openTicketIDsAsync)
+            }
+            literalArgument(locale.parameterLiteralPhrase)
+            greedyStringArgument(locale.parameterLiteralPhrase)
+            executeRegisterTMMessage { tmSender, args ->
+                commandTasks.assign(tmSender,
+                    assignment = Assignment.Phrase((args[1] as String)),
+                    ticket = awaitTicket(args[0]),
                     silent = true,
                 )
             }
@@ -228,12 +313,12 @@ class CommandAPIRunner {
                 withPermission("ticketmanager.command.assign")
                 withRequirement(::notUnderCooldown)
             }
-            argumentTicketFromID(::ticketIsOpen) {
+            argumentTicketFromIDAsync(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.unAssign(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     silent = false,
                 )
             }
@@ -246,12 +331,12 @@ class CommandAPIRunner {
                 withRequirement(::notUnderCooldown)
                 withRequirement(::hasSilentPermission)
             }
-            argumentTicketFromID(::ticketIsOpen) {
+            argumentTicketFromIDAsync(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.unAssign(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     silent = true
                 )
             }
@@ -263,7 +348,7 @@ class CommandAPIRunner {
                 withPermission("ticketmanager.command.assign")
                 withRequirement(::notUnderCooldown)
             }
-            argumentTicketFromID(::ticketIsOpen) {
+            argumentTicketFromIDAsync(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
             executeRegisterTMMessage { tmSender, args ->
@@ -281,12 +366,12 @@ class CommandAPIRunner {
                 withRequirement(::notUnderCooldown)
                 withRequirement(::hasSilentPermission)
             }
-            argumentTicketFromID(::ticketIsOpen) {
+            argumentTicketFromIDAsync(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.claim(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     silent = true
                 )
             }
@@ -298,12 +383,12 @@ class CommandAPIRunner {
                 withRequirement { hasOneDualityPermission(it, "ticketmanager.command.close") }
                 withRequirement(::notUnderCooldown)
             }
-            argumentTicketFromID(::ticketIsOpen, userDualityError("ticketmanager.command.close")) {
+            argumentTicketFromIDAsync(::ticketIsOpen, userDualityError("ticketmanager.command.close")) {
                 replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
             }
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.closeWithoutComment(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     silent = false
                 )
             }
@@ -316,12 +401,12 @@ class CommandAPIRunner {
                 withRequirement(::hasSilentPermission)
                 withRequirement(::notUnderCooldown)
             }
-            argumentTicketFromID(::ticketIsOpen, userDualityError("ticketmanager.command.close")) {
+            argumentTicketFromIDAsync(::ticketIsOpen, userDualityError("ticketmanager.command.close")) {
                 replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
             }
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.closeWithoutComment(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     silent = true
                 )
             }
@@ -333,13 +418,13 @@ class CommandAPIRunner {
                 withRequirement { hasOneDualityPermission(it, "ticketmanager.command.close") }
                 withRequirement(::notUnderCooldown)
             }
-            argumentTicketFromID(::ticketIsOpen, userDualityError("ticketmanager.command.close")) {
+            argumentTicketFromIDAsync(::ticketIsOpen, userDualityError("ticketmanager.command.close")) {
                 replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
             }
             greedyStringArgument(locale.parameterComment)
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.closeWithComment(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     comment = args[1] as String,
                     silent = false
                 )
@@ -353,13 +438,13 @@ class CommandAPIRunner {
                 withRequirement(::notUnderCooldown)
                 withRequirement(::hasSilentPermission)
             }
-            argumentTicketFromID(::ticketIsOpen, userDualityError("ticketmanager.command.close")) {
+            argumentTicketFromIDAsync(::ticketIsOpen, userDualityError("ticketmanager.command.close")) {
                 replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
             }
             greedyStringArgument(locale.parameterComment)
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.closeWithComment(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     comment = args[1] as String,
                     silent = true
                 )
@@ -407,13 +492,13 @@ class CommandAPIRunner {
                 withRequirement { hasOneDualityPermission(it, "ticketmanager.command.comment") }
                 withRequirement(::notUnderCooldown)
             }
-            argumentTicketFromID(::ticketIsOpen, userDualityError("ticketmanager.command.comment")) {
+            argumentTicketFromIDAsync(::ticketIsOpen, userDualityError("ticketmanager.command.comment")) {
                 replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.comment"))
             }
             greedyStringArgument(locale.parameterComment)
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.comment(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     comment = args[1] as String,
                     silent = false
                 )
@@ -427,13 +512,13 @@ class CommandAPIRunner {
                 withRequirement(::notUnderCooldown)
                 withRequirement(::hasSilentPermission)
             }
-            argumentTicketFromID(::ticketIsOpen, userDualityError("ticketmanager.command.comment")) {
+            argumentTicketFromIDAsync(::ticketIsOpen, userDualityError("ticketmanager.command.comment")) {
                 replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.comment"))
             }
             greedyStringArgument(locale.parameterComment)
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.comment(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     comment = args[1] as String,
                     silent = true
                 )
@@ -525,10 +610,10 @@ class CommandAPIRunner {
                 withPermission("ticketmanager.command.reopen")
                 withRequirement(::notUnderCooldown)
             }
-            argumentTicketFromID(::ticketIsClosed) {} // Note: Suggestions intentionally blank (require all closed)
+            argumentTicketFromIDAsync(::ticketIsClosed) {} // Note: Suggestions intentionally blank (require all closed)
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.reopen(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     silent = false
                 )
             }
@@ -541,10 +626,10 @@ class CommandAPIRunner {
                 withRequirement(::notUnderCooldown)
                 withRequirement(::hasSilentPermission)
             }
-            argumentTicketFromID(::ticketIsClosed) {} // Note: Suggestions intentionally blank (require all closed)
+            argumentTicketFromIDAsync(::ticketIsClosed) {} // Note: Suggestions intentionally blank (require all closed)
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.reopen(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     silent = true
                 )
             }
@@ -566,27 +651,25 @@ class CommandAPIRunner {
                             it.toTMSender().has("ticketmanager.command.proxyteleport")
                 }
             }
-            argumentTicketFromID({ ticket, sender ->
+            argumentTicketFromIDAsync({ ticket, sender ->
                 val location = ticket.actions[0].location
 
                 // Only teleport to player tickets
-                if (location !is TicketCreationLocation.FromPlayer)
-                    throw CustomArgumentException.fromString("You may not teleport to tickets created by Console!")
+                if (location !is ActionLocation.FromPlayer)
+                    throw CustomArgumentException.fromAdventureComponent(locale.brigadierConsoleLocTP.parseMiniMessage())
 
                 when (location.server == configState.proxyServerName) {
                     true -> if (!sender.has("ticketmanager.command.teleport"))
-                        throw CustomArgumentException.fromString("You do not have permission to teleport to tickets on the same server!")
+                        throw CustomArgumentException.fromAdventureComponent(locale.brigadierNoTPSameServer.parseMiniMessage())
                     false -> when (!configState.enableProxyMode) {
-                        false -> throw CustomArgumentException.fromString("You may not teleport to tickets on other servers when proxy mode is disabled!")
+                        false -> throw CustomArgumentException.fromAdventureComponent(locale.brigadierNoTPProxyDisabled.parseMiniMessage())
                         true -> if (!sender.has("ticketmanager.command.proxyteleport"))
-                            throw CustomArgumentException.fromString("You do not have permission to teleport to tickets on other servers!")
+                            throw CustomArgumentException.fromAdventureComponent(locale.brigadierNoTPDiffServer.parseMiniMessage())
                     }
                 }
             }) {} // Note: Suggests intentionally blank (would require all tickets)
             executeRegisterTMAction { tmSender, args ->
-                commandTasks.teleport(tmSender,
-                    ticket = args[0] as Ticket
-                )
+                commandTasks.teleport(tmSender, awaitTicket(args[0]))
             }
         }
 
@@ -595,11 +678,9 @@ class CommandAPIRunner {
             literalArgument(locale.commandWordView) {
                 withRequirement { hasOneDualityPermission(it, "ticketmanager.command.view") }
             }
-            argumentTicketFromID(userDualityError("ticketmanager.command.view")) {}
+            argumentTicketFromIDAsync(userDualityError("ticketmanager.command.view")) {}
             executeRegisterTMAction { tmSender, args ->
-                commandTasks.view(tmSender,
-                    ticket = args[0] as Ticket
-                )
+                commandTasks.view(tmSender, awaitTicket(args[0]))
             }
         }
 
@@ -608,27 +689,28 @@ class CommandAPIRunner {
             literalArgument(locale.commandWordView) {
                 withRequirement { hasOneDualityPermission(it, "ticketmanager.command.viewdeep") }
             }
-            argumentTicketFromID(userDualityError("ticketmanager.command.viewdeep")) {}
+            argumentTicketFromIDAsync(userDualityError("ticketmanager.command.viewdeep")) {}
             executeRegisterTMAction { tmSender, args ->
-                commandTasks.viewDeep(tmSender,
-                    ticket = args[0] as Ticket
-                )
+                commandTasks.viewDeep(tmSender, awaitTicket(args[0]))
             }
         }
-//TODO MAKE EVERYTHING RUN WITH THE CF
+
         // /ticket setpriority <ID> <Priority>
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordSetPriority) {
                 withPermission("ticketmanager.command.setPriority")
             }
-            argumentTicketFromID(::ticketIsOpen) {
+            argumentTicketFromIDAsync(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
-            multiLiteralArgument(locale.priorityLowest, locale.priorityLow,
-                locale.priorityNormal, locale.priorityHigh, locale.priorityHighest, "1", "2", "3", "4", "5")
+            multiLiteralArgument(locale.searchPriority, listOf(
+                locale.priorityLowest, locale.priorityLow, locale.priorityNormal,
+                locale.priorityHigh, locale.priorityHighest, "1", "2", "3", "4", "5"
+            ))
+
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.setPriority(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     priority = numberOrWordToPriority(args[1] as String),
                     silent = false
                 )
@@ -641,14 +723,16 @@ class CommandAPIRunner {
                 withPermission("ticketmanager.command.setPriority")
                 withRequirement(::hasSilentPermission)
             }
-            argumentTicketFromID(::ticketIsOpen) {
+            argumentTicketFromIDAsync(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
-            multiLiteralArgument(locale.priorityLowest, locale.priorityLow,
-                locale.priorityNormal, locale.priorityHigh, locale.priorityHighest, "1", "2", "3", "4", "5")
+            multiLiteralArgument(locale.searchPriority, listOf(
+                locale.priorityLowest, locale.priorityLow, locale.priorityNormal,
+                locale.priorityHigh, locale.priorityHighest, "1", "2", "3", "4", "5"
+            ))
             executeRegisterTMMessage { tmSender, args ->
                 commandTasks.setPriority(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = awaitTicket(args[0]),
                     priority = numberOrWordToPriority(args[1] as String),
                     silent = true
                 )
@@ -668,43 +752,97 @@ class CommandAPIRunner {
             literalArgument(locale.commandWordHistory) {
                 withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
             }
-            executeRegisterTMAction { tmSender, args ->
-                commandTasks.history(tmSender, tmSender.asCreator(), 1)
-            }
-        }
-
-        // /ticket history <User>
-        commandAPICommand(locale.commandBase) {
-            literalArgument(locale.commandWordHistory) {
-                withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
-            }
-            argument(CustomArgument(PlayerArgument(locale.parameterUser)) { info ->
-                if (!info.sender.hasPermission("ticketmanager.command.history.all") && !(info.sender.hasPermission("ticketmanager.command.history.own") && info.sender == info.currentInput))
-                    throw CustomArgumentException.fromString("You do not have permission to check the history of other people")
-                TicketCreator.User(info.currentInput.uniqueId)
-            })
-            executeRegisterTMAction { tmSender, args ->
+            executeRegisterTMAction { tmSender, _ ->
                 commandTasks.history(tmSender,
-                    checkedCreator = (args[0] as BukkitPlayer).toTMSender().asCreator(),
+                    checkedCreator = tmSender.asCreator(),
                     requestedPage = 1
                 )
             }
         }
 
-        // /ticket history <User> <Page>
+        // /ticket history Console
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordHistory) {
                 withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
             }
-            argument(CustomArgument(PlayerArgument(locale.parameterUser)) { info ->
-                if (!info.sender.hasPermission("ticketmanager.command.history.all") && !(info.sender.hasPermission("ticketmanager.command.history.own") && info.sender == info.currentInput))
-                    throw CustomArgumentException.fromString("You do not have permission to check the history of other people")
-                TicketCreator.User(info.currentInput.uniqueId)
+            literalArgument(locale.consoleName)
+            executeRegisterTMAction { tmSender, _ ->
+                commandTasks.history(tmSender,
+                    checkedCreator = Creator.Console,
+                    requestedPage = 1
+                )
+            }
+        }
+
+        // /ticket history Console [Page]
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordHistory) {
+                withPermission("ticketmanager.command.history.all")
+            }
+            literalArgument(locale.consoleName)
+            integerArgument(locale.parameterPage)
+            executeRegisterTMAction { tmSender, args ->
+                commandTasks.history(tmSender,
+                    checkedCreator = Creator.Console,
+                    requestedPage = args[0] as Int
+                )
+            }
+        }
+
+        // /ticket history [Page]
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordHistory) {
+                withPermission("ticketmanager.command.history.all")
+            }
+            integerArgument(locale.parameterPage)
+            executeRegisterTMAction { tmSender, args ->
+                commandTasks.history(tmSender,
+                    checkedCreator = tmSender.asCreator(),
+                    requestedPage = args[0] as Int
+                )
+            }
+        }
+
+        // /ticket history [User]
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordHistory) {
+                withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
+            }
+            argument(CustomArgument(OfflinePlayerArgument(locale.parameterUser)) {
+                if (!it.sender.hasPermission("ticketmanager.command.history.all")
+                    && it.sender.hasPermission("ticketmanager.command.history.own")
+                    && it.input != it.sender.name
+                    ) throw CustomArgumentException.fromAdventureComponent(locale.brigadierOtherHistory.parseMiniMessage())
+                it.currentInput
+            })
+            executeRegisterTMAction { tmSender, args ->
+                commandTasks.history(tmSender,
+                    checkedCreator = (args[0] as OfflinePlayer)
+                        .run(OfflinePlayer::getUniqueId)
+                        .run(Creator::User),
+                    requestedPage = 1
+                )
+            }
+        }
+
+        // /ticket history [User] [Page]
+        commandAPICommand(locale.commandBase) {
+            literalArgument(locale.commandWordHistory) {
+                withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
+            }
+            argument(CustomArgument(OfflinePlayerArgument(locale.parameterUser)) {
+                if (!it.sender.hasPermission("ticketmanager.command.history.all")
+                    && it.sender.hasPermission("ticketmanager.command.history.own")
+                    && it.input != it.sender.name
+                ) throw CustomArgumentException.fromAdventureComponent(locale.brigadierOtherHistory.parseMiniMessage())
+                it.currentInput
             })
             integerArgument(locale.parameterPage)
             executeRegisterTMAction { tmSender, args ->
                 commandTasks.history(tmSender,
-                    checkedCreator = (args[0] as BukkitPlayer).toTMSender().asCreator(),
+                    checkedCreator = (args[0] as OfflinePlayer)
+                        .run(OfflinePlayer::getUniqueId)
+                        .run(Creator::User),
                     requestedPage = args[1] as Int
                 )
             }
@@ -721,12 +859,12 @@ class CommandAPIRunner {
                     return@CustomArgument SearchConstraints(requestedPage = 1) // This prevents random check at beginning
 
                 // Temp variables to assign
-                var creator: Option<TicketCreator>? = null
-                var assigned: Option<TicketAssignmentType>? = null
+                var creator: Option<Creator>? = null
+                var assigned: Option<Assignment>? = null
                 var priority: Option<Ticket.Priority>? = null
                 var status: Option<Ticket.Status>? = null
-                var closedBy: Option<TicketCreator>? = null
-                var lastClosedBy: Option<TicketCreator>? = null
+                var closedBy: Option<Creator>? = null
+                var lastClosedBy: Option<Creator>? = null
                 var world: Option<String>? = null
                 var creationTime: Option<Long>? = null
                 var keywords: Option<List<String>>? = null
@@ -738,44 +876,71 @@ class CommandAPIRunner {
                     .findAll(info.currentInput)
                     .map(MatchResult::value)
                     .map { it.split(" ", limit = 3) }
-                    .map { Triple(it[0], it[1], it[2]) }
                     .forEach { (keyword, symbol, value) ->
                         when (keyword) {
                             locale.searchCreator -> creator = when (symbol) {
                                 "=" -> Option(SCSymbol.EQUALS, value.attemptNameToTicketCreator())
                                 "!=" -> Option(SCSymbol.NOT_EQUALS, value.attemptNameToTicketCreator())
-                                else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Please use = or !=")
+                                else -> throw CustomArgumentException
+                                    .fromAdventureComponent(locale.brigadierSearchBadSymbol1.parseMiniMessage(
+                                        "symbol" templated symbol,
+                                        "keyword" templated keyword,
+                                    ))
                             }
                             locale.searchAssigned -> assigned = when (symbol) {
-                                "=" -> Option(SCSymbol.EQUALS, value.attemptToAssignmentType())
-                                "!=" -> Option(SCSymbol.NOT_EQUALS, value.attemptToAssignmentType())
-                                else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Please use = or !=")
+                                "=" -> Option(SCSymbol.EQUALS, value.searchToAssignment())
+                                "!=" -> Option(SCSymbol.NOT_EQUALS, value.searchToAssignment())
+                                else -> throw CustomArgumentException
+                                    .fromAdventureComponent(locale.brigadierSearchBadSymbol1.parseMiniMessage(
+                                        "symbol" templated symbol,
+                                        "keyword" templated keyword,
+                                    ))
                             }
                             locale.searchLastClosedBy -> lastClosedBy = when (symbol) {
                                 "=" -> Option(SCSymbol.EQUALS, value.attemptNameToTicketCreator())
                                 "!=" -> Option(SCSymbol.NOT_EQUALS, value.attemptNameToTicketCreator())
-                                else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Please use = or !=")
+                                else -> throw CustomArgumentException
+                                    .fromAdventureComponent(locale.brigadierSearchBadSymbol1.parseMiniMessage(
+                                        "symbol" templated symbol,
+                                        "keyword" templated keyword,
+                                    ))
                             }
                             locale.searchClosedBy -> closedBy = when (symbol) {
                                 "=" -> Option(SCSymbol.EQUALS, value.attemptNameToTicketCreator())
                                 "!=" -> Option(SCSymbol.NOT_EQUALS, value.attemptNameToTicketCreator())
-                                else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Please use = or !=")
+                                else -> throw CustomArgumentException
+                                    .fromAdventureComponent(locale.brigadierSearchBadSymbol1.parseMiniMessage(
+                                        "symbol" templated symbol,
+                                        "keyword" templated keyword,
+                                    ))
                             }
                             locale.searchWorld -> world = when (symbol) {
                                 "=" -> Option(SCSymbol.EQUALS, value)
                                 "!=" -> Option(SCSymbol.NOT_EQUALS, value)
-                                else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Please use = or !=")
+                                else -> throw CustomArgumentException
+                                    .fromAdventureComponent(locale.brigadierSearchBadSymbol1.parseMiniMessage(
+                                        "symbol" templated symbol,
+                                        "keyword" templated keyword,
+                                    ))
                             }
                             locale.searchStatus -> {
                                 val ticketStatus = when (value) {
                                     locale.statusOpen -> Ticket.Status.OPEN
                                     locale.statusClosed -> Ticket.Status.CLOSED
-                                    else -> throw CustomArgumentException.fromString("Invalid status type!")
+                                    else -> throw CustomArgumentException.fromAdventureComponent(locale.brigadierSearchBadStatus.parseMiniMessage(
+                                        "status" templated value,
+                                        "open" templated Ticket.Status.OPEN.name,
+                                        "closed" templated Ticket.Status.CLOSED.name,
+                                    ))
                                 }
                                 status = when (symbol) {
                                     "=" -> Option(SCSymbol.EQUALS, ticketStatus)
                                     "!=" -> Option(SCSymbol.NOT_EQUALS, ticketStatus)
-                                    else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Please use = or !=")
+                                    else -> throw CustomArgumentException
+                                        .fromAdventureComponent(locale.brigadierSearchBadSymbol1.parseMiniMessage(
+                                            "symbol" templated symbol,
+                                            "keyword" templated keyword,
+                                        ))
                                 }
                             }
                             locale.searchPriority -> priority = when (symbol) {
@@ -783,14 +948,22 @@ class CommandAPIRunner {
                                     "!=" -> Option(SCSymbol.NOT_EQUALS, numberOrWordToPriority(value))
                                     "<" -> Option(SCSymbol.LESS_THAN, numberOrWordToPriority(value))
                                     ">" -> Option(SCSymbol.GREATER_THAN, numberOrWordToPriority(value))
-                                    else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Valid types are: =, !=, <, or >")
+                                    else -> throw CustomArgumentException
+                                        .fromAdventureComponent(locale.brigadierSearchBadSymbol2.parseMiniMessage(
+                                            "symbol" templated symbol,
+                                            "keyword" templated keyword,
+                                        ))
                                 }
                             locale.searchKeywords -> {
                                 val foundSearches = value.split(" || ")
                                 keywords = when (symbol) {
                                     "=" -> Option(SCSymbol.EQUALS, foundSearches)
                                     "!=" -> Option(SCSymbol.NOT_EQUALS, foundSearches)
-                                    else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Please use = or !=")
+                                    else -> throw CustomArgumentException
+                                        .fromAdventureComponent(locale.brigadierSearchBadSymbol1.parseMiniMessage(
+                                            "symbol" templated symbol,
+                                            "keyword" templated keyword,
+                                        ))
                                 }
                             }
                             locale.searchTime -> {
@@ -802,12 +975,19 @@ class CommandAPIRunner {
                                 creationTime = when (symbol) {
                                     "<" -> Option(SCSymbol.LESS_THAN, epochTime)
                                     ">" -> Option(SCSymbol.GREATER_THAN, epochTime)
-                                    else -> throw CustomArgumentException.fromString("$symbol is not a valid symbol for keyword $keyword! Please use < or >")
+                                    else -> throw CustomArgumentException
+                                        .fromAdventureComponent(locale.brigadierSearchBadSymbol3.parseMiniMessage(
+                                            "symbol" templated symbol,
+                                            "keyword" templated keyword,
+                                        ))
                                 }
                             }
                             locale.searchPage -> page = value.toIntOrNull()
-                                ?: throw CustomArgumentException.fromString("Invalid page")
-                            else -> throw CustomArgumentException.fromString("Invalid search constraint: $keyword")
+                                ?: throw CustomArgumentException.fromAdventureComponent(locale.brigadierBadPageNumber.parseMiniMessage())
+                            else -> throw CustomArgumentException
+                                .fromAdventureComponent(locale.brigadierBadSearchConstraint.parseMiniMessage(
+                                    "keyword" templated keyword
+                                ))
                         }
                     }
 
@@ -840,7 +1020,9 @@ class CommandAPIRunner {
 
                             locale.searchAssigned ->
                                 if (curArgsSet.size == 3)
-                                    TMPlugin.lpGroupNames.map { "::$it" } + platform.getOnlineSeenPlayerNames(args.sender.toTMSender()) + listOf(locale.consoleName, locale.miscNobody)
+                                    listOf(locale.consoleName, locale.miscNobody, locale.parameterLiteralPlayer, locale.parameterLiteralGroup, locale.parameterLiteralPhrase)
+                                else if (curArgsSet.size > 3 && curArgsSet[2] == locale.parameterLiteralPhrase)
+                                    listOf("${locale.parameterLiteralPhrase}...", "&&")
                                 else listOf("&&")
 
                             locale.searchPriority ->
@@ -908,12 +1090,10 @@ class CommandAPIRunner {
                 )
             }
         }
-
-    //TODO REWRITE ALL CUSTOM ARGUMENT EXCEPTIONS USING KYORI MINIMESSAGE
     }
 
     private fun BukkitCommandSender.toTMSender(): CommandSender.Active = when (this) {
-        is BukkitConsole -> PaperConsole(locale, configState.proxyServerName)
+        is BukkitConsole -> PaperConsole(configState.proxyServerName)
         is BukkitPlayer-> PaperPlayer(this, configState.proxyServerName)
         else -> throw Exception("Unsupported Entity Type!")
     }
@@ -963,17 +1143,28 @@ class CommandAPIRunner {
 
 
 
-    private fun String.attemptNameToTicketCreator(): TicketCreator {
-        return if (this == locale.consoleName) TicketCreator.Console
+    private fun String.attemptNameToTicketCreator(): Creator {
+        return if (this == locale.consoleName) Creator.Console
         else platform.offlinePlayerNameToUUIDOrNull(this)
-            ?.run(TicketCreator::User)
-            ?: TicketCreator.UUIDNoMatch
+            ?.run(Creator::User)
+            ?: Creator.UUIDNoMatch
     }
 
-    private fun String.attemptToAssignmentType(): TicketAssignmentType = when (this) {
-        locale.miscNobody -> TicketAssignmentType.Nobody
-        locale.consoleName -> TicketAssignmentType.Console
-        else -> TicketAssignmentType.Other(this)
+    private fun String.searchToAssignment(): Assignment {
+        val (type, value) = this.split(" ", limit = 2)
+            .let { it[0] to it.getOrNull(1) }
+
+        return when (type) {
+            locale.miscNobody -> Assignment.Nobody
+            locale.consoleName -> Assignment.Console
+            locale.parameterLiteralPlayer -> Assignment.Player(value!!)
+            locale.parameterLiteralGroup -> Assignment.PermissionGroup(value!!)
+            locale.parameterLiteralPhrase -> Assignment.Phrase(value!!)
+            else -> throw CustomArgumentException
+                .fromAdventureComponent(locale.brigadierInvalidAssignment.parseMiniMessage(
+                    "assignment" templated (value ?: "???")
+                ))
+        }
     }
 
     private fun timeUnitToMultiplier(timeUnit: String) = when (timeUnit) {
@@ -983,7 +1174,10 @@ class CommandAPIRunner {
         locale.timeDays.trimStart() -> 86400L
         locale.timeWeeks.trimStart() -> 604800L
         locale.timeYears.trimStart() -> 31556952L
-        else -> throw CustomArgumentException.fromString("Invalid time unit: $timeUnit")
+        else -> throw CustomArgumentException
+            .fromAdventureComponent(locale.brigadierInvalidTimeUnit.parseMiniMessage(
+                "timeunit" templated timeUnit
+            ))
     }
 
     private fun numberOrWordToPriority(input: String): Ticket.Priority = when (input) {
@@ -992,18 +1186,11 @@ class CommandAPIRunner {
         "3", locale.priorityNormal -> Ticket.Priority.NORMAL
         "4", locale.priorityHigh -> Ticket.Priority.HIGH
         "5", locale.priorityHighest -> Ticket.Priority.HIGHEST
-        else -> throw CustomArgumentException.fromString("$input is not a valid priority!")
+        else -> throw CustomArgumentException
+            .fromAdventureComponent(locale.brigadierInvalidPriority.parseMiniMessage(
+                "priority" templated input
+            ))
     }
+
+    private suspend fun awaitTicket(thing: Any) = (thing as CompletableFuture<*>).asDeferredThenAwait() as Ticket
 }
-
-fun BukkitCommandSender.toTicketCreator(): TicketCreator = when (this) {
-    is BukkitConsole -> TicketCreator.Console
-    is BukkitPlayer -> TicketCreator.User(uniqueId)
-    else -> throw Exception("Unsupported Entity Type!")
-}
-
-
-// /ticket history [User] [Page]
-
-// Ones to-do:
-// /ticket reload

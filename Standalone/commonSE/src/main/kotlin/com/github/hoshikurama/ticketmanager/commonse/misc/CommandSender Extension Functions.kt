@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.commonse.misc
 
-import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import java.util.*
 

@@ -75,6 +75,11 @@ class TMLocale(
     val parameterConstraints: String,
     val parameterNewSearchIndicator: String,
 
+    // Literals for Assignment suggestions
+    val parameterLiteralPlayer: String,
+    val parameterLiteralGroup: String,
+    val parameterLiteralPhrase: String,
+
     // Console Logging Messages
     val consoleErrorBadDiscord: String,
     val consoleInitializationComplete: String,
@@ -83,6 +88,8 @@ class TMLocale(
     val consoleErrorScheduledNotifications: String,
     val consoleErrorCommandExecution: String,
     val consoleErrorDBConversion: String,
+    val consoleDatabaseLoaded: String,
+    val consoleDatabaseWaitStart: String,
 
 // Visual Player-Modifiable Values
     // Priority
@@ -125,7 +132,7 @@ class TMLocale(
     val pageInactiveBack: String,
     val pageFormat: String,
 
-    // Warnings
+    // Warnings TODO FIGURE OUT WHAT IS STILL NEEDED
     val warningsLocked: String,
     val warningsNoPermission: String,
     val warningsInvalidID: String,
@@ -148,6 +155,20 @@ class TMLocale(
     val brigadierInvalidID: String,
     val brigadierTicketAlreadyClosed: String,
     val brigadierTicketAlreadyOpen: String,
+    val brigadierConsoleLocTP: String,
+    val brigadierNoTPSameServer: String,
+    val brigadierNoTPDiffServer: String,
+    val brigadierNoTPProxyDisabled: String,
+    val brigadierOtherHistory: String,
+    val brigadierSearchBadSymbol1: String,
+    val brigadierSearchBadStatus: String,
+    val brigadierSearchBadSymbol2: String,
+    val brigadierSearchBadSymbol3: String,
+    val brigadierBadPageNumber: String,
+    val brigadierBadSearchConstraint: String,
+    val brigadierInvalidAssignment: String,
+    val brigadierInvalidTimeUnit: String,
+    val brigadierInvalidPriority: String,
 
     // View and Deep View
     val viewHeader: String,
@@ -377,6 +398,12 @@ class TMLocale(
                 consoleErrorScheduledNotifications = core["ConsoleError_ScheduledNotifications"]!!,
                 consoleErrorCommandExecution = core["ConsoleError_CommandExecution"]!!,
                 consoleErrorDBConversion = core["ConsoleError_DatabaseConversion"]!!,
+                parameterNewSearchIndicator = core["Parameter_NewSearch_Indicator"]!!,
+                parameterLiteralPlayer = core["Parameter_Literal_Player"]!!,
+                parameterLiteralGroup = core["Parameter_Literal_PermissionGroup"]!!,
+                parameterLiteralPhrase = core["Parameter_Literal_Phrase"]!!,
+                consoleDatabaseLoaded = core["Console_DatabaseLoaded"]!!,
+                consoleDatabaseWaitStart = core["Console_WaitingForDatabase"]!!,
                 // Visual Aspects
                 priorityLowest = visuals["Priority_Lowest"]!!,
                 priorityLow = visuals["Priority_Low"]!!,
@@ -517,11 +544,24 @@ class TMLocale(
                 notifyTicketSetPriorityEvent = readAndPrime("Notify_Event_SetPriority")!!,
                 notifyPluginUpdate = readAndPrime("Notify_Event_PluginUpdate")!!,
                 notifyProxyUpdate = readAndPrime("Notify_Event_ProxyUpdate")!!,
-                brigadierNotYourTicket = core["Brigadier_NotYourTicket"]!!,
-                brigadierInvalidID = core["Brigadier_InvalidID"]!!,
-                brigadierTicketAlreadyClosed = core["Brigadier_TicketAlreadyClosed"]!!,
-                brigadierTicketAlreadyOpen = core["Brigadier_TicketAlreadyOpen"]!!,
-                parameterNewSearchIndicator = core["Parameter_NewSearch_Indicator"]!!,
+                brigadierNotYourTicket = readAndPrime("Brigadier_NotYourTicket")!!,
+                brigadierInvalidID = readAndPrime("Brigadier_InvalidID")!!,
+                brigadierTicketAlreadyClosed = readAndPrime("Brigadier_TicketAlreadyClosed")!!,
+                brigadierTicketAlreadyOpen = readAndPrime("Brigadier_TicketAlreadyOpen")!!,
+                brigadierConsoleLocTP = readAndPrime("Brigadier_ConsoleLocationTeleport")!!,
+                brigadierNoTPDiffServer = readAndPrime("Brigadier_NoTeleport_DifferentServer")!!,
+                brigadierNoTPSameServer = readAndPrime("Brigadier_NoTeleport_SameServer")!!,
+                brigadierNoTPProxyDisabled = readAndPrime("Brigadier_NoTeleport_ProxyDisabled")!!,
+                brigadierOtherHistory = readAndPrime("Brigadier_OtherHistory")!!,
+                brigadierSearchBadSymbol1 = readAndPrime("Brigadier_Search_BadSymbol_1")!!,
+                brigadierSearchBadStatus = readAndPrime("Brigadier_Search_BadStatus")!!,
+                brigadierSearchBadSymbol2 = readAndPrime("Brigadier_Search_BadSymbol_2")!!,
+                brigadierSearchBadSymbol3 = readAndPrime("Brigadier_Search_BadSymbol_3")!!,
+                brigadierBadPageNumber = readAndPrime("Brigadier_BadPageNumber")!!,
+                brigadierBadSearchConstraint = readAndPrime("Brigadier_BadSearchConstraint")!!,
+                brigadierInvalidAssignment = readAndPrime("Brigadier_InvalidAssignment")!!,
+                brigadierInvalidTimeUnit = readAndPrime("Brigadier_InvalidTimeUnit")!!,
+                brigadierInvalidPriority = readAndPrime("Brigadier_InvalidPriority")!!,
             )
         }
 
@@ -607,11 +647,12 @@ class TMLocale(
                 consoleErrorScheduledNotifications = internalVersion.consoleErrorScheduledNotifications,
                 consoleErrorCommandExecution = internalVersion.consoleErrorCommandExecution,
                 consoleErrorDBConversion = internalVersion.consoleErrorDBConversion,
-                brigadierNotYourTicket = internalVersion.brigadierNotYourTicket,
-                brigadierInvalidID = internalVersion.brigadierInvalidID,
-                brigadierTicketAlreadyClosed = internalVersion.brigadierTicketAlreadyClosed,
-                brigadierTicketAlreadyOpen = internalVersion.brigadierTicketAlreadyOpen,
                 parameterNewSearchIndicator = internalVersion.parameterNewSearchIndicator,
+                parameterLiteralGroup = internalVersion.parameterLiteralGroup,
+                parameterLiteralPhrase = internalVersion.parameterLiteralPhrase,
+                parameterLiteralPlayer = internalVersion.parameterLiteralPlayer,
+                consoleDatabaseLoaded = internalVersion.consoleDatabaseLoaded,
+                consoleDatabaseWaitStart = internalVersion.consoleDatabaseWaitStart,
                 // Visual Aspects
                 priorityLowest = visuals["Priority_Lowest"] ?: internalVersion.priorityLowest,
                 priorityLow = visuals["Priority_Low"] ?: internalVersion.priorityLow,
@@ -752,6 +793,24 @@ class TMLocale(
                 notifyTicketSetPriorityEvent = readAndPrime("Notify_Event_SetPriority") ?: internalVersion.notifyTicketSetPriorityEvent,
                 notifyPluginUpdate = readAndPrime("Notify_Event_PluginUpdate") ?: internalVersion.notifyPluginUpdate,
                 notifyProxyUpdate = readAndPrime("Notify_Event_ProxyUpdate") ?: internalVersion.notifyProxyUpdate,
+                brigadierNotYourTicket = readAndPrime("Brigadier_NotYourTicket") ?: internalVersion.brigadierNotYourTicket,
+                brigadierInvalidID = readAndPrime("Brigadier_InvalidID") ?: internalVersion.brigadierInvalidID,
+                brigadierTicketAlreadyClosed = readAndPrime("Brigadier_TicketAlreadyClosed") ?: internalVersion.brigadierTicketAlreadyClosed,
+                brigadierTicketAlreadyOpen = readAndPrime("Brigadier_TicketAlreadyOpen") ?: internalVersion.brigadierTicketAlreadyOpen,
+                brigadierConsoleLocTP = readAndPrime("Brigadier_ConsoleLocationTeleport") ?: internalVersion.brigadierConsoleLocTP,
+                brigadierNoTPDiffServer = readAndPrime("Brigadier_NoTeleport_DifferentServer") ?: internalVersion.brigadierNoTPDiffServer,
+                brigadierNoTPSameServer = readAndPrime("Brigadier_NoTeleport_SameServer") ?: internalVersion.brigadierNoTPSameServer,
+                brigadierNoTPProxyDisabled = readAndPrime("Brigadier_NoTeleport_ProxyDisabled") ?: internalVersion.brigadierNoTPProxyDisabled,
+                brigadierOtherHistory = readAndPrime("Brigadier_OtherHistory") ?: internalVersion.brigadierOtherHistory,
+                brigadierSearchBadSymbol1 = readAndPrime("Brigadier_Search_BadSymbol_1") ?: internalVersion.brigadierSearchBadSymbol1,
+                brigadierSearchBadStatus = readAndPrime("Brigadier_Search_BadStatus") ?: internalVersion.brigadierSearchBadStatus,
+                brigadierSearchBadSymbol2 = readAndPrime("Brigadier_Search_BadSymbol_2") ?: internalVersion.brigadierSearchBadSymbol2,
+                brigadierSearchBadSymbol3 = readAndPrime("Brigadier_Search_BadSymbol_3") ?: internalVersion.brigadierSearchBadSymbol3,
+                brigadierBadPageNumber = readAndPrime("Brigadier_BadPageNumber") ?: internalVersion.brigadierBadPageNumber,
+                brigadierBadSearchConstraint = readAndPrime("Brigadier_BadSearchConstraint") ?: internalVersion.brigadierBadSearchConstraint,
+                brigadierInvalidAssignment = readAndPrime("Brigadier_InvalidAssignment") ?: internalVersion.brigadierInvalidAssignment,
+                brigadierInvalidTimeUnit = readAndPrime("Brigadier_InvalidTimeUnit") ?: internalVersion.brigadierInvalidTimeUnit,
+                brigadierInvalidPriority = readAndPrime("Brigadier_InvalidPriority") ?: internalVersion.brigadierInvalidPriority,
             )
         }
     }

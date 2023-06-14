@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.paper
 
+import com.github.hoshikurama.ticketmanager.api.paper.TicketManagerDatabaseRegister
 import com.github.hoshikurama.ticketmanager.common.Proxy2Server
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
@@ -9,8 +10,10 @@ import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
 import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
+import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.misc.ConfigParameters
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.platform.events.EventBuilder
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPIBukkitConfig
 import kotlinx.coroutines.runBlocking
@@ -19,6 +22,7 @@ import org.bstats.charts.SimplePie
 import org.bstats.charts.SingleLineChart
 import org.bukkit.Bukkit
 import org.bukkit.event.Listener
+import org.bukkit.plugin.ServicePriority
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
 import java.io.InputStream
@@ -32,7 +36,8 @@ class TMPluginImpl(
 ) : TMPlugin(
     buildPlatformFunctions = { PlatformFunctionsImpl(paperPlugin, it) },
     buildJoinEvent = { config, platform, locale -> JoinEventImpl(locale, config, platform) },
-    cooldownAfterRemoval = { it.run(Bukkit::getPlayer)?.run(CommandAPI::updateRequirements) }
+    cooldownAfterRemoval = { it.run(Bukkit::getPlayer)?.run(CommandAPI::updateRequirements) },
+    eventBuilder = EventBuilderImpl()
 ) {
 
     init {
@@ -69,22 +74,25 @@ class TMPluginImpl(
         configState: ConfigState,
         joinEvent: TMPlayerJoinEvent,
         lpGroupNames: List<String>,
-        platformFunctions: PlatformFunctions
+        platformFunctions: PlatformFunctions,
+        eventBuilder: EventBuilder
     ) {
-        nonCommandStuff(cooldown, activeLocale, configState, joinEvent, lpGroupNames, platformFunctions)
+        Bukkit.getServicesManager().register(TicketManagerDatabaseRegister::class.java, TicketManagerDatabaseRegister(DatabaseManager), paperPlugin, ServicePriority.Normal)
+        nonCommandRegistrations(cooldown, activeLocale, configState, joinEvent, lpGroupNames, platformFunctions, eventBuilder)
         // Register Commands
         CommandAPI.onLoad(CommandAPIBukkitConfig(paperPlugin))
         CommandAPI.onEnable()
         CommandAPIRunner().generateCommands()
     }
 
-    private fun nonCommandStuff(
+    private fun nonCommandRegistrations(
         cooldown: Cooldown?,
         activeLocale: TMLocale,
         configState: ConfigState,
         joinEvent: TMPlayerJoinEvent,
         lpGroupNames: List<String>,
-        platformFunctions: PlatformFunctions
+        platformFunctions: PlatformFunctions,
+        eventBuilder: EventBuilder,
     ) {
         // Update Command References
         ReloadObjectCommand.cooldown = cooldown
@@ -93,7 +101,7 @@ class TMPluginImpl(
         ReloadObjectCommand.lpGroupNames = lpGroupNames
         ReloadObjectCommand.platform = platformFunctions
         ReloadObjectCommand.commandTasks = CommandTasks(
-            eventBuilder = EventBuilderImpl(),
+            eventBuilder = eventBuilder,
             configState = configState,
             platform = platformFunctions,
             locale = activeLocale,
@@ -121,16 +129,19 @@ class TMPluginImpl(
         configState: ConfigState,
         joinEvent: TMPlayerJoinEvent,
         lpGroupNames: List<String>,
-        platformFunctions: PlatformFunctions
+        platformFunctions: PlatformFunctions,
+        eventBuilder: EventBuilder,
     ) {
+    // Unregistrations...
         // Unregister Player join event
         BukkitPlayerJoinEvent.getHandlerList().unregister(paperPlugin)
-    // TODO REGISTER SERVICE
+
         // Unregister proxy events
         paperPlugin.server.messenger.unregisterIncomingPluginChannel(paperPlugin)
         paperPlugin.server.messenger.unregisterOutgoingPluginChannel(paperPlugin)
 
-        nonCommandStuff(cooldown, activeLocale, configState, joinEvent, lpGroupNames, platformFunctions)
+    // Registrations
+        nonCommandRegistrations(cooldown, activeLocale, configState, joinEvent, lpGroupNames, platformFunctions, eventBuilder)
     }
 
     override fun configExists(): Boolean {
@@ -198,5 +209,4 @@ class TMPluginImpl(
         }
         writer.close()
     }
-
 }

@@ -1,10 +1,10 @@
 package com.github.hoshikurama.ticketmanager.commonse.commands
 
-import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.database.DBResult
-import com.github.hoshikurama.ticketmanager.api.database.Option
-import com.github.hoshikurama.ticketmanager.api.database.SearchConstraints
-import com.github.hoshikurama.ticketmanager.api.ticket.*
+import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.common.database.DBResult
+import com.github.hoshikurama.ticketmanager.api.common.database.Option
+import com.github.hoshikurama.ticketmanager.api.common.database.SearchConstraints
+import com.github.hoshikurama.ticketmanager.api.common.ticket.*
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
 import com.github.hoshikurama.ticketmanager.commonse.TMCoroutine
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
@@ -21,7 +21,6 @@ import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asDeferredThenAwait
 import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.event.ClickEvent
@@ -71,23 +70,18 @@ class CommandTasks(
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).CloseWithComment(comment)
 
         // Call TicketModificationEventAsync
-        launchTicketModificationEventAsync(sender, ticket.creator, action, silent)
+        callTicketModificationEventAsync(sender, ticket.creator, action, silent)
 
         // Run all database calls and event
         TMCoroutine.launchSupervised {
-            listOf(
-                launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) },
-                launch { DatabaseManager.activeDatabase.setStatusAsync(ticket.id, Ticket.Status.CLOSED) },
-                launch {
-                    val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
-                    if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-                        DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
-                    else CompletableFuture.completedFuture(null)
-                }
-            ).joinAll()
-
-            // Calls DatabaseWriteCompleteEventAsync
-            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticket.id).callEventTM()
+            launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) }
+            launch { DatabaseManager.activeDatabase.setStatusAsync(ticket.id, Ticket.Status.CLOSED) }
+            launch {
+                val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
+                if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
+                    DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
+                else CompletableFuture.completedFuture(null)
+            }
         }
 
         return MessageNotification.CloseWithComment.newActive(
@@ -109,23 +103,18 @@ class CommandTasks(
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).CloseWithoutComment()
 
         // Call TicketModificationEventAsync
-        launchTicketModificationEventAsync(sender, ticket.creator, action, silent)
+        callTicketModificationEventAsync(sender, ticket.creator, action, silent)
 
         // Run all database calls and event
         TMCoroutine.launchSupervised {
-            listOf(
-                launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) },
-                launch { DatabaseManager.activeDatabase.setStatusAsync(ticket.id, Ticket.Status.CLOSED) },
-                launch {
-                    val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
-                    if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-                        DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
-                    else CompletableFuture.completedFuture(null)
-                }
-            ).joinAll()
-
-            // Calls DatabaseWriteCompleteEventAsync
-            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticket.id).callEventTM()
+            launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) }
+            launch { DatabaseManager.activeDatabase.setStatusAsync(ticket.id, Ticket.Status.CLOSED) }
+            launch {
+                val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
+                if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
+                    DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
+                else CompletableFuture.completedFuture(null)
+            }
         }
 
         return MessageNotification.CloseWithoutComment.newActive(
@@ -147,16 +136,11 @@ class CommandTasks(
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).MassClose()
 
         // Launch Ticket Modification Event
-        TMCoroutine.launchGlobal {
-            eventBuilder.buildTicketModificationEvent(sender, Creator.DummyCreator, action, silent).callEventTM()
-        }
+        callTicketModificationEventAsync(sender, Creator.DummyCreator, action, silent)
 
         TMCoroutine.launchSupervised {
             DatabaseManager.activeDatabase
                 .massCloseTicketsAsync(lowerBound, upperBound, sender.asCreator(), sender.getLocAsTicketLoc())
-                .join()
-
-            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticketID = -1).callEventTM()
         }
 
         return MessageNotification.MassClose.newActive(
@@ -177,20 +161,16 @@ class CommandTasks(
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Comment(comment)
 
         // Launch Ticket Modification Event
-        launchTicketModificationEventAsync(sender, ticket.creator, action, silent)
+        callTicketModificationEventAsync(sender, ticket.creator, action, silent)
 
         // Database Stuff + Event
         TMCoroutine.launchSupervised {
-            listOf(
-                launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) },
-                launch {
-                    val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
-                    if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-                        DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
-                },
-            ).joinAll()
-
-            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticket.id)
+            launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) }
+            launch {
+                val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
+                if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
+                    DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
+            }
         }
 
         return MessageNotification.Comment.newActive(
@@ -223,11 +203,7 @@ class CommandTasks(
         val id = DatabaseManager.activeDatabase.insertNewTicketAsync(initTicket).asDeferredThenAwait()
         GlobalState.ticketCounter.increment()
 
-        // Launch both events simultaneously
-        TMCoroutine.launchGlobal {
-            launch { eventBuilder.buildTicketModificationEvent(sender, initTicket.creator, initTicket.actions[0], false).callEventTM() }
-            launch { eventBuilder.buildDatabaseWriteCompleteEvent(sender, initTicket.actions[0], id).callEventTM() }
-        }
+        callTicketModificationEventAsync(sender, initTicket.creator, initTicket.actions[0], false)
 
         return MessageNotification.Create.newActive(
             isSilent = false,
@@ -494,22 +470,17 @@ class CommandTasks(
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Reopen()
 
         // launch event
-        launchTicketModificationEventAsync(sender, ticket.creator, action, silent)
+        callTicketModificationEventAsync(sender, ticket.creator, action, silent)
 
         // Write to database
         TMCoroutine.launchSupervised {
-            listOf(
-                launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) },
-                launch { DatabaseManager.activeDatabase.setStatusAsync(ticket.id, Ticket.Status.OPEN) },
-                launch {
-                    val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
-                    if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-                        DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
-                },
-            ).joinAll()
-
-            // Send event
-            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticket.id).callEventTM()
+            launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) }
+            launch { DatabaseManager.activeDatabase.setStatusAsync(ticket.id, Ticket.Status.OPEN) }
+            launch {
+                val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
+                if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
+                    DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
+            }
         }
 
         return MessageNotification.Reopen.newActive(silent, sender, ticket.creator, ticket.id)
@@ -562,9 +533,12 @@ class CommandTasks(
                 }
 
                 if (pageCount > 1) {
-                    append(buildPageComponent(returnedPage, pageCount,
-                        locale.run { "/$commandBase $commandWordHistory $targetName " }
-                    ))
+                    val command =
+                        if (sender.asCreator() == checkedCreator)
+                            locale.run { "/$commandBase $commandWordHistory " }
+                        else locale.run { "/$commandBase $commandWordHistory $targetName " }
+
+                    append(buildPageComponent(returnedPage, pageCount, command))
                 }
             }
         }
@@ -652,17 +626,12 @@ class CommandTasks(
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).SetPriority(priority)
 
         // Call event
-        launchTicketModificationEventAsync(sender, ticket.creator, action, silent)
+        callTicketModificationEventAsync(sender, ticket.creator, action, silent)
 
         // Database calls
         TMCoroutine.launchSupervised {
-            listOf(
-                launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) },
-                launch { DatabaseManager.activeDatabase.setPriorityAsync(ticket.id, priority) },
-            ).joinAll()
-
-            // Call event
-            eventBuilder.buildDatabaseWriteCompleteEvent(sender, action, ticket.id)
+            launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) }
+            launch { DatabaseManager.activeDatabase.setPriorityAsync(ticket.id, priority) }
         }
 
         return MessageNotification.SetPriority.newActive(silent, sender, ticket.creator, ticket.id, priority)
@@ -861,17 +830,12 @@ class CommandTasks(
         val insertedAction = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Assign(assignment)
 
         // Launch TicketModificationEventAsync
-        launchTicketModificationEventAsync(sender, Creator, insertedAction, silent)
+        callTicketModificationEventAsync(sender, Creator, insertedAction, silent)
 
         // Writes to database
         TMCoroutine.launchSupervised {
-            listOf(
-                launch { DatabaseManager.activeDatabase.setAssignmentAsync(ticketID, assignment) },
-                launch { DatabaseManager.activeDatabase.insertActionAsync(ticketID, insertedAction) },
-            ).joinAll()
-
-            // Calls DatabaseWriteCompleteEventAsync
-            eventBuilder.buildDatabaseWriteCompleteEvent(sender, insertedAction, ticketID).callEventTM()
+            launch { DatabaseManager.activeDatabase.setAssignmentAsync(ticketID, assignment) }
+            launch { DatabaseManager.activeDatabase.insertActionAsync(ticketID, insertedAction) }
         }
 
         return MessageNotification.Assign.newActive(
@@ -901,7 +865,7 @@ class CommandTasks(
 
         val locationString = ticket.actions[0].location.let {
             if (!configState.enableProxyMode && it.server != null)
-                it.toString()
+                it.stringFormat()
                     .split(" ")
                     .drop(1)
                     .joinToString(" ")
@@ -919,14 +883,14 @@ class CommandTasks(
         append(locale.viewSep2.parseMiniMessage())
     }
 
-    private fun launchTicketModificationEventAsync(
+    private fun callTicketModificationEventAsync(
         commandSender: CommandSender.Active,
         Creator: Creator,
         action: Action,
         isSilent: Boolean,
     ) {
         TMCoroutine.launchGlobal {
-            eventBuilder.buildTicketModificationEvent(commandSender, Creator, action, isSilent).callEventTM()
+            eventBuilder.buildTicketModifyEvent(commandSender, Creator, action, isSilent).callEventTM()
         }
     }
 
@@ -1029,3 +993,7 @@ private fun trimCommentToSize(comment: String, preSize: Int, maxSize: Int): Stri
     else comment
 }
 
+private fun ActionLocation.stringFormat() = when (this) {
+    is ActionLocation.FromPlayer -> "${server ?: ""} $world $x $y $z".trimStart()
+    is ActionLocation.FromConsole -> "${server ?: ""}    ".trimStart()
+}

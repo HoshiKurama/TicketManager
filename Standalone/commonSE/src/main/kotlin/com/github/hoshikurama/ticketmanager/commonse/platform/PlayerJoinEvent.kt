@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse.platform
 
-import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
+import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Assignment
 import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
@@ -97,7 +97,6 @@ abstract class PlayerJoinEvent(
             }
         } catch (e: Exception) {
             pushErrors(platformFunctions, configState, locale, e) { "An error occurred when a player joined!" }
-            //TODO: LOCALIZE THIS EVENTUALLY
         }
     }
 }

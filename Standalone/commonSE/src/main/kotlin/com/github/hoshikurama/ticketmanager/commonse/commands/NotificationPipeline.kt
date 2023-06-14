@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse.commands
 
-import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.ticket.Creator
+import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Creator
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.commonse.TMCoroutine
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale

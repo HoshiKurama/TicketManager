@@ -1,9 +1,9 @@
 package com.github.hoshikurama.ticketmanager.commonse.commands
 
-import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
-import com.github.hoshikurama.ticketmanager.api.ticket.Creator
-import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Assignment
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Creator
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Ticket
 import com.github.hoshikurama.ticketmanager.common.randServerIdentifier
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.misc.*

@@ -1,9 +1,9 @@
 package com.github.hoshikurama.ticketmanager.commonse.h2database
 
-import com.github.hoshikurama.ticketmanager.api.database.AsyncDatabase
-import com.github.hoshikurama.ticketmanager.api.database.DBResult
-import com.github.hoshikurama.ticketmanager.api.database.SearchConstraints
-import com.github.hoshikurama.ticketmanager.api.ticket.*
+import com.github.hoshikurama.ticketmanager.api.common.database.AsyncDatabase
+import com.github.hoshikurama.ticketmanager.api.common.database.DBResult
+import com.github.hoshikurama.ticketmanager.api.common.database.SearchConstraints
+import com.github.hoshikurama.ticketmanager.api.common.ticket.*
 import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asParallelStream
 import com.github.hoshikurama.ticketmanager.commonse.utilities.mapNotNull
@@ -127,10 +127,6 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
 
         return CompletableFuture.completedFuture(newID)
     }
-
-     private fun getTicketsAsync(ids: List<Long>): List<Ticket> {
-         return ids.asParallelStream().mapNotNull(ticketMap::get).toList()
-     }
 
     override fun getTicketOrNullAsync(id: Long): CompletableFuture<Ticket?> {
         return CompletableFuture.completedFuture(ticketMap[id])

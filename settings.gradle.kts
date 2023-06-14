@@ -36,7 +36,3 @@ pluginManagement {
 	}
 }
  */
-include("Standalone:Paper:ShadedDependencies")
-findProject(":Standalone:Paper:ShadedDependencies")?.name = "ShadedDependencies"
-include("Standalone:commonSE:ShadedDependencies")
-findProject(":Standalone:commonSE:ShadedDependencies")?.name = "ShadedDependencies"

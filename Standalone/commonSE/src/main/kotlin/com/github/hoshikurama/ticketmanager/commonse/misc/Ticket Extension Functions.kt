@@ -1,8 +1,8 @@
 package com.github.hoshikurama.ticketmanager.commonse.misc
 
-import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
-import com.github.hoshikurama.ticketmanager.api.ticket.Creator
-import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Assignment
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Creator
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Ticket
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import java.util.*
 
@@ -88,7 +88,7 @@ fun Assignment.toLocalizedName(activeLocale: TMLocale) = when (this) {
 }
 
 
-fun AssignmentString.asAssignmentType(): Assignment { //TODO IF NOT USED ELSEWHERE, MAYBE MOVE AROUND
+fun AssignmentString.asAssignmentType(): Assignment {
     val split = value.split(".", limit = 2)
     return when (split[0]) {
         ASSIGNMENT_CONSOLE -> Assignment.Console
