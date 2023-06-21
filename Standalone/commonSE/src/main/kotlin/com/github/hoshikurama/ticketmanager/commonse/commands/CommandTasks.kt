@@ -869,7 +869,7 @@ class CommandTasks(
                     .split(" ")
                     .drop(1)
                     .joinToString(" ")
-            else it.toString()
+            else it.stringFormat()
         }
         locale.viewLocation.parseMiniMessage("location" templated locationString)
             .let {

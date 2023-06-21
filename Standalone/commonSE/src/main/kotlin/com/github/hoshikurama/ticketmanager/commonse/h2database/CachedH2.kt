@@ -513,7 +513,7 @@ private fun Row.toTicket(): Ticket {
     )
 }
 
-private fun Action.getMessage(): String? = when (this) {
+internal fun Action.getMessage(): String? = when (this) {
     is ActionInfo.Assign -> assignment.asString()
     is ActionInfo.CloseWithComment -> comment
     is ActionInfo.Open -> message
@@ -522,11 +522,11 @@ private fun Action.getMessage(): String? = when (this) {
     else -> null
 }
 
-private enum class ActionAsEnum {
+internal enum class ActionAsEnum {
     ASSIGN, CLOSE, CLOSE_WITH_COMMENT, COMMENT, OPEN, REOPEN, SET_PRIORITY, MASS_CLOSE
 }
 
-private fun Action.getEnumForDB(): ActionAsEnum = when (this) {
+internal fun Action.getEnumForDB(): ActionAsEnum = when (this) {
     is ActionInfo.Assign -> ActionAsEnum.ASSIGN
     is ActionInfo.CloseWithComment -> ActionAsEnum.CLOSE_WITH_COMMENT
     is ActionInfo.CloseWithoutComment -> ActionAsEnum.CLOSE
