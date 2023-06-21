@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
-import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
-import com.github.hoshikurama.ticketmanager.api.ticket.Creator
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Assignment
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Creator
 import com.github.hoshikurama.ticketmanager.common.*
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
@@ -15,6 +15,7 @@ import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.commonse.misc.templated
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
+import com.github.hoshikurama.ticketmanager.commonse.platform.events.EventBuilder
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asDeferredThenAwait
 import kotlinx.coroutines.*
 import net.luckperms.api.LuckPermsProvider
@@ -26,13 +27,11 @@ import kotlin.io.path.exists
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-//TODO MESSAGE CONSOLE WITH WHEN PLUGIN IS WAITING AND HAS FOUND DATABASE
-//TODO REWRITE WAITING FOR DATABASE AND FOUND MESSAGES. Make sure the initialization complete msg runs at the right time
-
 abstract class TMPlugin(
     private val buildPlatformFunctions: (String?) -> PlatformFunctions,
     private val buildJoinEvent: (ConfigState, PlatformFunctions, TMLocale) -> PlayerJoinEvent,
     private val cooldownAfterRemoval: suspend (UUID) -> Unit,
+    private val eventBuilder: EventBuilder
 ) {
     companion object {
         @Volatile
@@ -53,6 +52,7 @@ abstract class TMPlugin(
         joinEvent: PlayerJoinEvent,
         lpGroupNames: List<String>,
         platformFunctions: PlatformFunctions,
+        eventBuilder: EventBuilder,
     )
     abstract fun platformUpdateOnReload(
         cooldown: Cooldown?,
@@ -61,6 +61,7 @@ abstract class TMPlugin(
         joinEvent: PlayerJoinEvent,
         lpGroupNames: List<String>,
         platformFunctions: PlatformFunctions,
+        eventBuilder: EventBuilder,
     )
 
     // Config Functions
@@ -87,10 +88,10 @@ abstract class TMPlugin(
         val (cooldown, activeLocale, configState, joinEvent, platformFunctions) = coreItems
 
         // Database Handling
-        println("Waiting for Database") //TODO PROPERLY IMPLEMENT
+        println(activeLocale.consoleDatabaseWaitStart)
         DatabaseManager.register(defaultDatabase) { CachedH2(config.pluginFolderPath.absolutePathString()) }
         TMCoroutine.launchGlobal { loadDatabase(configState, config, platformFunctions, errors, activeLocale) {
-            println("Database Selected!") //TODO PROPERLY IMPLEMENT
+            platformFunctions.pushInfoToConsole(activeLocale.consoleDatabaseLoaded)
             GlobalState.databaseSelected = true
         } }
 
@@ -98,11 +99,12 @@ abstract class TMPlugin(
 
         platformRunSyncAfterCoreLaunch(
             cooldown = cooldown,
-            joinEvent = joinEvent,
-            configState = configState,
             activeLocale = activeLocale,
-            platformFunctions = platformFunctions,
+            configState = configState,
+            joinEvent = joinEvent,
             lpGroupNames = lpGroupNames,
+            platformFunctions = platformFunctions,
+            eventBuilder = eventBuilder,
         )
 
         // Startup is now async...
@@ -147,7 +149,8 @@ abstract class TMPlugin(
             configState = configState,
             activeLocale = activeLocale,
             platformFunctions = platformFunctions,
-            lpGroupNames = lpGroupNamesAsync.await()
+            eventBuilder = eventBuilder,
+            lpGroupNames = lpGroupNamesAsync.await(),
         )
         lpGroupNames = lpGroupNamesAsync.await()
         performRemainingTasksAsync(activeLocale, configState, platformFunctions, errors)
@@ -165,6 +168,7 @@ abstract class TMPlugin(
         // Config file...
         val configGenerationRequired = !configExists()
         if (configGenerationRequired) generateConfig()
+        reloadConfig()
         val config = readConfig()
 
         kotlin.run {

@@ -1,9 +1,9 @@
 package com.github.hoshikurama.ticketmanager.commonse.h2database
 
-import com.github.hoshikurama.ticketmanager.api.database.AsyncDatabase
-import com.github.hoshikurama.ticketmanager.api.database.DBResult
-import com.github.hoshikurama.ticketmanager.api.database.SearchConstraints
-import com.github.hoshikurama.ticketmanager.api.ticket.*
+import com.github.hoshikurama.ticketmanager.api.common.database.AsyncDatabase
+import com.github.hoshikurama.ticketmanager.api.common.database.DBResult
+import com.github.hoshikurama.ticketmanager.api.common.database.SearchConstraints
+import com.github.hoshikurama.ticketmanager.api.common.ticket.*
 import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asParallelStream
 import com.github.hoshikurama.ticketmanager.commonse.utilities.mapNotNull
@@ -127,10 +127,6 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
 
         return CompletableFuture.completedFuture(newID)
     }
-
-     private fun getTicketsAsync(ids: List<Long>): List<Ticket> {
-         return ids.asParallelStream().mapNotNull(ticketMap::get).toList()
-     }
 
     override fun getTicketOrNullAsync(id: Long): CompletableFuture<Ticket?> {
         return CompletableFuture.completedFuture(ticketMap[id])
@@ -517,7 +513,7 @@ private fun Row.toTicket(): Ticket {
     )
 }
 
-private fun Action.getMessage(): String? = when (this) {
+internal fun Action.getMessage(): String? = when (this) {
     is ActionInfo.Assign -> assignment.asString()
     is ActionInfo.CloseWithComment -> comment
     is ActionInfo.Open -> message
@@ -526,11 +522,11 @@ private fun Action.getMessage(): String? = when (this) {
     else -> null
 }
 
-private enum class ActionAsEnum {
+internal enum class ActionAsEnum {
     ASSIGN, CLOSE, CLOSE_WITH_COMMENT, COMMENT, OPEN, REOPEN, SET_PRIORITY, MASS_CLOSE
 }
 
-private fun Action.getEnumForDB(): ActionAsEnum = when (this) {
+internal fun Action.getEnumForDB(): ActionAsEnum = when (this) {
     is ActionInfo.Assign -> ActionAsEnum.ASSIGN
     is ActionInfo.CloseWithComment -> ActionAsEnum.CLOSE_WITH_COMMENT
     is ActionInfo.CloseWithoutComment -> ActionAsEnum.CLOSE

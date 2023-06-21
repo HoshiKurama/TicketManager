@@ -1,12 +1,11 @@
 package com.github.hoshikurama.ticketmanager.commonse.misc
 
-import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Ticket
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.buildComponent
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asParallelStream
-import com.github.hoshikurama.ticketmanager.commonse.utilities.tryOrNull
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder
@@ -60,8 +59,6 @@ fun relTimeToEpochSecond(relTime: String, activeLocale: TMLocale): Long {
 
     return Instant.now().epochSecond - seconds
 }
-
-fun stringToStatusOrNull(str: String) = tryOrNull { Ticket.Status.valueOf(str) } //TODO ????
 
 // MiniMessage helper functions
 fun String.parseMiniMessage(vararg template: TagResolver) = MiniMessage.miniMessage().deserialize(this, *template)

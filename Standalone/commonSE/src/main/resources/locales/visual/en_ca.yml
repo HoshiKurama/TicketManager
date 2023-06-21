@@ -230,3 +230,23 @@ Notify_Event_SetPriority: '%TMHeader% <gray><user> <%CC%>set ticket <gray>#<id> 
 Notify_Event_TicketModification: '%TMHeader% Ticket <gray>#<id> <%CC%>has been updated! Type <gray>/ticket view <id> <%CC%>to view this ticket.'                    # Templates: <id>
 Notify_Event_PluginUpdate: '%TMHeader% TicketManager has an update!%nl%  <%CC%>Current Version: <gray><current>%nl%  <%CC%>Latest Version: <gray><latest>'          # Templates: <current> <latest>
 Notify_Event_ProxyUpdate: '%TMHeader% TicketManager Proxy has an update!%nl%  <%CC%>Current Version: <gray><current>%nl%  <%CC%>Latest Version: <gray><latest>'     # Templates: <current> <latest>
+#
+# Brigadier/CommandAPI Warnings  (Accepts Formatting):
+Brigadier_NotYourTicket: '<red>You do not have permission to modify this ticket.'
+Brigadier_InvalidID: '<red>Ticket #<id> does not exist.'                                                                     # Templates: <id>
+Brigadier_TicketAlreadyClosed: '<red>This ticket is already closed and may not be modified unless re-opened.'
+Brigadier_TicketAlreadyOpen: '<red>This ticket is already open.'
+Brigadier_ConsoleLocationTeleport: '<red>You many not teleport to a ticket or action made by Console.'
+Brigadier_NoTeleport_SameServer: '<red>You do not have permission to teleport to tickets made on the same server.'
+Brigadier_NoTeleport_DifferentServer: '<red>You do not have permission to teleport to tickets made on a different server.'
+Brigadier_NoTeleport_ProxyDisabled: "<red>You may not teleport to tickets made on other servers when proxy mode is disabled."
+Brigadier_OtherHistory: "<red>You do not have permission to view someone else's ticket history."
+Brigadier_Search_BadSymbol_1: "<red>Symbol <dark_red><symbol><red> is not a valid symbol for keyword <dark_red><keyword><red>. Please use <dark_red>=<red> or <dark_red>!=<red>."   # Templates: <symbol> <keyword>
+Brigadier_Search_BadStatus: "<dark_red><status><red> is not a valid status. Please use <dark_red><open><red> or <dark_red><closed><red>." # templates: <status> <open> <closed>
+Brigadier_Search_BadSymbol_2: "<red>Symbol <dark_red><symbol><red> is not a valid symbol for keyword <dark_red><keyword><red>. Please use <dark_red>=<red>, <dark_red>!=<red>, <dark_red><<red>, or <dark_red>><red>." # Templates: <symbol> <keyword>
+Brigadier_Search_BadSymbol_3: "<red>Symbol <dark_red><symbol><red> is not a valid symbol for keyword <dark_red><keyword><red>. Please use <dark_red><<red> or <dark_red>><red>."   # Templates: <symbol> <keyword>
+Brigadier_BadPageNumber: "<red> Invalid page number."
+Brigadier_BadSearchConstraint: "<red>Invalid search constraint: <dark_red><keyword><red>."  # Templates <keyword>
+Brigadier_InvalidAssignment: "<red>Invalid assignment type: <dark_red><assignment><red>."   # Templates <assignment>
+Brigadier_InvalidTimeUnit: "<red>Invalid time unit: <dark_red><timeunit><red>."             # Templates <timeunit>
+Brigadier_InvalidPriority: "<red>Invalid priority: <dark_red><priority><red>."              # Templates <priority>

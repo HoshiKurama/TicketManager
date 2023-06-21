@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse.extensions
 
-import com.github.hoshikurama.ticketmanager.api.database.AsyncDatabase
-import com.github.hoshikurama.ticketmanager.api.services.DatabaseRegistry
+import com.github.hoshikurama.ticketmanager.api.common.database.AsyncDatabase
+import com.github.hoshikurama.ticketmanager.api.common.services.DatabaseRegistry
 import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors

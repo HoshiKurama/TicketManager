@@ -1,8 +1,8 @@
 package com.github.hoshikurama.ticketmanager.paper
 
 
-import com.github.hoshikurama.ticketmanager.api.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.ticket.ActionLocation
+import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.common.ticket.ActionLocation
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 
