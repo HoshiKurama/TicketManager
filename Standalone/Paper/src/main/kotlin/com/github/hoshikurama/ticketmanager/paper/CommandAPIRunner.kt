@@ -697,7 +697,7 @@ class CommandAPIRunner {
 
         // /ticket viewdeep <ID>
         commandAPICommand(locale.commandBase) {
-            literalArgument(locale.commandWordView) {
+            literalArgument(locale.commandWordDeepView) {
                 withRequirement { hasOneDualityPermission(it, "ticketmanager.command.viewdeep") }
             }
             argumentTicketFromIDAsync(userDualityError("ticketmanager.command.viewdeep")) {}
