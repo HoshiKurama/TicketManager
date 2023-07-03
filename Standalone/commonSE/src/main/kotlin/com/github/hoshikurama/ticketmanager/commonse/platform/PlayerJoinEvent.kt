@@ -85,7 +85,7 @@ abstract class PlayerJoinEvent(
                     val assignedCF = async {
                         DatabaseManager.activeDatabase.countOpenTicketsAssignedToAsync(
                             player.permissionGroups.map(Assignment::PermissionGroup) + Assignment.Player(player.username)
-                        )
+                        ).asDeferredThenAwait()
                     }
 
                     if (openCF.await() != 0L)
