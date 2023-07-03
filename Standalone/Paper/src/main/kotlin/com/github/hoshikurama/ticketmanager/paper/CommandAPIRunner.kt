@@ -29,6 +29,9 @@ import dev.jorel.commandapi.executors.CommandArguments
 import dev.jorel.commandapi.executors.CommandExecutor
 import dev.jorel.commandapi.executors.ExecutorType
 import dev.jorel.commandapi.kotlindsl.*
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.future.asDeferred
+import net.kyori.adventure.text.Component
 import org.bukkit.OfflinePlayer
 import java.util.concurrent.CompletableFuture
 import com.github.hoshikurama.ticketmanager.api.common.database.SearchConstraints.Symbol as SCSymbol
@@ -64,48 +67,56 @@ class CommandAPIRunner {
 
     // Arguments
     private inline fun CommandAPICommand.argumentTicketFromIDAsync(
-        vararg otherChecks: (Ticket, CommandSender.Active) -> Unit,
+        vararg otherChecks: (Ticket, CommandSender.Active) -> Error?,
         otherFunctions: Argument<*>.() -> Unit
     ) = argument(
         CustomArgument(LongArgument(locale.parameterID)) { info ->
-            return@CustomArgument try {
-                DatabaseManager.activeDatabase
-                    .getTicketOrNullAsync(info.currentInput)
-                    .thenApplyAsync { ticketorNull ->
-                        // Filter invalid ticket
-                        val ticket = ticketorNull ?: throw CustomArgumentException.fromAdventureComponent(
-                            locale.brigadierInvalidID.parseMiniMessage(
-                                "id" templated info.currentInput.toString()
-                            )
-                        )
+            return@CustomArgument DatabaseManager.activeDatabase
+                .getTicketOrNullAsync(info.currentInput)
+                .thenApplyAsync { ticketOrNull ->
 
-                        // Filter out other checks
-                        val tmSender = info.sender.toTMSender()
-                        otherChecks.forEach { it.invoke(ticket, tmSender) }
-                        ticket
-                    }
-            } catch (e: Exception) { throw e.cause!! } // Throws CustomArgumentEvent instead of CF Exception
+                    // Filter Invalid Ticket
+                    val ticket = ticketOrNull ?: return@thenApplyAsync locale.brigadierInvalidID
+                        .parseMiniMessage("id" templated info.currentInput.toString())
+                        .run(::Error)
+
+                    // Other Checks
+                    val tmSender = info.sender.toTMSender()
+                    val failPoint = otherChecks.mapNotNull { it(ticket, tmSender) }
+
+                    return@thenApplyAsync if (failPoint.isNotEmpty()) failPoint.first() else Success(ticket)
+                }
         }
     ) { otherFunctions(this) }
 
     // Errors
     @Suppress("UNUSED_PARAMETER") // Note: allows method reference
-    private fun ticketIsOpen(ticket: Ticket, ignored: CommandSender.Active) {
-        if (ticket.status != Ticket.Status.OPEN) throw CustomArgumentException
-            .fromAdventureComponent(locale.brigadierTicketAlreadyClosed.parseMiniMessage())
+    private fun ticketIsOpen(ticket: Ticket, ignored: CommandSender.Active): Error? {
+        return if (ticket.status != Ticket.Status.OPEN)
+            locale.brigadierTicketAlreadyClosed
+                .parseMiniMessage()
+                .run(::Error)
+        else null
+
     }
     @Suppress("UNUSED_PARAMETER") // Note: allows method reference
-    private fun ticketIsClosed(ticket: Ticket, ignored: CommandSender.Active) {
-        if (ticket.status != Ticket.Status.CLOSED) throw CustomArgumentException
-            .fromAdventureComponent(locale.brigadierTicketAlreadyOpen.parseMiniMessage())
+    private fun ticketIsClosed(ticket: Ticket, ignored: CommandSender.Active): Error? {
+        return if (ticket.status != Ticket.Status.CLOSED)
+            locale.brigadierTicketAlreadyOpen
+                .parseMiniMessage()
+                .run(::Error)
+        else null
     }
-    private fun userDualityError(basePerm: String): (Ticket, CommandSender.Active) -> Unit = { ticket, sender ->
+    private fun userDualityError(basePerm: String): (Ticket, CommandSender.Active) -> Error? = { ticket, sender ->
         val hasAll = sender.has("$basePerm.all")
         val hasOwn = sender.has("$basePerm.own")
 
         val canRunCommand = hasAll || (hasOwn && ticket.creator == sender.asCreator())
-        if (!canRunCommand) throw CustomArgumentException
-            .fromAdventureComponent(locale.brigadierNotYourTicket.parseMiniMessage())
+        if (!canRunCommand)
+            locale.brigadierNotYourTicket
+                .parseMiniMessage()
+                .run(::Error)
+        else null
     }
 
 
@@ -160,7 +171,6 @@ class CommandAPIRunner {
         updateCommandReqs(bukkitSender)
     }
 
-
     // Command generator
     fun generateCommands() {
 
@@ -171,7 +181,7 @@ class CommandAPIRunner {
                 withRequirement(::notUnderCooldown)
             }
             greedyStringArgument(locale.parameterComment)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessageY { tmSender, args ->
                 commandTasks.create(tmSender,
                     message = args[0] as String
                 )
@@ -189,13 +199,13 @@ class CommandAPIRunner {
             }
             literalArgument(locale.parameterLiteralPlayer)
             offlinePlayerArgument(locale.parameterLiteralPlayer)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.assign(tmSender,
                     assignment = (args[1] as BukkitPlayer)
                         .run(OfflinePlayer::getName)
                         ?.run(Assignment::Player)
                         ?: Assignment.Nobody,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = false,
                 )
             }
@@ -212,10 +222,10 @@ class CommandAPIRunner {
             }
             literalArgument(locale.parameterLiteralGroup)
             multiLiteralArgument(locale.parameterLiteralGroup,lpGroupNames)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.assign(tmSender,
                     assignment = Assignment.PermissionGroup((args[1] as String)),
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = false,
                 )
             }
@@ -232,10 +242,10 @@ class CommandAPIRunner {
             }
             literalArgument(locale.parameterLiteralPhrase)
             greedyStringArgument(locale.parameterLiteralPhrase)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.assign(tmSender,
                     assignment = Assignment.Phrase((args[1] as String)),
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = false,
                 )
             }
@@ -253,13 +263,13 @@ class CommandAPIRunner {
             }
             literalArgument(locale.parameterLiteralPlayer)
             offlinePlayerArgument(locale.parameterLiteralPlayer)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.assign(tmSender,
                     assignment = (args[1] as OfflinePlayer)
                         .run(OfflinePlayer::getName)
                         ?.run(Assignment::Player)
                         ?: Assignment.Nobody,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = true,
                 )
             }
@@ -277,10 +287,10 @@ class CommandAPIRunner {
             }
             literalArgument(locale.parameterLiteralGroup)
             multiLiteralArgument(locale.parameterLiteralGroup,lpGroupNames)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.assign(tmSender,
                     assignment = Assignment.PermissionGroup((args[1] as String)),
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = true,
                 )
             }
@@ -298,10 +308,10 @@ class CommandAPIRunner {
             }
             literalArgument(locale.parameterLiteralPhrase)
             greedyStringArgument(locale.parameterLiteralPhrase)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.assign(tmSender,
                     assignment = Assignment.Phrase((args[1] as String)),
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = true,
                 )
             }
@@ -316,9 +326,9 @@ class CommandAPIRunner {
             argumentTicketFromIDAsync(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, _, ticket ->
                 commandTasks.unAssign(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = false,
                 )
             }
@@ -334,9 +344,9 @@ class CommandAPIRunner {
             argumentTicketFromIDAsync(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, _, ticket ->
                 commandTasks.unAssign(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = true
                 )
             }
@@ -351,9 +361,9 @@ class CommandAPIRunner {
             argumentTicketFromIDAsync(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, _, ticket ->
                 commandTasks.claim(tmSender,
-                    ticket = args[0] as Ticket,
+                    ticket = ticket,
                     silent = false
                 )
             }
@@ -369,9 +379,9 @@ class CommandAPIRunner {
             argumentTicketFromIDAsync(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, _, ticket ->
                 commandTasks.claim(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = true
                 )
             }
@@ -386,9 +396,9 @@ class CommandAPIRunner {
             argumentTicketFromIDAsync(::ticketIsOpen, userDualityError("ticketmanager.command.close")) {
                 replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
             }
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, _, ticket ->
                 commandTasks.closeWithoutComment(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = false
                 )
             }
@@ -404,9 +414,9 @@ class CommandAPIRunner {
             argumentTicketFromIDAsync(::ticketIsOpen, userDualityError("ticketmanager.command.close")) {
                 replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
             }
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, _, ticket ->
                 commandTasks.closeWithoutComment(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = true
                 )
             }
@@ -422,9 +432,9 @@ class CommandAPIRunner {
                 replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
             }
             greedyStringArgument(locale.parameterComment)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.closeWithComment(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     comment = args[1] as String,
                     silent = false
                 )
@@ -442,9 +452,9 @@ class CommandAPIRunner {
                 replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.close"))
             }
             greedyStringArgument(locale.parameterComment)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.closeWithComment(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     comment = args[1] as String,
                     silent = true
                 )
@@ -459,7 +469,7 @@ class CommandAPIRunner {
             }
             longArgument(locale.parameterLowerID)
             longArgument(locale.parameterUpperID)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessageY { tmSender, args ->
                 commandTasks.closeAll(tmSender,
                     lowerBound = args[0] as Long,
                     upperBound = args[1] as Long,
@@ -477,7 +487,7 @@ class CommandAPIRunner {
             }
             longArgument(locale.parameterLowerID)
             longArgument(locale.parameterUpperID)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessageY { tmSender, args ->
                 commandTasks.closeAll(tmSender,
                     lowerBound = args[0] as Long,
                     upperBound = args[1] as Long,
@@ -496,9 +506,9 @@ class CommandAPIRunner {
                 replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.comment"))
             }
             greedyStringArgument(locale.parameterComment)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.comment(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     comment = args[1] as String,
                     silent = false
                 )
@@ -516,9 +526,9 @@ class CommandAPIRunner {
                 replaceSuggestions(dualityOpenIDsAsync("ticketmanager.command.comment"))
             }
             greedyStringArgument(locale.parameterComment)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.comment(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     comment = args[1] as String,
                     silent = true
                 )
@@ -611,9 +621,9 @@ class CommandAPIRunner {
                 withRequirement(::notUnderCooldown)
             }
             argumentTicketFromIDAsync(::ticketIsClosed) {} // Note: Suggestions intentionally blank (require all closed)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, _, ticket ->
                 commandTasks.reopen(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = false
                 )
             }
@@ -627,9 +637,9 @@ class CommandAPIRunner {
                 withRequirement(::hasSilentPermission)
             }
             argumentTicketFromIDAsync(::ticketIsClosed) {} // Note: Suggestions intentionally blank (require all closed)
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, _, ticket ->
                 commandTasks.reopen(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     silent = true
                 )
             }
@@ -656,20 +666,21 @@ class CommandAPIRunner {
 
                 // Only teleport to player tickets
                 if (location !is ActionLocation.FromPlayer)
-                    throw CustomArgumentException.fromAdventureComponent(locale.brigadierConsoleLocTP.parseMiniMessage())
+                    return@argumentTicketFromIDAsync locale.brigadierConsoleLocTP.parseMiniMessage().run(::Error)
 
                 when (location.server == configState.proxyServerName) {
                     true -> if (!sender.has("ticketmanager.command.teleport"))
-                        throw CustomArgumentException.fromAdventureComponent(locale.brigadierNoTPSameServer.parseMiniMessage())
+                        return@argumentTicketFromIDAsync Error(locale.brigadierNoTPSameServer.parseMiniMessage())
                     false -> when (!configState.enableProxyMode) {
-                        false -> throw CustomArgumentException.fromAdventureComponent(locale.brigadierNoTPProxyDisabled.parseMiniMessage())
+                        false -> return@argumentTicketFromIDAsync Error(locale.brigadierNoTPProxyDisabled.parseMiniMessage())
                         true -> if (!sender.has("ticketmanager.command.proxyteleport"))
-                            throw CustomArgumentException.fromAdventureComponent(locale.brigadierNoTPDiffServer.parseMiniMessage())
+                            return@argumentTicketFromIDAsync Error(locale.brigadierNoTPDiffServer.parseMiniMessage())
                     }
                 }
+                null
             }) {} // Note: Suggests intentionally blank (would require all tickets)
-            executeRegisterTMAction { tmSender, args ->
-                commandTasks.teleport(tmSender, awaitTicket(args[0]))
+            executeRegisterTMAction(0) { tmSender, _, ticket ->
+                commandTasks.teleport(tmSender, ticket)
             }
         }
 
@@ -679,19 +690,19 @@ class CommandAPIRunner {
                 withRequirement { hasOneDualityPermission(it, "ticketmanager.command.view") }
             }
             argumentTicketFromIDAsync(userDualityError("ticketmanager.command.view")) {}
-            executeRegisterTMAction { tmSender, args ->
-                commandTasks.view(tmSender, awaitTicket(args[0]))
+            executeRegisterTMAction(0) { tmSender, _, ticket ->
+                commandTasks.view(tmSender, ticket)
             }
         }
 
         // /ticket viewdeep <ID>
         commandAPICommand(locale.commandBase) {
-            literalArgument(locale.commandWordView) {
+            literalArgument(locale.commandWordDeepView) {
                 withRequirement { hasOneDualityPermission(it, "ticketmanager.command.viewdeep") }
             }
             argumentTicketFromIDAsync(userDualityError("ticketmanager.command.viewdeep")) {}
-            executeRegisterTMAction { tmSender, args ->
-                commandTasks.viewDeep(tmSender, awaitTicket(args[0]))
+            executeRegisterTMAction(0) { tmSender, _, ticket ->
+                commandTasks.viewDeep(tmSender, ticket)
             }
         }
 
@@ -708,9 +719,9 @@ class CommandAPIRunner {
                 locale.priorityHigh, locale.priorityHighest, "1", "2", "3", "4", "5"
             ))
 
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.setPriority(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     priority = numberOrWordToPriority(args[1] as String),
                     silent = false
                 )
@@ -730,9 +741,9 @@ class CommandAPIRunner {
                 locale.priorityLowest, locale.priorityLow, locale.priorityNormal,
                 locale.priorityHigh, locale.priorityHighest, "1", "2", "3", "4", "5"
             ))
-            executeRegisterTMMessage { tmSender, args ->
+            executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.setPriority(tmSender,
-                    ticket = awaitTicket(args[0]),
+                    ticket = ticket,
                     priority = numberOrWordToPriority(args[1] as String),
                     silent = true
                 )
@@ -1098,10 +1109,11 @@ class CommandAPIRunner {
         else -> throw Exception("Unsupported Entity Type!")
     }
 
-    private inline fun CommandAPICommand.executeRegisterTMMessage(
+    private inline fun CommandAPICommand.executeRegisterTMMessageY(
         crossinline commandTask: suspend (tmSender: CommandSender.Active, args: Array<out Any>) -> MessageNotification<CommandSender.Active>?
     ) {
         executeTMAbstract { bukkitSender, args ->
+            // Standard Operations
             val tmSender = bukkitSender.toTMSender()
             val message = commandTask(tmSender, args.args())
 
@@ -1110,7 +1122,48 @@ class CommandAPIRunner {
         }
     }
 
+    private inline fun CommandAPICommand.executeRegisterTMMessage(
+        resultArgNum: Int,
+        crossinline commandTask: suspend (tmSender: CommandSender.Active, args: Array<out Any>, ticket: Ticket) -> MessageNotification<CommandSender.Active>?
+    ) {
+        executeTMAbstract { bukkitSender, args ->
+            val ticket = when(val result = awaitCommandResult(args.args()[resultArgNum])) {
+                is Error -> bukkitSender
+                    .sendMessage(result.errorComponent)
+                    .let { return@executeTMAbstract null }
+                is Success -> result.ticket
+            }
+
+            // Standard Operations
+            val tmSender = bukkitSender.toTMSender()
+            val message = commandTask(tmSender, args.args(), ticket)
+
+            cooldown?.performCommandDuties(bukkitSender)
+            message?.run { executeNotificationsAsync(platform, configState, tmSender, locale, this) }
+        }
+    }
+
     private inline fun CommandAPICommand.executeRegisterTMAction(
+        resultArgNum: Int,
+        crossinline commandTask: suspend (tmSender: CommandSender.Active, args: Array<out Any>, ticket: Ticket) -> Unit
+    ) {
+        executeTMAbstract { bukkitSender, args ->
+            val ticket = when(val result = awaitCommandResult(args.args()[resultArgNum])) {
+                is Error -> bukkitSender
+                    .sendMessage(result.errorComponent)
+                    .let { return@executeTMAbstract null }
+                is Success -> result.ticket
+            }
+
+            val tmSender = bukkitSender.toTMSender()
+            commandTask(tmSender, args.args(), ticket)
+
+            cooldown?.performCommandDuties(bukkitSender)
+        }
+    }
+
+    private inline fun CommandAPICommand.executeRegisterTMAction(
+
         crossinline commandTask: suspend (tmSender: CommandSender.Active, args: Array<out Any>) -> Unit
     ) {
         executeTMAbstract { bukkitSender, args ->
@@ -1192,5 +1245,9 @@ class CommandAPIRunner {
             ))
     }
 
-    private suspend fun awaitTicket(thing: Any) = (thing as CompletableFuture<*>).asDeferredThenAwait() as Ticket
+    private suspend fun awaitCommandResult(thing: Any) = (thing as CompletableFuture<*>).asDeferredThenAwait() as CommandResult
 }
+
+sealed interface CommandResult
+private class Error(val errorComponent: Component): CommandResult
+private class Success(val ticket: Ticket): CommandResult
