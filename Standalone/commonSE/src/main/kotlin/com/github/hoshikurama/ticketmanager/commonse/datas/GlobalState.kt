@@ -14,5 +14,5 @@ object GlobalState {
     @Volatile var databaseSelected: Boolean = false
 
     val isPluginLocked: Boolean
-        get() = dataInitializationComplete && databaseSelected
+        get() = !dataInitializationComplete || !databaseSelected
 }
