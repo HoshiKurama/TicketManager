@@ -36,5 +36,5 @@ dependencies {
     implementation("joda-time:joda-time:2.12.5")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.google.guava:guava:32.0.1-jre")
-    implementation("com.h2database:h2:2.1.214")
+    implementation( "com.h2database:h2:2.1.214")
 }
