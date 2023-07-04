@@ -14,6 +14,7 @@ import com.github.hoshikurama.ticketmanager.commonse.commands.MessageNotificatio
 import com.github.hoshikurama.ticketmanager.commonse.commands.executeNotificationsAsync
 import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
+import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
 import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
@@ -29,8 +30,6 @@ import dev.jorel.commandapi.executors.CommandArguments
 import dev.jorel.commandapi.executors.CommandExecutor
 import dev.jorel.commandapi.executors.ExecutorType
 import dev.jorel.commandapi.kotlindsl.*
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.future.asDeferred
 import net.kyori.adventure.text.Component
 import org.bukkit.OfflinePlayer
 import java.util.concurrent.CompletableFuture
@@ -620,7 +619,9 @@ class CommandAPIRunner {
                 withPermission("ticketmanager.command.reopen")
                 withRequirement(::notUnderCooldown)
             }
-            argumentTicketFromIDAsync(::ticketIsClosed) {} // Note: Suggestions intentionally blank (require all closed)
+            argumentTicketFromIDAsync(::ticketIsClosed) {
+                replaceSuggestions(ArgumentSuggestions.strings("<${locale.parameterID}>"))
+            }
             executeRegisterTMMessage(0) { tmSender, _, ticket ->
                 commandTasks.reopen(tmSender,
                     ticket = ticket,
@@ -636,7 +637,9 @@ class CommandAPIRunner {
                 withRequirement(::notUnderCooldown)
                 withRequirement(::hasSilentPermission)
             }
-            argumentTicketFromIDAsync(::ticketIsClosed) {} // Note: Suggestions intentionally blank (require all closed)
+            argumentTicketFromIDAsync(::ticketIsClosed) {
+                replaceSuggestions(ArgumentSuggestions.strings("<${locale.parameterID}>"))
+            }
             executeRegisterTMMessage(0) { tmSender, _, ticket ->
                 commandTasks.reopen(tmSender,
                     ticket = ticket,
@@ -678,7 +681,9 @@ class CommandAPIRunner {
                     }
                 }
                 null
-            }) {} // Note: Suggests intentionally blank (would require all tickets)
+            }) {
+                replaceSuggestions(ArgumentSuggestions.strings("<${locale.parameterID}>"))
+            }
             executeRegisterTMAction(0) { tmSender, _, ticket ->
                 commandTasks.teleport(tmSender, ticket)
             }
@@ -689,7 +694,9 @@ class CommandAPIRunner {
             literalArgument(locale.commandWordView) {
                 withRequirement { hasOneDualityPermission(it, "ticketmanager.command.view") }
             }
-            argumentTicketFromIDAsync(userDualityError("ticketmanager.command.view")) {}
+            argumentTicketFromIDAsync(userDualityError("ticketmanager.command.view")) {
+                replaceSuggestions(ArgumentSuggestions.strings("<${locale.parameterID}>"))
+            }
             executeRegisterTMAction(0) { tmSender, _, ticket ->
                 commandTasks.view(tmSender, ticket)
             }
@@ -700,7 +707,9 @@ class CommandAPIRunner {
             literalArgument(locale.commandWordDeepView) {
                 withRequirement { hasOneDualityPermission(it, "ticketmanager.command.viewdeep") }
             }
-            argumentTicketFromIDAsync(userDualityError("ticketmanager.command.viewdeep")) {}
+            argumentTicketFromIDAsync(userDualityError("ticketmanager.command.viewdeep")) {
+                replaceSuggestions(ArgumentSuggestions.strings("<${locale.parameterID}>"))
+            }
             executeRegisterTMAction(0) { tmSender, _, ticket ->
                 commandTasks.viewDeep(tmSender, ticket)
             }
@@ -758,7 +767,6 @@ class CommandAPIRunner {
             executeRegisterTMAction { tmSender, _ -> commandTasks.reload(tmSender) }
         }
 
-        // /ticket history
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordHistory) {
                 withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
@@ -1001,7 +1009,6 @@ class CommandAPIRunner {
                                 ))
                         }
                     }
-
                 return@CustomArgument SearchConstraints(creator, assigned, priority, status, closedBy, lastClosedBy, world, creationTime, keywords, page)
             }) {
                 replaceSuggestions { args, builder -> CompletableFuture.supplyAsync { // Remove everything behind last &&
@@ -1182,19 +1189,25 @@ class CommandAPIRunner {
             commandTask(tmSender, args)
         }
     }
-    //TODO ADD ERROR FOR WHEN ATTEMPTING TO DO COMMAND WHEN STILL LOCKED
+
     private inline fun <T> CommandAPICommand.executeTMAbstract(
         crossinline commandTask: suspend (bukkitSender: BukkitCommandSender, args: CommandArguments) -> T
     ) {
         executes(CommandExecutor { bukkitSender, args ->
+            if (GlobalState.isPluginLocked) {
+                locale.warningsLocked
+                    .parseMiniMessage()
+                    .run(bukkitSender::sendMessage)
+
+                return@CommandExecutor
+            }
+
             TMCoroutine.launchSupervised {
                 try { commandTask(bukkitSender, args) }
                 catch(e: Exception) { pushErrors(platform, configState, locale, e, TMLocale::warningsUnexpectedError) }
             }
         }, ExecutorType.CONSOLE, ExecutorType.PLAYER).register()
     }
-
-
 
     private fun String.attemptNameToTicketCreator(): Creator {
         return if (this == locale.consoleName) Creator.Console
