@@ -20,10 +20,10 @@ repositories {
 
 dependencies {
     compileOnly("net.luckperms:api:5.4")
-    compileOnly("io.papermc.paper:paper-api:1.19.4-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.20-R0.1-SNAPSHOT")
     compileOnly("org.yaml:snakeyaml:2.0")
     compileOnly("com.google.code.gson:gson:2.10.1")
-    compileOnly("com.google.guava:guava:32.0.1-jre")
+    compileOnly("com.google.guava:guava:32.1.1-jre")
     compileOnly("net.kyori:adventure-api:4.14.0")
     compileOnly("net.kyori:adventure-text-minimessage:4.14.0")
     //compileOnly("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
@@ -41,8 +41,8 @@ dependencies {
     implementation("org.bstats:bstats-bukkit:3.0.2")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
 
     implementation(project(":Standalone:commonSE"))
     implementation(project(":common"))
@@ -63,7 +63,6 @@ tasks {
             exclude(dependency("org.codehaus.plexus:.*:.*"))
             exclude(dependency("javax.inject:.*:.*"))
             exclude(dependency("org.eclipse.sisu:.*:.*"))
-            exclude(dependency("org.jetbrains:annotations:.*"))
             exclude(dependency("com.mojang.brigadier:.*"))
 
             // Excludes for Adventure

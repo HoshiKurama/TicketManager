@@ -20,7 +20,7 @@
 #   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
 #                                                Localization Settings                                                #
 #   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
-#   TicketManager supports localization into other languages. Minecraft clients will:                                 #                                                                                                     #
+#   TicketManager supports localization into other languages. Minecraft clients will:                                 #
 #       • See translated messages                                                                                     #
 #       • Use translated commands                                                                                     #
 #       • Receive translated tab-completions.                                                                         #

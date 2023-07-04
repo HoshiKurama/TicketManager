@@ -387,7 +387,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
     }
 
     override fun closeDatabase() {
-        sqlPool.connection.createStatement().execute("SHUTDOWN")
+        sqlPool.dispose()
     }
 
     override fun initializeDatabase() {
