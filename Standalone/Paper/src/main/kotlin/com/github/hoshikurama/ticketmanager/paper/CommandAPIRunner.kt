@@ -188,7 +188,7 @@ class CommandAPIRunner {
             }
         }
 
-        // /ticket assign <ID> player <Player>
+        // /ticket assign <ID> user <Player>
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordAssign) {
                 withPermission("ticketmanager.command.assign")
@@ -201,7 +201,7 @@ class CommandAPIRunner {
             offlinePlayerArgument(locale.parameterLiteralPlayer)
             executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.assign(tmSender,
-                    assignment = (args[1] as BukkitPlayer)
+                    assignment = (args[1] as OfflinePlayer)
                         .run(OfflinePlayer::getName)
                         ?.run(Assignment::Player)
                         ?: Assignment.Nobody,
@@ -277,7 +277,7 @@ class CommandAPIRunner {
 
         // /ticket s.assign <ID> group <Group>
         commandAPICommand(locale.commandBase) {
-            literalArgument(locale.commandWordAssign) {
+            literalArgument(locale.commandWordSilentAssign) {
                 withPermission("ticketmanager.command.assign")
                 withRequirement(::notUnderCooldown)
                 withRequirement(::hasSilentPermission)
@@ -298,7 +298,7 @@ class CommandAPIRunner {
 
         // /ticket s.assign <ID> phrase <phrase...>
         commandAPICommand(locale.commandBase) {
-            literalArgument(locale.commandWordAssign) {
+            literalArgument(locale.commandWordSilentAssign) {
                 withPermission("ticketmanager.command.assign")
                 withRequirement(::notUnderCooldown)
                 withRequirement(::hasSilentPermission)
@@ -1182,7 +1182,7 @@ class CommandAPIRunner {
             commandTask(tmSender, args)
         }
     }
-
+    //TODO ADD ERROR FOR WHEN ATTEMPTING TO DO COMMAND WHEN STILL LOCKED
     private inline fun <T> CommandAPICommand.executeTMAbstract(
         crossinline commandTask: suspend (bukkitSender: BukkitCommandSender, args: CommandArguments) -> T
     ) {
