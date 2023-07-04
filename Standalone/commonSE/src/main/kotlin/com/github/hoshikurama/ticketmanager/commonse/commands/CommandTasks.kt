@@ -823,14 +823,14 @@ class CommandTasks(
     private fun assignVariationWriter(
         sender: CommandSender.Active,
         assignment: Assignment,
-        Creator: Creator,
+        creator: Creator,
         ticketID: Long,
         silent: Boolean,
     ): MessageNotification<CommandSender.Active> {
         val insertedAction = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Assign(assignment)
 
         // Launch TicketModificationEventAsync
-        callTicketModificationEventAsync(sender, Creator, insertedAction, silent)
+        callTicketModificationEventAsync(sender, creator, insertedAction, silent)
 
         // Writes to database
         TMCoroutine.launchSupervised {
@@ -842,7 +842,7 @@ class CommandTasks(
             isSilent = silent,
             assignment = assignment,
             commandSender = sender,
-            ticketCreator = Creator,
+            ticketCreator = creator,
             ticketID = ticketID
         )
     }
