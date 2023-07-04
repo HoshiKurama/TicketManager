@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.commonse.datas
 
-import com.github.hoshikurama.ticketmanager.commonse.utilities.IntActor
+import com.github.hoshikurama.ticketmanager.api.common.IntActor
 
 /**
  * This data must be kept around, even between plugin reloads

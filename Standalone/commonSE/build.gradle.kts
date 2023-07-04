@@ -18,7 +18,7 @@ repositories {
 dependencies {
 
     implementation(project(":common"))
-    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC24")
+    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC26")
     // Not included but shaded later
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("net.kyori:adventure-text-minimessage:4.14.0")

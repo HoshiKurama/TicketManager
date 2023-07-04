@@ -1,7 +1,6 @@
 package com.github.hoshikurama.ticketmanager.commonse.datas
 
-import com.github.hoshikurama.ticketmanager.commonse.TMCoroutine
-import kotlinx.coroutines.CoroutineScope
+import com.github.hoshikurama.ticketmanager.api.common.TMCoroutine
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive

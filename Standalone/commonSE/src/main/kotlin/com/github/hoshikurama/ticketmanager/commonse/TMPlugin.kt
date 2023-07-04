@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
+import com.github.hoshikurama.ticketmanager.api.common.TMCoroutine
 import com.github.hoshikurama.ticketmanager.api.common.ticket.Assignment
 import com.github.hoshikurama.ticketmanager.api.common.ticket.Creator
 import com.github.hoshikurama.ticketmanager.common.*
