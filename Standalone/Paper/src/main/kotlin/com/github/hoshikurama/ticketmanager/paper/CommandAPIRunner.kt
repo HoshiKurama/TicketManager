@@ -1068,8 +1068,11 @@ class CommandAPIRunner {
                                 else listOf(locale.timeSeconds.trimStart(), locale.timeMinutes.trimStart(), locale.timeHours.trimStart(),
                                     locale.timeDays.trimStart(), locale.timeWeeks.trimStart(), locale.timeYears.trimStart(),
                                 )
-
-                            locale.searchKeywords -> listOf("||", "&&", "<${locale.searchKeywords}>")
+                            locale.searchKeywords -> {
+                                if (curArgsSet.size == 3 || curArgsSet[curArgsSet.lastIndex-1] == "||")
+                                    listOf("<${locale.searchKeywords}>")
+                                else listOf("||", "&&", "<${locale.searchKeywords}>")
+                            }
                             else -> throw Exception("Impossible")
                         }
                             .filter { it.startsWith(curArgsSet.last()) }
