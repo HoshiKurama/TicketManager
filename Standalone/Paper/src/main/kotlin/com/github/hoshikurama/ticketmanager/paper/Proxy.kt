@@ -24,7 +24,6 @@ class Proxy(
         when (channel) {
 
             Proxy2Server.NotificationSharing.name -> {
-                @Suppress("UnstableApiUsage")
                 val input = ByteStreams.newDataInput(message)
 
                 // Filters out same server

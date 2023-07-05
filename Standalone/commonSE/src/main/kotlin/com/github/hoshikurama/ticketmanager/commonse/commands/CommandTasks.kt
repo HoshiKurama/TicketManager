@@ -18,8 +18,7 @@ import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.onHo
 import com.github.hoshikurama.ticketmanager.commonse.platform.events.EventBuilder
 import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.utilities.asDeferredThenAwait
-import com.google.common.collect.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.kyori.adventure.text.Component
@@ -192,7 +191,7 @@ class CommandTasks(
         val initTicket = Ticket(
             id = -1L,
             creator = sender.asCreator(),
-            actions = ImmutableList.of(ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Open(message)),
+            actions = listOf(ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Open(message)).toImmutableList(),
             priority = Ticket.Priority.NORMAL,
             status = Ticket.Status.OPEN,
             assignedTo = Assignment.Nobody,
@@ -200,7 +199,7 @@ class CommandTasks(
         )
 
         // Inserts ticket and receives ID
-        val id = DatabaseManager.activeDatabase.insertNewTicketAsync(initTicket).asDeferredThenAwait()
+        val id = DatabaseManager.activeDatabase.insertNewTicketAsync(initTicket)
         GlobalState.ticketCounter.increment()
 
         callTicketModificationEventAsync(sender, initTicket.creator, initTicket.actions[0], false)
@@ -219,7 +218,7 @@ class CommandTasks(
         sender: CommandSender.Active,
         requestedPage: Int
     ) {
-        val tickets = DatabaseManager.activeDatabase.getOpenTicketsAsync(requestedPage, 8).asDeferredThenAwait()
+        val tickets = DatabaseManager.activeDatabase.getOpenTicketsAsync(requestedPage, 8)
         createGeneralList(locale.listHeader, tickets, locale.run { "/$commandBase $commandWordList " })
             .run(sender::sendMessage)
     }
@@ -235,7 +234,6 @@ class CommandTasks(
 
         val tickets = DatabaseManager.activeDatabase
             .getOpenTicketsAssignedToAsync(requestedPage,8, listOf(sender.asAssignment()) + groups)
-            .asDeferredThenAwait()
 
         createGeneralList(locale.listAssignedHeader, tickets, locale.run { "/$commandBase $commandWordListAssigned " })
             .run(sender::sendMessage)
@@ -248,7 +246,6 @@ class CommandTasks(
     ) {
         val tickets = DatabaseManager.activeDatabase
             .getOpenTicketsNotAssignedAsync(requestedPage, 8)
-            .asDeferredThenAwait()
 
         createGeneralList(locale.listUnassignedHeader, tickets, locale.run { "/$commandBase $commandWordListUnassigned " })
             .run(sender::sendMessage)
@@ -492,13 +489,12 @@ class CommandTasks(
         checkedCreator: Creator,
         requestedPage: Int,
     ) {
-        val search = DatabaseManager.activeDatabase
+        val (results, pageCount, resultCount, returnedPage) = DatabaseManager.activeDatabase
             .searchDatabaseAsync(SearchConstraints(
                 creator = Option(SearchConstraints.Symbol.EQUALS, checkedCreator),
                 requestedPage = requestedPage,
             ), 9)
         val targetName = checkedCreator.attemptName()
-        val (results, pageCount, resultCount, returnedPage) = search.asDeferredThenAwait()
 
         // Component Builder...
         val sentComponent = buildComponent {
@@ -560,8 +556,8 @@ class CommandTasks(
         // Results calculation and destructuring
         val (results, pageCount, resultCount, returnedPage) =
             DatabaseManager.activeDatabase.searchDatabaseAsync(searchParameters, 9)
-                .asDeferredThenAwait()
-// Component Builder...
+
+        // Component Builder...
         val sentComponent = buildComponent {
             // Initial header
             append(locale.searchHeader.parseMiniMessage("size" templated "$resultCount"))

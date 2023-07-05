@@ -9,7 +9,6 @@ import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import java.util.concurrent.ConcurrentHashMap
-import java.util.function.Supplier
 
 const val defaultDatabase = "CACHED_H2"
 
@@ -21,12 +20,8 @@ object DatabaseManager : DatabaseRegistry {
     @Volatile lateinit var activeDatabase: AsyncDatabase internal set
 
 
-    override fun register(databaseName: String, builder: () -> AsyncDatabase) {
+    override fun register1(databaseName: String, builder: () -> AsyncDatabase) {
         map[databaseName] = builder
-    }
-
-    override fun register(databaseName: String, builder: Supplier<AsyncDatabase>) {
-        register(databaseName) { builder.get() }
     }
 
     // Note: Function below will initiate the listen

@@ -1,9 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse.utilities
 
 import com.github.hoshikurama.ticketmanager.commonse.utilities.TypeSafeStream.Companion.asTypeSafeStream
-import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.future.asDeferred
-import java.util.*
 import java.util.concurrent.CompletableFuture
 
 @Suppress("Unused")
@@ -12,10 +10,6 @@ fun <T> List<T>.asParallelStream() = asTypeSafeStream().parallel()
 fun <T> Sequence<T>.asParallelStream() = asTypeSafeStream().parallel()
 @Suppress("Unused")
 fun <T> MutableCollection<T>.asParallelStream() = asTypeSafeStream().parallel()
-
-fun <T: Any> Optional<T?>.unwrapOrNull(): T? = if (isPresent) get() else null
-fun <T: Any> Optional<T?>.tK(): T? = unwrapOrNull()
-
 
 @Suppress("Unused")
 fun <T> T.notEquals(t: T) = this != t
@@ -26,5 +20,3 @@ inline fun <T> tryOrNull(function: () -> T): T? =
     catch (e: Exception) { e.printStackTrace(); null }
 
 suspend inline fun <T> CompletableFuture<T>.asDeferredThenAwait(): T = asDeferred().await()
-
-fun <T> List<T>.toImmutableList(): ImmutableList<T> = ImmutableList.copyOf(iterator())

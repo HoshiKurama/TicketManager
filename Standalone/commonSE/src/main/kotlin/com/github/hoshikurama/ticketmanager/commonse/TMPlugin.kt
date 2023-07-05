@@ -90,7 +90,7 @@ abstract class TMPlugin(
 
         // Database Handling
         println(activeLocale.consoleDatabaseWaitStart)
-        DatabaseManager.register(defaultDatabase) { CachedH2(config.pluginFolderPath.absolutePathString()) }
+        DatabaseManager.register2(defaultDatabase) { CachedH2(config.pluginFolderPath.absolutePathString()) }
         TMCoroutine.launchGlobal { loadDatabase(configState, config, platformFunctions, errors, activeLocale) {
             platformFunctions.pushInfoToConsole(activeLocale.consoleDatabaseLoaded)
             GlobalState.databaseSelected = true
@@ -141,7 +141,7 @@ abstract class TMPlugin(
         val (coreItems, config) = loadCoreItems(errors)
         val (cooldown, activeLocale, configState, joinEvent, platformFunctions) = coreItems
 
-        DatabaseManager.register(defaultDatabase) { CachedH2(config.pluginFolderPath.absolutePathString()) }
+        DatabaseManager.register2(defaultDatabase) { CachedH2(config.pluginFolderPath.absolutePathString()) }
         loadDatabase(configState, config, platformFunctions, errors, activeLocale)
 
         platformUpdateOnReload(
@@ -344,7 +344,6 @@ abstract class TMPlugin(
                         .forEach {
                             val ids = DatabaseManager.activeDatabase
                                 .getTicketIDsWithUpdatesForAsync(Creator.User(it.uuid))
-                                .asDeferredThenAwait()
                             val tickets = ids.joinToString(", ")
 
                             if (ids.isEmpty()) return@forEach
@@ -362,7 +361,7 @@ abstract class TMPlugin(
                     try {
                         val (openTickets, _, openCount, _) = DatabaseManager.activeDatabase
                             .getOpenTicketsAsync(1, 0)
-                            .asDeferredThenAwait()
+
                         platformFunctions.getAllOnlinePlayers()
                             .filter { it.has("ticketmanager.notify.openTickets.scheduled") }
                             .forEach { p ->

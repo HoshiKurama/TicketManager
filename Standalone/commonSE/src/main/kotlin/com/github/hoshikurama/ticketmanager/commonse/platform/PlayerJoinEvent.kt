@@ -13,7 +13,6 @@ import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.commonse.misc.templated
-import com.github.hoshikurama.ticketmanager.commonse.utilities.asDeferredThenAwait
 import kotlinx.coroutines.async
 
 abstract class PlayerJoinEvent(
@@ -67,7 +66,7 @@ abstract class PlayerJoinEvent(
                 TMCoroutine.launchSupervised {
                     if (!player.has("ticketmanager.notify.unreadUpdates.onJoin")) return@launchSupervised
 
-                    val ids = DatabaseManager.activeDatabase.getTicketIDsWithUpdatesForAsync(player.asCreator()).asDeferredThenAwait()
+                    val ids = DatabaseManager.activeDatabase.getTicketIDsWithUpdatesForAsync(player.asCreator())
                     if (ids.isEmpty()) return@launchSupervised
 
                     val template =
@@ -81,11 +80,11 @@ abstract class PlayerJoinEvent(
                 TMCoroutine.launchSupervised {
                     if (!player.has("ticketmanager.notify.openTickets.onJoin")) return@launchSupervised
 
-                    val openCF = async { DatabaseManager.activeDatabase.countOpenTicketsAsync().asDeferredThenAwait() }
+                    val openCF = async { DatabaseManager.activeDatabase.countOpenTicketsAsync() }
                     val assignedCF = async {
                         DatabaseManager.activeDatabase.countOpenTicketsAssignedToAsync(
                             player.permissionGroups.map(Assignment::PermissionGroup) + Assignment.Player(player.username)
-                        ).asDeferredThenAwait()
+                        )
                     }
 
                     if (openCF.await() != 0L)

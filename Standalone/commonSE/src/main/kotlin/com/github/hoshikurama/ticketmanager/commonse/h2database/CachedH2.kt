@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.commonse.h2database
 
-import com.github.hoshikurama.ticketmanager.api.common.database.AsyncDatabase
+import com.github.hoshikurama.ticketmanager.api.common.database.CompletableFutureAsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.common.database.DBResult
 import com.github.hoshikurama.ticketmanager.api.common.database.SearchConstraints
 import com.github.hoshikurama.ticketmanager.api.common.ticket.*
@@ -8,8 +8,8 @@ import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asParallelStream
 import com.github.hoshikurama.ticketmanager.commonse.utilities.mapNotNull
 import com.github.hoshikurama.ticketmanager.commonse.utilities.notEquals
-import com.github.hoshikurama.ticketmanager.commonse.utilities.toImmutableList
-import com.google.common.collect.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toPersistentList
 import kotliquery.*
 import org.h2.jdbcx.JdbcConnectionPool
 import java.time.Instant
@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
-class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
+class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase {
 
     private val ticketMap = ConcurrentHashMap<Long, Ticket>()
     private val nextTicketID = AtomicLong(1L)
@@ -190,7 +190,7 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
                 // Side effects occur here intentionally
                 val action = ActionInfo(actor, ticketLoc, curTime).MassClose()
                 val newTicket = Ticket(it.id, it.creator, it.priority, Ticket.Status.CLOSED, it.assignedTo, it.creatorStatusUpdate,
-                    ImmutableList.copyOf(arrayOf(*it.actions.toTypedArray(), action)))
+                    (it.actions.toPersistentList() + action).toImmutableList())
                 ticketMap[it.id] = newTicket
                 newTicket
             }
@@ -348,42 +348,42 @@ class CachedH2(absoluteDataFolderPath: String) : AsyncDatabase {
         )
     }
 
-    override fun getTicketIDsWithUpdatesAsync(): CompletableFuture<ImmutableList<Long>> {
+    override fun getTicketIDsWithUpdatesAsync(): CompletableFuture<List<Long>> {
         return ticketMap.values.asParallelStream()
             .filter { it.creatorStatusUpdate }
             .map(Ticket::id)
-            .toImmutableList()
+            .toList()
             .let { CompletableFuture.completedFuture(it) }
     }
 
-    override fun getTicketIDsWithUpdatesForAsync(creator: Creator): CompletableFuture<ImmutableList<Long>> {
+    override fun getTicketIDsWithUpdatesForAsync(creator: Creator): CompletableFuture<List<Long>> {
         return ticketMap.values.asParallelStream()
             .filter { it.creatorStatusUpdate && it.creator == creator }
             .map(Ticket::id)
-            .toImmutableList()
+            .toList()
             .let { CompletableFuture.completedFuture(it) }
     }
 
-    override fun getOwnedTicketIDsAsync(creator: Creator): CompletableFuture<ImmutableList<Long>> = CompletableFuture.supplyAsync {
+    override fun getOwnedTicketIDsAsync(creator: Creator): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
         ticketMap.values.asParallelStream()
             .filter { it.creator == creator }
             .map(Ticket::id)
-            .toImmutableList()
+            .toList()
     }
 
-    override fun getOpenTicketIDsAsync(): CompletableFuture<ImmutableList<Long>> = CompletableFuture.supplyAsync {
+    override fun getOpenTicketIDsAsync(): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
         ticketMap.values.asParallelStream()
             .filter { it.status == Ticket.Status.OPEN }
             .map(Ticket::id)
-            .toImmutableList()
+            .toList()
     }
 
-    override fun getOpenTicketIDsForUser(creator: Creator): CompletableFuture<ImmutableList<Long>> = CompletableFuture.supplyAsync {
+    override fun getOpenTicketIDsForUser(creator: Creator): CompletableFuture<List<Long>> = CompletableFuture.supplyAsync {
         ticketMap.values.asParallelStream()
             .filter { it.creator == creator }
             .filter { it.status == Ticket.Status.OPEN }
             .map(Ticket::id)
-            .toImmutableList()
+            .toList()
     }
 
     override fun closeDatabase() {
@@ -509,7 +509,7 @@ private fun Row.toTicket(): Ticket {
         status = Ticket.Status.valueOf(string(4)),
         assignedTo = stringOrNull(5)?.run(::AssignmentString)?.asAssignmentType() ?: Assignment.Nobody,
         creatorStatusUpdate = boolean(6),
-        actions = ImmutableList.of()
+        actions = emptyList<Action>().toImmutableList()
     )
 }
 

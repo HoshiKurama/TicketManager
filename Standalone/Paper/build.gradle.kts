@@ -28,8 +28,9 @@ dependencies {
     compileOnly("net.kyori:adventure-text-minimessage:4.14.0")
     //compileOnly("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
 
-    implementation("com.github.HoshiKurama.TicketManager_API:Paper:10.0.0-RC26")
-    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC26")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
+    implementation("com.github.HoshiKurama.TicketManager_API:Paper:10.0.0RC-28")
+    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0RC-28")
     implementation("com.mojang:brigadier:1.0.500")
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("com.h2database:h2:2.1.214")

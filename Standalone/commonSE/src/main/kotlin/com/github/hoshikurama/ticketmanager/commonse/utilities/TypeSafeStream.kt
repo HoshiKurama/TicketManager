@@ -1,6 +1,5 @@
 package com.github.hoshikurama.ticketmanager.commonse.utilities
 
-import com.google.common.collect.ImmutableList
 import java.util.*
 import java.util.stream.Stream
 import kotlin.streams.asSequence
@@ -21,7 +20,6 @@ class TypeSafeStream<T>(val stream: Stream<T>) {
 
     // Stream Collection to Kotlin collections
     @Suppress("UNUSED") fun toList(): List<T> = stream.toList()
-    @Suppress("UNUSED") fun toImmutableList(): ImmutableList<T> = ImmutableList.copyOf(stream.iterator())
     @Suppress("UNUSED") fun toMutableList(): MutableList<T> = stream.toList()
     @Suppress("UNUSED") fun toSet(): Set<T> = toList().toSet()
     @Suppress("UNUSED") fun toMutableSet(): MutableSet<T> = toMutableList().toMutableSet()

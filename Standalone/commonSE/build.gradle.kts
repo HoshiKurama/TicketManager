@@ -18,7 +18,8 @@ repositories {
 dependencies {
 
     implementation(project(":common"))
-    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC26")
+    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0RC-28")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
     // Not included but shaded later
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("net.kyori:adventure-text-minimessage:4.14.0")
