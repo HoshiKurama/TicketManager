@@ -72,6 +72,12 @@ class CommandAPIRunner {
     ) = argument(
         CustomArgument(LongArgument(locale.parameterID)) { info ->
             TMCoroutine.asyncSupervised {
+                // Verifies plugin state
+                if (GlobalState.isPluginLocked)
+                    return@asyncSupervised locale.warningsLocked
+                        .parseMiniMessage()
+                        .run(::Error)
+
                 val ticketOrNull = DatabaseManager.activeDatabase
                     .getTicketOrNullAsync(info.currentInput)
 
