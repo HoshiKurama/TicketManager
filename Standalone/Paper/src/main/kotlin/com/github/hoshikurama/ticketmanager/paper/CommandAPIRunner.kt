@@ -30,7 +30,7 @@ import dev.jorel.commandapi.executors.CommandArguments
 import dev.jorel.commandapi.executors.CommandExecutor
 import dev.jorel.commandapi.executors.ExecutorType
 import dev.jorel.commandapi.kotlindsl.*
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.future.asCompletableFuture
 import net.kyori.adventure.text.Component
 import org.bukkit.OfflinePlayer
 import java.util.concurrent.CompletableFuture
@@ -71,23 +71,21 @@ class CommandAPIRunner {
         otherFunctions: Argument<*>.() -> Unit
     ) = argument(
         CustomArgument(LongArgument(locale.parameterID)) { info ->
-            CompletableFuture.supplyAsync {
-                runBlocking {
-                    val ticketOrNull = DatabaseManager.activeDatabase
-                        .getTicketOrNullAsync(info.currentInput)
+            TMCoroutine.asyncSupervised {
+                val ticketOrNull = DatabaseManager.activeDatabase
+                    .getTicketOrNullAsync(info.currentInput)
 
-                    // Filter Invalid Ticket
-                    val ticket = ticketOrNull ?: return@runBlocking locale.brigadierInvalidID
-                        .parseMiniMessage("id" templated info.currentInput.toString())
-                        .run(::Error)
+                // Filter Invalid Ticket
+                val ticket = ticketOrNull ?: return@asyncSupervised locale.brigadierInvalidID
+                    .parseMiniMessage("id" templated info.currentInput.toString())
+                    .run(::Error)
 
-                    // Other Checks
-                    val tmSender = info.sender.toTMSender()
-                    val failPoint = otherChecks.mapNotNull { it(ticket, tmSender) }
+                // Other Checks
+                val tmSender = info.sender.toTMSender()
+                val failPoint = otherChecks.mapNotNull { it(ticket, tmSender) }
 
-                    return@runBlocking if (failPoint.isNotEmpty()) failPoint.first() else Success(ticket)
-                }
-            }
+                if (failPoint.isNotEmpty()) failPoint.first() else Success(ticket)
+            }.asCompletableFuture()
         }
     ) { otherFunctions(this) }
 
@@ -123,25 +121,21 @@ class CommandAPIRunner {
 
     // Argument Suggestions
     private val openTicketIDsAsync = ArgumentSuggestions.stringsAsync { _: SuggestionInfo<BukkitCommandSender> ->
-        CompletableFuture.supplyAsync {
-            runBlocking {
-                DatabaseManager.activeDatabase.getOpenTicketIDsAsync()
-                    .map(Long::toString).toTypedArray()
-            }
-        }
+        TMCoroutine.asyncGlobal {
+            DatabaseManager.activeDatabase.getOpenTicketIDsAsync()
+                .map(Long::toString).toTypedArray()
+        }.asCompletableFuture()
     }
 
     private fun dualityOpenIDsAsync(basePerm: String) = ArgumentSuggestions.stringsAsync { info ->
-        CompletableFuture.supplyAsync {
-            runBlocking {
-                val tmSender = info.sender.toTMSender()
+        TMCoroutine.asyncGlobal {
+            val tmSender = info.sender.toTMSender()
 
-                val results = if (tmSender.has("$basePerm.all")) DatabaseManager.activeDatabase.getOpenTicketIDsAsync()
-                else DatabaseManager.activeDatabase.getOpenTicketIDsForUser(tmSender.asCreator())
+            val results = if (tmSender.has("$basePerm.all")) DatabaseManager.activeDatabase.getOpenTicketIDsAsync()
+            else DatabaseManager.activeDatabase.getOpenTicketIDsForUser(tmSender.asCreator())
 
-                results.map(Long::toString).toTypedArray()
-            }
-        }
+            results.map(Long::toString).toTypedArray()
+        }.asCompletableFuture()
     }
 
     // Requirements
