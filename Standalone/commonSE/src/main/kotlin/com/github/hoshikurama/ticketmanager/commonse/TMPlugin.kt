@@ -1,6 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
 import com.github.hoshikurama.ticketmanager.api.common.TMCoroutine
+import com.github.hoshikurama.ticketmanager.api.common.database.AsyncDBAdapter
 import com.github.hoshikurama.ticketmanager.api.common.ticket.Assignment
 import com.github.hoshikurama.ticketmanager.api.common.ticket.Creator
 import com.github.hoshikurama.ticketmanager.common.*
@@ -122,7 +123,10 @@ abstract class TMPlugin(
         cooldown?.shutdown()
         periodicTasks.forEach(Job::cancel)
 
-        DatabaseManager.activeDatabase.closeDatabase()
+        // Only close database here if the current DB is CachedH2. Otherwise, it must be delegated to the Extension
+        if (DatabaseManager.activeAssignedUUID == null && DatabaseManager.activeDatabase is AsyncDBAdapter)
+            DatabaseManager.activeDatabase.closeDatabase()
+
         runBlocking { TMCoroutine.cancelTasks("Plugin shutting down!") }
     }
 
