@@ -2,6 +2,7 @@ package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
 import com.github.hoshikurama.ticketmanager.api.common.ticket.ActionLocation
+import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.commonse.misc.encodeRequestTP
 import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
@@ -52,7 +53,7 @@ class PlatformFunctionsImpl(
     }
 
     override fun teleportToTicketLocDiffServer(player: OnlinePlayer, loc: ActionLocation.FromPlayer) {
-        plugin.server.sendPluginMessage(plugin, "ticketmanager:server_to_proxy_tp", encodeRequestTP(player, loc))
+        plugin.server.sendPluginMessage(plugin, Server2Proxy.Teleport.waterfallString(), encodeRequestTP(player, loc))
     }
 
     override fun relayMessageToProxy(channel: String, encodedMessage: ByteArray) {

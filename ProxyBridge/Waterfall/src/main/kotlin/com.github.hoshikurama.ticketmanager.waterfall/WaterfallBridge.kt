@@ -1,7 +1,6 @@
 package com.github.hoshikurama.ticketmanager.waterfall
 
 import com.github.hoshikurama.ticketmanager.common.*
-import com.github.hoshikurama.ticketmanager.common.discord.notifications.DiscordNotification
 import com.github.hoshikurama.ticketmanager.commonpde.ProxyBridge
 import com.google.common.io.ByteStreams
 import net.md_5.bungee.api.event.PluginMessageEvent
@@ -10,24 +9,16 @@ import net.md_5.bungee.api.plugin.Plugin
 import net.md_5.bungee.api.scheduler.ScheduledTask
 import net.md_5.bungee.event.EventHandler
 import org.bstats.bungeecord.Metrics
-import java.nio.file.Files
-import java.nio.file.Path
 import java.util.*
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeUnit
 
-
-
-class WaterfallBridgeAdapter<T>(private val plugin: T) : ProxyBridge()
+class WaterfallBridgeAdapter<T>(private val plugin: T) : ProxyBridge(plugin.dataFolder.toPath())
     where T: Plugin, T: Listener
 {
     @Volatile
     private var task: ScheduledTask? = null
     private lateinit var metrics: Metrics
-
-    override val dataDirectory: Path
-        get() = plugin.dataFolder.toPath()
 
     override fun registerChannels() {
         listOf(
@@ -37,7 +28,6 @@ class WaterfallBridgeAdapter<T>(private val plugin: T) : ProxyBridge()
             Server2Proxy.ProxyVersionRequest,
             Proxy2Server.NotificationSharing,
             Server2Proxy.NotificationSharing,
-            Server2Proxy.DiscordMessage,
         )
             .map(ProxyChannel::waterfallString)
             .forEach(plugin.proxy::registerChannel)
@@ -51,7 +41,6 @@ class WaterfallBridgeAdapter<T>(private val plugin: T) : ProxyBridge()
             Server2Proxy.ProxyVersionRequest,
             Proxy2Server.NotificationSharing,
             Server2Proxy.NotificationSharing,
-            Server2Proxy.DiscordMessage,
         )
             .map(ProxyChannel::waterfallString)
             .forEach(plugin.proxy::unregisterChannel)
@@ -62,28 +51,6 @@ class WaterfallBridgeAdapter<T>(private val plugin: T) : ProxyBridge()
 
         // Initialize Metrics
         metrics = Metrics(plugin, waterfallBridgeKey)
-    }
-
-    override fun loadExternalConfig(): List<String> = this.dataDirectory.resolve("config.yml").run(Files::readAllLines)
-
-    override fun configExists(): Boolean = this.dataDirectory.resolve("config.yml").toFile().exists()
-
-    override fun writeConfig(list: List<String>) {
-        val writer = this.dataDirectory.resolve("config.yml").toFile().bufferedWriter()
-
-        list.forEachIndexed { index, str ->
-            writer.write(str)
-
-            if (index != list.lastIndex)
-                writer.newLine()
-        }
-        writer.close()
-    }
-
-    override fun dataDirectoryExists(): Boolean = plugin.dataFolder.exists()
-
-    override fun writeDataDirectory() {
-        plugin.dataFolder.mkdir()
     }
 
     override fun scheduleRepeatCheck(frequencyHours: Long) {
@@ -97,10 +64,7 @@ class WaterfallBridgeAdapter<T>(private val plugin: T) : ProxyBridge()
         val update = UpdateChecker(true, UpdateChecker.Location.BRIDGE)
 
         update.latestVersionIfNotLatest?.let {
-            plugin.logger.info(locale.notifyPluginUpdate
-                .replace("<current>", bridgePluginVersion)
-                .replace("<latest>", it)
-            )
+            plugin.logger.info("[TicketManager Proxy] TicketManager has an update!\n  Current Version: $bridgePluginVersion\n  Latest Version: $it")
         }
         updateChecker.set(update)
     }
@@ -158,13 +122,6 @@ class WaterfallBridge : Plugin(), Listener {
                     val msg = ProxyUpdate.encodeServerMsg(bridgePluginVersion, latestVer)
                     targetServer.sendData(Proxy2Server.ProxyVersionRequest.waterfallString(), msg)
                 }
-            }
-
-            Server2Proxy.DiscordMessage.waterfallString() -> {
-                if (adapter.discord == null) return
-
-                val notification = DiscordNotification.decode(event.data, adapter.locale)
-                CompletableFuture.runAsync { adapter.discord?.sendMessage(notification, adapter.locale) }
             }
         }
     }

@@ -33,7 +33,7 @@ dependencies {
     implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC30")
     implementation("com.mojang:brigadier:1.0.500")
     implementation("com.github.seratch:kotliquery:1.9.0")
-    implementation("com.h2database:h2:2.1.214")
+    implementation("com.h2database:h2:2.2.220")
     implementation("dev.jorel:commandapi-bukkit-core:9.0.3")
     implementation("dev.jorel:commandapi-bukkit-shade:9.0.3")
     implementation("dev.jorel:commandapi-bukkit-kotlin:9.0.3")
@@ -41,7 +41,7 @@ dependencies {
     implementation("net.kyori:adventure-extra-kotlin:4.14.0")
     implementation("org.bstats:bstats-bukkit:3.0.2")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
 

@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.8.22"
+    kotlin("jvm") version "1.9.0"
     java
 }
 
@@ -10,13 +10,8 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0")
 }
-/*
-TODO: update to Kotlin 1.9.0 once maven dependency releases.
-https://kotlinlang.org/docs/whatsnew19.html#install-kotlin-1-9-0
-Do an update to all gradle files
- */
 
 subprojects {
     group = "com.github.hoshikurama"
