@@ -41,10 +41,11 @@
 #                                     ║  'en_ca'  │ Canadian English             ║                                    #
 #                                     ║  'en_uk'  │ UK English                   ║                                    #
 #                                     ║  'en_us'  │ US English                   ║                                    #
+#                                     ║  'fr_fr'  │ French (France)              ║                                    #
 #                                     ╚═══════════╧══════════════════════════════╝                                    #
 #                                                                                                                     #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Preferred_Locale: 'en_CA'                                                                                             #
+Preferred_Locale: "en_ca"
 #   Locale that TicketManager will use.                                                                               #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 #                                                                                                                     #
@@ -101,9 +102,6 @@ Allow_Proxy_UpdateChecking: true
 Proxy_Update_Check_Frequency: 1
 #   Time in hours between proxy update checking.                                                                      #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Discord_Bot_On_Proxy: false
-#   Send notification to proxy discord instance (Bot and Proxy must also be enabled)                                  #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 #                                                                                                                     #
 #                                                                                                                     #
 #                                                                                                                     #
@@ -112,72 +110,16 @@ Discord_Bot_On_Proxy: false
 #   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
 #                                                  Database Settings                                                  #
 #   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
-#   TicketManager has multiple modes storing current and past tickets. These are (with config values):                #
-#       • Cached H2   ('CACHED_H2')                                                                                   #
-#       • H2          ('H2')                                                                                          #
-#       • Memory      ('MEMORY')                                                                                      #
-#       • MySQL       ('MYSQL').                                                                                      #
+#   TicketManager only ships with one database type: CACHED_H2. In summary, tickets are loaded into memory, but       #
+#   tickets and actions are also pushed to an H2 database. This provides both speed and data safety.                  #
 #                                                                                                                     #
-#   If an error occurs during database initialization, TicketManager defaults to Cached H2. Information only needs    #
-#   to be inputted for the anticipated database mode.                                                                 #
+#   However, TM Database Extensions allow any database to be used. Simply install the desired extension, and paste    #
+#   the config value specified by the extension into the Database_Mode parameter below.                               #
 #                                                                                                                     #
-#   Note: While Memory and Cached H2 technically use more RAM than the other options, tickets are quite small.        #
-#   Consequently, it takes thousands to tens of thousands of tickets before RAM usage becomes meaningful.             #
+#   If an error occurs during database initialization, TicketManager defaults to the included CACHED_H2.              #
 #                                                                                                                     #
+#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Database_Mode: 'CACHED_H2'
-#   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄    #
-#                                           Cached H2  (No Config Settings)                                           #
-#                                                                                                                     #
-#   Cached H2 is Memory mode with a backing H2 database.                                                              #
-#       ╔══════════════════════════════════════════════════╤══════════════════════════════════════════════════╗       #
-#       ║                       Pros                       │                       Cons                       ║       #
-#       ╠══════════════════════════════════════════════════╪══════════════════════════════════════════════════╣       #
-#       ║  Speed of Memory with reliability of H2          │  Uses more memory than MySQL                     ║       #
-#       ╚══════════════════════════════════════════════════╧══════════════════════════════════════════════════╝       #
-#                                                                                                                     #
-#   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄    #
-#                                               H2  (No Config Settings)                                              #
-#                                                                                                                     #
-#   H2 stores data in an H2 file in the TicketManager plugin folder on the server.                                    #
-#       ╔══════════════════════════════════════════════════╤══════════════════════════════════════════════════╗       #
-#       ║                       Pros                       │                       Cons                       ║       #
-#       ╠══════════════════════════════════════════════════╪══════════════════════════════════════════════════╣       #
-#       ║  No external database (unlike MySQL)             │  Generally less throughput than MySQL or Memory  ║       #
-#       ╟──────────────────────────────────────────────────┼──────────────────────────────────────────────────╢       #
-#       ║  Second fastest search command times             │  Stores ticket data on the server storage        ║       #
-#       ╚══════════════════════════════════════════════════╧══════════════════════════════════════════════════╝       #
-#                                                                                                                     #
-#   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄    #
-#                                             MySQL  (Has Config Settings)                                            #
-#                                                                                                                     #
-#   MySQL stores data in a database which may or may not be the same computer as your Minecraft server.               #
-#       ╔══════════════════════════════════════════════════╤══════════════════════════════════════════════════╗       #
-#       ║                       Pros                       │                       Cons                       ║       #
-#       ╠══════════════════════════════════════════════════╪══════════════════════════════════════════════════╣       #
-#       ║  Able to handle more traffic than H2             │  Requires MySQL database                         ║       #
-#       ╟──────────────────────────────────────────────────┼──────────────────────────────────────────────────╢       #
-#       ║  Database can be offloaded to another server     │  Generally slower than other options             ║       #
-#       ╚══════════════════════════════════════════════════╧══════════════════════════════════════════════════╝       #
-#                                                                                                                     #
-MySQL_Port: ''
-MySQL_Host: ''
-MySQL_DBName: ''
-MySQL_Username: ''
-MySQL_Password: ''
-#   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄    #
-#                                            Memory  (Has Config Settings)                                            #
-#                                                                                                                     #
-#   Memory runs your entire database in RAM. Data is backed up throughout normal server operations and on server      #
-#   shutdowns. It is then reloaded into memory on the next startup.                                                   #
-#       ╔══════════════════════════════════════════════════╤══════════════════════════════════════════════════╗       #
-#       ║                       Pros                       │                       Cons                       ║       #
-#       ╠══════════════════════════════════════════════════╪══════════════════════════════════════════════════╣       #
-#       ║  Extremely responsive and fast queries           │  Any power loss or server crash will result in   ║       #
-#       ║                                                  │  all data beyond the last backup being lost      ║       #
-#       ╚══════════════════════════════════════════════════╧══════════════════════════════════════════════════╝       #
-#                                                                                                                     #
-Memory_Backup_Frequency: 600
-#   Time in seconds between database backups                                                                          #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 #                                                                                                                     #
 #                                                                                                                     #
@@ -189,11 +131,11 @@ Memory_Backup_Frequency: 600
 #   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
 #   TicketManager can output unexpected errors to Console. Please note that the following settings are for Console    #
 #   only. Players wishing to modify their experience should use permission nodes.                                     #
-#
-#   TicketManager can output errors in two ways:
-#       • Modified Stacktrace
-#       • Full Stacktrace.
-#
+#                                                                                                                     #
+#   TicketManager can output errors in two ways:                                                                      #
+#       • Modified Stacktrace                                                                                         #
+#       • Full Stacktrace.                                                                                            #
+#                                                                                                                     #
 #   The modified stacktrace is custom and only prints where code went wrong in TicketManager's code itself. This is   #
 #   especially useful for quickly determining a problem's location. It is also more readable for users not familiar   #
 #   with the standard stacktrace.                                                                                     #
@@ -207,56 +149,6 @@ Print_Modified_Stacktrace: true
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Print_Full_Stacktrace: false
 #   Enable or disable the standard stacktrace in Console.                                                             #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-#                                                                                                                     #
-#                                                                                                                     #
-#                                                                                                                     #
-#                                                                                                                     #
-#                                                                                                                     #
-#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
-#                                                 Discord Bot Settings                                                #
-#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
-#   TicketManager has the ability to send ticket modification and creation notifications to a channel in your         #
-#   Discord server.                                                                                                   #
-#                                                                                                                     #
-#   Please note that you must generate your own bot token and provide a channel ID for the desired channel. The       #
-#   wiki provides step-by-step instructions, but the information may or may not be outdated.                          #
-#                                                                                                                     #
-#   TicketManager does not send notifications when users perform a command silently.                                  #
-#                                                                                                                     #
-#   For users with multiple servers in proxy mode, consider using a single bot running on the proxy. To enable        #
-#   this behaviour, enable the discord bot and then enable forwarding discord messages to the proxy.                  #
-#                                                                                                                     #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Use_Discord_Bot: false
-#   Enable or disable the Discord bot.                                                                                #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Discord_Bot_Token: ''
-#   Generated Discord bot token.                                                                                      #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Discord_Channel_ID: -1
-#   Text Channel ID of the channel the bot should send messages to.                                                   #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Discord_Notify_On_Assign: true
-#   Send notification when tickets assignments/un-assignments occur.                                                  #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Discord_Notify_On_Close: true
-#   Send notification when a ticket is closed.                                                                        #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Discord_Notify_On_Close_All: true
-#   Send notification when tickets are mass-closed.                                                                   #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Discord_Notify_On_Comment: true
-#   Send notification when a ticket receives a comment.                                                               #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Discord_Notify_On_Create: true
-#   Send notification when a ticket is created.                                                                       #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Discord_Notify_On_Reopen: true
-#   Send notification when a ticket is re-opened.                                                                     #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Discord_Notify_On_Priority_Change: true
-#   Send notification when a ticket's priority is changed.                                                            #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 #                                                                                                                     #
 #                                                                                                                     #

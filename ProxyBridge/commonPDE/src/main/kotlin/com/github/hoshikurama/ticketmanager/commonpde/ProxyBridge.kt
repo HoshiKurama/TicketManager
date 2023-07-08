@@ -43,8 +43,14 @@ abstract class ProxyBridge {
         val configMap = loadExternalConfig()
             .asSequence()
             .filterNot { it.startsWith("#") }
-            .map { it.split(":", limit = 2).map(String::trim) }
-            .map { it[0] to it[1] }
+            .map { it.split(": ", limit = 2) }
+            .map { it[0] to StringBuilder(it[1]) }
+            .onEach { (_, sb) ->
+                listOf(sb.lastIndex, 0)
+                    .filter { sb[it] == '\"' || sb[it] == '\'' }
+                    .forEach(sb::deleteCharAt)
+            }
+            .map { it.first to it.second.toString() }
             .toMap()
         val autoUpdateConfig = configMap["Auto_Update_Config"]?.toBoolean() ?: true
         val updateCheckFrequency = configMap["Update_Check_Duration_Hours"]?.toLong() ?: 12L
