@@ -26,12 +26,12 @@ dependencies {
     compileOnly("com.google.guava:guava:32.1.2-jre")
     compileOnly("net.kyori:adventure-api:4.14.0")
     compileOnly("net.kyori:adventure-text-minimessage:4.14.0")
+    compileOnly("com.mojang:brigadier:1.0.500")
     //compileOnly("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
 
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
     implementation("com.github.HoshiKurama.TicketManager_API:Paper:10.0.0-RC32")
     implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC32")
-    implementation("com.mojang:brigadier:1.0.500")
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("com.h2database:h2:2.2.220")
     implementation("dev.jorel:commandapi-bukkit-core:9.0.3")
@@ -71,7 +71,6 @@ tasks {
 
         // Relocators
         relocate("dev.jorel", "com.github.hoshikurama.ticketmanager.shaded.commandapi")
-        relocate("com.mojang.brigadier", "com.github.hoshikurama.ticketmanager.shaded.brigadier")
         relocate("org.bstats", "com.github.hoshikurama.ticketmanager.shaded.bStats")
         relocate("kotliquery", "com.github.hoshikurama.ticketmanager.shaded.kotliquery")
         relocate("org.h2", "com.github.hoshikurama.ticketmanager.shaded.h2")
