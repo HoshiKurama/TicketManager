@@ -18,14 +18,14 @@ repositories {
 dependencies {
 
     implementation(project(":common"))
-    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC30")
+    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC32")
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
     // Not included but shaded later
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("net.kyori:adventure-text-minimessage:4.14.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0")
 
     // Not included and not shaded later
@@ -33,9 +33,9 @@ dependencies {
     implementation("net.kyori:adventure-api:4.14.0")
     implementation("net.kyori:adventure-extra-kotlin:4.14.0")
 
-    implementation("org.yaml:snakeyaml:2.0")
+    implementation("org.yaml:snakeyaml:2.1")
     implementation("joda-time:joda-time:2.12.5")
     implementation("com.google.code.gson:gson:2.10.1")
-    implementation("com.google.guava:guava:32.1.1-jre")
+    implementation("com.google.guava:guava:32.1.2-jre")
     implementation( "com.h2database:h2:2.2.220")
 }

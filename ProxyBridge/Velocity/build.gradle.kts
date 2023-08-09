@@ -27,8 +27,7 @@ dependencies {
     implementation(project(":ProxyBridge:commonPDE"))
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
     implementation("org.bstats:bstats-velocity:3.0.2")
-    implementation("org.yaml:snakeyaml:2.0")
-    implementation("com.discord4j:discord4j-core:3.2.5")
+    implementation("org.yaml:snakeyaml:2.1")
 }
 
 tasks {
