@@ -21,16 +21,16 @@ repositories {
 dependencies {
     compileOnly("net.luckperms:api:5.4")
     compileOnly("io.papermc.paper:paper-api:1.20-R0.1-SNAPSHOT")
-    compileOnly("org.yaml:snakeyaml:2.0")
+    compileOnly("org.yaml:snakeyaml:2.1")
     compileOnly("com.google.code.gson:gson:2.10.1")
-    compileOnly("com.google.guava:guava:32.1.1-jre")
+    compileOnly("com.google.guava:guava:32.1.2-jre")
     compileOnly("net.kyori:adventure-api:4.14.0")
     compileOnly("net.kyori:adventure-text-minimessage:4.14.0")
     //compileOnly("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
 
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
-    implementation("com.github.HoshiKurama.TicketManager_API:Paper:10.0.0-RC30")
-    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC30")
+    implementation("com.github.HoshiKurama.TicketManager_API:Paper:10.0.0-RC32")
+    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC32")
     implementation("com.mojang:brigadier:1.0.500")
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("com.h2database:h2:2.2.220")
@@ -42,8 +42,8 @@ dependencies {
     implementation("org.bstats:bstats-bukkit:3.0.2")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
     implementation(project(":Standalone:commonSE"))
     implementation(project(":common"))
@@ -64,7 +64,6 @@ tasks {
             exclude(dependency("org.codehaus.plexus:.*:.*"))
             exclude(dependency("javax.inject:.*:.*"))
             exclude(dependency("org.eclipse.sisu:.*:.*"))
-            exclude(dependency("com.mojang.brigadier:.*"))
 
             // Excludes for Adventure
             exclude { it.moduleGroup == "net.kyori" && it.moduleName != "adventure-extra-kotlin"}
@@ -72,13 +71,16 @@ tasks {
 
         // Relocators
         relocate("dev.jorel", "com.github.hoshikurama.ticketmanager.shaded.commandapi")
+        relocate("com.mojang.brigadier", "com.github.hoshikurama.ticketmanager.shaded.brigadier")
         relocate("org.bstats", "com.github.hoshikurama.ticketmanager.shaded.bStats")
         relocate("kotliquery", "com.github.hoshikurama.ticketmanager.shaded.kotliquery")
-        relocate("org.h2", "com.github.hoshikurama.ticketmanager.shaded.org.h2")
+        relocate("org.h2", "com.github.hoshikurama.ticketmanager.shaded.h2")
         relocate("org.joda.time", "com.github.hoshikurama.ticketmanager.shaded.jodatime")
         relocate("kotlin", "com.github.hoshikurama.ticketmanager.shaded.kotlin")
         relocate("kotlinx", "com.github.hoshikurama.ticketmanager.shaded.kotlinx")
         relocate("net.kyori.adventure.extra.kotlin", "com.github.hoshikurama.ticketmanager.shaded.adventureextrakotlin")
         relocate("com.zaxxer.hikari", "com.github.hoshikurama.ticketmanager.shaded.hikari")
+        relocate("org.intellij", "com.github.hoshikurama.ticketmanager.shaded.intellij")
+        relocate("org.jetbrains.annotations", "com.github.hoshikurama.ticketmanager.shaded.jetbrains.annotations")
     }
 }
