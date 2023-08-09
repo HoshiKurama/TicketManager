@@ -69,7 +69,7 @@ class CommandTasks(
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).CloseWithComment(comment)
 
         // Call TicketModificationEventAsync
-        callTicketModificationEventAsync(sender, ticket.creator, action, silent)
+        callTicketModificationEventAsync(sender, ticket.creator, action, ticket.id, silent)
 
         // Run all database calls and event
         TMCoroutine.launchSupervised {
@@ -102,7 +102,7 @@ class CommandTasks(
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).CloseWithoutComment()
 
         // Call TicketModificationEventAsync
-        callTicketModificationEventAsync(sender, ticket.creator, action, silent)
+        callTicketModificationEventAsync(sender, ticket.creator, action, ticket.id, silent)
 
         // Run all database calls and event
         TMCoroutine.launchSupervised {
@@ -135,7 +135,7 @@ class CommandTasks(
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).MassClose()
 
         // Launch Ticket Modification Event
-        callTicketModificationEventAsync(sender, Creator.DummyCreator, action, silent)
+        callTicketModificationEventAsync(sender, Creator.DummyCreator, action, -1, silent)
 
         TMCoroutine.launchSupervised {
             DatabaseManager.activeDatabase
@@ -160,7 +160,7 @@ class CommandTasks(
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Comment(comment)
 
         // Launch Ticket Modification Event
-        callTicketModificationEventAsync(sender, ticket.creator, action, silent)
+        callTicketModificationEventAsync(sender, ticket.creator, action, ticket.id, silent)
 
         // Database Stuff + Event
         TMCoroutine.launchSupervised {
@@ -202,7 +202,7 @@ class CommandTasks(
         val id = DatabaseManager.activeDatabase.insertNewTicketAsync(initTicket)
         GlobalState.ticketCounter.increment()
 
-        callTicketModificationEventAsync(sender, initTicket.creator, initTicket.actions[0], false)
+        callTicketModificationEventAsync(sender, initTicket.creator, initTicket.actions[0], id, false)
 
         return MessageNotification.Create.newActive(
             isSilent = false,
@@ -467,7 +467,7 @@ class CommandTasks(
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Reopen()
 
         // launch event
-        callTicketModificationEventAsync(sender, ticket.creator, action, silent)
+        callTicketModificationEventAsync(sender, ticket.creator, action, ticket.id, silent)
 
         // Write to database
         TMCoroutine.launchSupervised {
@@ -622,7 +622,7 @@ class CommandTasks(
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).SetPriority(priority)
 
         // Call event
-        callTicketModificationEventAsync(sender, ticket.creator, action, silent)
+        callTicketModificationEventAsync(sender, ticket.creator, action, ticket.id, silent)
 
         // Database calls
         TMCoroutine.launchSupervised {
@@ -826,7 +826,7 @@ class CommandTasks(
         val insertedAction = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Assign(assignment)
 
         // Launch TicketModificationEventAsync
-        callTicketModificationEventAsync(sender, creator, insertedAction, silent)
+        callTicketModificationEventAsync(sender, creator, insertedAction, ticketID, silent)
 
         // Writes to database
         TMCoroutine.launchSupervised {
@@ -881,12 +881,13 @@ class CommandTasks(
 
     private fun callTicketModificationEventAsync(
         commandSender: CommandSender.Active,
-        Creator: Creator,
+        creator: Creator,
         action: Action,
+        ticketNumber: Long,
         isSilent: Boolean,
     ) {
         TMCoroutine.launchGlobal {
-            eventBuilder.buildTicketModifyEvent(commandSender, Creator, action, isSilent).callEventTM()
+            eventBuilder.buildTicketModifyEvent(commandSender, creator, action, ticketNumber, isSilent).callEventTM()
         }
     }
 

@@ -116,7 +116,6 @@ class TMPluginImpl(
             paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, Proxy2Server.Teleport.waterfallString(), proxy!!)
             paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.ProxyVersionRequest.waterfallString())
             paperPlugin.server.messenger.registerIncomingPluginChannel(paperPlugin, Proxy2Server.ProxyVersionRequest.waterfallString(), proxy!!)
-            paperPlugin.server.messenger.registerOutgoingPluginChannel(paperPlugin, Server2Proxy.DiscordMessage.waterfallString())
         }
 
         // Registers player join event

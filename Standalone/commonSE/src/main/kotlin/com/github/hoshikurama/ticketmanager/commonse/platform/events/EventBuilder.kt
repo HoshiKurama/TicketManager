@@ -12,6 +12,7 @@ interface EventBuilder {
         activeCommandSender: CommandSender.Active,
         ticketCreator: Creator,
         modification: Action,
+        ticketNumber: Long,
         wasSilent: Boolean,
     ) : AbstractAsyncTicketModifyEvent
 }

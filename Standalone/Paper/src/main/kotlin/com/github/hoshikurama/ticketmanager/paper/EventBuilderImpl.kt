@@ -13,8 +13,9 @@ class EventBuilderImpl : EventBuilder {
         activeCommandSender: CommandSender.Active,
         ticketCreator: Creator,
         modification: Action,
+        ticketNumber: Long,
         wasSilent: Boolean
     ): AbstractAsyncTicketModifyEvent {
-        return AsyncTicketModifyEvent(activeCommandSender, ticketCreator, modification, wasSilent)
+        return AsyncTicketModifyEvent(activeCommandSender, ticketCreator, modification, ticketNumber, wasSilent)
     }
 }
