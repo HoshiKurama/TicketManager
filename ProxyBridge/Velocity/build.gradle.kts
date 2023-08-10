@@ -35,6 +35,5 @@ tasks {
         archiveBaseName.set("TicketManager-VelocityBridge")
 
         relocate("org.bstats", "com.github.hoshikurama.ticketmanager.bstats")
-        relocate("io.netty", "com.discord4j.shaded.io.netty")
     }
 }

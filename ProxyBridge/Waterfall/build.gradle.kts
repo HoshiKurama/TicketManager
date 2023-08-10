@@ -18,7 +18,7 @@ repositories {
 dependencies {
     implementation(project(":common"))
     implementation(project(":ProxyBridge:commonPDE"))
-    compileOnly("io.github.waterfallmc:waterfall-api:1.19-R0.1-SNAPSHOT")
+    compileOnly("io.github.waterfallmc:waterfall-api:1.20-R0.1-SNAPSHOT")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
     implementation("org.bstats:bstats-bungeecord:3.0.2")
     implementation("org.yaml:snakeyaml:2.0")
@@ -29,6 +29,5 @@ tasks {
         archiveBaseName.set("TicketManager-WaterfallBridge")
 
         relocate("org.bstats", "com.github.hoshikurama.ticketmanager.bstats")
-        relocate("io.netty", "com.discord4j.shaded.io.netty")
     }
 }

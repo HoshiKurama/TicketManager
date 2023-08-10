@@ -30,8 +30,8 @@ dependencies {
     //compileOnly("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
 
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
-    implementation("com.github.HoshiKurama.TicketManager_API:Paper:10.0.0-RC32")
-    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC32")
+    implementation("com.github.HoshiKurama.TicketManager_API:Paper:10.0.0-RC34")
+    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC34")
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("com.h2database:h2:2.2.220")
     implementation("dev.jorel:commandapi-bukkit-core:9.0.3")
@@ -40,11 +40,13 @@ dependencies {
     implementation("joda-time:joda-time:2.12.5")
     implementation("net.kyori:adventure-extra-kotlin:4.14.0")
     implementation("org.bstats:bstats-bukkit:3.0.2")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
+    // Kotlin Stuff
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.0")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.6.0-RC")
     implementation(project(":Standalone:commonSE"))
     implementation(project(":common"))
 }
