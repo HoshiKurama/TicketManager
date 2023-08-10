@@ -86,17 +86,7 @@ Page_Format: '<back_button><dark_gray>...............<dark_aqua>(<cur_page> of <
 # Warnings (Accepts Formatting):
 Warning_Header: '<red>[TicketManager]'
 Warning_Locked: '%Header% Commands are currently locked! Please try again later'
-Warning_NoPermission: '%Header% You do not have permission to perform this command!'
-Warning_InvalidID: '%Header% Please enter a valid ticket ID!'
-Warning_NAN: '%Header% Please enter a valid number!'
 Warning_NoConfig: '%Header% Config file not found! New file generated.'
-Warning_InvalidCommand: '%Header% No such command exists or number of arguments is incorrect!'
-Warning_PriorityOutOfBounds: '%Header% Priority must be between 1 and 5!'
-Warning_Under_Cooldown: '%Header% You need to wait a bit before trying to modify or create another ticket!'
-Warning_TicketAlreadyClosed: '%Header% This ticket is already closed!'
-Warning_TicketAlreadyOpen: '%Header% This ticket is already open!'
-Warning_InvalidDBType: '%Header% Invalid database type!'
-Warning_ConvertToSameDBType: '%Header% Unable to convert database to type already in use!'
 Warning_UnexpectedError: '%Header% Unexpected error has occurred!'
 Warning_LongTaskDuringReload: '%Header% Long-standing task detected during reload attempt. Forcefully ending all other tasks!'
 Warning_InvalidConfig: '%Header% <count> config values defaulted! Please check console for more information'                   # Templates: <count>

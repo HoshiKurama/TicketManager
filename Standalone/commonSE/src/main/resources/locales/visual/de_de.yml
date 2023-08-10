@@ -86,17 +86,7 @@ Page_Format: '<back_button><dark_gray>...............<dark_aqua>(<cur_page> von 
 # Warnings (Accepts Formatting):
 Warning_Header: '<red>[TicketManager]'
 Warning_Locked: '%Header% Aktuell sind alle Befehle gesperrt! Versuche es später erneut'
-Warning_NoPermission: '%Header% Du hast keine Berechtigungen um diesen Befehl auszuführen!'
-Warning_InvalidID: '%Header% Bitte gebe eine gültige Ticket-ID an!'
-Warning_NAN: '%Header% Bitte gebe eine gültige ID an!'
 Warning_NoConfig: '%Header% Konfiguration nicht gefunden! Neue Konfiguration wird generiert.'
-Warning_InvalidCommand: '%Header% Dieser Befehl existiert nicht oder die Anzahl der Argumente ist falsch!'
-Warning_PriorityOutOfBounds: '%Header% Die Priorität muss zwischen 1 und 5 liegen!'
-Warning_Under_Cooldown: '%Header% Du musst noch warten bevor du wieder ein Ticket erstellen oder bearbeiten kannst!'
-Warning_TicketAlreadyClosed: '%Header% Dieses Ticket wurde bereits geschlossen!'
-Warning_TicketAlreadyOpen: '%Header% Dieses Ticket wurde bereits geöffent!'
-Warning_InvalidDBType: '%Header% Ungültiger Datenbanktyp!'
-Warning_ConvertToSameDBType: '%Header% Kann die Datenbank nicht in den bereits genutzten Typ umwandeln!'
 Warning_UnexpectedError: '%Header% Ein unerwarteter Fehler ist aufgetreten!'
 Warning_LongTaskDuringReload: '%Header% Beim neuladen wurde eine Aufgabe gefunden die zu lange braucht. Alle anderen Aufgaben werden zwangsmäßig beendet!'
 Warning_InvalidConfig: '%Header% Es wurden <count> Konfigurationseinträge zurückgesetzt! Bitte überprüfe die Konsole für mehr Informationen.'                # Templates: <count>
