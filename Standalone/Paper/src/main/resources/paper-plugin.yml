@@ -30,9 +30,6 @@ permissions:
   ticketmanager.command.comment.own:
     description: Comment on only own tickets
     default: false
-  ticketmanager.command.convertDatabase:
-    description: Convert database to another supported type
-    default: false
   ticketmanager.command.create:
     description: Create a ticket
     default: false
@@ -159,7 +156,6 @@ permissions:
       ticketmanager.command.closeAll: true
       ticketmanager.command.comment.all: true
       ticketmanager.command.comment.own: true
-      ticketmanager.command.convertDatabase: true
       ticketmanager.command.create: true
       ticketmanager.command.help: true
       ticketmanager.command.history.all: true

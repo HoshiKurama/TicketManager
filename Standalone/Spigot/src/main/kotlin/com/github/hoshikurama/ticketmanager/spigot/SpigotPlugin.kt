@@ -16,15 +16,12 @@ class SpigotPlugin : JavaPlugin() {
         // Grabs Adventure BukkitAudiences object
         adventure = BukkitAudiences.create(this)
 
-        tmPlugin = TMPluginImpl(
-            spigotPlugin = this,
-            adventure = adventure,
-        )
+        tmPlugin = TMPluginImpl(this, adventure)
         tmPlugin.enableTicketManager()
     }
 
     override fun onDisable() {
-        tmPlugin.disablePlugin()
+        tmPlugin.disableTicketManager()
         adventure.close()
     }
 }

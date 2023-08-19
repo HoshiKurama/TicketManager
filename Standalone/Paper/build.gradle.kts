@@ -29,7 +29,6 @@ dependencies {
     compileOnly("com.mojang:brigadier:1.0.500")
     //compileOnly("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
     implementation("com.github.HoshiKurama.TicketManager_API:Paper:10.0.0-RC34")
     implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0-RC34")
     implementation("com.github.seratch:kotliquery:1.9.0")
@@ -43,10 +42,12 @@ dependencies {
     // Kotlin Stuff
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.0")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.6.0-RC")
+    // Projects
     implementation(project(":Standalone:commonSE"))
     implementation(project(":common"))
 }
@@ -66,8 +67,6 @@ tasks {
             exclude(dependency("org.codehaus.plexus:.*:.*"))
             exclude(dependency("javax.inject:.*:.*"))
             exclude(dependency("org.eclipse.sisu:.*:.*"))
-
-            // Excludes for Adventure
             exclude { it.moduleGroup == "net.kyori" && it.moduleName != "adventure-extra-kotlin"}
         }
 

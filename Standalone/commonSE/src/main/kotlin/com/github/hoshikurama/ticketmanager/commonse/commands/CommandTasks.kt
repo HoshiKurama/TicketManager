@@ -305,13 +305,6 @@ class CommandTasks(
                 ),
                 Command(
                     silenceable = false,
-                    command = commandWordConvertDB,
-                    arguments = listOf(RequiredArg(parameterTargetDB)),
-                    permissions = listOf("ticketmanager.command.convertDatabase"),
-                    explanation = helpExplanationConvertDatabase,
-                ),
-                Command(
-                    silenceable = false,
                     command = commandWordCreate,
                     arguments = listOf(RequiredArg("$parameterComment...")),
                     permissions = listOf("ticketmanager.command.create"),

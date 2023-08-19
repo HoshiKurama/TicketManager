@@ -1,38 +1,26 @@
 package com.github.hoshikurama.ticketmanager.spigot
 
-import com.github.hoshikurama.ticketmanager.implapi.ticket.TicketInterface
-import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.commands.Console
-import com.github.hoshikurama.ticketmanager.commonse.commands.OnlinePlayer
+import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.common.ticket.ActionLocation
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
 
 class SpigotPlayer(
     internal val sPlayer: org.bukkit.entity.Player,
     private val adventure: BukkitAudiences,
-    localeHandler: LocaleHandler,
-) : OnlinePlayer(
-    uniqueID = sPlayer.uniqueId,
-    name = sPlayer.name,
-    locale = localeHandler.getOrDefault(sPlayer.locale),
-    serverName = null,
-) {
-    override fun getLocAsTicketLoc(): TicketInterface.CreationLocation {
-        return sPlayer.location.run { TicketInterface.TicketLocation(null, world?.name, blockX, blockY, blockZ) }
+    override val serverName: String?,
+) : CommandSender.Active.OnlinePlayer(sPlayer.name, sPlayer.uniqueId) {
+
+    override fun getLocAsTicketLoc(): ActionLocation {
+        return sPlayer.location.run { ActionLocation.FromPlayer(serverName, world!!.name, blockX, blockY, blockZ) }
     }
 
-    override fun sendMessage(component: Component) {
-        adventure.player(sPlayer).sendMessage(component)
-    }
+    override fun sendMessage(component: Component) = adventure.player(sPlayer).sendMessage(component)
 }
 
 class SpigotConsole(
     private val adventure: BukkitAudiences,
-    locale: TMLocale,
-): Console(locale, null) {
-
-    override fun sendMessage(component: Component) {
-        adventure.console().sendMessage(component)
-    }
+    override val serverName: String?,
+) : CommandSender.Active.OnlineConsole() {
+    override fun sendMessage(component: Component) = adventure.console().sendMessage(component)
 }
