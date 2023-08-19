@@ -1,17 +1,15 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
-import com.github.hoshikurama.ticketmanager.common.CommonKeywords
 import com.github.hoshikurama.ticketmanager.common.supportedLocales
-import com.github.hoshikurama.ticketmanager.commonse.misc.TypeSafeStream.Companion.asTypeSafeStream
 import org.yaml.snakeyaml.Yaml
-import java.nio.file.Paths
+import java.nio.file.Path
 import kotlin.io.path.inputStream
 
 class TMLocale(
 // Core locale file fields
     // Miscellaneous
-    override val consoleName: String,
-    override val miscNobody: String,
+    val consoleName: String,
+    val miscNobody: String,
     val wikiLink: String,
 
     // Command Types
@@ -44,7 +42,6 @@ class TMLocale(
     val commandWordView: String,
     val commandWordDeepView: String,
     val commandWordReload: String,
-    val commandWordConvertDB: String,
 
     // Search words:
     val searchAssigned: String,
@@ -73,25 +70,30 @@ class TMLocale(
     val parameterPage: String,
     val parameterLevel: String,
     val parameterUser: String,
-    val parameterTargetDB: String,
     val parameterConstraints: String,
+    val parameterNewSearchIndicator: String,
+
+    // Literals for Assignment suggestions
+    val parameterLiteralPlayer: String,
+    val parameterLiteralGroup: String,
+    val parameterLiteralPhrase: String,
 
     // Console Logging Messages
-    val consoleErrorBadDiscord: String,
     val consoleInitializationComplete: String,
     val consoleErrorBadDatabase: String,
     val consoleWarningInvalidConfigNode: String,
     val consoleErrorScheduledNotifications: String,
     val consoleErrorCommandExecution: String,
-    val consoleErrorDBConversion: String,
+    val consoleDatabaseLoaded: String,
+    val consoleDatabaseWaitStart: String,
 
 // Visual Player-Modifiable Values
     // Priority
-    override val priorityLowest: String,
-    override val priorityLow: String,
-    override val priorityNormal: String,
-    override val priorityHigh: String,
-    override val priorityHighest: String,
+    val priorityLowest: String,
+    val priorityLow: String,
+    val priorityNormal: String,
+    val priorityHigh: String,
+    val priorityHighest: String,
     val priorityColourLowestHex: String,
     val priorityColourLowHex: String,
     val priorityColourNormalHex: String,
@@ -128,30 +130,31 @@ class TMLocale(
 
     // Warnings
     val warningsLocked: String,
-    val warningsNoPermission: String,
-    val warningsInvalidID: String,
-    val warningsInvalidNumber: String,
     val warningsNoConfig: String,
-    val warningsInvalidCommand: String,
-    val warningsPriorityOutOfBounds: String,
-    val warningsUnderCooldown: String,
-    val warningsTicketAlreadyClosed: String,
-    val warningsTicketAlreadyOpen: String,
-    val warningsInvalidDBType: String,
-    val warningsConvertToSameDBType: String,
     val warningsUnexpectedError: String,
     val warningsLongTaskDuringReload: String,
     val warningsInvalidConfig: String,
     val warningsInternalError: String,
 
-    // Discord Notifications
-    override val discordOnAssign: String,
-    override val discordOnClose: String,
-    override val discordOnCloseAll: String,
-    override val discordOnComment: String,
-    override val discordOnCreate: String,
-    override val discordOnReopen: String,
-    override val discordOnPriorityChange: String,
+    //Brigadier Warnings
+    val brigadierNotYourTicket: String,
+    val brigadierInvalidID: String,
+    val brigadierTicketAlreadyClosed: String,
+    val brigadierTicketAlreadyOpen: String,
+    val brigadierConsoleLocTP: String,
+    val brigadierNoTPSameServer: String,
+    val brigadierNoTPDiffServer: String,
+    val brigadierNoTPProxyDisabled: String,
+    val brigadierOtherHistory: String,
+    val brigadierSearchBadSymbol1: String,
+    val brigadierSearchBadStatus: String,
+    val brigadierSearchBadSymbol2: String,
+    val brigadierSearchBadSymbol3: String,
+    val brigadierBadPageNumber: String,
+    val brigadierBadSearchConstraint: String,
+    val brigadierInvalidAssignment: String,
+    val brigadierInvalidTimeUnit: String,
+    val brigadierInvalidPriority: String,
 
     // View and Deep View
     val viewHeader: String,
@@ -209,7 +212,6 @@ class TMLocale(
     val helpExplanationClose: String,
     val helpExplanationCloseAll: String,
     val helpExplanationComment: String,
-    val helpExplanationConvertDatabase: String,
     val helpExplanationCreate: String,
     val helpExplanationHelp: String,
     val helpExplanationHistory: String,
@@ -236,8 +238,6 @@ class TMLocale(
     val informationReloadInitiated: String,
     val informationReloadSuccess: String,
     val informationReloadTasksDone: String,
-    val informationDBConvertInit: String,
-    val informationDBConvertSuccess: String,
     val informationReloadFailure: String,
 
     // Ticket Notifications
@@ -261,9 +261,9 @@ class TMLocale(
     val notifyTicketReopenEvent: String,
     val notifyTicketSetPrioritySuccess: String,
     val notifyTicketSetPriorityEvent: String,
-    override val notifyPluginUpdate: String,
+    val notifyPluginUpdate: String,
     val notifyProxyUpdate: String,
-) : CommonKeywords {
+) {
     companion object {
         private fun loadYMLFrom(location: String): Map<String, String> =
             this::class.java.classLoader
@@ -273,9 +273,13 @@ class TMLocale(
         private fun inlinePlaceholders(str: String?, tmHeader: String, cc: String) = str
             ?.replace("%TMHeader%", tmHeader)
             ?.replace("%nl%", "\n")
-            ?.replace("%CC%", miniMessageToHex(cc))
+            ?.replace("%CC%", convertToMiniMessage(cc))
 
-        private fun miniMessageToHex(str: String): String {
+        private fun convertToMiniMessage(str: String): String {
+            // Return if already kyrori insertable...
+            if (str.startsWith("<") && str.endsWith(">"))
+                return str.slice(1 until str.length)
+
             val isHexCode = "^#([a-fA-F\\d]{6})\$".toRegex()::matches
 
             if (isHexCode(str)) return str
@@ -347,7 +351,6 @@ class TMLocale(
                 commandWordView = core["Command_View"]!!,
                 commandWordDeepView = core["Command_DeepView"]!!,
                 commandWordReload = core["Command_Reload"]!!,
-                commandWordConvertDB = core["Command_ConvertDB"]!!,
                 searchAssigned = core["Search_AssignedTo"]!!,
                 searchCreator = core["Search_Creator"]!!,
                 searchKeywords = core["Search_Keywords"]!!,
@@ -372,30 +375,33 @@ class TMLocale(
                 parameterPage = core["Parameters_Page"]!!,
                 parameterLevel = core["Parameters_Level"]!!,
                 parameterUser = core["Parameters_User"]!!,
-                parameterTargetDB = core["Parameters_Target_Database"]!!,
                 parameterConstraints = core["Parameters_Constraints"]!!,
-                consoleErrorBadDiscord = core["ConsoleError_DiscordInitialize"]!!,
                 consoleInitializationComplete = core["Console_InitializationComplete"]!!,
                 consoleErrorBadDatabase = core["ConsoleError_DatabaseInitialize"]!!,
                 consoleWarningInvalidConfigNode = core["ConsoleWarning_InvalidConfigNode"]!!,
                 consoleErrorScheduledNotifications = core["ConsoleError_ScheduledNotifications"]!!,
                 consoleErrorCommandExecution = core["ConsoleError_CommandExecution"]!!,
-                consoleErrorDBConversion = core["ConsoleError_DatabaseConversion"]!!,
+                parameterNewSearchIndicator = core["Parameter_NewSearch_Indicator"]!!,
+                parameterLiteralPlayer = core["Parameter_Literal_Player"]!!,
+                parameterLiteralGroup = core["Parameter_Literal_PermissionGroup"]!!,
+                parameterLiteralPhrase = core["Parameter_Literal_Phrase"]!!,
+                consoleDatabaseLoaded = core["Console_DatabaseLoaded"]!!,
+                consoleDatabaseWaitStart = core["Console_WaitingForDatabase"]!!,
                 // Visual Aspects
                 priorityLowest = visuals["Priority_Lowest"]!!,
                 priorityLow = visuals["Priority_Low"]!!,
                 priorityNormal = visuals["Priority_Normal"]!!,
                 priorityHigh = visuals["Priority_High"]!!,
                 priorityHighest = visuals["Priority_Highest"]!!,
-                priorityColourLowestHex = miniMessageToHex(visuals["PriorityColour_Lowest"]!!),
-                priorityColourLowHex = miniMessageToHex(visuals["PriorityColour_Low"]!!),
-                priorityColourNormalHex = miniMessageToHex(visuals["PriorityColour_Normal"]!!),
-                priorityColourHighHex = miniMessageToHex(visuals["PriorityColour_High"]!!),
-                priorityColourHighestHex = miniMessageToHex(visuals["PriorityColour_Highest"]!!),
+                priorityColourLowestHex = convertToMiniMessage(visuals["PriorityColour_Lowest"]!!),
+                priorityColourLowHex = convertToMiniMessage(visuals["PriorityColour_Low"]!!),
+                priorityColourNormalHex = convertToMiniMessage(visuals["PriorityColour_Normal"]!!),
+                priorityColourHighHex = convertToMiniMessage(visuals["PriorityColour_High"]!!),
+                priorityColourHighestHex = convertToMiniMessage(visuals["PriorityColour_Highest"]!!),
                 statusOpen = visuals["Status_Open"]!!,
                 statusClosed = visuals["Status_Closed"]!!,
-                statusColourOpenHex = miniMessageToHex(visuals["StatusColour_Open"]!!),
-                statusColourClosedHex = miniMessageToHex(visuals["StatusColour_Closed"]!!),
+                statusColourOpenHex = convertToMiniMessage(visuals["StatusColour_Open"]!!),
+                statusColourClosedHex = convertToMiniMessage(visuals["StatusColour_Closed"]!!),
                 timeSeconds = visuals["Time_Seconds"]!!,
                 timeMinutes = visuals["Time_Minutes"]!!,
                 timeHours = visuals["Time_Hours"]!!,
@@ -413,28 +419,11 @@ class TMLocale(
                 pageInactiveBack = readAndPrime("Page_InactiveBack")!!,
                 pageFormat = readAndPrime("Page_Format")!!,
                 warningsLocked = inlineWarningHeader("Warning_Locked")!!,
-                warningsNoPermission = inlineWarningHeader("Warning_NoPermission")!!,
-                warningsInvalidID = inlineWarningHeader("Warning_InvalidID")!!,
-                warningsInvalidNumber = inlineWarningHeader("Warning_NAN")!!,
                 warningsNoConfig = inlineWarningHeader("Warning_NoConfig")!!,
-                warningsInvalidCommand = inlineWarningHeader("Warning_InvalidCommand")!!,
-                warningsPriorityOutOfBounds = inlineWarningHeader("Warning_PriorityOutOfBounds")!!,
-                warningsUnderCooldown = inlineWarningHeader("Warning_Under_Cooldown")!!,
-                warningsTicketAlreadyClosed = inlineWarningHeader("Warning_TicketAlreadyClosed")!!,
-                warningsTicketAlreadyOpen = inlineWarningHeader("Warning_TicketAlreadyOpen")!!,
-                warningsInvalidDBType = inlineWarningHeader("Warning_InvalidDBType")!!,
-                warningsConvertToSameDBType = inlineWarningHeader("Warning_ConvertToSameDBType")!!,
                 warningsUnexpectedError = inlineWarningHeader("Warning_UnexpectedError")!!,
                 warningsLongTaskDuringReload = inlineWarningHeader("Warning_LongTaskDuringReload")!!,
                 warningsInvalidConfig = inlineWarningHeader("Warning_InvalidConfig")!!,
                 warningsInternalError = inlineWarningHeader("Warning_InternalError")!!,
-                discordOnAssign = visuals["Discord_OnAssign"]!!,
-                discordOnClose = visuals["Discord_OnClose"]!!,
-                discordOnCloseAll = visuals["Discord_OnCloseAll"]!!,
-                discordOnComment = visuals["Discord_OnComment"]!!,
-                discordOnCreate = visuals["Discord_OnCreate"]!!,
-                discordOnReopen = visuals["Discord_OnReopen"]!!,
-                discordOnPriorityChange = visuals["Discord_OnPriorityChange"]!!,
                 viewHeader = readAndPrime("ViewFormat_Header")!!,
                 viewSep1 = readAndPrime("ViewFormat_Sep1")!!,
                 viewCreator = readAndPrime("ViewFormat_InfoCreator")!!,
@@ -480,7 +469,6 @@ class TMLocale(
                 helpExplanationClose = readAndPrime("Help_Explanation_Close")!!,
                 helpExplanationCloseAll = readAndPrime("Help_Explanation_CloseAll")!!,
                 helpExplanationComment = readAndPrime("Help_Explanation_Comment")!!,
-                helpExplanationConvertDatabase = readAndPrime("Help_Explanation_ConvertDatabase")!!,
                 helpExplanationCreate = readAndPrime("Help_Explanation_Create")!!,
                 helpExplanationHelp = readAndPrime("Help_Explanation_Help")!!,
                 helpExplanationHistory = readAndPrime("Help_Explanation_History")!!,
@@ -503,8 +491,6 @@ class TMLocale(
                 informationReloadInitiated = readAndPrime("Info_ReloadInitiated")!!,
                 informationReloadSuccess = readAndPrime("Info_ReloadSuccess")!!,
                 informationReloadTasksDone = readAndPrime("Info_Reload_TasksDone")!!,
-                informationDBConvertInit = readAndPrime("Info_DBConversionInit")!!,
-                informationDBConvertSuccess = readAndPrime("Info_DBConversionSuccess")!!,
                 informationReloadFailure = readAndPrime("Info_ReloadFailure")!!,
                 notifyUnreadUpdateSingle = readAndPrime("Notify_UnreadUpdate_Single")!!,
                 notifyUnreadUpdateMulti = readAndPrime("Notify_UnreadUpdate_Multi")!!,
@@ -528,12 +514,30 @@ class TMLocale(
                 notifyTicketSetPriorityEvent = readAndPrime("Notify_Event_SetPriority")!!,
                 notifyPluginUpdate = readAndPrime("Notify_Event_PluginUpdate")!!,
                 notifyProxyUpdate = readAndPrime("Notify_Event_ProxyUpdate")!!,
+                brigadierNotYourTicket = readAndPrime("Brigadier_NotYourTicket")!!,
+                brigadierInvalidID = readAndPrime("Brigadier_InvalidID")!!,
+                brigadierTicketAlreadyClosed = readAndPrime("Brigadier_TicketAlreadyClosed")!!,
+                brigadierTicketAlreadyOpen = readAndPrime("Brigadier_TicketAlreadyOpen")!!,
+                brigadierConsoleLocTP = readAndPrime("Brigadier_ConsoleLocationTeleport")!!,
+                brigadierNoTPDiffServer = readAndPrime("Brigadier_NoTeleport_DifferentServer")!!,
+                brigadierNoTPSameServer = readAndPrime("Brigadier_NoTeleport_SameServer")!!,
+                brigadierNoTPProxyDisabled = readAndPrime("Brigadier_NoTeleport_ProxyDisabled")!!,
+                brigadierOtherHistory = readAndPrime("Brigadier_OtherHistory")!!,
+                brigadierSearchBadSymbol1 = readAndPrime("Brigadier_Search_BadSymbol_1")!!,
+                brigadierSearchBadStatus = readAndPrime("Brigadier_Search_BadStatus")!!,
+                brigadierSearchBadSymbol2 = readAndPrime("Brigadier_Search_BadSymbol_2")!!,
+                brigadierSearchBadSymbol3 = readAndPrime("Brigadier_Search_BadSymbol_3")!!,
+                brigadierBadPageNumber = readAndPrime("Brigadier_BadPageNumber")!!,
+                brigadierBadSearchConstraint = readAndPrime("Brigadier_BadSearchConstraint")!!,
+                brigadierInvalidAssignment = readAndPrime("Brigadier_InvalidAssignment")!!,
+                brigadierInvalidTimeUnit = readAndPrime("Brigadier_InvalidTimeUnit")!!,
+                brigadierInvalidPriority = readAndPrime("Brigadier_InvalidPriority")!!,
             )
         }
 
-        fun buildLocaleFromExternal(localeID: String, rootFileLocation: String, colour: String, internalVersion: TMLocale): TMLocale {
+        fun buildLocaleFromExternal(localeID: String, localesFolderPath: Path, colour: String, internalVersion: TMLocale): TMLocale {
             val visuals: Map<String, String> = try {
-                Paths.get("$rootFileLocation/locales/$localeID.yml")
+                localesFolderPath.resolve("$localeID.yml")
                     .inputStream()
                     .let { Yaml().load(it) }
             } catch (e: Exception) { mapOf() }
@@ -579,7 +583,6 @@ class TMLocale(
                 commandWordView = internalVersion.commandWordView,
                 commandWordDeepView = internalVersion.commandWordDeepView,
                 commandWordReload = internalVersion.commandWordReload,
-                commandWordConvertDB = internalVersion.commandWordConvertDB,
                 searchAssigned = internalVersion.searchAssigned,
                 searchCreator = internalVersion.searchCreator,
                 searchKeywords = internalVersion.searchKeywords,
@@ -604,30 +607,33 @@ class TMLocale(
                 parameterPage = internalVersion.parameterPage,
                 parameterLevel = internalVersion.parameterLevel,
                 parameterUser = internalVersion.parameterUser,
-                parameterTargetDB = internalVersion.parameterTargetDB,
                 parameterConstraints = internalVersion.parameterConstraints,
-                consoleErrorBadDiscord = internalVersion.consoleErrorBadDiscord,
                 consoleInitializationComplete = internalVersion.consoleInitializationComplete,
                 consoleErrorBadDatabase = internalVersion.consoleErrorBadDatabase,
                 consoleWarningInvalidConfigNode = internalVersion.consoleWarningInvalidConfigNode,
                 consoleErrorScheduledNotifications = internalVersion.consoleErrorScheduledNotifications,
                 consoleErrorCommandExecution = internalVersion.consoleErrorCommandExecution,
-                consoleErrorDBConversion = internalVersion.consoleErrorDBConversion,
+                parameterNewSearchIndicator = internalVersion.parameterNewSearchIndicator,
+                parameterLiteralGroup = internalVersion.parameterLiteralGroup,
+                parameterLiteralPhrase = internalVersion.parameterLiteralPhrase,
+                parameterLiteralPlayer = internalVersion.parameterLiteralPlayer,
+                consoleDatabaseLoaded = internalVersion.consoleDatabaseLoaded,
+                consoleDatabaseWaitStart = internalVersion.consoleDatabaseWaitStart,
                 // Visual Aspects
                 priorityLowest = visuals["Priority_Lowest"] ?: internalVersion.priorityLowest,
                 priorityLow = visuals["Priority_Low"] ?: internalVersion.priorityLow,
                 priorityNormal = visuals["Priority_Normal"] ?: internalVersion.priorityNormal,
                 priorityHigh = visuals["Priority_High"] ?: internalVersion.priorityHigh,
                 priorityHighest = visuals["Priority_Highest"] ?: internalVersion.priorityHighest,
-                priorityColourLowestHex = miniMessageToHex(visuals["PriorityColour_Lowest"] ?: internalVersion.priorityColourLowestHex),
-                priorityColourLowHex = miniMessageToHex(visuals["PriorityColour_Low"] ?: internalVersion.priorityColourLowHex),
-                priorityColourNormalHex = miniMessageToHex(visuals["PriorityColour_Normal"] ?: internalVersion.priorityColourNormalHex),
-                priorityColourHighHex = miniMessageToHex(visuals["PriorityColour_High"] ?: internalVersion.priorityColourHighHex),
-                priorityColourHighestHex = miniMessageToHex(visuals["PriorityColour_Highest"] ?: internalVersion.priorityColourHighestHex),
+                priorityColourLowestHex = convertToMiniMessage(visuals["PriorityColour_Lowest"] ?: internalVersion.priorityColourLowestHex),
+                priorityColourLowHex = convertToMiniMessage(visuals["PriorityColour_Low"] ?: internalVersion.priorityColourLowHex),
+                priorityColourNormalHex = convertToMiniMessage(visuals["PriorityColour_Normal"] ?: internalVersion.priorityColourNormalHex),
+                priorityColourHighHex = convertToMiniMessage(visuals["PriorityColour_High"] ?: internalVersion.priorityColourHighHex),
+                priorityColourHighestHex = convertToMiniMessage(visuals["PriorityColour_Highest"] ?: internalVersion.priorityColourHighestHex),
                 statusOpen = visuals["Status_Open"] ?: internalVersion.statusOpen,
                 statusClosed = visuals["Status_Closed"] ?: internalVersion.statusClosed,
-                statusColourOpenHex = miniMessageToHex(visuals["StatusColour_Open"] ?: internalVersion.statusColourOpenHex),
-                statusColourClosedHex = miniMessageToHex(visuals["StatusColour_Closed"] ?: internalVersion.statusColourClosedHex),
+                statusColourOpenHex = convertToMiniMessage(visuals["StatusColour_Open"] ?: internalVersion.statusColourOpenHex),
+                statusColourClosedHex = convertToMiniMessage(visuals["StatusColour_Closed"] ?: internalVersion.statusColourClosedHex),
                 timeSeconds = visuals["Time_Seconds"] ?: internalVersion.timeSeconds,
                 timeMinutes = visuals["Time_Minutes"] ?: internalVersion.timeMinutes,
                 timeHours = visuals["Time_Hours"] ?: internalVersion.timeHours,
@@ -645,28 +651,11 @@ class TMLocale(
                 pageInactiveBack = readAndPrime("Page_InactiveBack") ?: internalVersion.pageInactiveBack,
                 pageFormat = readAndPrime("Page_Format") ?: internalVersion.pageFormat,
                 warningsLocked = inlineWarningHeader("Warning_Locked") ?: internalVersion.warningsLocked,
-                warningsNoPermission = inlineWarningHeader("Warning_NoPermission") ?: internalVersion.warningsNoPermission,
-                warningsInvalidID = inlineWarningHeader("Warning_InvalidID") ?: internalVersion.warningsInvalidID,
-                warningsInvalidNumber = inlineWarningHeader("Warning_NAN") ?: internalVersion.warningsInvalidNumber,
                 warningsNoConfig = inlineWarningHeader("Warning_NoConfig") ?: internalVersion.warningsNoConfig,
-                warningsInvalidCommand = inlineWarningHeader("Warning_InvalidCommand") ?: internalVersion.warningsInvalidCommand,
-                warningsPriorityOutOfBounds = inlineWarningHeader("Warning_PriorityOutOfBounds") ?: internalVersion.warningsPriorityOutOfBounds,
-                warningsUnderCooldown = inlineWarningHeader("Warning_Under_Cooldown") ?: internalVersion.warningsUnderCooldown,
-                warningsTicketAlreadyClosed = inlineWarningHeader("Warning_TicketAlreadyClosed") ?: internalVersion.warningsTicketAlreadyClosed,
-                warningsTicketAlreadyOpen = inlineWarningHeader("Warning_TicketAlreadyOpen") ?: internalVersion.warningsTicketAlreadyOpen,
-                warningsInvalidDBType = inlineWarningHeader("Warning_InvalidDBType") ?: internalVersion.warningsInvalidDBType,
-                warningsConvertToSameDBType = inlineWarningHeader("Warning_ConvertToSameDBType") ?: internalVersion.warningsConvertToSameDBType,
                 warningsUnexpectedError = inlineWarningHeader("Warning_UnexpectedError") ?: internalVersion.warningsUnexpectedError,
                 warningsLongTaskDuringReload = inlineWarningHeader("Warning_LongTaskDuringReload") ?: internalVersion.warningsLongTaskDuringReload,
                 warningsInvalidConfig = inlineWarningHeader("Warning_InvalidConfig") ?: internalVersion.warningsInvalidConfig,
                 warningsInternalError = inlineWarningHeader("Warning_InternalError") ?: internalVersion.warningsInternalError,
-                discordOnAssign = visuals["Discord_OnAssign"] ?: internalVersion.discordOnAssign,
-                discordOnClose = visuals["Discord_OnClose"] ?: internalVersion.discordOnClose,
-                discordOnCloseAll = visuals["Discord_OnCloseAll"] ?: internalVersion.discordOnCloseAll,
-                discordOnComment = visuals["Discord_OnComment"] ?: internalVersion.discordOnComment,
-                discordOnCreate = visuals["Discord_OnCreate"] ?: internalVersion.discordOnCreate,
-                discordOnReopen = visuals["Discord_OnReopen"] ?: internalVersion.discordOnReopen,
-                discordOnPriorityChange = visuals["Discord_OnPriorityChange"] ?: internalVersion.discordOnPriorityChange,
                 viewHeader = readAndPrime("ViewFormat_Header") ?: internalVersion.viewHeader,
                 viewSep1 = readAndPrime("ViewFormat_Sep1") ?: internalVersion.viewSep1,
                 viewCreator = readAndPrime("ViewFormat_InfoCreator") ?: internalVersion.viewCreator,
@@ -712,7 +701,6 @@ class TMLocale(
                 helpExplanationClose = readAndPrime("Help_Explanation_Close") ?: internalVersion.helpExplanationClose,
                 helpExplanationCloseAll = readAndPrime("Help_Explanation_CloseAll") ?: internalVersion.helpExplanationCloseAll,
                 helpExplanationComment = readAndPrime("Help_Explanation_Comment") ?: internalVersion.helpExplanationComment,
-                helpExplanationConvertDatabase = readAndPrime("Help_Explanation_ConvertDatabase") ?: internalVersion.helpExplanationConvertDatabase,
                 helpExplanationCreate = readAndPrime("Help_Explanation_Create") ?: internalVersion.helpExplanationCreate,
                 helpExplanationHelp = readAndPrime("Help_Explanation_Help") ?: internalVersion.helpExplanationHelp,
                 helpExplanationHistory = readAndPrime("Help_Explanation_History") ?: internalVersion.helpExplanationHistory,
@@ -735,8 +723,6 @@ class TMLocale(
                 informationReloadInitiated = readAndPrime("Info_ReloadInitiated") ?: internalVersion.informationReloadInitiated,
                 informationReloadSuccess = readAndPrime("Info_ReloadSuccess") ?: internalVersion.informationReloadSuccess,
                 informationReloadTasksDone = readAndPrime("Info_Reload_TasksDone") ?: internalVersion.informationReloadTasksDone,
-                informationDBConvertInit = readAndPrime("Info_DBConversionInit") ?: internalVersion.informationDBConvertInit,
-                informationDBConvertSuccess = readAndPrime("Info_DBConversionSuccess") ?: internalVersion.informationDBConvertSuccess,
                 informationReloadFailure = readAndPrime("Info_ReloadFailure") ?: internalVersion.informationReloadFailure,
                 notifyUnreadUpdateSingle = readAndPrime("Notify_UnreadUpdate_Single") ?: internalVersion.notifyUnreadUpdateSingle,
                 notifyUnreadUpdateMulti = readAndPrime("Notify_UnreadUpdate_Multi") ?: internalVersion.notifyUnreadUpdateMulti,
@@ -760,52 +746,39 @@ class TMLocale(
                 notifyTicketSetPriorityEvent = readAndPrime("Notify_Event_SetPriority") ?: internalVersion.notifyTicketSetPriorityEvent,
                 notifyPluginUpdate = readAndPrime("Notify_Event_PluginUpdate") ?: internalVersion.notifyPluginUpdate,
                 notifyProxyUpdate = readAndPrime("Notify_Event_ProxyUpdate") ?: internalVersion.notifyProxyUpdate,
+                brigadierNotYourTicket = readAndPrime("Brigadier_NotYourTicket") ?: internalVersion.brigadierNotYourTicket,
+                brigadierInvalidID = readAndPrime("Brigadier_InvalidID") ?: internalVersion.brigadierInvalidID,
+                brigadierTicketAlreadyClosed = readAndPrime("Brigadier_TicketAlreadyClosed") ?: internalVersion.brigadierTicketAlreadyClosed,
+                brigadierTicketAlreadyOpen = readAndPrime("Brigadier_TicketAlreadyOpen") ?: internalVersion.brigadierTicketAlreadyOpen,
+                brigadierConsoleLocTP = readAndPrime("Brigadier_ConsoleLocationTeleport") ?: internalVersion.brigadierConsoleLocTP,
+                brigadierNoTPDiffServer = readAndPrime("Brigadier_NoTeleport_DifferentServer") ?: internalVersion.brigadierNoTPDiffServer,
+                brigadierNoTPSameServer = readAndPrime("Brigadier_NoTeleport_SameServer") ?: internalVersion.brigadierNoTPSameServer,
+                brigadierNoTPProxyDisabled = readAndPrime("Brigadier_NoTeleport_ProxyDisabled") ?: internalVersion.brigadierNoTPProxyDisabled,
+                brigadierOtherHistory = readAndPrime("Brigadier_OtherHistory") ?: internalVersion.brigadierOtherHistory,
+                brigadierSearchBadSymbol1 = readAndPrime("Brigadier_Search_BadSymbol_1") ?: internalVersion.brigadierSearchBadSymbol1,
+                brigadierSearchBadStatus = readAndPrime("Brigadier_Search_BadStatus") ?: internalVersion.brigadierSearchBadStatus,
+                brigadierSearchBadSymbol2 = readAndPrime("Brigadier_Search_BadSymbol_2") ?: internalVersion.brigadierSearchBadSymbol2,
+                brigadierSearchBadSymbol3 = readAndPrime("Brigadier_Search_BadSymbol_3") ?: internalVersion.brigadierSearchBadSymbol3,
+                brigadierBadPageNumber = readAndPrime("Brigadier_BadPageNumber") ?: internalVersion.brigadierBadPageNumber,
+                brigadierBadSearchConstraint = readAndPrime("Brigadier_BadSearchConstraint") ?: internalVersion.brigadierBadSearchConstraint,
+                brigadierInvalidAssignment = readAndPrime("Brigadier_InvalidAssignment") ?: internalVersion.brigadierInvalidAssignment,
+                brigadierInvalidTimeUnit = readAndPrime("Brigadier_InvalidTimeUnit") ?: internalVersion.brigadierInvalidTimeUnit,
+                brigadierInvalidPriority = readAndPrime("Brigadier_InvalidPriority") ?: internalVersion.brigadierInvalidPriority,
             )
         }
     }
 }
 
-class LocaleHandler(
-    private val activeTypes: Map<String, TMLocale>,
-    private val fallbackType: TMLocale,
-    val consoleLocale: TMLocale,
-) {
-    companion object {
-        fun buildLocales(
-            mainColourCode: String,
-            preferredLocale: String,
-            consoleLocale: String,
-            forceLocale: Boolean,
-            rootFolderLocation: String,
-            enableAVC: Boolean,
-        ) : LocaleHandler {
-            val allLocales = supportedLocales
-                .asTypeSafeStream()
-                .parallel()
-                .map { it to TMLocale.buildLocaleFromInternal(it, mainColourCode) }
-                .map { (k,v) -> if (enableAVC) k to TMLocale.buildLocaleFromExternal(
-                    k,
-                    rootFolderLocation,
-                    mainColourCode,
-                    v
-                ) else k to v }
-                .toList()
-                .toMap()
-            val lowercasePreferred = preferredLocale.lowercase()
+fun buildLocale(
+    mainColourCode: String,
+    preferredLocale: String,
+    localesFolderPath: Path,
+    enableAVC: Boolean,
+): TMLocale {
+    val selectedLocale = preferredLocale.lowercase()
+        .takeIf(supportedLocales::contains) ?: "en_ca"
 
-            val activeTypes = if (forceLocale) mapOf(lowercasePreferred to allLocales.getOrDefault(lowercasePreferred, allLocales["en_ca"]!!)) else allLocales
-            val fallback = activeTypes.getOrDefault(lowercasePreferred, allLocales["en_ca"]!!)
-            val consoleLocaleS = activeTypes.getOrDefault(consoleLocale.lowercase(), fallback)
-
-            return LocaleHandler(activeTypes, fallback, consoleLocaleS)
-        }
-    }
-
-    fun getOrDefault(type: String): TMLocale {
-        val lowercased = type.lowercase()
-        return activeTypes[lowercased] ?: activeTypes[supportedLocales.first { type.startsWith(lowercased.split("_")[0])}] ?: fallbackType
-    }
-
-    //= activeTypes[type.lowercase()] ?: activeTypes.get(supportedLocales.first) ?: fallbackType//activeTypes.getOrDefault(type.lowercase(), fallbackType)
-    fun getCommandBases() = if (activeTypes.isEmpty()) setOf(fallbackType.commandBase) else activeTypes.map { it.value.commandBase }.toSet()
+    val internalLocaleBuild = TMLocale.buildLocaleFromInternal(selectedLocale, mainColourCode)
+    return if (enableAVC) TMLocale.buildLocaleFromExternal(selectedLocale, localesFolderPath, mainColourCode, internalLocaleBuild)
+        else internalLocaleBuild
 }

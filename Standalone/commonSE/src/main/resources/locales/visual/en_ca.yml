@@ -42,19 +42,19 @@ Priority_Low: 'LOW'
 Priority_Normal: 'NORMAL'
 Priority_High: 'HIGH'
 Priority_Highest: 'HIGHEST'
-# Colours (Accepts formatting)
-PriorityColour_Lowest: 'dark_blue'
-PriorityColour_Low: 'blue'
-PriorityColour_Normal: 'yellow'
-PriorityColour_High: 'red'
-PriorityColour_Highest: 'dark_red'
+# Colours (Use Kyori MiniMessage, hex code including #, or legacy)
+PriorityColour_Lowest: '<dark_blue>'
+PriorityColour_Low: '<blue>'
+PriorityColour_Normal: '<yellow>'
+PriorityColour_High: '<red>'
+PriorityColour_Highest: '<dark_red>'
 #
 # Status (No Formatting):
 Status_Open: 'OPEN'
 Status_Closed: 'CLOSED'
-# Colours (Accepts formatting):
-StatusColour_Open: 'green'
-StatusColour_Closed: 'red'
+# Colours (Use Kyori MiniMessage, hex code including #, or legacy)
+StatusColour_Open: '<green>'
+StatusColour_Closed: '<red>'
 #
 # Time words (the space is intentional) (No Formatting):
 Time_Seconds: ' seconds'
@@ -82,34 +82,14 @@ Page_Format: '<back_button><dark_gray>...............<dark_aqua>(<cur_page> of <
 # ========================================
 #                 Messages
 # ========================================
-#
 # Warnings (Accepts Formatting):
 Warning_Header: '<red>[TicketManager]'
 Warning_Locked: '%Header% Commands are currently locked! Please try again later'
-Warning_NoPermission: '%Header% You do not have permission to perform this command!'
-Warning_InvalidID: '%Header% Please enter a valid ticket ID!'
-Warning_NAN: '%Header% Please enter a valid number!'
 Warning_NoConfig: '%Header% Config file not found! New file generated.'
-Warning_InvalidCommand: '%Header% No such command exists or number of arguments is incorrect!'
-Warning_PriorityOutOfBounds: '%Header% Priority must be between 1 and 5!'
-Warning_Under_Cooldown: '%Header% You need to wait a bit before trying to modify or create another ticket!'
-Warning_TicketAlreadyClosed: '%Header% This ticket is already closed!'
-Warning_TicketAlreadyOpen: '%Header% This ticket is already open!'
-Warning_InvalidDBType: '%Header% Invalid database type!'
-Warning_ConvertToSameDBType: '%Header% Unable to convert database to type already in use!'
 Warning_UnexpectedError: '%Header% Unexpected error has occurred!'
 Warning_LongTaskDuringReload: '%Header% Long-standing task detected during reload attempt. Forcefully ending all other tasks!'
 Warning_InvalidConfig: '%Header% <count> config values defaulted! Please check console for more information'                   # Templates: <count>
 Warning_InternalError: '%Header% An internal error has occurred! Please check console for details'
-#
-# Discord Notifications (No Formatting):
-Discord_OnAssign: '%user% assigned ticket #%num%'
-Discord_OnClose: '%user% closed ticket #%num%'
-Discord_OnCloseAll: '%user% mass-closed tickets'
-Discord_OnComment: '%user% commented on ticket #%num%'
-Discord_OnCreate: '%user% created ticket #%num%'
-Discord_OnReopen: '%user% reopened ticket #%num%'
-Discord_OnPriorityChange: '%user% changed priority of ticket #%num%'
 #
 #
 # ========================================
@@ -171,7 +151,6 @@ Help_Explanation_Claim: ''
 Help_Explanation_Close: ''
 Help_Explanation_CloseAll: ''
 Help_Explanation_Comment: ''
-Help_Explanation_ConvertDatabase: ''
 Help_Explanation_Create: ''
 Help_Explanation_Help: ''
 Help_Explanation_History: ''
@@ -204,8 +183,6 @@ Info_ReloadInitiated: '%TMHeader% <#F3F3F3><user> <%CC%>has initiated a plugin r
 Info_Reload_TasksDone: '%TMHeader% All other tasks complete! Reloading now...'
 Info_ReloadSuccess: '%TMHeader% <%CC%>Reload <green>successful<%CC%>!'
 Info_ReloadFailure: '%TMHeader% <%CC%>Reload <red>failure<%CC%>!'
-Info_DBConversionInit: '%TMHeader% <%CC%>Database conversion from <gray><fromdb> <%CC%>to <gray><todb><%CC%>! Plugin locked!'                            # Templates: <fromdb> <todb>
-Info_DBConversionSuccess: '%TMHeader% <%CC%>Database conversion complete! Plugin unlocked! Change config and reload plugin to use new database type.'
 #
 # Ticket Notifications (Accepts Formatting):
 Notify_UnreadUpdate_Single: '%TMHeader% Ticket <gray><num> <%CC%>has an update! Type <gray>/ticket view <num> <%CC%>to clear notification.'                          # Templates <num>
@@ -230,3 +207,23 @@ Notify_Event_SetPriority: '%TMHeader% <gray><user> <%CC%>set ticket <gray>#<id> 
 Notify_Event_TicketModification: '%TMHeader% Ticket <gray>#<id> <%CC%>has been updated! Type <gray>/ticket view <id> <%CC%>to view this ticket.'                    # Templates: <id>
 Notify_Event_PluginUpdate: '%TMHeader% TicketManager has an update!%nl%  <%CC%>Current Version: <gray><current>%nl%  <%CC%>Latest Version: <gray><latest>'          # Templates: <current> <latest>
 Notify_Event_ProxyUpdate: '%TMHeader% TicketManager Proxy has an update!%nl%  <%CC%>Current Version: <gray><current>%nl%  <%CC%>Latest Version: <gray><latest>'     # Templates: <current> <latest>
+#
+# Brigadier/CommandAPI Warnings  (Accepts Formatting):
+Brigadier_NotYourTicket: '<red>You do not have permission to modify this ticket.'
+Brigadier_InvalidID: '<red>Ticket #<id> does not exist.'                                                                     # Templates: <id>
+Brigadier_TicketAlreadyClosed: '<red>This ticket is already closed and may not be modified unless re-opened.'
+Brigadier_TicketAlreadyOpen: '<red>This ticket is already open.'
+Brigadier_ConsoleLocationTeleport: '<red>You many not teleport to a ticket or action made by Console.'
+Brigadier_NoTeleport_SameServer: '<red>You do not have permission to teleport to tickets made on the same server.'
+Brigadier_NoTeleport_DifferentServer: '<red>You do not have permission to teleport to tickets made on a different server.'
+Brigadier_NoTeleport_ProxyDisabled: "<red>You may not teleport to tickets made on other servers when proxy mode is disabled."
+Brigadier_OtherHistory: "<red>You do not have permission to view someone else's ticket history."
+Brigadier_Search_BadSymbol_1: "<red>Symbol <dark_red><symbol><red> is not a valid symbol for keyword <dark_red><keyword><red>. Please use <dark_red>=<red> or <dark_red>!=<red>."   # Templates: <symbol> <keyword>
+Brigadier_Search_BadStatus: "<dark_red><status><red> is not a valid status. Please use <dark_red><open><red> or <dark_red><closed><red>." # templates: <status> <open> <closed>
+Brigadier_Search_BadSymbol_2: "<red>Symbol <dark_red><symbol><red> is not a valid symbol for keyword <dark_red><keyword><red>. Please use <dark_red>=<red>, <dark_red>!=<red>, <dark_red><<red>, or <dark_red>><red>." # Templates: <symbol> <keyword>
+Brigadier_Search_BadSymbol_3: "<red>Symbol <dark_red><symbol><red> is not a valid symbol for keyword <dark_red><keyword><red>. Please use <dark_red><<red> or <dark_red>><red>."   # Templates: <symbol> <keyword>
+Brigadier_BadPageNumber: "<red> Invalid page number."
+Brigadier_BadSearchConstraint: "<red>Invalid search constraint: <dark_red><keyword><red>."  # Templates <keyword>
+Brigadier_InvalidAssignment: "<red>Invalid assignment type: <dark_red><assignment><red>."   # Templates <assignment>
+Brigadier_InvalidTimeUnit: "<red>Invalid time unit: <dark_red><timeunit><red>."             # Templates <timeunit>
+Brigadier_InvalidPriority: "<red>Invalid priority: <dark_red><priority><red>."              # Templates <priority>

@@ -1,24 +1,9 @@
 name: TicketManager
-version: 9.0.1
+version: 10.0.0
 main: com.github.hoshikurama.ticketmanager.spigot.SpigotPlugin
-api-version: 1.18
+api-version: 1.19
 authors: [HoshiKurama]
-depend: [Vault]
-libraries:
-  - org.jetbrains.kotlin:kotlin-stdlib:1.8.10
-  - com.mysql:mysql-connector-j:8.0.32
-  - com.github.jasync-sql:jasync-mysql:2.1.23
-  - com.github.seratch:kotliquery:1.9.0
-  - joda-time:joda-time:2.12.2
-  - com.discord4j:discord4j-core:3.2.2
-  - net.kyori:adventure-text-minimessage:4.12.0
-  - net.kyori:adventure-platform-bukkit:4.1.2
-  - net.kyori:adventure-extra-kotlin:4.12.0
-  - com.discord4j:discord4j-core:3.2.3
-  - com.h2database:h2:2.1.214
-commands:
-  ticket:
-    description: Base for all TicketManager commands
+depend: [LuckPerms]
 permissions:
   ticketmanager.command.assign:
     description: Assign a ticket
@@ -37,9 +22,6 @@ permissions:
     default: false
   ticketmanager.command.comment.own:
     description: Comment on only own tickets
-    default: false
-  ticketmanager.command.convertDatabase:
-    description: Convert database to another supported type
     default: false
   ticketmanager.command.create:
     description: Create a ticket
@@ -69,7 +51,10 @@ permissions:
     description: Set priority of any ticket
     default: false
   ticketmanager.command.teleport:
-    description: Teleport to any ticket
+    description: Teleport to any ticket created on the same server
+    default: false
+  ticketmanager.command.proxyteleport:
+    description: Teleport to tickets across an entire proxy network
     default: false
   ticketmanager.command.view.all:
     description: View any ticket
@@ -89,9 +74,6 @@ permissions:
   ticketmanager.commandArg.silence:
     description: Ability to perform silent variations
     default: false
-  ticketmanager.commandArg.autotab:
-    description: Allows autotabbing (must have permission for command too)
-    default: false
   ticketmanager.notify.openTickets.onJoin:
     description: See open and assigned ticket count on login
     default: false
@@ -109,6 +91,9 @@ permissions:
     default: false
   ticketmanager.notify.pluginUpdate:
     description: Get notified of plugin update on login
+    default: false
+  ticketmanager.notify.proxyUpdate:
+    description: Get notified of proxy update on login
     default: false
   ticketmanager.notify.error.stacktrace:
     description: See modified stacktrace on errors
@@ -164,7 +149,6 @@ permissions:
       ticketmanager.command.closeAll: true
       ticketmanager.command.comment.all: true
       ticketmanager.command.comment.own: true
-      ticketmanager.command.convertDatabase: true
       ticketmanager.command.create: true
       ticketmanager.command.help: true
       ticketmanager.command.history.all: true
@@ -175,6 +159,7 @@ permissions:
       ticketmanager.command.search: true
       ticketmanager.command.setPriority: true
       ticketmanager.command.teleport: true
+      ticketmanager.command.proxyteleport: true
       ticketmanager.command.view.all: true
       ticketmanager.command.view.own: true
       ticketmanager.command.viewdeep.all: true
@@ -214,6 +199,7 @@ permissions:
       ticketmanager.massNotify.*: true
       ticketmanager.notify.change.*: true
       ticketmanager.notify.pluginUpdate: true
+      ticketmanager.notify.proxyUpdate: true
     default: false
   ticketmanager.*:
     description: Wildcard for all TicketManager permissions
@@ -222,7 +208,6 @@ permissions:
       ticketmanager.command.*: true
       ticketmanager.commandArg.cooldown.override: true
       ticketmanager.commandArg.silence: true
-      ticketmanager.commandArg.autotab: true
     default: op
   ticketmanager.basic:
     description: Preset for normal users
@@ -233,7 +218,6 @@ permissions:
       ticketmanager.command.help: true
       ticketmanager.command.history.own: true
       ticketmanager.command.view.own: true
-      ticketmanager.commandArg.autotab: true
       ticketmanager.notify.unreadUpdates.onJoin: true
       ticketmanager.notify.unreadUpdates.scheduled: true
       ticketmanager.notify.change.*: true

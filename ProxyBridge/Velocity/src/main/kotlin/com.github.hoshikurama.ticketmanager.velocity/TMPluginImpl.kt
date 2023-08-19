@@ -2,7 +2,6 @@ package com.github.hoshikurama.ticketmanager.velocity
 
 
 import com.github.hoshikurama.ticketmanager.common.*
-import com.github.hoshikurama.ticketmanager.common.discord.notifications.DiscordNotification
 import com.github.hoshikurama.ticketmanager.commonpde.ProxyBridge
 import com.google.common.io.ByteStreams
 import com.google.inject.Inject
@@ -17,10 +16,8 @@ import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier
 import com.velocitypowered.api.scheduler.ScheduledTask
 import org.bstats.velocity.Metrics
 import org.slf4j.Logger
-import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 @Plugin(
@@ -34,8 +31,8 @@ class TMPluginImpl @Inject constructor(
     private val server: ProxyServer,
     private val metricsFactory: Metrics.Factory,
     private val logger: Logger,
-    @DataDirectory override val dataDirectory: Path,
-): ProxyBridge() {
+    @DataDirectory val dataDirectory: Path,
+): ProxyBridge(dataDirectory) {
     private fun ProxyChannel.applySettings() = MinecraftChannelIdentifier.create(namespace, name)!!
 
     private val incomingMessage = Server2Proxy.NotificationSharing.applySettings()
@@ -46,8 +43,6 @@ class TMPluginImpl @Inject constructor(
 
     private val serverToProxyUpdate = Server2Proxy.ProxyVersionRequest.applySettings()
     private val proxyToServerUpdate = Proxy2Server.ProxyVersionRequest.applySettings()
-
-    private val discordMessage = Server2Proxy.DiscordMessage.applySettings()
 
     @Volatile
     private var task: ScheduledTask? = null
@@ -96,43 +91,15 @@ class TMPluginImpl @Inject constructor(
                     targetServer.sendPluginMessage(proxyToServerUpdate, msg)
                 }
             }
-
-            discordMessage -> {
-                if (discord == null) return
-
-                val notification = DiscordNotification.decode(event.data, locale)
-                CompletableFuture.runAsync { discord?.sendMessage(notification, locale) }
-            }
         }
     }
 
-    override fun registerChannels(): Unit = server.channelRegistrar.register(incomingMessage, outgoingMessage, serverToProxyTeleport, proxyToServerTeleport, proxyToServerUpdate, serverToProxyUpdate, discordMessage)
-    override fun unregisterChannels(): Unit = server.channelRegistrar.unregister(incomingMessage, outgoingMessage, serverToProxyTeleport, proxyToServerTeleport, proxyToServerUpdate, serverToProxyUpdate, discordMessage)
+    override fun registerChannels(): Unit = server.channelRegistrar.register(incomingMessage, outgoingMessage, serverToProxyTeleport, proxyToServerTeleport, proxyToServerUpdate, serverToProxyUpdate)
+    override fun unregisterChannels(): Unit = server.channelRegistrar.unregister(incomingMessage, outgoingMessage, serverToProxyTeleport, proxyToServerTeleport, proxyToServerUpdate, serverToProxyUpdate)
 
     override fun doSpecialtyBeforeStart() {
         // Register bStats (unless disabled by player in bStats config)
         metrics = metricsFactory.make(this, velocityBridgeKey)
-    }
-    override fun loadExternalConfig(): List<String> = Files.readAllLines(this.dataDirectory.resolve("config.yml"), Charsets.UTF_8)
-
-    override fun configExists(): Boolean = this.dataDirectory.resolve("config.yml").toFile().exists()
-
-    override fun writeConfig(list: List<String>) {
-        val writer = this.dataDirectory.resolve("config.yml").toFile().bufferedWriter()
-
-        list.forEachIndexed { index, str ->
-            writer.write(str)
-
-            if (index != list.lastIndex)
-                writer.newLine()
-        }
-        writer.close()
-    }
-
-    override fun dataDirectoryExists(): Boolean = this.dataDirectory.toFile().exists()
-
-    override fun writeDataDirectory() {
-        this.dataDirectory.toFile().mkdir()
     }
 
     override fun scheduleRepeatCheck(frequencyHours: Long) {
@@ -149,10 +116,7 @@ class TMPluginImpl @Inject constructor(
         val update = UpdateChecker(true, UpdateChecker.Location.BRIDGE)
 
         update.latestVersionIfNotLatest?.let {
-            logger.info(locale.notifyPluginUpdate
-                .replace("<current>", bridgePluginVersion)
-                .replace("<latest>", it)
-            )
+            logger.info("[TicketManager Proxy] TicketManager has an update!\n  Current Version: $bridgePluginVersion\n  Latest Version: $it")
         }
         updateChecker.set(update)
     }

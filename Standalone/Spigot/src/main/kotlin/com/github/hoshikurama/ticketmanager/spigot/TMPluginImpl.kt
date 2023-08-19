@@ -1,56 +1,151 @@
 package com.github.hoshikurama.ticketmanager.spigot
 
+import com.github.hoshikurama.ticketmanager.api.paper.TicketManagerDatabaseRegister
+import com.github.hoshikurama.ticketmanager.common.Proxy2Server
+import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
+import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
+import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
+import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
+import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
+import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
+import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.misc.ConfigParameters
+import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.platform.events.EventBuilder
+import dev.jorel.commandapi.CommandAPI
+import dev.jorel.commandapi.CommandAPIBukkitConfig
+import kotlinx.coroutines.runBlocking
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
-import net.milkbowl.vault.permission.Permission
 import org.bstats.bukkit.Metrics
 import org.bstats.charts.SimplePie
 import org.bstats.charts.SingleLineChart
 import org.bukkit.Bukkit
-import org.bukkit.command.CommandExecutor
-import org.bukkit.command.TabCompleter
 import org.bukkit.event.Listener
-import org.bukkit.event.player.PlayerJoinEvent
-import org.bukkit.event.server.TabCompleteEvent
+import org.bukkit.plugin.ServicePriority
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
 import java.io.InputStream
 import java.io.InputStreamReader
-import java.util.concurrent.TimeUnit
+
+typealias TMPlayerJoinEvent = com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
+typealias BukkitPlayerJoinEvent = org.bukkit.event.player.PlayerJoinEvent
 
 class TMPluginImpl(
     private val spigotPlugin: SpigotPlugin,
-    private val perms: Permission,
     private val adventure: BukkitAudiences,
 ) : TMPlugin(
-    buildPlatformFunctions = { PlatformFunctionsImpl(perms, adventure, spigotPlugin) },
-    buildPipeline = { platform,instance,global -> CommandExecutorImpl(platform, instance, global, perms, adventure) },
-    buildTabComplete = { platform, instance -> TabCompleteImpl(platform, instance, perms, adventure) },
-    buildJoinEvent = { global, instance, platform -> JoinEventImpl(global, instance, platform, perms, adventure) },
+    buildPlatformFunctions = { PlatformFunctionsImpl(adventure, spigotPlugin, it) },
+    buildJoinEvent = { config, platform, locale -> JoinEventImpl(locale, config, platform, adventure) },
+    cooldownAfterRemoval = { it.run(Bukkit::getPlayer)?.run(CommandAPI::updateRequirements) },
+    eventBuilder = EventBuilderImpl()
 ) {
-    private lateinit var metrics: Metrics
 
-    override fun performSyncBefore() {
+    init {
+        activeInstance = this
+    }
+
+    private lateinit var metrics: Metrics
+    private var proxy: Proxy? = null
+
+    override fun platformRunFirst() {
         // Launch Metrics
         metrics = Metrics(spigotPlugin, bukkitMetricsKey)
         metrics.addCustomChart(
             SingleLineChart("tickets_made") {
-                globalPluginState.ticketCountMetrics.getAndSet(0)
+                runBlocking {
+                    GlobalState.ticketCounter.getAndReset()
+                }
             }
         )
         metrics.addCustomChart(
             SimplePie("database_type") {
-                instancePluginState.database.type.name
+                GlobalState.databaseType?: "UNINITIALIZED"
             }
         )
 
-        metrics.addCustomChart(SimplePie("plugin_platform") { "Spigot" })
+        metrics.addCustomChart(SimplePie("plugin_platform") { "Paper" })
+
+        // LuckPerms???
     }
 
-    override fun performAsyncTaskTimer(frequency: Long, duration: TimeUnit, action: () -> Unit) {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(spigotPlugin, Runnable { action() }, 0, duration.toSeconds(frequency) * 20L)
+    override fun platformRunSyncAfterCoreLaunch(
+        cooldown: Cooldown?,
+        activeLocale: TMLocale,
+        configState: ConfigState,
+        joinEvent: TMPlayerJoinEvent,
+        lpGroupNames: List<String>,
+        platformFunctions: PlatformFunctions,
+        eventBuilder: EventBuilder
+    ) {
+        Bukkit.getServicesManager().register(
+            TicketManagerDatabaseRegister::class.java, TicketManagerDatabaseRegister(
+                DatabaseManager
+            ), spigotPlugin, ServicePriority.Normal)
+        nonCommandRegistrations(cooldown, activeLocale, configState, joinEvent, lpGroupNames, platformFunctions, eventBuilder)
+        // Register Commands
+        CommandAPI.onLoad(CommandAPIBukkitConfig(spigotPlugin))
+        CommandAPI.onEnable()
+        CommandAPIRunner(adventure).generateCommands()
+    }
+
+    private fun nonCommandRegistrations(
+        cooldown: Cooldown?,
+        activeLocale: TMLocale,
+        configState: ConfigState,
+        joinEvent: TMPlayerJoinEvent,
+        lpGroupNames: List<String>,
+        platformFunctions: PlatformFunctions,
+        eventBuilder: EventBuilder,
+    ) {
+        // Update Command References
+        ReloadObjectCommand.cooldown = cooldown
+        ReloadObjectCommand.locale = activeLocale
+        ReloadObjectCommand.configState = configState
+        ReloadObjectCommand.lpGroupNames = lpGroupNames
+        ReloadObjectCommand.platform = platformFunctions
+        ReloadObjectCommand.commandTasks = CommandTasks(
+            eventBuilder = eventBuilder,
+            configState = configState,
+            platform = platformFunctions,
+            locale = activeLocale,
+        )
+
+        // Register Proxy listeners if necessary
+        if (configState.enableProxyMode) {
+            proxy = Proxy(platformFunctions, configState, activeLocale)
+            spigotPlugin.server.messenger.registerOutgoingPluginChannel(spigotPlugin, Server2Proxy.NotificationSharing.waterfallString())
+            spigotPlugin.server.messenger.registerIncomingPluginChannel(spigotPlugin, Proxy2Server.NotificationSharing.waterfallString(), proxy!!)
+            spigotPlugin.server.messenger.registerOutgoingPluginChannel(spigotPlugin, Server2Proxy.Teleport.waterfallString())
+            spigotPlugin.server.messenger.registerIncomingPluginChannel(spigotPlugin, Proxy2Server.Teleport.waterfallString(), proxy!!)
+            spigotPlugin.server.messenger.registerOutgoingPluginChannel(spigotPlugin, Server2Proxy.ProxyVersionRequest.waterfallString())
+            spigotPlugin.server.messenger.registerIncomingPluginChannel(spigotPlugin, Proxy2Server.ProxyVersionRequest.waterfallString(), proxy!!)
+        }
+
+        // Registers player join event
+        spigotPlugin.server.pluginManager.registerEvents(joinEvent as Listener, spigotPlugin)
+    }
+
+    override fun platformUpdateOnReload(
+        cooldown: Cooldown?,
+        activeLocale: TMLocale,
+        configState: ConfigState,
+        joinEvent: TMPlayerJoinEvent,
+        lpGroupNames: List<String>,
+        platformFunctions: PlatformFunctions,
+        eventBuilder: EventBuilder,
+    ) {
+        // Unregistrations...
+        // Unregister Player join event
+        BukkitPlayerJoinEvent.getHandlerList().unregister(spigotPlugin)
+
+        // Unregister proxy events
+        spigotPlugin.server.messenger.unregisterIncomingPluginChannel(spigotPlugin)
+        spigotPlugin.server.messenger.unregisterOutgoingPluginChannel(spigotPlugin)
+
+        // Registrations
+        nonCommandRegistrations(cooldown, activeLocale, configState, joinEvent, lpGroupNames, platformFunctions, eventBuilder)
     }
 
     override fun configExists(): Boolean {
@@ -68,42 +163,23 @@ class TMPluginImpl(
     override fun readConfig(): ConfigParameters {
         return spigotPlugin.config.run {
             ConfigParameters(
-                mySQLHost = getString("MySQL_Host"),
-                mySQLPort = getString("MySQL_Port"),
-                mySQLDBName = getString("MySQL_DBName"),
-                mySQLUsername = getString("MySQL_Username"),
-                mySQLPassword = getString("MySQL_Password"),
-                pluginFolderPath = spigotPlugin.dataFolder.absolutePath,
-                memoryFrequency = getLong("Memory_Backup_Frequency"),
+                pluginFolderPath = spigotPlugin.dataFolder.toPath(),
                 dbTypeAsStr = getString("Database_Mode"),
                 allowCooldowns = getBoolean("Use_Cooldowns"),
                 cooldownSeconds = getLong("Cooldown_Time"),
-                localeHandlerColourCode = getString("Colour_Code"),
-                localeHandlerPreferredLocale = getString("Preferred_Locale"),
-                localeHandlerConsoleLocale = getString("Console_Locale"),
-                localeHandlerForceLocale = getBoolean("Force_Locale"),
+                localedColourCode = getString("Colour_Code"),
+                selectedLocale = getString("Preferred_Locale"),
                 allowUnreadTicketUpdates = getBoolean("Allow_Unread_Ticket_Updates"),
                 checkForPluginUpdates = getBoolean("Allow_UpdateChecking"),
-                enableDiscord = getBoolean("Use_Discord_Bot"),
-                discordNotifyOnAssign = getBoolean("Discord_Notify_On_Assign"),
-                discordNotifyOnClose = getBoolean("Discord_Notify_On_Close"),
-                discordNotifyOnCloseAll = getBoolean("Discord_Notify_On_Close_All"),
-                discordNotifyOnComment = getBoolean("Discord_Notify_On_Comment"),
-                discordNotifyOnCreate = getBoolean("Discord_Notify_On_Create"),
-                discordNotifyOnReopen = getBoolean("Discord_Notify_On_Reopen"),
-                discordNotifyOnPriorityChange = getBoolean("Discord_Notify_On_Priority_Change"),
-                discordToken = getString("Discord_Bot_Token"),
-                discordChannelID = getLong("Discord_Channel_ID"),
                 printModifiedStacktrace = getBoolean("Print_Modified_Stacktrace"),
                 printFullStacktrace = getBoolean("Print_Full_Stacktrace"),
                 enableAdvancedVisualControl = getBoolean("Enable_Advanced_Visual_Control"),
-                enableProxyMode = false,
-                proxyServerName = "",
+                enableProxyMode = getBoolean("Enable_Proxy"),
+                proxyServerName = getString("Proxy_Server_Name"),
                 autoUpdateConfig = getBoolean("Auto_Update_Config"),
-                allowProxyUpdateChecks = false,
-                proxyUpdateFrequency = 0,
+                allowProxyUpdateChecks = getBoolean("Allow_Proxy_UpdateChecking"),
+                proxyUpdateFrequency = getLong("Proxy_Update_Check_Frequency"),
                 pluginUpdateFrequency = getLong("Plugin_Update_Check_Frequency"),
-                forwardDiscordToProxy = false,
             )
         }
     }
@@ -136,25 +212,5 @@ class TMPluginImpl(
                 writer.newLine()
         }
         writer.close()
-    }
-
-    override fun registerProcesses() {
-        instancePluginState.localeHandler.getCommandBases().forEach {
-            spigotPlugin.getCommand(it)?.setExecutor(commandPipeline as CommandExecutor)
-            spigotPlugin.getCommand(it)?.tabCompleter = tabComplete as TabCompleter
-            // Remember to register any keyword in plugin.yml
-        }
-
-        // Registers play join event
-        spigotPlugin.server.pluginManager.registerEvents(joinEvent as Listener, spigotPlugin)
-    }
-
-    override fun unregisterProcesses() {
-        // Removes current task timers
-        spigotPlugin.server.scheduler.cancelTasks(spigotPlugin)
-
-        // Unregisters listeners
-        TabCompleteEvent.getHandlerList().unregister(spigotPlugin)
-        PlayerJoinEvent.getHandlerList().unregister(spigotPlugin)
     }
 }

@@ -30,11 +30,6 @@ object Server2Proxy {
         override val namespace = STD_NAMESPACE
         override val name = "s2p_proxy_version_request"
     }
-
-    object DiscordMessage : S2PChannel {
-        override val namespace = STD_NAMESPACE
-        override val name = "s2p_discord_message"
-    }
 }
 
 object Proxy2Server {

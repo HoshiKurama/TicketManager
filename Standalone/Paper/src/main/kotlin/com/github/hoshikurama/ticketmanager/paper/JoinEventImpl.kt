@@ -1,35 +1,33 @@
 package com.github.hoshikurama.ticketmanager.paper
 
-import com.github.hoshikurama.ticketmanager.commonse.data.GlobalPluginState
-import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.api.common.ticket.ActionLocation
+import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
-import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
-import net.milkbowl.vault.permission.Permission
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import java.util.concurrent.ConcurrentHashMap
 
-val proxyJoinMap = ConcurrentHashMap<String, Ticket.TicketLocation>()
+val proxyJoinMap = ConcurrentHashMap<String, ActionLocation.FromPlayer>()
 
 class JoinEventImpl(
-    globalState: GlobalPluginState,
-    instanceState: InstancePluginState,
+    activeLocale: TMLocale,
+    configState: ConfigState,
     platformFunctions: PlatformFunctions,
-    private val perms: Permission,
-) : PlayerJoinEvent(globalState, platformFunctions, instanceState), Listener {
+) : PlayerJoinEvent(platformFunctions, configState, activeLocale), Listener {
 
     @EventHandler
     fun onPlayerJoinEvent(event: org.bukkit.event.player.PlayerJoinEvent) {
-        val player = PaperPlayer(event.player, perms, instanceState.localeHandler, instanceState.proxyServerName)
+        val player = PaperPlayer(event.player, configState.proxyServerName)
         val serverCount = Bukkit.getServer().onlinePlayers.size
 
-        super.whenPlayerJoins(player, serverCount)
+        super.whenPlayerJoinsAsync(player, serverCount)
 
         val uuidString = event.player.uniqueId.toString()
         if (proxyJoinMap.containsKey(uuidString)) {
-            platformFunctions.teleportToTicketLocSameServer(platformFunctions.buildPlayer(event.player.uniqueId, instanceState.localeHandler)!!, proxyJoinMap[uuidString]!!) // Teleport player to final location
+            platformFunctions.teleportToTicketLocSameServer(platformFunctions.buildPlayer(event.player.uniqueId)!!, proxyJoinMap[uuidString]!!) // Teleport player to final location
             proxyJoinMap.remove(uuidString)
         }
     }

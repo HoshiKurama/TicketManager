@@ -1,49 +1,70 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
+import com.github.hoshikurama.ticketmanager.api.common.TMCoroutine
+import com.github.hoshikurama.ticketmanager.api.common.database.AsyncDBAdapter
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Assignment
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Creator
 import com.github.hoshikurama.ticketmanager.common.*
-import com.github.hoshikurama.ticketmanager.common.discord.Discord
-import com.github.hoshikurama.ticketmanager.commonse.data.Cooldown
-import com.github.hoshikurama.ticketmanager.commonse.data.GlobalPluginState
-import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
-import com.github.hoshikurama.ticketmanager.commonse.database.*
+import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
+import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
+import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
+import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
+import com.github.hoshikurama.ticketmanager.commonse.extensions.defaultDatabase
+import com.github.hoshikurama.ticketmanager.commonse.h2database.CachedH2
 import com.github.hoshikurama.ticketmanager.commonse.misc.ConfigParameters
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.commonse.misc.templated
-import com.github.hoshikurama.ticketmanager.commonse.pipeline.Pipeline
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
-import com.github.hoshikurama.ticketmanager.commonse.platform.TabComplete
-import com.github.hoshikurama.ticketmanager.commonse.ticket.User
-import java.io.File
+import com.github.hoshikurama.ticketmanager.commonse.platform.events.EventBuilder
+import com.github.hoshikurama.ticketmanager.commonse.utilities.asDeferredThenAwait
+import kotlinx.coroutines.*
+import net.luckperms.api.LuckPermsProvider
+import net.luckperms.api.model.group.Group
 import java.nio.file.Files
-import java.nio.file.Paths
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
+import java.util.*
+import kotlin.io.path.absolutePathString
 import kotlin.io.path.exists
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 abstract class TMPlugin(
     private val buildPlatformFunctions: (String?) -> PlatformFunctions,
-    private val buildJoinEvent: (GlobalPluginState, InstancePluginState, PlatformFunctions) -> PlayerJoinEvent,
-    private val buildTabComplete: (PlatformFunctions, InstancePluginState) -> TabComplete,
-    private val buildPipeline: (PlatformFunctions, InstancePluginState, GlobalPluginState) -> Pipeline,
+    private val buildJoinEvent: (ConfigState, PlatformFunctions, TMLocale) -> PlayerJoinEvent,
+    private val cooldownAfterRemoval: suspend (UUID) -> Unit,
+    private val eventBuilder: EventBuilder
 ) {
-    protected val globalPluginState = GlobalPluginState()
-
-    protected lateinit var instancePluginState: InstancePluginState private set
-    protected lateinit var platformFunctions: PlatformFunctions private set
-    protected lateinit var tabComplete: TabComplete private set
-    protected lateinit var joinEvent: PlayerJoinEvent private set
-    protected lateinit var commandPipeline: Pipeline private set
-
     companion object {
-       internal lateinit var activeInstance: TMPlugin
-       private set
+        @Volatile
+        lateinit var lpGroupNames: List<String> private set
+        @Volatile internal var cooldown: Cooldown? = null
+            private set
+        @Volatile lateinit var activeInstance: TMPlugin
     }
 
-    abstract fun performSyncBefore()
-    abstract fun performAsyncTaskTimer(frequency: Long, duration: TimeUnit, action: () -> Unit)
+    private val periodicTasks = mutableListOf<Job>()
+
+// Abstract Functions
+    abstract fun platformRunFirst()
+    abstract fun platformRunSyncAfterCoreLaunch(
+        cooldown: Cooldown?,
+        activeLocale: TMLocale,
+        configState: ConfigState,
+        joinEvent: PlayerJoinEvent,
+        lpGroupNames: List<String>,
+        platformFunctions: PlatformFunctions,
+        eventBuilder: EventBuilder,
+    )
+    abstract fun platformUpdateOnReload(
+        cooldown: Cooldown?,
+        activeLocale: TMLocale,
+        configState: ConfigState,
+        joinEvent: PlayerJoinEvent,
+        lpGroupNames: List<String>,
+        platformFunctions: PlatformFunctions,
+        eventBuilder: EventBuilder,
+    )
 
     // Config Functions
     abstract fun configExists(): Boolean
@@ -56,298 +77,357 @@ abstract class TMPlugin(
     abstract fun loadPlayerConfig(): List<String>
     abstract fun writeNewConfig(entries: List<String>)
 
-    // Registration Related Functions
-    abstract fun registerProcesses()
-    abstract fun unregisterProcesses()
-
-
-    // Non-Abstract Functions
+// Non-Abstract Functions
     fun enableTicketManager() {
-        performSyncBefore()
-        activeInstance = this
-        CompletableFuture.runAsync(::initializeData) // Also registers
-        performAsyncTaskTimer(10, TimeUnit.MINUTES, ::periodicTasks)
+        GlobalState.dataInitializationComplete = false
+        GlobalState.databaseSelected = false
+
+        // This part runs sync for initial startup
+        platformRunFirst()
+        val lpGroupNamesDeferred = loadLPGroupNames()
+        val errors = mutableListOf<Pair<String, String>>()
+        val (coreItems, config) = loadCoreItems(errors)
+        val (cooldown, activeLocale, configState, joinEvent, platformFunctions) = coreItems
+
+        // Database Handling
+        println(activeLocale.consoleDatabaseWaitStart)
+        DatabaseManager.register2(defaultDatabase) { CachedH2(config.pluginFolderPath.absolutePathString()) }
+        TMCoroutine.launchGlobal { loadDatabase(configState, config, platformFunctions, errors, activeLocale) {
+            platformFunctions.pushInfoToConsole(activeLocale.consoleDatabaseLoaded)
+            GlobalState.databaseSelected = true
+        } }
+
+        lpGroupNames = runBlocking { lpGroupNamesDeferred.await() }
+
+        platformRunSyncAfterCoreLaunch(
+            cooldown = cooldown,
+            activeLocale = activeLocale,
+            configState = configState,
+            joinEvent = joinEvent,
+            lpGroupNames = lpGroupNames,
+            platformFunctions = platformFunctions,
+            eventBuilder = eventBuilder,
+        )
+
+        // Startup is now async...
+        performRemainingTasksAsync(activeLocale, configState, platformFunctions, errors)
+        loadUpdateCheckersAsync(config, configState, platformFunctions, errors)
+        GlobalState.dataInitializationComplete = true
     }
 
-    private fun updatePluginUpdateChecker() {
-        val newChecker = UpdateChecker(true, UpdateChecker.Location.MAIN)
-        instancePluginState.pluginUpdate.set(newChecker)
+    fun disableTicketManager() {
+        GlobalState.dataInitializationComplete = false
+        GlobalState.databaseSelected = false
+
+        // Cancels periodic coroutine tasks
+        cooldown?.shutdown()
+        periodicTasks.forEach(Job::cancel)
+
+        // Only close database here if the current DB is CachedH2. Otherwise, it must be delegated to the Extension
+        if (DatabaseManager.activeAssignedUUID == null && DatabaseManager.activeDatabase is AsyncDBAdapter)
+            DatabaseManager.activeDatabase.closeDatabase()
+
+        runBlocking { TMCoroutine.cancelTasks("Plugin shutting down!") }
     }
 
-    private fun updateProxyUpdateChecker() {
-        // ASSUMES PROXY SERVER NAME IS NOT NULL AND CAN CHECK FOR UPDATES
-        val message = ProxyUpdate.encodeProxyMsg(instancePluginState.proxyServerName!!)
-        platformFunctions.relayMessageToProxy(Server2Proxy.ProxyVersionRequest.waterfallString(), message)
+    suspend fun reloadTicketManager(): Unit = coroutineScope {
+        // Disable
+        cooldown?.shutdown()
+        periodicTasks.forEach(Job::cancel)
+        DatabaseManager.activeDatabase.closeDatabase()
+
+        try { TMCoroutine.cancelTasks("Plugin shutting down!") }
+        catch (ignored: Exception) {}
+
+        // Startup
+        val lpGroupNamesAsync = loadLPGroupNames()
+        val errors = mutableListOf<Pair<String, String>>()
+        val (coreItems, config) = loadCoreItems(errors)
+        val (cooldown, activeLocale, configState, joinEvent, platformFunctions) = coreItems
+
+        DatabaseManager.register2(defaultDatabase) { CachedH2(config.pluginFolderPath.absolutePathString()) }
+        loadDatabase(configState, config, platformFunctions, errors, activeLocale)
+
+        platformUpdateOnReload(
+            cooldown = cooldown,
+            joinEvent = joinEvent,
+            configState = configState,
+            activeLocale = activeLocale,
+            platformFunctions = platformFunctions,
+            eventBuilder = eventBuilder,
+            lpGroupNames = lpGroupNamesAsync.await(),
+        )
+        lpGroupNames = lpGroupNamesAsync.await()
+        performRemainingTasksAsync(activeLocale, configState, platformFunctions, errors)
     }
 
-    private fun periodicTasks() {
-        if (globalPluginState.pluginLocked.get()) return
+// Locale stuff...
 
-        CompletableFuture.runAsync(instancePluginState.cooldowns::filterMapAsync)
+    private fun loadCoreItems(
+        errors: MutableList<Pair<String, String>>
+    ): Pair<CoreItems, ConfigParameters> {
 
-        // Mass Unread Notify
-        CompletableFuture.runAsync {
-            if (!instancePluginState.allowUnreadTicketUpdates) return@runAsync
+        fun <T> T.addToErrors(location: String, toString: (T) -> String): T =
+            this.also { errors.add(location to toString(it)) }
 
-            platformFunctions.getAllOnlinePlayers(instancePluginState.localeHandler)
-                .filter { it.has("ticketmanager.notify.unreadUpdates.scheduled") }
-                .forEach {
-                    instancePluginState.database.getTicketIDsWithUpdatesForAsync(User(it.uniqueID)).thenAcceptAsync { ids ->
-                        val tickets = ids.joinToString(", ")
+        // Config file...
+        val configGenerationRequired = !configExists()
+        if (configGenerationRequired) generateConfig()
+        reloadConfig()
+        val config = readConfig()
 
-                        if (ids.isEmpty()) return@thenAcceptAsync
-
-                        val template = if (ids.size > 1) it.locale.notifyUnreadUpdateMulti
-                        else it.locale.notifyUnreadUpdateSingle
-
-                        template.parseMiniMessage("num" templated tickets).run(it::sendMessage)
-                    }
-                        .exceptionallyAsync { e -> pushScheduledMessage(e as Exception) }
-                }
+        kotlin.run {
+            // Updates config file if requested
+            val autoUpdateConfig = config.autoUpdateConfig ?: true.addToErrors("Auto_Update_Config", Boolean::toString)
+            if (autoUpdateConfig) TMCoroutine.launchGlobal { updateConfig(::loadPlayerConfig, ::loadInternalConfig, ::writeNewConfig) }
         }
 
-        // Open and Assigned Notify
-        instancePluginState.database.getOpenTicketsAsync(1, 0).thenApplyAsync { (openTickets, _, openCount,_) ->
-            platformFunctions.getAllOnlinePlayers(instancePluginState.localeHandler)
-                .filter { it.has("ticketmanager.notify.openTickets.scheduled") }
-                .forEach { p ->
-                    val groups = p.permissionGroups.map { "::$it" }
-                    val assignedCount = openTickets.count { it.assignedTo == p.name || it.assignedTo in groups }
+        // AVC...
+        val enableAdvancedVisualControl = kotlin.run {
+            val enableAVC = config.enableAdvancedVisualControl
+                ?: false.addToErrors("Enable_Advanced_Visual_Control", Boolean::toString)
 
-                    if (assignedCount != 0)
-                        p.locale.notifyOpenAssigned.parseMiniMessage(
-                            "open" templated "$openCount",
-                            "assigned" templated "$assignedCount"
-                        ).run(p::sendMessage)
-                }
-        }.exceptionallyAsync { e -> pushScheduledMessage(e as Exception) }
-    }
-
-    fun disablePlugin() {
-        globalPluginState.pluginLocked.set(true)
-        instancePluginState.database.closeDatabase()
-    }
-
-    fun initializeData() {
-        CompletableFuture.runAsync {
-            globalPluginState.pluginLocked.set(true)
-            val errorsToPushOnLocalization = mutableListOf<() -> Unit>()
-
-            // Generate config file if not found
-            if (!configExists()) {
-                generateConfig()
-                errorsToPushOnLocalization.add {
-                    platformFunctions.massNotify(instancePluginState.localeHandler, "ticketmanager.notify.warning") {
-                        it.warningsNoConfig.parseMiniMessage()
+            return@run enableAVC.also {
+                if (!enableAVC) return@also
+                val localeFolder = config.pluginFolderPath.resolve("locales")
+                localeFolder.toFile().run { if (!exists()) mkdir() }
+                supportedLocales
+                    .filterNot { localeFolder.resolve("$it.yml").exists() }
+                    .forEach {
+                        this@TMPlugin::class.java.classLoader
+                            .getResourceAsStream("locales/visual/$it.yml")!!
+                            .use { input -> Files.copy(input, localeFolder.resolve("$it.yml")) }
                     }
-                }
             }
-            reloadConfig()
+        }
 
-            // Builds associated objects from config
-            readConfig().let { c ->
-                // List of errors
-                val errors = mutableListOf<Pair<String, String>>()
-                fun <T> T.addToErrors(location: String, toString: (T) -> String): T = this.also { errors.add(location to toString(it)) }
+        // Locale...
+        val activeLocale = buildLocale(
+            mainColourCode = config.localedColourCode ?: "&3".addToErrors("Colour_Code") { it },
+            preferredLocale = config.selectedLocale ?: "en_ca".addToErrors("Preferred_Locale") { it },
+            enableAVC = enableAdvancedVisualControl,
+            localesFolderPath = config.pluginFolderPath,
+        )
 
+        // Config State...
+        val configState = kotlin.run {
 
-                // Updates config file if requested
-                if (c.autoUpdateConfig ?: true.addToErrors("Auto_Update_Config", Boolean::toString)) {
-                    com.github.hoshikurama.ticketmanager.common.updateConfig(::loadPlayerConfig, ::loadInternalConfig, ::writeNewConfig)
+            val proxyServerName = config.proxyServerName.let {
+                if (it == null) null.addToErrors("Proxy_Server_Name") { "null" }
+                else it.takeIf(String::isNotBlank)
+            }
+            val enableProxyMode = proxyServerName != null && config.enableProxyMode
+                    ?: false.addToErrors("Enable_Proxy", Boolean::toString)
+
+            ConfigState(
+                proxyUpdate = null,
+                enableProxyMode = enableProxyMode,
+                proxyServerName = proxyServerName,
+                allowProxyUpdatePings = enableProxyMode && config.allowProxyUpdateChecks
+                    ?: true.addToErrors("Allow_Proxy_UpdateChecking", Boolean::toString),
+                allowUnreadTicketUpdates = config.allowUnreadTicketUpdates
+                    ?: true.addToErrors("Allow_Unread_Ticket_Updates", Boolean::toString),
+                printModifiedStacktrace = config.printModifiedStacktrace
+                    ?: true.addToErrors("Print_Modified_Stacktrace", Boolean::toString),
+                printFullStacktrace = config.printFullStacktrace
+                    ?: false.addToErrors("Print_Full_Stacktrace", Boolean::toString),
+                pluginUpdate = UpdateChecker(
+                    canCheck = config.checkForPluginUpdates
+                        ?: true.addToErrors("Allow_UpdateChecking", Boolean::toString),
+                    location= UpdateChecker.Location.MAIN
+                ),
+            )
+        }
+
+        val cooldown = Cooldown(
+            duration = config.cooldownSeconds ?: 1L.addToErrors("Cooldown_Time", Long::toString),
+            runAfterRemoval = cooldownAfterRemoval
+        ).takeIf { config.allowCooldowns ?: false.addToErrors("Use_Cooldowns", Boolean::toString) }
+
+        // Platform Functions...
+        val platformFunctions = buildPlatformFunctions(configState.proxyServerName)
+
+        // Error Pushing...
+        TMCoroutine.launchGlobal {
+            if (!configGenerationRequired) return@launchGlobal
+            platformFunctions.massNotify(
+                "ticketmanager.notify.warning",
+                activeLocale.warningsNoConfig.parseMiniMessage()
+            )
+        }
+
+        return CoreItems(
+            cooldown,
+            activeLocale,
+            configState,
+            buildJoinEvent(configState, platformFunctions, activeLocale),
+            platformFunctions) to config
+    }
+
+    private suspend fun loadDatabase(
+        configState: ConfigState,
+        configParameters: ConfigParameters,
+        platformFunctions: PlatformFunctions,
+        errors: MutableList<Pair<String, String>>,
+        locale: TMLocale,
+        afterLoad: (() -> Unit)? = null,
+    ) {
+        fun <T> T.addToErrors(location: String, toString: (T) -> String): T =
+            this.also { errors.add(location to toString(it)) }
+
+        GlobalState.databaseType = configParameters.dbTypeAsStr ?: defaultDatabase.addToErrors("Database_Mode") { it }
+        DatabaseManager.activateNewDatabase(GlobalState.databaseType!!, platformFunctions, configState, locale)
+        afterLoad?.invoke()
+    }
+
+    private fun loadLPGroupNames(): Deferred<List<String>> = TMCoroutine.asyncGlobal {
+        LuckPermsProvider.get().groupManager.run {
+            loadAllGroups().asDeferredThenAwait()
+            loadedGroups.map(Group::getName)
+        }
+    }
+
+    private fun loadUpdateCheckersAsync(
+        config: ConfigParameters,
+        configState: ConfigState,
+        platformFunctions: PlatformFunctions,
+        errors: MutableList<Pair<String, String>>,
+    ) {
+        // Config Read with Error Checks
+        fun <T> T.addToErrors(location: String, toString: (T) -> String): T =
+            this.also { errors.add(location to toString(it)) }
+
+        // Launch Continuous Update Checker
+        if (configState.pluginUpdate.canCheck) {
+            TMCoroutine.launchSupervised {
+                val pluginUpdateFreq = config.pluginUpdateFrequency
+                    ?: 1L.addToErrors("Plugin_Update_Check_Frequency", Long::toString)
+
+                while (true) {
+                    configState.pluginUpdate = UpdateChecker(true, UpdateChecker.Location.MAIN)
+                    delay(pluginUpdateFreq.toDuration(DurationUnit.HOURS))
                 }
+            }.run(periodicTasks::add)
+        }
 
-                // Generates Advanced Visual Control files
-                try {
-                    if (c.enableAdvancedVisualControl == true) {
-                        File("${c.pluginFolderPath}/locales").let { if (!it.exists()) it.mkdir() }
+        // Proxy Update Checker...
+        if (configState.enableProxyMode && configState.allowProxyUpdatePings) {
+            val proxyUpdateFreq = config.proxyUpdateFrequency
+                ?: 1L.addToErrors("Proxy_Update_Check_Frequency", Long::toString)
 
-                        supportedLocales
-                            .filterNot { Paths.get("${c.pluginFolderPath}/locales/$it.yml").exists() }
-                            .forEach {
-                                this@TMPlugin::class.java.classLoader
-                                    .getResourceAsStream("locales/visual/$it.yml")!!
-                                    .use { input -> Files.copy(input, Paths.get("${c.pluginFolderPath}/locales/$it.yml")) }
-                            }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-
-                // Proxy Stuff
-                val enableProxyMode = c.enableProxyMode ?: false.addToErrors("Enable_Proxy", Boolean::toString)
-                val serverName = c.proxyServerName.let { if (it == null) null.addToErrors("Proxy_Server_Name") { "null" } else it.takeIf(String::isNotBlank) }
-                val allowProxyUpdatePings = c.allowProxyUpdateChecks ?: true.addToErrors("Allow_Proxy_UpdateChecking", Boolean::toString)
-                val proxyUpdateFreq = c.proxyUpdateFrequency ?: 1L.addToErrors("Proxy_Update_Check_Frequency", Long::toString)
-
-                // Generate platform functions
-                platformFunctions = buildPlatformFunctions(serverName)
-
-                // Builds LocaleHandler object
-                val localeHandler = kotlin.run {
-                    val colourCode = c.localeHandlerColourCode ?: "&3".addToErrors("Colour_Code") { it }
-                    val preferredLocale = c.localeHandlerPreferredLocale ?: "en_ca".addToErrors("Preferred_Locale") { it }
-                    val consoleLocale = c.localeHandlerConsoleLocale ?: "en_ca".addToErrors("Console_Locale") { it }
-                    val forceLocale = c.localeHandlerForceLocale ?: false.addToErrors("Force_Locale", Boolean::toString)
-                    val enableAdvancedVisualControl = c.enableAdvancedVisualControl ?: false.addToErrors("Enable_Advanced_Visual_Control", Boolean::toString)
-                    LocaleHandler.buildLocales(
-                        colourCode,
-                        preferredLocale.lowercase(),
-                        consoleLocale.lowercase(),
-                        forceLocale,
-                        c.pluginFolderPath,
-                        enableAdvancedVisualControl
+            TMCoroutine.launchSupervised {
+                while (true) {
+                    delay(proxyUpdateFreq.toDuration(DurationUnit.HOURS))
+                    val message = ProxyUpdate.encodeProxyMsg(configState.proxyServerName!!)
+                    platformFunctions.relayMessageToProxy(
+                        Server2Proxy.ProxyVersionRequest.waterfallString(),
+                        message
                     )
                 }
+            }.run(periodicTasks::add)
+        }
+    }
 
-                // Builds DatabaseBuilders object
-                val databaseBuilders = DatabaseBuilders(
-                    mySQLBuilder = kotlin.run {
-                        val port = c.mySQLPort ?: "_".addToErrors("MySQL_Port") { it }
-                        val host = c.mySQLHost ?: "_".addToErrors("MySQL_Host") { it }
-                        val dbName = c.mySQLDBName ?: "_".addToErrors("MySQL_DBName") { it }
-                        val username = c.mySQLUsername ?: "_".addToErrors("MySQL_Username") { it }
-                        val password = c.mySQLPassword ?: "_".addToErrors("MySQL_Password") { it }
-                        MySQLBuilder(host, port, dbName, username, password)
-                    },
-                    memoryBuilder = kotlin.run {
-                        val backupFrequency = c.memoryFrequency ?: 600L.addToErrors("Memory_Backup_Frequency", Long::toString)
-                        MemoryBuilder(c.pluginFolderPath, backupFrequency)
-                    },
-                    cachedH2Builder = CachedH2Builder(c.pluginFolderPath),
-                    h2Builder = H2Builder(c.pluginFolderPath)
-                )
+    private fun performRemainingTasksAsync(
+        activeLocale: TMLocale,
+        configState: ConfigState,
+        platformFunctions: PlatformFunctions,
+        errors: MutableList<Pair<String, String>>,
+    ) {
+        // Standard Periodic Tasks...
+        TMCoroutine.launchSupervised noReturn@{
+            while (true) {
+                delay(10L.toDuration(DurationUnit.MINUTES))
+                if (!GlobalState.isPluginLocked) continue
 
-                // Builds Database object
-                val database = kotlin.run {
-                    val type =
-                        try { AsyncDatabase.Type.valueOf(c.dbTypeAsStr!!.uppercase()) }
-                        catch (e: Exception) { AsyncDatabase.Type.CACHED_H2.addToErrors("Database_Mode", AsyncDatabase.Type::name) }
+                // Mass Unread Notify Period Task
+                TMCoroutine.launchSupervised {
+                    if (configState.allowUnreadTicketUpdates) return@launchSupervised
+                    platformFunctions.getAllOnlinePlayers()
+                        .filter { it.has("ticketmanager.notify.unreadUpdates.scheduled") }
+                        .forEach {
+                            val ids = DatabaseManager.activeDatabase
+                                .getTicketIDsWithUpdatesForAsync(Creator.User(it.uuid))
+                            val tickets = ids.joinToString(", ")
 
-                    try {
-                        when (type) {
-                            AsyncDatabase.Type.MEMORY -> databaseBuilders.memoryBuilder
-                            AsyncDatabase.Type.MYSQL -> databaseBuilders.mySQLBuilder
-                            AsyncDatabase.Type.CACHED_H2 -> databaseBuilders.cachedH2Builder
-                            AsyncDatabase.Type.H2 -> databaseBuilders.h2Builder
+                            if (ids.isEmpty()) return@forEach
+
+                            val template = if (ids.size > 1) activeLocale.notifyUnreadUpdateMulti
+                            else activeLocale.notifyUnreadUpdateSingle
+
+                            template.parseMiniMessage("num" templated tickets)
+                                .run(it::sendMessage)
                         }
-                            .run(DatabaseBuilder::build)
-                            .apply(AsyncDatabase::initializeDatabase)
-
-                    } catch (e: Exception) {
-                        errorsToPushOnLocalization.add { pushErrors(platformFunctions, instancePluginState, e, TMLocale::consoleErrorBadDatabase) }
-                        databaseBuilders.cachedH2Builder.build().apply { initializeDatabase() }
-                    }
                 }
 
-                // Builds Discord-Related Objects
-                val enableDiscord = c.enableDiscord ?: false.addToErrors("Use_Discord_Bot", Boolean::toString)
-                val enableProxyDiscord = (c.forwardDiscordToProxy ?: false.addToErrors("Discord_Bot_On_Proxy", Boolean::toString)) && enableDiscord
-                val discordSettings = Discord.Settings(
-                    notifyOnAssign = c.discordNotifyOnAssign ?: true.addToErrors("Discord_Notify_On_Assign", Boolean::toString),
-                    notifyOnClose = c.discordNotifyOnClose ?: true.addToErrors("Discord_Notify_On_Close", Boolean::toString),
-                    notifyOnCloseAll = c.discordNotifyOnCloseAll ?: true.addToErrors("Discord_Notify_On_Close_All", Boolean::toString),
-                    notifyOnComment = c.discordNotifyOnComment ?: true.addToErrors("Discord_Notify_On_Comment", Boolean::toString),
-                    notifyOnCreate = c.discordNotifyOnCreate ?: true.addToErrors("Discord_Notify_On_Create", Boolean::toString),
-                    notifyOnReopen = c.discordNotifyOnReopen ?: true.addToErrors("Discord_Notify_On_Reopen", Boolean::toString),
-                    notifyOnPriorityChange = c.discordNotifyOnPriorityChange ?: true.addToErrors("Discord_Notify_On_Priority_Change", Boolean::toString),
-                    forwardToProxy = enableProxyDiscord
-                )
-                val discord = if (enableDiscord && !enableProxyDiscord) {
+                // Open and Assigned Notify
+                TMCoroutine.launchSupervised {
                     try {
-                        Discord(
-                            token = c.discordToken ?: "0".addToErrors("Discord_Bot_Token") { it },
-                            channelID = c.discordChannelID ?: (-1L).addToErrors("Discord_Channel_ID", Long::toString),
-                        )
+                        val (openTickets, _, openCount, _) = DatabaseManager.activeDatabase
+                            .getOpenTicketsAsync(1, 0)
+
+                        platformFunctions.getAllOnlinePlayers()
+                            .filter { it.has("ticketmanager.notify.openTickets.scheduled") }
+                            .forEach { p ->
+                                val groups = p.permissionGroups.map(Assignment::PermissionGroup)
+                                val assignedCount = openTickets.count {
+                                    it.assignedTo == Assignment.Player(p.username)
+                                            || it.assignedTo in groups
+                                }
+
+                                if (assignedCount != 0) {
+                                    activeLocale.notifyOpenAssigned.parseMiniMessage(
+                                        "open" templated "$openCount",
+                                        "assigned" templated "$assignedCount"
+                                    ).run(p::sendMessage)
+                                }
+                            }
                     } catch (e: Exception) {
-                        errorsToPushOnLocalization.add { pushErrors(platformFunctions, instancePluginState, e, TMLocale::consoleErrorBadDiscord) }
-                        null
-                    }
-                } else null
-
-                // Builds Cooldowns
-                val cooldowns = Cooldown(
-                    enabled = c.allowCooldowns ?: false.addToErrors("Use_Cooldowns", Boolean::toString),
-                    duration = c.cooldownSeconds ?: (0L).addToErrors("Cooldown_Time", Long::toString),
-                )
-
-                // Other config items
-                val allowUnreadTicketUpdates = c.allowUnreadTicketUpdates ?: true.addToErrors("Allow_Unread_Ticket_Updates", Boolean::toString)
-                val updateChecker = UpdateChecker(canCheck = c.checkForPluginUpdates ?: true.addToErrors("Allow_UpdateChecking", Boolean::toString), UpdateChecker.Location.MAIN)
-                val printModifiedStacktrace = c.printModifiedStacktrace ?: true.addToErrors("Print_Modified_Stacktrace", Boolean::toString)
-                val printFullStacktrace = c.printFullStacktrace ?: false.addToErrors("Print_Full_Stacktrace", Boolean::toString)
-                val pluginUpdateFreq = c.pluginUpdateFrequency ?: 1L.addToErrors("Plugin_Update_Check_Frequency", Long::toString)
-
-                // Builds and assigns final objects
-                instancePluginState = InstancePluginState(
-                    database = database,
-                    cooldowns = cooldowns,
-                    discord = discord,
-                    discordSettings = discordSettings,
-                    databaseBuilders = databaseBuilders,
-                    localeHandler = localeHandler,
-                    pluginUpdate = AtomicReference(updateChecker),
-                    allowUnreadTicketUpdates = allowUnreadTicketUpdates,
-                    printModifiedStacktrace = printModifiedStacktrace,
-                    printFullStacktrace = printFullStacktrace,
-                    enableProxyMode = enableProxyMode,
-                    proxyServerName = serverName,
-                    allowProxyUpdatePings = allowProxyUpdatePings,
-                    cachedProxyUpdate = AtomicReference(),
-                )
-                tabComplete = buildTabComplete(platformFunctions, instancePluginState)
-                commandPipeline = buildPipeline(platformFunctions, instancePluginState, globalPluginState)
-                joinEvent = buildJoinEvent(globalPluginState, instancePluginState, platformFunctions)
-                registerProcesses()
-
-                // Print warnings
-                CompletableFuture.runAsync {
-                    errors.forEach { (node, default) ->
-                        localeHandler.consoleLocale.consoleWarningInvalidConfigNode
-                            .replaceFirst("%node%", node)
-                            .replaceFirst("%default%", default)
-                            .run(platformFunctions::pushWarningToConsole)
-                    }
-                    errorsToPushOnLocalization.forEach { it() }
-
-                    // Notification stating something went wrong during startup
-                    if (errors.size > 0) {
-                        platformFunctions.massNotify(localeHandler, "ticketmanager.notify.warning") {
-                            it.warningsInvalidConfig.parseMiniMessage("count" templated "${errors.size}")
-                        }
+                        pushErrors(platformFunctions, configState, activeLocale, e, TMLocale::consoleErrorScheduledNotifications)
                     }
 
-                    platformFunctions.pushInfoToConsole(instancePluginState.localeHandler.consoleLocale.consoleInitializationComplete)
-                }
 
-                // Additional startup procedures
-                instancePluginState.run {
-
-                    // Place update is available into Console
-                    if (pluginUpdate.get().canCheck && pluginUpdate.get().latestVersionIfNotLatest != null) {
-                        localeHandler.consoleLocale.notifyPluginUpdate.parseMiniMessage(
-                            "current" templated mainPluginVersion,
-                            "latest" templated pluginUpdate.get().latestVersionIfNotLatest!!
-                        ).run(platformFunctions.getConsoleAudience()::sendMessage)
-                    }
-
-                    // Launch plugin update checking
-                    if (pluginUpdate.get().canCheck)
-                        performAsyncTaskTimer(pluginUpdateFreq, TimeUnit.HOURS, ::updatePluginUpdateChecker)
-
-                    // Proxy update checking...
-                    if (proxyServerName != null && allowProxyUpdatePings && enableProxyMode) {
-                        updateProxyUpdateChecker()                                                                  // Perform initial proxy update check
-                        performAsyncTaskTimer(proxyUpdateFreq, TimeUnit.HOURS, ::updateProxyUpdateChecker)          // Launch proxy update checking
-                    }
                 }
             }
+        }.run(periodicTasks::add)
 
-            globalPluginState.pluginLocked.set(false)
-        }.exceptionallyAsync { it.printStackTrace(); null; }
-    }
+        // Notification Tasks which aren't important to wait for (Not repeating)
+        TMCoroutine.launchGlobal {
 
-    private fun pushScheduledMessage(exception: Exception): Void? {
-        pushErrors(platformFunctions, instancePluginState, exception, TMLocale::consoleErrorScheduledNotifications)
-        return null
+            // Print warnings
+            errors.forEach { (node, default) ->
+                activeLocale.consoleWarningInvalidConfigNode
+                    .replaceFirst("%node%", node)
+                    .replaceFirst("%default%", default)
+                    .run(platformFunctions::pushWarningToConsole)
+            }
+
+            // Notification stating something went wrong during startup
+            if (errors.isNotEmpty()) {
+                platformFunctions.massNotify(
+                    "ticketmanager.notify.warning",
+                    activeLocale.warningsInvalidConfig
+                        .parseMiniMessage("count" templated "${errors.size}")
+                )
+            }
+            platformFunctions.pushInfoToConsole(activeLocale.consoleInitializationComplete)
+
+
+            // Place update is available into Console
+            if (configState.pluginUpdate.canCheck && configState.pluginUpdate.latestVersionIfNotLatest != null) {
+                activeLocale.notifyPluginUpdate.parseMiniMessage(
+                    "current" templated mainPluginVersion,
+                    "latest" templated configState.pluginUpdate.latestVersionIfNotLatest!!
+                ).run(platformFunctions.getConsoleAudience()::sendMessage)
+            }
+        }
     }
 }
+
+private data class CoreItems(
+    val cooldown: Cooldown?,
+    val activeLocale: TMLocale,
+    val configState: ConfigState,
+    val joinEvent: PlayerJoinEvent,
+    val platformFunctions: PlatformFunctions,
+)

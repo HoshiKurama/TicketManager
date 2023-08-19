@@ -1,7 +1,6 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "7.1.2"
-    id("com.github.ben-manes.versions") version "0.45.0" // https://github.com/ben-manes/gradle-versions-plugin
-    kotlin("plugin.serialization") version "1.8.10"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.github.ben-manes.versions") version "0.47.0" // https://github.com/ben-manes/gradle-versions-plugin
     kotlin("jvm")
     java
     application
@@ -17,25 +16,26 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":common"))
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
-    implementation("com.mysql:mysql-connector-j:8.0.32")
-    implementation("com.github.jasync-sql:jasync-mysql:2.1.23")
-    implementation("com.github.seratch:kotliquery:1.9.0")
-    implementation("net.kyori:adventure-api:4.12.0")
-    implementation("net.kyori:adventure-extra-kotlin:4.12.0")
-    implementation("net.kyori:adventure-text-minimessage:4.12.0")
-    implementation("org.yaml:snakeyaml:1.33")
-    implementation("joda-time:joda-time:2.12.2")
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("com.h2database:h2:2.1.214")
-    implementation("com.google.guava:guava:31.1-jre")
-}
 
-tasks {
-    shadowJar {
-        dependencies {
-            include(project(":common"))
-        }
-    }
+    implementation(project(":common"))
+    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
+    // Not included but shaded later
+    implementation("com.github.seratch:kotliquery:1.9.0")
+    implementation("net.kyori:adventure-text-minimessage:4.14.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0")
+
+    // Not included and not shaded later
+    compileOnly("net.luckperms:api:5.4")
+    implementation("net.kyori:adventure-api:4.14.0")
+    implementation("net.kyori:adventure-extra-kotlin:4.14.0")
+
+    implementation("org.yaml:snakeyaml:2.1")
+    implementation("joda-time:joda-time:2.12.5")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.guava:guava:32.1.2-jre")
+    implementation( "com.h2database:h2:2.2.220")
 }

@@ -1,20 +1,21 @@
 package com.github.hoshikurama.ticketmanager.commonse.platform
 
-import com.github.hoshikurama.ticketmanager.commonse.LocaleHandler
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.ticket.Ticket
+import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.common.ticket.ActionLocation
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
 import java.util.*
 
+typealias OnlinePlayer = CommandSender.Active.OnlinePlayer
+
 interface PlatformFunctions {
-    fun massNotify(localeHandler: LocaleHandler, permission: String, localeMsg: (TMLocale) -> Component)
-    fun buildPlayer(uuid: UUID, localeHandler: LocaleHandler): Player?
-    fun getAllOnlinePlayers(localeHandler: LocaleHandler): List<Player>
+    fun massNotify(permission: String, message: Component)
+    fun buildPlayer(uuid: UUID): OnlinePlayer?
+    fun getAllOnlinePlayers(): List<OnlinePlayer>
     fun offlinePlayerNameToUUIDOrNull(name: String): UUID?
-    fun nameFromUUID(uuid: UUID): String
-    fun teleportToTicketLocSameServer(player: Player, loc: Ticket.TicketLocation)
-    fun teleportToTicketLocDiffServer(player: Player, loc: Ticket.TicketLocation)
+    fun nameFromUUIDOrNull(uuid: UUID): String?
+    fun teleportToTicketLocSameServer(player: OnlinePlayer, loc: ActionLocation.FromPlayer)
+    fun teleportToTicketLocDiffServer(player: OnlinePlayer, loc: ActionLocation.FromPlayer)
     fun relayMessageToProxy(channel: String, encodedMessage: ByteArray)
 
     // Console Messages
@@ -24,8 +25,6 @@ interface PlatformFunctions {
     fun pushErrorToConsole(message: String)
 
     // Tab Complete Functions:
-    fun getPermissionGroups(): List<String>
-    fun getOfflinePlayerNames(): List<String>
-    fun getOnlineSeenPlayerNames(sender: Sender): List<String>
+    fun getOnlineSeenPlayerNames(sender: CommandSender.Active): List<String>
     fun getWorldNames(): List<String>
 }

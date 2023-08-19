@@ -1,98 +1,101 @@
 package com.github.hoshikurama.ticketmanager.commonse.platform
 
+import com.github.hoshikurama.ticketmanager.api.common.TMCoroutine
+import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
+import com.github.hoshikurama.ticketmanager.api.common.ticket.Assignment
 import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
+import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
-import com.github.hoshikurama.ticketmanager.commonse.data.GlobalPluginState
-import com.github.hoshikurama.ticketmanager.commonse.data.InstancePluginState
+import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
+import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
+import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.commonse.misc.templated
-import com.github.hoshikurama.ticketmanager.commonse.ticket.User
-import java.util.concurrent.CompletableFuture
+import kotlinx.coroutines.async
 
 abstract class PlayerJoinEvent(
-    private val globalPluginState: GlobalPluginState,
     protected val platformFunctions: PlatformFunctions,
-    protected val instanceState: InstancePluginState,
+    protected val configState: ConfigState,
+    protected val locale: TMLocale,
 ) {
 
-    fun whenPlayerJoins(player: Player, serverCount: Int) {
-        if (globalPluginState.pluginLocked.get()) return
+    fun whenPlayerJoinsAsync(player: CommandSender.Active.OnlinePlayer, serverCount: Int) {
+        if (GlobalState.isPluginLocked) return
+        try {
+            TMCoroutine.launchSupervised ignored@ {
 
-        CompletableFuture.runAsync {
+                // Plugin Update Checking
+                TMCoroutine.launchSupervised {
+                    if (configState.pluginUpdate.canCheck) {
+                        val newerVersion = configState.pluginUpdate.latestVersionIfNotLatest
+                            ?: return@launchSupervised // Only present if newer version is available and plugin can check
+                        if (!player.has("ticketmanager.notify.pluginUpdate")) return@launchSupervised
 
-            // Plugin Update Checking
-            kotlin.run {
-                if (instanceState.pluginUpdate.get().canCheck) {
-                    val newerVersion = instanceState.pluginUpdate.get().latestVersionIfNotLatest ?: return@run // Only present if newer version is available and plugin can check
-                    if (!player.has("ticketmanager.notify.pluginUpdate")) return@run
-
-                    player.locale.notifyPluginUpdate.parseMiniMessage(
-                        "current" templated mainPluginVersion,
-                        "latest" templated newerVersion,
-                    ).run(player::sendMessage)
-                }
-            }
-
-            // Proxy update message
-            kotlin.run {
-                if (player.has("ticketmanager.notify.proxyUpdate")
-                    && instanceState.enableProxyMode
-                    && instanceState.allowProxyUpdatePings
-                    && instanceState.proxyServerName != null
-                    && instanceState.cachedProxyUpdate.get() != null
-                ) {
-                    // Helps with startup...
-                    if (serverCount <= 1) {
-                        val message = ProxyUpdate.encodeProxyMsg(instanceState.proxyServerName)
-                        platformFunctions.relayMessageToProxy("ticketmanager:s2p_proxy_update", message)
+                        locale.notifyPluginUpdate.parseMiniMessage(
+                            "current" templated mainPluginVersion,
+                            "latest" templated newerVersion,
+                        ).run(player::sendMessage)
                     }
-
-                    val (curVer, latestVer) = instanceState.cachedProxyUpdate.get()!!
-                    player.locale.notifyProxyUpdate.parseMiniMessage(
-                        "current" templated curVer,
-                        "latest" templated latestVer,
-                    ).run(player::sendMessage)
                 }
-            }
 
-            // Unread Updates
-            kotlin.run {
-                if (!player.has("ticketmanager.notify.unreadUpdates.onJoin")) return@run
+                // Proxy update message
+                TMCoroutine.launchSupervised {
+                    if (player.has("ticketmanager.notify.proxyUpdate")
+                        && configState.enableProxyMode
+                        && configState.allowProxyUpdatePings
+                        && configState.proxyServerName != null
+                        && configState.proxyUpdate != null
+                    ) {
+                        // Helps with startup...
+                        if (serverCount <= 1) {
+                            val message = ProxyUpdate.encodeProxyMsg(configState.proxyServerName)
+                            platformFunctions.relayMessageToProxy(Server2Proxy.ProxyVersionRequest.waterfallString(), message)
+                        }
 
-                instanceState.database.getTicketIDsWithUpdatesForAsync(User(player.uniqueID)).thenAcceptAsync { ids ->
-                    if (ids.isEmpty()) return@thenAcceptAsync
+                        val (curVer, latestVer) = configState.proxyUpdate!!
+                        locale.notifyProxyUpdate.parseMiniMessage(
+                            "current" templated curVer,
+                            "latest" templated latestVer,
+                        ).run(player::sendMessage)
+                    }
+                }
 
-                    val template = if (ids.size == 1) player.locale.notifyUnreadUpdateSingle else player.locale.notifyUnreadUpdateMulti
+                // Unread Updates
+                TMCoroutine.launchSupervised {
+                    if (!player.has("ticketmanager.notify.unreadUpdates.onJoin")) return@launchSupervised
+
+                    val ids = DatabaseManager.activeDatabase.getTicketIDsWithUpdatesForAsync(player.asCreator())
+                    if (ids.isEmpty()) return@launchSupervised
+
+                    val template =
+                        if (ids.size == 1) locale.notifyUnreadUpdateSingle else locale.notifyUnreadUpdateMulti
                     val tickets = ids.joinToString(", ")
 
                     template.parseMiniMessage("num" templated tickets).run(player::sendMessage)
                 }
-            }
 
-            // View Open-Count and Assigned-Count Tickets
-            kotlin.run {
-                if (!player.has("ticketmanager.notify.openTickets.onJoin")) return@run
+                // View Open-Count and Assigned-Count Tickets
+                TMCoroutine.launchSupervised {
+                    if (!player.has("ticketmanager.notify.openTickets.onJoin")) return@launchSupervised
 
-                val openCF = instanceState.database.countOpenTicketsAsync()
-                val assignedCF = instanceState.database.countOpenTicketsAssignedToAsync(player.name, player.permissionGroups)
+                    val openCF = async { DatabaseManager.activeDatabase.countOpenTicketsAsync() }
+                    val assignedCF = async {
+                        DatabaseManager.activeDatabase.countOpenTicketsAssignedToAsync(
+                            player.permissionGroups.map(Assignment::PermissionGroup) + Assignment.Player(player.username)
+                        )
+                    }
 
-                CompletableFuture.allOf(openCF, assignedCF).thenAcceptAsync {
-                    val open = openCF.join()
-                    val assigned = assignedCF.join()
-
-                    if (open != 0L)
-                        player.locale.notifyOpenAssigned.parseMiniMessage(
-                            "open" templated open.toString(),
-                            "assigned" templated assigned.toString()
+                    if (openCF.await() != 0L)
+                        locale.notifyOpenAssigned.parseMiniMessage(
+                            "open" templated openCF.await().toString(),
+                            "assigned" templated assignedCF.await().toString()
                         ).run(player::sendMessage)
                 }
             }
-        }.exceptionallyAsync {
-            (it as? Exception)?.let { e ->
-                pushErrors(platformFunctions, instanceState, e) { "An error occurred when a player joined!" } //TODO: LOCALIZE THIS EVENTUALLY
-            }
-            null
+        } catch (e: Exception) {
+            pushErrors(platformFunctions, configState, locale, e) { "An error occurred when a player joined!" }
         }
     }
 }
