@@ -307,8 +307,9 @@ class TMLocale(
         }
 
         fun buildLocaleFromInternal(localeID: String, colour: String): TMLocale {
-            val core = loadYMLFrom("locales/core/$localeID.yml")
-            val visuals = loadYMLFrom("locales/visual/$localeID.yml")
+            val localeIDLC = localeID.lowercase()
+            val core = loadYMLFrom("locales/core/$localeIDLC.yml")
+            val visuals = loadYMLFrom("locales/visual/$localeIDLC.yml")
 
             // Prepares Headers for inlining (Still has placeholders)
             val uniformHeader = visuals["Uniform_Header"]!!
