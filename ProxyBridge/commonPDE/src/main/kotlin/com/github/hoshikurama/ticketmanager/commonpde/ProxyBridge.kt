@@ -1,6 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonpde
 
 import com.github.hoshikurama.ticketmanager.common.UpdateChecker
+import org.yaml.snakeyaml.Yaml
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.nio.file.Files
@@ -15,8 +16,6 @@ abstract class ProxyBridge(private val dataFolder: Path) {
         doSpecialtyBeforeStart()
         registerChannels()
 
-        // Configuration Initialization
-
         // Generate Data Folder
         if (dataFolder.notExists())
             dataFolder.toFile().mkdir()
@@ -28,29 +27,18 @@ abstract class ProxyBridge(private val dataFolder: Path) {
         }
 
         // Read Config
-        val (playerConfigMap, internalConfigMap) = listOf(
-            Files.readAllLines(configPath, Charsets.UTF_8),
-            loadInternalConfig(),
-        ).map { c ->
-            c.asSequence()
-                .filterNot { it.startsWith("#") }
-                .map { it.split(": ", limit = 2) }
-                .map { it[0] to StringBuilder(it[1]) }
-                .onEach { (_, sb) ->
-                    listOf(sb.lastIndex, 0)
-                        .filter { sb[it] == '\"' || sb[it] == '\'' }
-                        .forEach(sb::deleteCharAt)
-                }
-                .map { it.first to it.second.toString() }
-                .toMap()
-        }
+        val playerConfigMap: Map<String, Any> = Files.newInputStream(configPath)
+            .let { Yaml().load(it) }
+        val internalConfigMap: Map<String, Any> = this::class.java.classLoader
+            .getResourceAsStream("config.yml")
+            .let { Yaml().load(it) }
 
-        val autoUpdateConfig = playerConfigMap["Auto_Update_Config"]?.toBooleanStrictOrNull()
-            ?: internalConfigMap["Auto_Update_Config"]!!.toBooleanStrict()
-        val updateCheckFrequency = playerConfigMap["Update_Check_Duration_Hours"]?.toLongOrNull()
-            ?: internalConfigMap["Update_Check_Duration_Hours"]!!.toLong()
-        val allowUpdateChecking = playerConfigMap["Allow_Update_Checking"]?.toBooleanStrictOrNull()
-            ?: internalConfigMap["Allow_Update_Checking"]!!.toBooleanStrict()
+        val autoUpdateConfig = playerConfigMap["Auto_Update_Config"]?.asOrNull<Boolean>()
+            ?: internalConfigMap["Auto_Update_Config"]!!.asOrThrow()
+        val updateCheckFrequency = playerConfigMap["Update_Check_Duration_Hours"]?.asOrNull<Long>()
+            ?: internalConfigMap["Update_Check_Duration_Hours"]!!.asOrThrow()
+        val allowUpdateChecking = playerConfigMap["Allow_Update_Checking"]?.asOrNull<Boolean>()
+            ?: internalConfigMap["Allow_Update_Checking"]!!.asOrThrow()
 
         // Auto update config
         if (autoUpdateConfig)
@@ -114,3 +102,6 @@ abstract class ProxyBridge(private val dataFolder: Path) {
         writer.close()
     }
 }
+
+inline fun <reified T> Any.asOrNull() = this as? T
+inline fun <reified T> Any.asOrThrow() = this as T
