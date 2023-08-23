@@ -35,8 +35,8 @@ abstract class ProxyBridge(private val dataFolder: Path) {
 
         val autoUpdateConfig = playerConfigMap["Auto_Update_Config"]?.asOrNull<Boolean>()
             ?: internalConfigMap["Auto_Update_Config"]!!.asOrThrow()
-        val updateCheckFrequency = playerConfigMap["Update_Check_Duration_Hours"]?.asOrNull<Long>()
-            ?: internalConfigMap["Update_Check_Duration_Hours"]!!.asOrThrow()
+        val updateCheckFrequency = playerConfigMap["Update_Check_Duration_Hours"]?.asOrNull<Int>()?.toLong()
+            ?: internalConfigMap["Update_Check_Duration_Hours"]!!.asOrThrow<Long>().toLong()
         val allowUpdateChecking = playerConfigMap["Allow_Update_Checking"]?.asOrNull<Boolean>()
             ?: internalConfigMap["Allow_Update_Checking"]!!.asOrThrow()
 
