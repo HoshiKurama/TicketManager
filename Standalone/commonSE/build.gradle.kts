@@ -26,14 +26,14 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")
 
     // Not included and not shaded later
     compileOnly("net.luckperms:api:5.4")
     implementation("net.kyori:adventure-api:4.14.0")
     implementation("net.kyori:adventure-extra-kotlin:4.14.0")
 
-    implementation("org.yaml:snakeyaml:2.1")
+    implementation("org.yaml:snakeyaml:2.2")
     implementation("joda-time:joda-time:2.12.5")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.google.guava:guava:32.1.2-jre")
