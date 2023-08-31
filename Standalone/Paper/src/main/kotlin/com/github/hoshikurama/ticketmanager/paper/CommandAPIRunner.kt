@@ -230,7 +230,10 @@ class CommandAPIRunner {
                 replaceSuggestions(openTicketIDsAsync)
             }
             literalArgument(locale.parameterLiteralGroup)
-            multiLiteralArgument(locale.parameterLiteralGroup,lpGroupNames)
+            multiLiteralArgument(
+                nodeName = locale.parameterLiteralGroup,
+                *lpGroupNames.toTypedArray()
+            )
             executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.assign(tmSender,
                     assignment = Assignment.PermissionGroup((args[1] as String)),
@@ -295,7 +298,10 @@ class CommandAPIRunner {
                 replaceSuggestions(openTicketIDsAsync)
             }
             literalArgument(locale.parameterLiteralGroup)
-            multiLiteralArgument(locale.parameterLiteralGroup,lpGroupNames)
+            multiLiteralArgument(
+                nodeName = locale.parameterLiteralGroup,
+                *lpGroupNames.toTypedArray()
+            )
             executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.assign(tmSender,
                     assignment = Assignment.PermissionGroup((args[1] as String)),
@@ -733,11 +739,10 @@ class CommandAPIRunner {
             argumentTicketFromIDAsync(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
-            multiLiteralArgument(locale.searchPriority, listOf(
+            multiLiteralArgument(nodeName = locale.searchPriority,
                 locale.priorityLowest, locale.priorityLow, locale.priorityNormal,
                 locale.priorityHigh, locale.priorityHighest, "1", "2", "3", "4", "5"
-            ))
-
+            )
             executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.setPriority(tmSender,
                     ticket = ticket,
@@ -756,10 +761,10 @@ class CommandAPIRunner {
             argumentTicketFromIDAsync(::ticketIsOpen) {
                 replaceSuggestions(openTicketIDsAsync)
             }
-            multiLiteralArgument(locale.searchPriority, listOf(
+            multiLiteralArgument(nodeName = locale.searchPriority,
                 locale.priorityLowest, locale.priorityLow, locale.priorityNormal,
                 locale.priorityHigh, locale.priorityHighest, "1", "2", "3", "4", "5"
-            ))
+            )
             executeRegisterTMMessage(0) { tmSender, args, ticket ->
                 commandTasks.setPriority(tmSender,
                     ticket = ticket,
@@ -1117,7 +1122,7 @@ class CommandAPIRunner {
                 commandTasks.search(tmSender,
                     searchParameters = args[0] as SearchConstraints,
                     useNewFormat = true,
-                    newRawArgumentString = args.fullInput,
+                    newRawArgumentString = args.fullInput(),
                 )
             }
         }
