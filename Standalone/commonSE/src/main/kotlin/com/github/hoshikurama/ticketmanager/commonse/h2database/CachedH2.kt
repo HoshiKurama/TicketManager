@@ -40,28 +40,28 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = Ticket(t.id, t.creator, t.priority, t.status, assignment, t.creatorStatusUpdate, t.actions)
 
-        return sendQuery { update(queryOf("UPDATE \"TicketManager_V8_Tickets\" SET ASSIGNED_TO = ? WHERE ID = ?;", assignment.asString(), ticketID)) }
+        return sendQuery { update(queryOf("UPDATE TicketManager_V8_Tickets SET ASSIGNED_TO = ? WHERE ID = ?;", assignment.asString(), ticketID)) }
     }
 
     override fun setCreatorStatusUpdateAsync(ticketID: Long, status: Boolean): CompletableFuture<Void> {
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = Ticket(t.id, t.creator, t.priority, t.status, t.assignedTo, status, t.actions)
 
-        return sendQuery { update(queryOf("UPDATE \"TicketManager_V8_Tickets\" SET STATUS_UPDATE_FOR_CREATOR = ? WHERE ID = ?;", status, ticketID)) }
+        return sendQuery { update(queryOf("UPDATE TicketManager_V8_Tickets SET STATUS_UPDATE_FOR_CREATOR = ? WHERE ID = ?;", status, ticketID)) }
     }
 
     override fun setPriorityAsync(ticketID: Long, priority: Ticket.Priority): CompletableFuture<Void> {
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = Ticket(t.id, t.creator, priority, t.status, t.assignedTo, t.creatorStatusUpdate, t.actions)
 
-        return sendQuery { update(queryOf("UPDATE \"TicketManager_V8_Tickets\" SET PRIORITY = ? WHERE ID = ?;", priority.asByte(), ticketID)) }
+        return sendQuery { update(queryOf("UPDATE TicketManager_V8_Tickets SET PRIORITY = ? WHERE ID = ?;", priority.asByte(), ticketID)) }
     }
 
     override fun setStatusAsync(ticketID: Long, status: Ticket.Status): CompletableFuture<Void> {
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = Ticket(t.id, t.creator, t.priority, status, t.assignedTo, t.creatorStatusUpdate, t.actions)
 
-        return sendQuery { update(queryOf("UPDATE \"TicketManager_V8_Tickets\" SET STATUS = ? WHERE ID = ?;", status.name, ticketID)) }
+        return sendQuery { update(queryOf("UPDATE TicketManager_V8_Tickets SET STATUS = ? WHERE ID = ?;", status.name, ticketID)) }
     }
 
     override fun insertActionAsync(id: Long, action: Action): CompletableFuture<Void> {
@@ -70,7 +70,7 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
 
         return sendQuery {
             execute(
-                queryOf("INSERT INTO \"TicketManager_V10_Actions\" (TICKET_ID, ACTION_TYPE, CREATOR, MESSAGE, EPOCH_TIME, SERVER, WORLD, WORLD_X, WORLD_Y, WORLD_Z) VALUES (?,?,?,?,?,?,?,?,?,?);",
+                queryOf("INSERT INTO TicketManager_V10_Actions (TICKET_ID, ACTION_TYPE, CREATOR, MESSAGE, EPOCH_TIME, SERVER, WORLD, WORLD_X, WORLD_Y, WORLD_Z) VALUES (?,?,?,?,?,?,?,?,?,?);",
                     id,
                     action.getEnumForDB().name,
                     action.user.asString(),
@@ -94,7 +94,7 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
         // Writes ticket
         sendQuery {
             update(
-                queryOf("INSERT INTO \"TicketManager_V8_Tickets\" (ID, CREATOR, PRIORITY, STATUS, ASSIGNED_TO, STATUS_UPDATE_FOR_CREATOR) VALUES(?,?,?,?,?,?);",
+                queryOf("INSERT INTO TicketManager_V8_Tickets (ID, CREATOR, PRIORITY, STATUS, ASSIGNED_TO, STATUS_UPDATE_FOR_CREATOR) VALUES (?,?,?,?,?,?);",
                     newTicket.id,
                     newTicket.creator.asString(),
                     newTicket.priority.asByte(),
@@ -109,7 +109,7 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
         newTicket.actions.forEach {
             sendQuery {
                 update(
-                    queryOf("INSERT INTO \"TicketManager_V10_Actions\" (TICKET_ID, ACTION_TYPE, CREATOR, MESSAGE, EPOCH_TIME, SERVER, WORLD, WORLD_X, WORLD_Y, WORLD_Z) VALUES (?,?,?,?,?,?,?,?,?,?);",
+                    queryOf("INSERT INTO TicketManager_V10_Actions (TICKET_ID, ACTION_TYPE, CREATOR, MESSAGE, EPOCH_TIME, SERVER, WORLD, WORLD_X, WORLD_Y, WORLD_Z) VALUES (?,?,?,?,?,?,?,?,?,?);",
                         newTicket.id,
                         it.getEnumForDB().name,
                         it.user.asString(),
@@ -203,7 +203,7 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
             location = ticketLoc,
         ).MassClose()
 
-        sendQuery { update(queryOf("UPDATE \"TicketManager_V8_Tickets\" SET STATUS = ? WHERE ID IN (${ticketIds.joinToString(", ")});", Ticket.Status.CLOSED.name)) }
+        sendQuery { update(queryOf("UPDATE TicketManager_V8_Tickets SET STATUS = ? WHERE ID IN (${ticketIds.joinToString(", ")});", Ticket.Status.CLOSED.name)) }
         return sendQuery { ticketIds.map { insertActionAsync(it, action) }.flatten() }
     }
 
@@ -396,7 +396,7 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
         using(sessionOf(sqlPool)) {
             // Ticket Table
             it.execute(queryOf("""
-                create table if not exists "TicketManager_V10_Tickets"
+                create table if not exists TicketManager_V10_Tickets
                 (
                     ID                        NUMBER GENERATED BY DEFAULT AS IDENTITY (START WITH 1 INCREMENT BY 1) not null,
                     CREATOR                   VARCHAR_IGNORECASE(70)  not null,
@@ -408,14 +408,14 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
                         primary key (ID)
                 );""".replace("\n", "").trimIndent()))
 
-            it.execute(queryOf("""create unique index if not exists INDEX_ID on "TicketManager_V8_Tickets" (ID);"""))
-            it.execute(queryOf("""create index if not exists INDEX_STATUS_UPDATE_FOR_CREATOR on "TicketManager_V8_Tickets" (STATUS_UPDATE_FOR_CREATOR);"""))
-            it.execute(queryOf("""create index if not exists INDEX_STATUS on "TicketManager_V8_Tickets" (STATUS);"""))
+            it.execute(queryOf("""create unique index if not exists INDEX_ID on TicketManager_V10_Tickets (ID);"""))
+            it.execute(queryOf("""create index if not exists INDEX_STATUS_UPDATE_FOR_CREATOR on TicketManager_V10_Tickets (STATUS_UPDATE_FOR_CREATOR);"""))
+            it.execute(queryOf("""create index if not exists INDEX_STATUS on TicketManager_V10_Tickets (STATUS);"""))
 
 
             // Actions Table
             it.execute(queryOf("""
-                CREATE TABLE IF NOT EXISTS "TicketManager_V10_Actions"
+                CREATE TABLE IF NOT EXISTS TicketManager_V10_Actions
                 (
                     ACTION_ID       NUMBER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1) not null,
                     TICKET_ID       BIGINT                  NOT NULL,
@@ -432,13 +432,13 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
                         primary key (ACTION_ID)
                 );""".replace("\n", "").trimIndent()))
 
-            it.execute(queryOf("""CREATE INDEX IF NOT EXISTS INDEX_TICKET_ID ON "TicketManager_V10_Actions" (TICKET_ID);"""))
+            it.execute(queryOf("""CREATE INDEX IF NOT EXISTS INDEX_TICKET_ID ON TicketManager_V10_Actions (TICKET_ID);"""))
         }
 
         // Loads tickets to memory
         val basicTicketsCF = CompletableFuture.supplyAsync {
             using(sessionOf(sqlPool)) { session ->
-                session.run(queryOf("SELECT * FROM \"TicketManager_V8_Tickets\";")
+                session.run(queryOf("SELECT * FROM TicketManager_V8_Tickets;")
                     .map {it.toTicket() }.asList
                 )
             }
@@ -446,7 +446,7 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
 
         val actionsCF = CompletableFuture.supplyAsync {
             using(sessionOf(sqlPool)) { session ->
-                session.run(queryOf("SELECT * FROM \"TicketManager_V10_Actions\";")
+                session.run(queryOf("SELECT * FROM TicketManager_V10_Actions;")
                     .map { it.long(2) to it.toAction() }.asList
                 )
             }
