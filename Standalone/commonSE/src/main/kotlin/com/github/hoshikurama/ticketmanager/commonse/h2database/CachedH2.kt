@@ -24,7 +24,7 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
     private val sqlPool: JdbcConnectionPool
 
     init {
-        val fixedURL = "jdbc:h2:file:$absoluteDataFolderPath/TicketManager-H2-V8.db"
+        val fixedURL = "jdbc:h2:file:$absoluteDataFolderPath/TicketManager-H2-V10.db"
             .replace("C:", "")
             .replace("\\", "/")
 
@@ -40,28 +40,28 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = Ticket(t.id, t.creator, t.priority, t.status, assignment, t.creatorStatusUpdate, t.actions)
 
-        return sendQuery { update(queryOf("UPDATE TicketManager_V8_Tickets SET ASSIGNED_TO = ? WHERE ID = ?;", assignment.asString(), ticketID)) }
+        return sendQuery { update(queryOf("UPDATE TicketManager_V10_Tickets SET ASSIGNED_TO = ? WHERE ID = ?;", assignment.asString(), ticketID)) }
     }
 
     override fun setCreatorStatusUpdateAsync(ticketID: Long, status: Boolean): CompletableFuture<Void> {
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = Ticket(t.id, t.creator, t.priority, t.status, t.assignedTo, status, t.actions)
 
-        return sendQuery { update(queryOf("UPDATE TicketManager_V8_Tickets SET STATUS_UPDATE_FOR_CREATOR = ? WHERE ID = ?;", status, ticketID)) }
+        return sendQuery { update(queryOf("UPDATE TicketManager_V10_Tickets SET STATUS_UPDATE_FOR_CREATOR = ? WHERE ID = ?;", status, ticketID)) }
     }
 
     override fun setPriorityAsync(ticketID: Long, priority: Ticket.Priority): CompletableFuture<Void> {
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = Ticket(t.id, t.creator, priority, t.status, t.assignedTo, t.creatorStatusUpdate, t.actions)
 
-        return sendQuery { update(queryOf("UPDATE TicketManager_V8_Tickets SET PRIORITY = ? WHERE ID = ?;", priority.asByte(), ticketID)) }
+        return sendQuery { update(queryOf("UPDATE TicketManager_V10_Tickets SET PRIORITY = ? WHERE ID = ?;", priority.asByte(), ticketID)) }
     }
 
     override fun setStatusAsync(ticketID: Long, status: Ticket.Status): CompletableFuture<Void> {
         val t = ticketMap[ticketID]!!
         ticketMap[ticketID] = Ticket(t.id, t.creator, t.priority, status, t.assignedTo, t.creatorStatusUpdate, t.actions)
 
-        return sendQuery { update(queryOf("UPDATE TicketManager_V8_Tickets SET STATUS = ? WHERE ID = ?;", status.name, ticketID)) }
+        return sendQuery { update(queryOf("UPDATE TicketManager_V10_Tickets SET STATUS = ? WHERE ID = ?;", status.name, ticketID)) }
     }
 
     override fun insertActionAsync(id: Long, action: Action): CompletableFuture<Void> {
@@ -94,7 +94,7 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
         // Writes ticket
         sendQuery {
             update(
-                queryOf("INSERT INTO TicketManager_V8_Tickets (ID, CREATOR, PRIORITY, STATUS, ASSIGNED_TO, STATUS_UPDATE_FOR_CREATOR) VALUES (?,?,?,?,?,?);",
+                queryOf("INSERT INTO TicketManager_V10_Tickets (ID, CREATOR, PRIORITY, STATUS, ASSIGNED_TO, STATUS_UPDATE_FOR_CREATOR) VALUES (?,?,?,?,?,?);",
                     newTicket.id,
                     newTicket.creator.asString(),
                     newTicket.priority.asByte(),
@@ -203,7 +203,7 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
             location = ticketLoc,
         ).MassClose()
 
-        sendQuery { update(queryOf("UPDATE TicketManager_V8_Tickets SET STATUS = ? WHERE ID IN (${ticketIds.joinToString(", ")});", Ticket.Status.CLOSED.name)) }
+        sendQuery { update(queryOf("UPDATE TicketManager_V10_Tickets SET STATUS = ? WHERE ID IN (${ticketIds.joinToString(", ")});", Ticket.Status.CLOSED.name)) }
         return sendQuery { ticketIds.map { insertActionAsync(it, action) }.flatten() }
     }
 
@@ -435,7 +435,7 @@ class CachedH2(absoluteDataFolderPath: String) : CompletableFutureAsyncDatabase 
         // Loads tickets to memory
         val basicTicketsCF = CompletableFuture.supplyAsync {
             using(sessionOf(sqlPool)) { session ->
-                session.run(queryOf("SELECT * FROM TicketManager_V8_Tickets;")
+                session.run(queryOf("SELECT * FROM TicketManager_V10_Tickets;")
                     .map {it.toTicket() }.asList
                 )
             }
