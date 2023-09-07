@@ -802,7 +802,7 @@ class CommandTasks(
                 )
                 pushErrors(platform, configState, locale, e, TMLocale::warningsUnexpectedError)
                 generateModifiedStacktrace(e, locale)
-
+            } finally {
                 GlobalState.dataInitializationComplete = true
                 GlobalState.databaseSelected = true
             }
