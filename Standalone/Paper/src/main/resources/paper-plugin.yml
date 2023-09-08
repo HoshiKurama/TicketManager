@@ -7,7 +7,7 @@ folia-supported: true
 dependencies:
   server:
     LuckPerms:
-      load: AFTER
+      load: BEFORE
       required: true
       join-classpath: false
 permissions:
