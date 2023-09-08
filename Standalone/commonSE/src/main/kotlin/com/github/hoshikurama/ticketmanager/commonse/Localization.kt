@@ -278,7 +278,7 @@ class TMLocale(
         private fun convertToMiniMessage(str: String): String {
             // Return if already kyrori insertable...
             if (str.startsWith("<") && str.endsWith(">"))
-                return str.slice(1 until str.length)
+                return str.slice(1 until str.length-1)
 
             val isHexCode = "^#([a-fA-F\\d]{6})\$".toRegex()::matches
 
