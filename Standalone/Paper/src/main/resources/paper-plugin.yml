@@ -9,7 +9,7 @@ dependencies:
     LuckPerms:
       load: BEFORE
       required: true
-      join-classpath: false
+      join-classpath: true
 permissions:
   ticketmanager.command.assign:
     description: Assign a ticket
