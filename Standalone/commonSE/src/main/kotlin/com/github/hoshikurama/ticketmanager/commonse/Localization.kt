@@ -535,7 +535,7 @@ class TMLocale(
                 brigadierInvalidPriority = readAndPrime("Brigadier_InvalidPriority")!!,
             )
         }
-// TODO THIS IS THE PROBLEM
+
         fun buildLocaleFromExternal(localeID: String, localesFolderPath: Path, colour: String, internalVersion: TMLocale): TMLocale {
 
 
