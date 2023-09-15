@@ -206,7 +206,7 @@ abstract class TMPlugin(
             mainColourCode = config.localedColourCode ?: "&3".addToErrors("Colour_Code") { it },
             preferredLocale = config.selectedLocale ?: "en_ca".addToErrors("Preferred_Locale") { it },
             enableAVC = enableAdvancedVisualControl,
-            localesFolderPath = config.pluginFolderPath,
+            localesFolderPath = config.pluginFolderPath.resolve("locales"),
         )
 
         // Config State...
