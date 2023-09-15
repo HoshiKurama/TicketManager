@@ -3,6 +3,7 @@ package com.github.hoshikurama.ticketmanager.commonse
 import com.github.hoshikurama.ticketmanager.common.supportedLocales
 import org.yaml.snakeyaml.Yaml
 import java.nio.file.Path
+import kotlin.io.path.absolute
 import kotlin.io.path.inputStream
 
 class TMLocale(
@@ -307,9 +308,8 @@ class TMLocale(
         }
 
         fun buildLocaleFromInternal(localeID: String, colour: String): TMLocale {
-            val localeIDLC = localeID.lowercase()
-            val core = loadYMLFrom("locales/core/$localeIDLC.yml")
-            val visuals = loadYMLFrom("locales/visual/$localeIDLC.yml")
+            val core = loadYMLFrom("locales/core/$localeID.yml")
+            val visuals = loadYMLFrom("locales/visual/$localeID.yml")
 
             // Prepares Headers for inlining (Still has placeholders)
             val uniformHeader = visuals["Uniform_Header"]!!
@@ -535,10 +535,13 @@ class TMLocale(
                 brigadierInvalidPriority = readAndPrime("Brigadier_InvalidPriority")!!,
             )
         }
-
+// TODO THIS IS THE PROBLEM
         fun buildLocaleFromExternal(localeID: String, localesFolderPath: Path, colour: String, internalVersion: TMLocale): TMLocale {
+
+
             val visuals: Map<String, String> = try {
                 localesFolderPath.resolve("$localeID.yml")
+                    .absolute()
                     .inputStream()
                     .let { Yaml().load(it) }
             } catch (e: Exception) { mapOf() }
