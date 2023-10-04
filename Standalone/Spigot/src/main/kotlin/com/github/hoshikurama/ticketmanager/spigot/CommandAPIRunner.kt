@@ -8,18 +8,18 @@ import com.github.hoshikurama.ticketmanager.api.common.ticket.ActionLocation
 import com.github.hoshikurama.ticketmanager.api.common.ticket.Assignment
 import com.github.hoshikurama.ticketmanager.api.common.ticket.Creator
 import com.github.hoshikurama.ticketmanager.api.common.ticket.Ticket
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
 import com.github.hoshikurama.ticketmanager.commonse.commands.MessageNotification
 import com.github.hoshikurama.ticketmanager.commonse.commands.executeNotificationsAsync
-import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
-import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
-import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
-import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.pushErrors
 import com.github.hoshikurama.ticketmanager.commonse.misc.templated
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.datas.ConfigState
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.datas.Cooldown
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.datas.GlobalState
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asDeferredThenAwait
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPICommand
@@ -1225,7 +1225,7 @@ class CommandAPIRunner(private val adventure: BukkitAudiences) {
 
             TMCoroutine.launchSupervised {
                 try { commandTask(bukkitSender, args) }
-                catch(e: Exception) { pushErrors(platform, configState, locale, e, com.github.hoshikurama.ticketmanager.commonse.TMLocale::warningsUnexpectedError) }
+                catch(e: Exception) { pushErrors(platform, configState, locale, e, TMLocale::warningsUnexpectedError) }
             }
         }, ExecutorType.CONSOLE, ExecutorType.PLAYER).register()
     }

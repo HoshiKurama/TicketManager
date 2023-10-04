@@ -1,13 +1,6 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "8.1.1"
     id("com.github.ben-manes.versions") version "0.47.0" // https://github.com/ben-manes/gradle-versions-plugin
     kotlin("jvm")
-    java
-    application
-}
-
-application {
-    mainClass.set("com.github.hoshikurama.ticketmanager.commonse.TMPlugin")
 }
 
 repositories {
@@ -17,25 +10,30 @@ repositories {
 
 dependencies {
 
-    implementation(project(":common"))
-    implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
+    compileOnly(project(":common"))
+    compileOnly(files( // TODO THIS IS TEMPORARY FOR TESTING
+        "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMSE-API/build/libs/TMSE-API-1.0-SNAPSHOT-sources.jar",
+        "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMSE-API/build/libs/TMSE-API-1.0-SNAPSHOT.jar",
+        "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMCore/build/libs/TMCore-1.0-SNAPSHOT.jar",
+        "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMCore/build/libs/TMCore-1.0-SNAPSHOT-sources.jar",
+        )
+    )
     // Not included but shaded later
-    implementation("com.github.seratch:kotliquery:1.9.0")
-    implementation("net.kyori:adventure-text-minimessage:4.14.0")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")
+    compileOnly("com.github.seratch:kotliquery:1.9.0")
+    compileOnly("net.kyori:adventure-text-minimessage:4.14.0")
+    compileOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")
 
     // Not included and not shaded later
     compileOnly("net.luckperms:api:5.4")
-    implementation("net.kyori:adventure-api:4.14.0")
-    implementation("net.kyori:adventure-extra-kotlin:4.14.0")
+    compileOnly("net.kyori:adventure-api:4.14.0")
+    compileOnly("net.kyori:adventure-extra-kotlin:4.14.0")
 
-    implementation("org.yaml:snakeyaml:2.2")
-    implementation("joda-time:joda-time:2.12.5")
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("com.google.guava:guava:32.1.2-jre")
-    implementation( "com.h2database:h2:2.2.220")
+    compileOnly("org.yaml:snakeyaml:2.2")
+    compileOnly("joda-time:joda-time:2.12.5")
+    compileOnly("com.google.code.gson:gson:2.10.1")
+    compileOnly("com.google.guava:guava:32.1.2-jre")
+    compileOnly( "com.h2database:h2:2.2.220")
 }

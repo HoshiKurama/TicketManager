@@ -4,16 +4,15 @@ import com.github.hoshikurama.ticketmanager.api.paper.TicketManagerDatabaseRegis
 import com.github.hoshikurama.ticketmanager.common.Proxy2Server
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
-import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
-import com.github.hoshikurama.ticketmanager.commonse.datas.Cooldown
-import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
-import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
-import com.github.hoshikurama.ticketmanager.commonse.misc.ConfigParameters
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.platform.events.EventBuilder
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.TMPlugin
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.datas.ConfigState
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.datas.Cooldown
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.datas.GlobalState
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.extensions.DatabaseManager
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.misc.ConfigParameters
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPIBukkitConfig
 import kotlinx.coroutines.runBlocking
@@ -29,7 +28,7 @@ import java.io.File
 import java.io.InputStream
 import java.io.InputStreamReader
 
-typealias TMPlayerJoinEvent = com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
+typealias TMPlayerJoinEvent = com.github.hoshikurama.ticketmanager.commonse.oldDELETE.PlayerJoinEvent
 typealias BukkitPlayerJoinEvent = org.bukkit.event.player.PlayerJoinEvent
 
 class TMPluginImpl(
@@ -107,7 +106,7 @@ class TMPluginImpl(
         ReloadObjectCommand.platform = platformFunctions
         ReloadObjectCommand.commandTasks = CommandTasks(
             eventBuilder = eventBuilder,
-            configState = configState,
+            config = configState,
             platform = platformFunctions,
             locale = activeLocale,
         )

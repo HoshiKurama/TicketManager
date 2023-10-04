@@ -1,9 +1,9 @@
 name: TicketManager
-version: 10.0.5
+version: 11.0.0
 main: com.github.hoshikurama.ticketmanager.paper.PaperPlugin
 api-version: 1.18
 authors: [HoshiKurama]
-depend: [LuckPerms]
+depend: [TicketManagerCore]
 permissions:
   ticketmanager.command.assign:
     description: Assign a ticket

@@ -5,7 +5,6 @@ import com.github.hoshikurama.ticketmanager.api.common.events.AbstractAsyncTicke
 import com.github.hoshikurama.ticketmanager.api.common.ticket.Action
 import com.github.hoshikurama.ticketmanager.api.common.ticket.Creator
 import com.github.hoshikurama.ticketmanager.api.paper.events.AsyncTicketModifyEvent
-import com.github.hoshikurama.ticketmanager.commonse.platform.events.EventBuilder
 
 class EventBuilderImpl : EventBuilder {
 
