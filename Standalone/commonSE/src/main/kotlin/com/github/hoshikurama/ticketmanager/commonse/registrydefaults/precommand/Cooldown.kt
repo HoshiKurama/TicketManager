@@ -32,7 +32,8 @@ class Cooldown(private val cooldownDuration: Duration) : PreCommandExtension.Syn
             return Decision.CONTINUE
         }
 
-        // TODO: MAKE IT PASTE OUT A STATEMENT OF THIS
-        return Decision.BLOCK
+        map[player.uuid] = TimeSource.Monotonic.markNow()
+        locale.
     }
+
 }
