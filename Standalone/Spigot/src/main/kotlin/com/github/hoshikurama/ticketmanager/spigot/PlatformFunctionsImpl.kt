@@ -4,7 +4,7 @@ import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
 import com.github.hoshikurama.ticketmanager.api.common.ticket.ActionLocation
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.commonse.misc.encodeRequestTP
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.PlatformFunctions
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component

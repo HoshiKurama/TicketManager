@@ -1,21 +1,24 @@
 package com.github.hoshikurama.ticketmanager.commonse.misc
 
-import com.github.hoshikurama.ticketmanager.api.common.ticket.Ticket
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
-import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.buildComponent
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.utilities.asParallelStream
+import com.github.hoshikurama.ticketmanager.api.CommandSender
+import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
+import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
+import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 
 typealias TicketPredicate = (Ticket) -> Boolean
 
-fun Long.toLargestRelativeTime(activeLocale: TMLocale): String {
+fun Permission.has(sender: CommandSender.Active, permission: String, consolePermission: Boolean) = when (sender) {
+    is CommandSender.OnlinePlayer -> has(sender, permission)
+    is CommandSender.OnlineConsole -> consolePermission
+}
+
+fun Long.toLargestRelativeTime(activeLocale: Locale): String {
     val timeAgo = Instant.now().epochSecond - this
 
     return when {
@@ -28,7 +31,7 @@ fun Long.toLargestRelativeTime(activeLocale: TMLocale): String {
     }
 }
 
-fun relTimeToEpochSecond(relTime: String, activeLocale: TMLocale): Long {
+fun relTimeToEpochSecond(relTime: String, activeLocale: Locale): Long {
     var seconds = 0L
     var index = 0
     val unprocessed = StringBuilder(relTime)
@@ -68,56 +71,19 @@ infix fun String.templated(component: Component) = Placeholder.component(this, c
 operator fun Component.plus(other: Component) = append(other)
 
 // Other
-fun generateModifiedStacktrace(e: Exception, activeLocale: TMLocale) = buildComponent {
-    // Builds Header
-    append(activeLocale.stacktraceLine1.parseMiniMessage())
-    append(activeLocale.stacktraceLine2.parseMiniMessage("exception" templated (e.javaClass.simpleName ?: "???")))
-    append(activeLocale.stacktraceLine3.parseMiniMessage("message" templated (e.message ?: "?")))
-    append(activeLocale.stacktraceLine4.parseMiniMessage())
-
-    // Adds stacktrace entries
-    e.stackTrace
-        ?.filter { it.className.contains("com.github.hoshikurama.ticketmanager") }
-        ?.map {
-            activeLocale.stacktraceEntry.parseMiniMessage(
-                "method" templated it.methodName,
-                "file" templated (it.fileName ?: "?"),
-                "line" templated "${it.lineNumber}"
-            )
-        }
-        ?.forEach(this::append)
-}
-
-fun <T> List<CompletableFuture<T>>.flatten(): CompletableFuture<List<T>> {
-    return CompletableFuture.allOf(*this.toTypedArray())
-        .thenApplyAsync { this.map { it.join() } }
-}
-
 fun pushErrors(
     platform: PlatformFunctions,
-    instanceState: ConfigState,
-    activeLocale: TMLocale,
+    permission: Permission,
+    locale: Locale,
     exception: Exception,
-    consoleErrorMessage: (TMLocale) -> String,
+    consoleErrorMessage: (Locale) -> String,
 ) {
     // Logs error
-    platform.pushErrorToConsole(consoleErrorMessage(activeLocale))
-    // Pushes full stacktrace to console
-    if (instanceState.printFullStacktrace)
-        exception.printStackTrace()
-
-    // Pushed modified stacktrace to console if requested
-    if (instanceState.printModifiedStacktrace)
-        platform.getConsoleAudience().sendMessage(generateModifiedStacktrace(exception, activeLocale))
+    platform.pushErrorToConsole(consoleErrorMessage(locale))
+    exception.printStackTrace()
 
     // Pushes other messages to other players
-    val onlinePlayers = platform.getAllOnlinePlayers()
-
-    onlinePlayers.asParallelStream()
-        .filter { it.has("ticketmanager.notify.error.stacktrace") }
-        .forEach { generateModifiedStacktrace(exception, activeLocale).run(it::sendMessage) }
-
-    onlinePlayers.asParallelStream()
-        .filter { it.has("ticketmanager.notify.error.message") && !it.has("ticketmanager.notify.error.stacktrace") }
-        .forEach { activeLocale.warningsInternalError.run(it::sendMessage) }
+    platform.getAllOnlinePlayers()
+        .filter { permission.has(it, "ticketmanager.notify.error.message") }
+        .forEach { locale.warningsInternalError.run(it::sendMessage) }
 }

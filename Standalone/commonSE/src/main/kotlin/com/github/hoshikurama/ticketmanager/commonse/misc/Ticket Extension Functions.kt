@@ -1,9 +1,9 @@
 package com.github.hoshikurama.ticketmanager.commonse.misc
 
-import com.github.hoshikurama.ticketmanager.api.common.ticket.Assignment
-import com.github.hoshikurama.ticketmanager.api.common.ticket.Creator
-import com.github.hoshikurama.ticketmanager.api.common.ticket.Ticket
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
+import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
+import com.github.hoshikurama.ticketmanager.api.ticket.Creator
+import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
 import java.util.*
 
 private const val ASSIGNMENT_CONSOLE = "CONSOLE"
@@ -35,7 +35,7 @@ internal fun Ticket.Priority.asByte(): Byte = when (this) {
 }
 
 
-internal fun Ticket.Priority.getHexColour(activeLocale: TMLocale): String = when (this) {
+internal fun Ticket.Priority.getHexColour(activeLocale: Locale): String = when (this) {
     Ticket.Priority.LOWEST -> activeLocale.priorityColourLowestHex
     Ticket.Priority.LOW -> activeLocale.priorityColourLowHex
     Ticket.Priority.NORMAL -> activeLocale.priorityColourNormalHex
@@ -43,13 +43,13 @@ internal fun Ticket.Priority.getHexColour(activeLocale: TMLocale): String = when
     Ticket.Priority.HIGHEST -> activeLocale.priorityColourHighestHex
 }
 
-fun Ticket.Status.getHexColour(activeLocale: TMLocale): String = when (this) {
+fun Ticket.Status.getHexColour(activeLocale: Locale): String = when (this) {
     Ticket.Status.OPEN -> activeLocale.statusColourOpenHex
     Ticket.Status.CLOSED -> activeLocale.statusColourClosedHex
 }
 
 
-fun Ticket.Priority.toLocaledWord(activeLocale: TMLocale) = when (this) {
+fun Ticket.Priority.toLocaledWord(activeLocale: Locale) = when (this) {
     Ticket.Priority.LOWEST -> activeLocale.priorityLowest
     Ticket.Priority.LOW -> activeLocale.priorityLow
     Ticket.Priority.NORMAL -> activeLocale.priorityNormal
@@ -57,7 +57,7 @@ fun Ticket.Priority.toLocaledWord(activeLocale: TMLocale) = when (this) {
     Ticket.Priority.HIGHEST -> activeLocale.priorityHighest
 }
 
-internal fun Ticket.Status.toLocaledWord(activeLocale: TMLocale) = when (this) {
+internal fun Ticket.Status.toLocaledWord(activeLocale: Locale) = when (this) {
     Ticket.Status.OPEN ->  activeLocale.statusOpen
     Ticket.Status.CLOSED -> activeLocale.statusClosed
 }
@@ -79,7 +79,7 @@ fun Creator.asString(): String = when (this) {
 }
 
 
-fun Assignment.toLocalizedName(activeLocale: TMLocale) = when (this) {
+fun Assignment.toLocalizedName(activeLocale: Locale) = when (this) {
     is Assignment.Player -> this.username
     is Assignment.Console -> activeLocale.consoleName
     is Assignment.Nobody -> activeLocale.miscNobody

@@ -1,10 +1,10 @@
 package com.github.hoshikurama.ticketmanager.spigot
 
 import com.github.hoshikurama.ticketmanager.api.common.ticket.ActionLocation
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
-import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlayerJoinEvent
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.PlayerJoinEvent
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.datas.ConfigState
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
