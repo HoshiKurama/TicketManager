@@ -1,25 +1,27 @@
 package com.github.hoshikurama.ticketmanager.commonse.commands
 
-import com.github.hoshikurama.ticketmanager.api.common.TMCoroutine
-import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.common.database.DBResult
-import com.github.hoshikurama.ticketmanager.api.common.database.Option
-import com.github.hoshikurama.ticketmanager.api.common.database.SearchConstraints
-import com.github.hoshikurama.ticketmanager.api.common.ticket.*
+import com.github.hoshikurama.ticketmanager.api.CommandSender
+import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.api.event.events.AsyncTicketModify
+import com.github.hoshikurama.ticketmanager.api.registry.config.Config
+import com.github.hoshikurama.ticketmanager.api.registry.database.types.AsyncDatabase
+import com.github.hoshikurama.ticketmanager.api.registry.database.utils.DBResult
+import com.github.hoshikurama.ticketmanager.api.registry.database.utils.Option
+import com.github.hoshikurama.ticketmanager.api.registry.database.utils.SearchConstraints
+import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
+import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
+import com.github.hoshikurama.ticketmanager.api.ticket.*
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
-import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
-import com.github.hoshikurama.ticketmanager.commonse.datas.GlobalState
-import com.github.hoshikurama.ticketmanager.commonse.extensions.DatabaseManager
 import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.buildComponent
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.onHover
-import com.github.hoshikurama.ticketmanager.commonse.platform.events.EventBuilder
-import com.github.hoshikurama.ticketmanager.commonse.platform.OnlinePlayer
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.delay
+import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingChannel
+import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.ProxyJoinChannel
+import com.github.hoshikurama.tmcore.ChanneledCounter
+import com.github.hoshikurama.tmcore.TMCoroutine
+import com.github.hoshikurama.tmcore.events.TMEventBus
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.event.ClickEvent
@@ -34,14 +36,18 @@ import java.util.concurrent.CompletableFuture
  * must be parsed and permissions must be checked somewhere else. Use composition.
  */
 class CommandTasks(
-    private val eventBuilder: EventBuilder,
-    private val configState: ConfigState,
+    private val config: Config,
+    private val locale: Locale,
+    private val database: AsyncDatabase,
     private val platform: PlatformFunctions,
-    private val locale: TMLocale,
+    private val permission: Permission,
+    private val ticketCounter: ChanneledCounter,
+    private val notificationSharingChannel: NotificationSharingChannel,
+    private val proxyJoinChannel: ProxyJoinChannel,
 ) {
 
     // /ticket assign <ID> <Assignment>
-    fun assign(
+    suspend fun assign(
         sender: CommandSender.Active,
         assignment: Assignment,
         ticket: Ticket,
@@ -51,7 +57,7 @@ class CommandTasks(
     }
 
     // /ticket claim <ID>
-    fun claim(
+    suspend fun claim(
         sender: CommandSender.Active,
         ticket: Ticket,
         silent: Boolean,
@@ -60,7 +66,7 @@ class CommandTasks(
     }
 
     // /ticket close <ID> [Comment...]
-    fun closeWithComment(
+    suspend fun closeWithComment(
         sender: CommandSender.Active,
         ticket: Ticket,
         comment: String,
@@ -68,17 +74,17 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).CloseWithComment(comment)
 
-        // Call TicketModificationEventAsync
-        callTicketModificationEventAsync(sender, ticket.creator, action, ticket.id, silent)
+        // Runs async internally
+        TMEventBus.call(AsyncTicketModify(sender, ticket.creator, ticket.id, action, silent))
 
         // Run all database calls and event
-        TMCoroutine.launchSupervised {
-            launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) }
-            launch { DatabaseManager.activeDatabase.setStatusAsync(ticket.id, Ticket.Status.CLOSED) }
+        TMCoroutine.Supervised.launch {
+            launch { database.insertActionAsync(ticket.id, action) }
+            launch { database.setStatusAsync(ticket.id, Ticket.Status.CLOSED) }
             launch {
-                val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
+                val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && config.allowUnreadTicketUpdates
                 if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-                    DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
+                    database.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
                 else CompletableFuture.completedFuture(null)
             }
         }
@@ -89,29 +95,30 @@ class CommandTasks(
             ticketCreator = ticket.creator,
             closingMessage = action.comment,
             ticketID = ticket.id,
+            permissions = permission,
         )
     }
 
 
     // /ticket close <ID> [Comment...]
-    fun closeWithoutComment(
+    suspend fun closeWithoutComment(
         sender: CommandSender.Active,
         ticket: Ticket,
         silent: Boolean,
     ): MessageNotification<CommandSender.Active> {
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).CloseWithoutComment()
 
-        // Call TicketModificationEventAsync
-        callTicketModificationEventAsync(sender, ticket.creator, action, ticket.id, silent)
+        // Runs async internally
+        TMEventBus.call(AsyncTicketModify(sender, ticket.creator, ticket.id, action, silent))
 
         // Run all database calls and event
-        TMCoroutine.launchSupervised {
-            launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) }
-            launch { DatabaseManager.activeDatabase.setStatusAsync(ticket.id, Ticket.Status.CLOSED) }
+        TMCoroutine.Supervised.launch {
+            launch { database.insertActionAsync(ticket.id, action) }
+            launch { database.setStatusAsync(ticket.id, Ticket.Status.CLOSED) }
             launch {
-                val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
+                val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && config.allowUnreadTicketUpdates
                 if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-                    DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
+                    database.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
                 else CompletableFuture.completedFuture(null)
             }
         }
@@ -121,12 +128,13 @@ class CommandTasks(
             commandSender = sender,
             ticketCreator = ticket.creator,
             ticketID = ticket.id,
+            permissions = permission,
         )
 
     }
 
     // /ticket closeall <Lower ID> <Upper ID>
-    fun closeAll(
+    suspend fun closeAll(
         sender: CommandSender.Active,
         lowerBound: Long,
         upperBound: Long,
@@ -134,12 +142,11 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).MassClose()
 
-        // Launch Ticket Modification Event
-        callTicketModificationEventAsync(sender, Creator.DummyCreator, action, -1, silent)
+        // Runs async internally
+        TMEventBus.call(AsyncTicketModify(sender, Creator.DummyCreator, -1, action, silent))
 
-        TMCoroutine.launchSupervised {
-            DatabaseManager.activeDatabase
-                .massCloseTicketsAsync(lowerBound, upperBound, sender.asCreator(), sender.getLocAsTicketLoc())
+        TMCoroutine.Supervised.launch {
+            database.massCloseTicketsAsync(lowerBound, upperBound, sender.asCreator(), sender.getLocAsTicketLoc())
         }
 
         return MessageNotification.MassClose.newActive(
@@ -147,11 +154,12 @@ class CommandTasks(
             commandSender = sender,
             lowerBound = lowerBound,
             upperBound = upperBound,
+            permissions = permission,
         )
     }
 
     // /ticket comment <ID> <Comment…>
-    fun comment(
+    suspend fun comment(
         sender: CommandSender.Active,
         ticket: Ticket,
         silent: Boolean,
@@ -159,16 +167,16 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Comment(comment)
 
-        // Launch Ticket Modification Event
-        callTicketModificationEventAsync(sender, ticket.creator, action, ticket.id, silent)
+        // Runs async internally
+        TMEventBus.call(AsyncTicketModify(sender, ticket.creator, ticket.id, action, silent))
 
         // Database Stuff + Event
-        TMCoroutine.launchSupervised {
-            launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) }
+        TMCoroutine.Supervised.launch {
+            launch { database.insertActionAsync(ticket.id, action) }
             launch {
-                val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
+                val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && config.allowUnreadTicketUpdates
                 if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-                    DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
+                    database.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
             }
         }
 
@@ -178,6 +186,7 @@ class CommandTasks(
             ticketCreator = ticket.creator,
             ticketID = ticket.id,
             comment = comment,
+            permissions = permission,
         )
 
     }
@@ -191,7 +200,7 @@ class CommandTasks(
         val initTicket = Ticket(
             id = -1L,
             creator = sender.asCreator(),
-            actions = listOf(ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Open(message)).toImmutableList(),
+            actions = listOf(ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Open(message)),
             priority = Ticket.Priority.NORMAL,
             status = Ticket.Status.OPEN,
             assignedTo = Assignment.Nobody,
@@ -199,10 +208,11 @@ class CommandTasks(
         )
 
         // Inserts ticket and receives ID
-        val id = DatabaseManager.activeDatabase.insertNewTicketAsync(initTicket)
-        GlobalState.ticketCounter.increment()
+        val id = database.insertNewTicketAsync(initTicket)
+        ticketCounter.increment()
 
-        callTicketModificationEventAsync(sender, initTicket.creator, initTicket.actions[0], id, false)
+        // Runs async internally
+        TMEventBus.call(AsyncTicketModify(sender, initTicket.creator, id, initTicket.actions[0], false))
 
         return MessageNotification.Create.newActive(
             isSilent = false,
@@ -210,6 +220,7 @@ class CommandTasks(
             ticketCreator = initTicket.creator,
             ticketID = id,
             message = message,
+            permissions = permission,
         )
     }
 
@@ -218,7 +229,7 @@ class CommandTasks(
         sender: CommandSender.Active,
         requestedPage: Int
     ) {
-        val tickets = DatabaseManager.activeDatabase.getOpenTicketsAsync(requestedPage, 8)
+        val tickets = database.getOpenTicketsAsync(requestedPage, 8)
         createGeneralList(locale.listHeader, tickets, locale.run { "/$commandBase $commandWordList " })
             .run(sender::sendMessage)
     }
@@ -228,12 +239,12 @@ class CommandTasks(
         sender: CommandSender.Active,
         requestedPage: Int,
     ) {
-        val groups = if (sender is OnlinePlayer)
-            sender.permissionGroups.map(Assignment::PermissionGroup)
+        val groups = if (sender is CommandSender.OnlinePlayer)
+            permission.groupNamesOf(sender)
+                .map(Assignment::PermissionGroup)
         else listOf()
 
-        val tickets = DatabaseManager.activeDatabase
-            .getOpenTicketsAssignedToAsync(requestedPage,8, listOf(sender.asAssignment()) + groups)
+        val tickets = database.getOpenTicketsAssignedToAsync(requestedPage,8, listOf(sender.asAssignment()) + groups)
 
         createGeneralList(locale.listAssignedHeader, tickets, locale.run { "/$commandBase $commandWordListAssigned " })
             .run(sender::sendMessage)
@@ -244,7 +255,7 @@ class CommandTasks(
         sender: CommandSender.Active,
         requestedPage: Int,
     ) {
-        val tickets = DatabaseManager.activeDatabase
+        val tickets = database
             .getOpenTicketsNotAssignedAsync(requestedPage, 8)
 
         createGeneralList(locale.listUnassignedHeader, tickets, locale.run { "/$commandBase $commandWordListUnassigned " })
@@ -403,10 +414,9 @@ class CommandTasks(
                 ),
             )
         }
-            .asSequence()
-            .filter { it.permissions.any(sender::has) }
+            .filter { c -> c.permissions.any { permission.has(sender, it, consolePermission = true) } }
 
-        val hasSilentPerm = sender.has("ticketmanager.commandArg.silence")
+        val hasSilentPerm = permission.has(sender, "ticketmanager.commandArg.silence", consolePermission = true)
         val component = buildComponent {
             locale.run {
                 // Builds header
@@ -452,28 +462,28 @@ class CommandTasks(
         sender.sendMessage(component)
     }
 
-    fun reopen(
+    suspend fun reopen(
         sender: CommandSender.Active,
         silent: Boolean,
         ticket: Ticket,
     ): MessageNotification<CommandSender.Active> {
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Reopen()
 
-        // launch event
-        callTicketModificationEventAsync(sender, ticket.creator, action, ticket.id, silent)
+        // Runs async internally
+        TMEventBus.call(AsyncTicketModify(sender, ticket.creator, ticket.id, action, silent))
 
         // Write to database
-        TMCoroutine.launchSupervised {
-            launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) }
-            launch { DatabaseManager.activeDatabase.setStatusAsync(ticket.id, Ticket.Status.OPEN) }
+        TMCoroutine.Supervised.launch {
+            launch { database.insertActionAsync(ticket.id, action) }
+            launch { database.setStatusAsync(ticket.id, Ticket.Status.OPEN) }
             launch {
-                val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
+                val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && config.allowUnreadTicketUpdates
                 if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-                    DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
+                    database.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
             }
         }
 
-        return MessageNotification.Reopen.newActive(silent, sender, ticket.creator, ticket.id)
+        return MessageNotification.Reopen.newActive(silent, sender, ticket.creator, ticket.id, permission)
     }
 
     // /ticket history [User] [Page]
@@ -482,7 +492,7 @@ class CommandTasks(
         checkedCreator: Creator,
         requestedPage: Int,
     ) {
-        val (results, pageCount, resultCount, returnedPage) = DatabaseManager.activeDatabase
+        val (results, pageCount, resultCount, returnedPage) = database
             .searchDatabaseAsync(SearchConstraints(
                 creator = Option(SearchConstraints.Symbol.EQUALS, checkedCreator),
                 requestedPage = requestedPage,
@@ -548,7 +558,7 @@ class CommandTasks(
 
         // Results calculation and destructuring
         val (results, pageCount, resultCount, returnedPage) =
-            DatabaseManager.activeDatabase.searchDatabaseAsync(searchParameters, 9)
+            database.searchDatabaseAsync(searchParameters, 9)
 
         // Component Builder...
         val sentComponent = buildComponent {
@@ -606,7 +616,7 @@ class CommandTasks(
     }
 
     // /ticket setpriority <ID> <Level>
-    fun setPriority(
+    suspend fun setPriority(
         sender: CommandSender.Active,
         priority: Ticket.Priority,
         ticket: Ticket,
@@ -614,33 +624,34 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).SetPriority(priority)
 
-        // Call event
-        callTicketModificationEventAsync(sender, ticket.creator, action, ticket.id, silent)
+        // Runs async internally
+        TMEventBus.call(AsyncTicketModify(sender, ticket.creator, ticket.id, action, silent))
 
         // Database calls
-        TMCoroutine.launchSupervised {
-            launch { DatabaseManager.activeDatabase.insertActionAsync(ticket.id, action) }
-            launch { DatabaseManager.activeDatabase.setPriorityAsync(ticket.id, priority) }
+        TMCoroutine.Supervised.launch {
+            launch { database.insertActionAsync(ticket.id, action) }
+            launch { database.setPriorityAsync(ticket.id, priority) }
         }
 
-        return MessageNotification.SetPriority.newActive(silent, sender, ticket.creator, ticket.id, priority)
+        return MessageNotification.SetPriority.newActive(silent, sender, ticket.creator, ticket.id, priority, permission)
     }
 
     // /ticket teleport <ID>
     fun teleport(sender: CommandSender.Active, ticket: Ticket) {
         val location = ticket.actions[0].location
 
-        if (sender is CommandSender.Active.OnlinePlayer && location is ActionLocation.FromPlayer) {
+        if (sender is CommandSender.OnlinePlayer && location is ActionLocation.FromPlayer) {
             // Was made on a different server...
-            if (location.server != null && location.server != configState.proxyServerName) {
-                if (configState.enableProxyMode) platform.teleportToTicketLocDiffServer(sender, location)
+            if (config.proxyOptions != null && location.server != null) {
+                proxyJoinChannel.forward(sender.uuid to location)
+                platform.teleportToTicketLocDiffServer(sender, location)
             } else platform.teleportToTicketLocSameServer(sender, location)
         }
         // Else don't teleport
     }
 
     // /ticket unassign <ID>
-    fun unAssign(
+    suspend fun unAssign(
         sender: CommandSender.Active,
         ticket: Ticket,
         silent: Boolean,
@@ -694,9 +705,9 @@ class CommandTasks(
     ) {
         val baseComponent = buildTicketInfoComponent(ticket)
 
-        val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
+        val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && config.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-            TMCoroutine.launchSupervised { DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, false) }
+            TMCoroutine.Supervised.launch { database.setCreatorStatusUpdateAsync(ticket.id, false) }
 
         val entries = ticket.actions.asSequence()
             .filter { it is ActionInfo.Comment || it is ActionInfo.Open || it is ActionInfo.CloseWithComment }
@@ -723,9 +734,9 @@ class CommandTasks(
     ) {
         val baseComponent = buildTicketInfoComponent(ticket)
 
-        val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && configState.allowUnreadTicketUpdates
+        val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && config.allowUnreadTicketUpdates
         if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
-            TMCoroutine.launchSupervised { DatabaseManager.activeDatabase.setCreatorStatusUpdateAsync(ticket.id, false) }
+            TMCoroutine.Supervised.launch { database.setCreatorStatusUpdateAsync(ticket.id, false) }
 
         fun formatDeepAction(action: Action): List<Component> {
             val templatedUser = "user" templated action.user.attemptName()
@@ -756,9 +767,8 @@ class CommandTasks(
             .run(sender::sendMessage)
     }
 
-    suspend fun reload(sender: CommandSender.Active) {
-        GlobalState.dataInitializationComplete = false
-        GlobalState.databaseSelected = false
+    // Global coroutine prevents this very job from ending
+    suspend fun reload(sender: CommandSender.Active): Job = TMCoroutine.Global.launch {
 
         // Announce Intentions
         platform.massNotify(
@@ -766,50 +776,16 @@ class CommandTasks(
             message = locale.informationReloadInitiated.parseMiniMessage("user" templated sender.getUsername(locale))
         )
 
-        // Give time for things to complete
-        var counter = 0
-        while (TMCoroutine.getSupervisedJobCount() < 2) {
-            if (counter > 29) {
-                TMCoroutine.cancelTasks("User ${sender.getUsername(locale)} requested a plugin restart and 1+ tasks is taking too long")
-                platform.massNotify(
-                    "ticketmanager.notify.warning",
-                    locale.warningsLongTaskDuringReload.parseMiniMessage()
-                )
-            }
+        TMPlugin.activeInstance.disableTicketManager(false)
+        TMPlugin.activeInstance.enableTicketManager()
 
-            delay(1000)
-            counter++
-        }
+        platform.massNotify("ticketmanager.notify.info", locale.informationReloadSuccess.parseMiniMessage())
 
-        // Closed...
-        platform.massNotify("ticketmanager.notify.info",
-            locale.informationReloadTasksDone.parseMiniMessage()
-        )
-
-        TMCoroutine.launchGlobal {
-            try {
-                TMPlugin.activeInstance.reloadTicketManager()
-
-                // Notifications
-                platform.massNotify("ticketmanager.notify.info", locale.informationReloadSuccess.parseMiniMessage())
-
-                if (!sender.has("ticketmanager.notify.info"))
-                    sender.sendMessage(locale.informationReloadSuccess.parseMiniMessage())
-
-            } catch (e: Exception) {
-                platform.massNotify("ticketmanager.notify.info",
-                    locale.informationReloadFailure.parseMiniMessage()
-                )
-                pushErrors(platform, configState, locale, e, TMLocale::warningsUnexpectedError)
-                generateModifiedStacktrace(e, locale)
-            } finally {
-                GlobalState.dataInitializationComplete = true
-                GlobalState.databaseSelected = true
-            }
-        }
+        if (!permission.has(sender, "ticketmanager.notify.info", consolePermission = true))
+            sender.sendMessage(locale.informationReloadSuccess.parseMiniMessage())
     }
 
-    private fun assignVariationWriter(
+    private suspend fun assignVariationWriter(
         sender: CommandSender.Active,
         assignment: Assignment,
         creator: Creator,
@@ -818,13 +794,13 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
         val insertedAction = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Assign(assignment)
 
-        // Launch TicketModificationEventAsync
-        callTicketModificationEventAsync(sender, creator, insertedAction, ticketID, silent)
+        // Runs async internally
+        TMEventBus.call(AsyncTicketModify(sender, creator, ticketID, insertedAction, silent))
 
         // Writes to database
-        TMCoroutine.launchSupervised {
-            launch { DatabaseManager.activeDatabase.setAssignmentAsync(ticketID, assignment) }
-            launch { DatabaseManager.activeDatabase.insertActionAsync(ticketID, insertedAction) }
+        TMCoroutine.Supervised.launch {
+            launch { database.setAssignmentAsync(ticketID, assignment) }
+            launch { database.insertActionAsync(ticketID, insertedAction) }
         }
 
         return MessageNotification.Assign.newActive(
@@ -832,8 +808,35 @@ class CommandTasks(
             assignment = assignment,
             commandSender = sender,
             ticketCreator = creator,
-            ticketID = ticketID
+            ticketID = ticketID,
+            permissions = permission,
         )
+    }
+
+    fun executeNotifications(
+        commandSender: CommandSender.Active,
+        message: MessageNotification<CommandSender.Active>
+    ) {
+        message.run {
+            //  Send to other servers if needed
+            if (config.proxyOptions != null)
+                notificationSharingChannel.forward(message)
+
+            if (sendSenderMSG) generateSenderMSG(locale).run(commandSender::sendMessage)
+
+            if (sendCreatorMSG && ticketCreator is Creator.User) {
+                val creatorPlayer = platform.buildPlayer((ticketCreator as Creator.User).uuid)
+
+                if (creatorPlayer != null
+                    && permission.has(creatorPlayer, creatorAlertPerm)
+                    && !permission.has(creatorPlayer, massNotifyPerm)
+                ) {
+                    generateCreatorMSG(locale).run(creatorPlayer::sendMessage)
+                }
+            }
+
+            if (sendMassNotify) platform.massNotify(massNotifyPerm, generateMassNotify(locale))
+        }
     }
 
 // Private Functions
@@ -853,7 +856,7 @@ class CommandTasks(
             .let(this::append)
 
         val locationString = ticket.actions[0].location.let {
-            if (!configState.enableProxyMode && it.server != null)
+            if (config.proxyOptions != null)
                 it.stringFormat()
                     .split(" ")
                     .drop(1)
@@ -870,18 +873,6 @@ class CommandTasks(
             .let(this::append)
 
         append(locale.viewSep2.parseMiniMessage())
-    }
-
-    private fun callTicketModificationEventAsync(
-        commandSender: CommandSender.Active,
-        creator: Creator,
-        action: Action,
-        ticketNumber: Long,
-        isSilent: Boolean,
-    ) {
-        TMCoroutine.launchGlobal {
-            eventBuilder.buildTicketModifyEvent(commandSender, creator, action, ticketNumber, isSilent).callEventTM()
-        }
     }
 
     private fun createGeneralList(
@@ -977,6 +968,7 @@ class CommandTasks(
         else -> "???"
     }
 }
+
 
 private fun trimCommentToSize(comment: String, preSize: Int, maxSize: Int): String {
     return if (comment.length + preSize > maxSize) "${comment.substring(0,maxSize-preSize-3)}..."

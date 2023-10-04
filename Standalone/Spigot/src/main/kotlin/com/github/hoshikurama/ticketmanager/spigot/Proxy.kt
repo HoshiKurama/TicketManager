@@ -4,11 +4,11 @@ import com.github.hoshikurama.ticketmanager.api.common.ticket.Creator
 import com.github.hoshikurama.ticketmanager.common.Proxy2Server
 import com.github.hoshikurama.ticketmanager.common.ProxyUpdate
 import com.github.hoshikurama.ticketmanager.common.randServerIdentifier
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
 import com.github.hoshikurama.ticketmanager.commonse.commands.MessageNotification
-import com.github.hoshikurama.ticketmanager.commonse.datas.ConfigState
 import com.github.hoshikurama.ticketmanager.commonse.misc.decodeRequestTP
-import com.github.hoshikurama.ticketmanager.commonse.platform.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.TMLocale
+import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.datas.ConfigState
 import com.google.common.io.ByteStreams
 import org.bukkit.entity.Player
 import org.bukkit.plugin.messaging.PluginMessageListener

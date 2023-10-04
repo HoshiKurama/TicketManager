@@ -1,7 +1,7 @@
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
 #                                              TicketManager Config File                                              #
-#                                                     Version 10.0.6                                                  #
+#                                                     Version 11.0.0                                                  #
 #                                                     Paper Edition                                                   #
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
 # ╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳ #
@@ -99,57 +99,6 @@ Proxy_Server_Name: ''
 Allow_Proxy_UpdateChecking: true
 #   Allow the server to check for new proxy versions.                                                                 #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Proxy_Update_Check_Frequency: 1
-#   Time in hours between proxy update checking.                                                                      #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-#                                                                                                                     #
-#                                                                                                                     #
-#                                                                                                                     #
-#                                                                                                                     #
-#                                                                                                                     #
-#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
-#                                                  Database Settings                                                  #
-#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
-#   TicketManager only ships with one database type: CACHED_H2. In summary, tickets are loaded into memory, but       #
-#   tickets and actions are also pushed to an H2 database. This provides both speed and data safety.                  #
-#                                                                                                                     #
-#   However, TM Database Extensions allow any database to be used. Simply install the desired extension, and paste    #
-#   the config value specified by the extension into the Database_Mode parameter below.                               #
-#                                                                                                                     #
-#   If an error occurs during database initialization, TicketManager defaults to the included CACHED_H2.              #
-#                                                                                                                     #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Database_Mode: 'CACHED_H2'
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-#                                                                                                                     #
-#                                                                                                                     #
-#                                                                                                                     #
-#                                                                                                                     #
-#                                                                                                                     #
-#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
-#                                               Error Printing Settings                                               #
-#   ══════════════════════════════════════════════════════════════════════════════════════════════════════════════    #
-#   TicketManager can output unexpected errors to Console. Please note that the following settings are for Console    #
-#   only. Players wishing to modify their experience should use permission nodes.                                     #
-#                                                                                                                     #
-#   TicketManager can output errors in two ways:                                                                      #
-#       • Modified Stacktrace                                                                                         #
-#       • Full Stacktrace.                                                                                            #
-#                                                                                                                     #
-#   The modified stacktrace is custom and only prints where code went wrong in TicketManager's code itself. This is   #
-#   especially useful for quickly determining a problem's location. It is also more readable for users not familiar   #
-#   with the standard stacktrace.                                                                                     #
-#                                                                                                                     #
-#   The full stacktrace is the standard stacktrace provided by Java. It contains more information than the modified   #
-#   stacktrace but is more difficult to read.                                                                         #
-#                                                                                                                     #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Print_Modified_Stacktrace: true
-#   Enable or disable the modified stacktrace in Console.                                                             #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Print_Full_Stacktrace: false
-#   Enable or disable the standard stacktrace in Console.                                                             #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 #                                                                                                                     #
 #                                                                                                                     #
 #                                                                                                                     #
@@ -194,9 +143,6 @@ Allow_Unread_Ticket_Updates: true
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Allow_UpdateChecking: true
 #   Allow the server to check for newer version of TicketManager.                                                     #
-#   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
-Plugin_Update_Check_Frequency: 1
-#   Time in hours between update checks for the plugin.                                                               #
 #   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────    #
 Auto_Update_Config: true
 #   Allow this config file to automatically update and transfer existing config settings.                             #

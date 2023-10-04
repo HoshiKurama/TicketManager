@@ -1,11 +1,11 @@
 package com.github.hoshikurama.ticketmanager.commonse.misc
 
-import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.common.ticket.ActionLocation
+import com.github.hoshikurama.ticketmanager.api.CommandSender
+import com.github.hoshikurama.ticketmanager.api.ticket.ActionLocation
 import com.google.common.io.ByteStreams
 import java.util.*
 
-fun encodeRequestTP(player: CommandSender.Active.OnlinePlayer, location: ActionLocation.FromPlayer): ByteArray {
+fun encodeRequestTP(player: CommandSender.OnlinePlayer, location: ActionLocation.FromPlayer): ByteArray {
     val output = ByteStreams.newDataOutput()
 
     output.writeUTF(location.server!!)

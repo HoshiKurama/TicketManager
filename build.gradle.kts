@@ -15,7 +15,7 @@ dependencies {
 
 subprojects {
     group = "com.github.hoshikurama"
-    version = "10.0.6"
+    version = "11.0.0"
 
     tasks.withType<KotlinCompile> {
         kotlinOptions.jvmTarget = "17"

@@ -1,23 +1,23 @@
 package com.github.hoshikurama.ticketmanager.commonse.misc
 
-import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.commonse.TMLocale
+import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
+import com.github.hoshikurama.ticketmanager.commonse.CommandSenders
 import java.util.*
+import com.github.hoshikurama.ticketmanager.api.CommandSender as CommandSenderAPI
 
-fun InfoCSString.asCommandSender(): CommandSender.Info {
+fun InfoCSString.asCommandSender(): CommandSenderAPI.Info {
     val split = this.value.split(".")
     return when (split[0]) {
-        "CSI_USER" -> CommandSender.Info.Player(split[1], UUID.fromString(split[2]))
-        "CSI_CONSOLE" -> CommandSender.Info.Console()
+        "CSI_USER" -> CommandSenders.Info.Player(split[1], UUID.fromString(split[2]))
+        "CSI_CONSOLE" -> CommandSenders.Info.Console()
         else -> throw Exception("Invalid type found when attempting to decode CommandCapable.Info! Value: ${split[0]}")
     }
 }
 
-fun CommandSender.getUsername(locale: TMLocale): String = when(this) {
-    is CommandSender.Active.OnlineConsole,
-    is CommandSender.Info.Console -> locale.consoleName
-    is CommandSender.Active.OnlinePlayer -> username
-    is CommandSender.Info.Player -> username
+fun CommandSenderAPI.getUsername(locale: Locale): String = when(this) {
+    is CommandSenderAPI.Player -> username
+    is CommandSenderAPI.Console -> locale.consoleName
+    else -> throw Exception("Impossible")
 }
 
 @JvmInline

@@ -2,8 +2,8 @@ package com.github.hoshikurama.ticketmanager.common
 
 import java.util.*
 
-const val mainPluginVersion = "10.0.6"
-const val bridgePluginVersion = "3.1"
+const val mainPluginVersion = "11.0.0"
+const val bridgePluginVersion = "3.0"
 
 const val bukkitMetricsKey = 11033
 const val velocityBridgeKey = 15470
