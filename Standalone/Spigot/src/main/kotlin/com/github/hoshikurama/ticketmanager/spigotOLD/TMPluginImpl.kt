@@ -1,4 +1,4 @@
-package com.github.hoshikurama.ticketmanager.spigot
+package com.github.hoshikurama.ticketmanager.spigotOLD
 
 import com.github.hoshikurama.ticketmanager.api.paper.TicketManagerDatabaseRegister
 import com.github.hoshikurama.ticketmanager.common.Proxy2Server

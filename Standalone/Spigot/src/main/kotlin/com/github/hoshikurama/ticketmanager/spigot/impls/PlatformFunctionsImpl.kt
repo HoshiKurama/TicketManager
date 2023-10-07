@@ -1,42 +1,42 @@
-package com.github.hoshikurama.ticketmanager.spigot
+package com.github.hoshikurama.ticketmanager.spigot.impls
 
-import com.github.hoshikurama.ticketmanager.api.common.commands.CommandSender
-import com.github.hoshikurama.ticketmanager.api.common.ticket.ActionLocation
+import com.github.hoshikurama.ticketmanager.api.CommandSender
+import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.api.registry.config.Config
+import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
+import com.github.hoshikurama.ticketmanager.api.ticket.ActionLocation
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.commonse.misc.encodeRequestTP
-import com.github.hoshikurama.ticketmanager.commonse.oldDELETE.PlatformFunctions
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
-import net.luckperms.api.LuckPermsProvider
 import org.bukkit.Bukkit
 import org.bukkit.Location
-import org.bukkit.entity.Player
+import org.bukkit.plugin.Plugin
 import java.util.*
 import java.util.logging.Level
 
-typealias OnlinePlayer = CommandSender.Active.OnlinePlayer
-
 class PlatformFunctionsImpl(
     private val adventure: BukkitAudiences,
-    private val plugin: SpigotPlugin,
-    private val serverName: String?,
+    private val plugin: Plugin,
+    private val permissions: Permission,
+    config: Config,
 ): PlatformFunctions {
+    private val serverName = config.proxyOptions?.serverName
 
     override fun massNotify(permission: String, message: Component) {
-        val lpUserAdapter = LuckPermsProvider.get().getPlayerAdapter(Player::class.java)
         adventure.console().sendMessage(message)
 
-        Bukkit.getOnlinePlayers()
-            .filter { lpUserAdapter.getPermissionData(it).checkPermission(permission).asBoolean() }
-            .forEach { adventure.sender(it).sendMessage(message) }
+        getAllOnlinePlayers()
+            .filter { permissions.has(it, permission) }
+            .forEach { it.sendMessage(message) }
     }
 
-    override fun buildPlayer(uuid: UUID): OnlinePlayer? {
+    override fun buildPlayer(uuid: UUID): CommandSender.OnlinePlayer? {
         return Bukkit.getPlayer(uuid)?.run { SpigotPlayer(this, adventure, serverName) }
     }
 
-    override fun getAllOnlinePlayers(): List<OnlinePlayer> {
+    override fun getAllOnlinePlayers(): List<CommandSender.OnlinePlayer> {
         return Bukkit.getOnlinePlayers().map { SpigotPlayer(it, adventure, serverName) }
     }
 
@@ -49,7 +49,7 @@ class PlatformFunctionsImpl(
         return uuid.run(Bukkit::getOfflinePlayer).name
     }
 
-    override fun teleportToTicketLocSameServer(player: OnlinePlayer, loc: ActionLocation.FromPlayer) {
+    override fun teleportToTicketLocSameServer(player: CommandSender.OnlinePlayer, loc: ActionLocation.FromPlayer) {
         val world = Bukkit.getWorld(loc.world)
         val spigotPlayer = player as SpigotPlayer
 
@@ -59,12 +59,8 @@ class PlatformFunctionsImpl(
         }
     }
 
-    override fun teleportToTicketLocDiffServer(player: OnlinePlayer, loc: ActionLocation.FromPlayer) {
+    override fun teleportToTicketLocDiffServer(player: CommandSender.OnlinePlayer, loc: ActionLocation.FromPlayer) {
         plugin.server.sendPluginMessage(plugin, Server2Proxy.Teleport.waterfallString(), encodeRequestTP(player, loc))
-    }
-
-    override fun relayMessageToProxy(channel: String, encodedMessage: ByteArray) {
-        plugin.server.sendPluginMessage(plugin, channel, encodedMessage)
     }
 
     override fun getConsoleAudience(): Audience {

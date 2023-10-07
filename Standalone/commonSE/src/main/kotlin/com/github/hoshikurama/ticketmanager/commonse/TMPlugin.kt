@@ -15,6 +15,7 @@ import com.github.hoshikurama.ticketmanager.commonse.registrydefaults.database.D
 import com.github.hoshikurama.ticketmanager.commonse.registrydefaults.locale.DefaultLocaleExtension
 import com.github.hoshikurama.ticketmanager.commonse.registrydefaults.permission.LuckPerms
 import com.github.hoshikurama.ticketmanager.commonse.registrydefaults.playerjoin.*
+import com.github.hoshikurama.ticketmanager.commonse.registrydefaults.precommand.Cooldown
 import com.github.hoshikurama.ticketmanager.commonse.registrydefaults.repeatingtasks.RepeatingStaffCount
 import com.github.hoshikurama.ticketmanager.commonse.registrydefaults.repeatingtasks.UnreadNotify
 import com.github.hoshikurama.tmcore.ChanneledCounter
@@ -87,6 +88,7 @@ abstract class TMPlugin(
         if (config.allowUnreadTicketUpdates) PlayerJoinRegistry.register(UnreadUpdates::class, RunType.ASYNC)
         if (config.proxyOptions != null) PlayerJoinRegistry.register(ProxyTeleport(proxyJoinChannel), RunType.ASYNC)
         if (config.proxyOptions != null) PlayerJoinRegistry.register(PBEUpdateChecker(pbeVersionChannel), RunType.ASYNC)
+        if (config.cooldownOptions != null) PreCommandRegistry.register(Cooldown(config.cooldownOptions!!.duration))
         PlayerJoinRegistry.register(StaffCount::class, RunType.ASYNC)
 
         if (config.allowUnreadTicketUpdates) RepeatingTaskRegistry.register(UnreadNotify::class)
