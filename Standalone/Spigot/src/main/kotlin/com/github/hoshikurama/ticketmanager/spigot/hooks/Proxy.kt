@@ -1,4 +1,4 @@
-package com.github.hoshikurama.ticketmanager.paper.hooks
+package com.github.hoshikurama.ticketmanager.spigot.hooks
 
 import com.github.hoshikurama.ticketmanager.common.Proxy2Server
 import com.github.hoshikurama.ticketmanager.common.randServerIdentifier

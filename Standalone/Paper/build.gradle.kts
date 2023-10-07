@@ -22,10 +22,9 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:1.20-R0.1-SNAPSHOT")
     compileOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
     compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.0")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.1")
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.6.0")
     compileOnly("net.kyori:adventure-api:4.14.0")
     compileOnly("net.kyori:adventure-text-minimessage:4.14.0")
@@ -41,7 +40,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.google.guava:guava:32.1.2-jre")
     implementation("com.github.seratch:kotliquery:1.9.0")
-    implementation("com.h2database:h2:2.2.220")
+    implementation("com.h2database:h2:2.2.224")
     implementation("dev.jorel:commandapi-bukkit-core:9.2.0")
     implementation("dev.jorel:commandapi-bukkit-shade:9.2.0")
     implementation("dev.jorel:commandapi-bukkit-kotlin:9.2.0")
@@ -68,4 +67,4 @@ tasks {
         relocate("kotlin", "com.github.hoshikurama.ticketmanager.shaded.kotlin")
         relocate("kotlinx", "com.github.hoshikurama.ticketmanager.shaded.kotlinx")
     }
-} //TODO: Kotlinx was successfully removed, but Kotlin still exists
+}

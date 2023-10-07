@@ -18,15 +18,14 @@ import java.util.logging.Level
 class PlatformFunctionsImpl(
     private val plugin: Plugin,
     private val permissions: Permission,
-    private val config: Config,
+    config: Config,
 ) : PlatformFunctions {
     private val serverName = config.proxyOptions?.serverName
 
     override fun massNotify(permission: String, message: Component) {
         Bukkit.getConsoleSender().sendMessage(message)
 
-        Bukkit.getOnlinePlayers()
-            .map { PaperPlayer(it, serverName) }
+        getAllOnlinePlayers()
             .filter { permissions.has(it, permission) }
             .forEach { it.sendMessage(message) }
     }

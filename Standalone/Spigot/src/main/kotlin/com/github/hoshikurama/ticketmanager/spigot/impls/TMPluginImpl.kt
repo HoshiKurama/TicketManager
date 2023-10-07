@@ -1,4 +1,4 @@
-package com.github.hoshikurama.ticketmanager.paper.impls
+package com.github.hoshikurama.ticketmanager.spigot.impls
 
 import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.api.registry.config.Config
@@ -14,43 +14,42 @@ import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingChannel
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.PBEVersionChannel
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.ProxyJoinChannel
-import com.github.hoshikurama.ticketmanager.paper.CommandAPIRunner
-import com.github.hoshikurama.ticketmanager.paper.PaperPlugin
-import com.github.hoshikurama.ticketmanager.paper.hooks.JoinEventListener
-import com.github.hoshikurama.ticketmanager.paper.hooks.Proxy
+import com.github.hoshikurama.ticketmanager.spigot.CommandAPIRunner
+import com.github.hoshikurama.ticketmanager.spigot.SpigotPlugin
+import com.github.hoshikurama.ticketmanager.spigot.hooks.JoinEventListener
+import com.github.hoshikurama.ticketmanager.spigot.hooks.Proxy
 import com.github.hoshikurama.tmcore.ChanneledCounter
 import dev.jorel.commandapi.CommandAPI
+import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import org.bukkit.Bukkit
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.plugin.Plugin
 import java.util.function.Consumer
 
+
 class TMPluginImpl(
-    private val paperPlugin: PaperPlugin,
+    private val spigotPlugin: SpigotPlugin,
+    private val adventure: BukkitAudiences,
     pbeVersionChannel: PBEVersionChannel,
     proxyJoinChannel: ProxyJoinChannel,
     ticketCounter: ChanneledCounter,
     notificationSharingChannel: NotificationSharingChannel,
 ) : TMPlugin(
-    tmDirectory = paperPlugin.dataFolder.toPath(),
+    tmDirectory = spigotPlugin.dataFolder.toPath(),
     pbeVersionChannel = pbeVersionChannel,
     proxyJoinChannel = proxyJoinChannel,
     ticketCounter = ticketCounter,
     notificationSharingChannel = notificationSharingChannel,
     platformFunctionBuilder = { permissions, config ->
-        PlatformFunctionsImpl(paperPlugin, permissions, config)
+        PlatformFunctionsImpl(adventure, spigotPlugin, permissions, config)
     },
 ) {
-
-    init {
-        activeInstance = this
-    }
 
     override fun unregisterCommands(trueShutdown: Boolean) {
         val unregister = { CommandAPI.unregister(baseTicketCommand, true) }
 
         if (trueShutdown) unregister()
-        else paperPlugin.runTask(unregister)
+        else spigotPlugin.runTask(unregister)
     }
 
     override fun registerCommands(
@@ -62,7 +61,7 @@ class TMPluginImpl(
         preCommand: PreCommandExtensionHolder,
         commandTasks: CommandTasks
     ) {
-        paperPlugin.runTask {
+        spigotPlugin.runTask {
             CommandAPIRunner(
                 config = config,
                 locale = locale,
@@ -70,9 +69,20 @@ class TMPluginImpl(
                 commandTasks = commandTasks,
                 permissions = permission,
                 platform = platformFunctions,
-                preCommandExtensionHolder = preCommand
+                preCommandExtensionHolder = preCommand,
+                adventure = adventure,
             ).generateCommands()
         }
+    }
+
+    override fun unregisterProxyChannels(trueShutdown: Boolean) {
+        val unregister = {
+            spigotPlugin.server.messenger.unregisterIncomingPluginChannel(spigotPlugin)
+            spigotPlugin.server.messenger.unregisterOutgoingPluginChannel(spigotPlugin)
+        }
+
+        if (trueShutdown) unregister()
+        else spigotPlugin.runTask(unregister)
     }
 
     override fun registerProxyChannels(
@@ -80,28 +90,25 @@ class TMPluginImpl(
         pbeVersionChannel: PBEVersionChannel,
         notificationSharingChannel: NotificationSharingChannel
     ) {
-        paperPlugin.runTask {
+        spigotPlugin.runTask {
             val proxy = Proxy(notificationSharingChannel, pbeVersionChannel, proxyJoinChannel)
 
-            paperPlugin.server.messenger.run {
-                registerOutgoingPluginChannel(paperPlugin, Server2Proxy.NotificationSharing.waterfallString())
-                registerIncomingPluginChannel(paperPlugin, Proxy2Server.NotificationSharing.waterfallString(), proxy)
-                registerOutgoingPluginChannel(paperPlugin, Server2Proxy.Teleport.waterfallString())
-                registerIncomingPluginChannel(paperPlugin, Proxy2Server.Teleport.waterfallString(), proxy)
-                registerOutgoingPluginChannel(paperPlugin, Server2Proxy.ProxyVersionRequest.waterfallString())
-                registerIncomingPluginChannel(paperPlugin, Proxy2Server.ProxyVersionRequest.waterfallString(), proxy)
+            spigotPlugin.server.messenger.run {
+                registerOutgoingPluginChannel(spigotPlugin, Server2Proxy.NotificationSharing.waterfallString())
+                registerIncomingPluginChannel(spigotPlugin, Proxy2Server.NotificationSharing.waterfallString(), proxy)
+                registerOutgoingPluginChannel(spigotPlugin, Server2Proxy.Teleport.waterfallString())
+                registerIncomingPluginChannel(spigotPlugin, Proxy2Server.Teleport.waterfallString(), proxy)
+                registerOutgoingPluginChannel(spigotPlugin, Server2Proxy.ProxyVersionRequest.waterfallString())
+                registerIncomingPluginChannel(spigotPlugin, Proxy2Server.ProxyVersionRequest.waterfallString(), proxy)
             }
         }
     }
 
-    override fun unregisterProxyChannels(trueShutdown: Boolean) {
-        val unregister = {
-            paperPlugin.server.messenger.unregisterIncomingPluginChannel(paperPlugin)
-            paperPlugin.server.messenger.unregisterOutgoingPluginChannel(paperPlugin)
-        }
+    override fun unregisterPlayerJoinEvent(trueShutdown: Boolean) {
+        val unregister = { PlayerJoinEvent.getHandlerList().unregister(spigotPlugin) }
 
         if (trueShutdown) unregister()
-        else paperPlugin.runTask(unregister)
+        else spigotPlugin.runTask(unregister)
     }
 
     override fun registerPlayerJoinEvent(
@@ -112,18 +119,11 @@ class TMPluginImpl(
         platformFunctions: PlatformFunctions,
         extensions: PlayerJoinExtensionHolder
     ) {
-        val joinEventHook = JoinEventListener(config, locale, permission, database, platformFunctions, extensions)
+        val joinEventHook = JoinEventListener(config, locale, permission, database, platformFunctions, extensions, adventure)
 
-        paperPlugin.runTask {
-            paperPlugin.server.pluginManager.registerEvents(joinEventHook, paperPlugin)
+        spigotPlugin.runTask {
+            spigotPlugin.server.pluginManager.registerEvents(joinEventHook, spigotPlugin)
         }
-    }
-
-    override fun unregisterPlayerJoinEvent(trueShutdown: Boolean) {
-        val unregister = { PlayerJoinEvent.getHandlerList().unregister(paperPlugin) }
-
-        if (trueShutdown) unregister()
-        else paperPlugin.runTask(unregister)
     }
 }
 
