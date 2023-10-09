@@ -19,8 +19,6 @@ class Proxy(
 ): PluginMessageListener {
 
     override fun onPluginMessageReceived(channel: String, player: Player, message: ByteArray) {
-
-
         when (channel) {
             Proxy2Server.NotificationSharing.name -> {
                 val shouldSendMessage = ByteStreams.newDataInput(message)

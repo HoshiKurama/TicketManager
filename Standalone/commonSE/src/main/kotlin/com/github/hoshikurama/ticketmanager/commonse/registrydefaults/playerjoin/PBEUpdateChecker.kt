@@ -11,7 +11,6 @@ import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.templated
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.PBEVersionChannel
-import kotlinx.coroutines.runBlocking
 import java.net.URL
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.TimeSource
@@ -19,7 +18,7 @@ import kotlin.time.TimeSource
 class PBEUpdateChecker(private val pbeVersionChannel: PBEVersionChannel) : PlayerJoinExtension {
     @Volatile var latestVersion = grabLatestVersion()
     @Volatile var lastCheck = TimeSource.Monotonic.markNow()
-    @Volatile var doesUpdateExist = runBlocking { doesNewUpdateExist() }
+    @Volatile var doesUpdateExist: Boolean? = null
 
 
     override suspend fun whenPlayerJoins(
@@ -36,11 +35,11 @@ class PBEUpdateChecker(private val pbeVersionChannel: PBEVersionChannel) : Playe
         val curTime = TimeSource.Monotonic.markNow()
         if (curTime - lastCheck > 1.hours) {
             latestVersion = grabLatestVersion()
-            doesUpdateExist = doesNewUpdateExist()
+            doesUpdateExist = doesNewUpdateExist(config.proxyOptions?.serverName ?: "NULL")
             lastCheck = curTime
         }
 
-        if (!doesUpdateExist) return
+        if (doesUpdateExist != null && !doesUpdateExist!!) return
         locale.notifyProxyUpdate.parseMiniMessage(
             "current" templated mainPluginVersion,
             "latest" templated latestVersion,
@@ -61,8 +60,8 @@ class PBEUpdateChecker(private val pbeVersionChannel: PBEVersionChannel) : Playe
             .replace("\"","")
     }
 
-    private suspend fun doesNewUpdateExist(): Boolean {
-        val currentVersion = pbeVersionChannel.request(Unit)
+    private suspend fun doesNewUpdateExist(serverName: String): Boolean {
+        val currentVersion = pbeVersionChannel.request(serverName)
         if (latestVersion == currentVersion)
             return false
 

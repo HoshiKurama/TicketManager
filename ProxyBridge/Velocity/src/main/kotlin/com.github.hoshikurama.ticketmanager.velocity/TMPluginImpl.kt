@@ -82,12 +82,13 @@ class TMPluginImpl @Inject constructor(
             }
 
             serverToProxyUpdate -> {
-                val serverName = ProxyUpdate.decodeProxyMsg(event.data)
+                val serverName = ByteStreams.newDataInput(event.data).readUTF()
                 val targetServer = server.allServers.firstOrNull { it.serverInfo.name == serverName }
-                val latestVer = updateChecker.get().latestVersionIfNotLatest
 
-                if (targetServer != null && latestVer != null) {
-                    val msg = ProxyUpdate.encodeServerMsg(bridgePluginVersion, latestVer)
+                if (targetServer != null) {
+                    val msg = ByteStreams.newDataOutput()
+                        .apply { writeUTF(bridgePluginVersion) }
+                        .toByteArray()
                     targetServer.sendPluginMessage(proxyToServerUpdate, msg)
                 }
             }
