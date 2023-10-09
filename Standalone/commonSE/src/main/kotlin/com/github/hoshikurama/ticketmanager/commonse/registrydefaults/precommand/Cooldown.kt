@@ -6,6 +6,7 @@ import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
 import com.github.hoshikurama.ticketmanager.api.registry.precommand.PreCommandExtension
 import com.github.hoshikurama.ticketmanager.api.registry.precommand.PreCommandExtension.SyncDecider.Decision
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
+import com.github.hoshikurama.ticketmanager.commonse.misc.templated
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration
@@ -34,7 +35,7 @@ class Cooldown(private val cooldownDuration: Duration) : PreCommandExtension.Syn
         }
 
         locale.informationUnderCooldown
-            .parseMiniMessage()
+            .parseMiniMessage("duration" templated (cooldownDuration - elapsed).inWholeSeconds.toString())
             .run(player::sendMessage)
         return Decision.BLOCK
     }

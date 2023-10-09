@@ -184,6 +184,7 @@
   Info_Reload_TasksDone: '%TMHeader% All other tasks complete! Reloading now...'
   Info_ReloadSuccess: '%TMHeader% <%CC%>Reload <green>successful<%CC%>!'
   Info_ReloadFailure: '%TMHeader% <%CC%>Reload <red>failure<%CC%>!'
+  Info_UnderCooldown: '%TMHeader% <red>You are still under cooldown for <duration> more seconds.' # Templates: <duration>
   #
   # Ticket Notifications (Accepts Formatting):
   Notify_UnreadUpdate_Single: '%TMHeader% Ticket <gray><num> <%CC%>has an update! Type <gray>/ticket view <num> <%CC%>to clear notification.'                          # Templates <num>
