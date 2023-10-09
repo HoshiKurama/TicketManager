@@ -2,7 +2,7 @@ package com.github.hoshikurama.ticketmanager.commonse.commands
 
 import com.github.hoshikurama.ticketmanager.api.CommandSender
 import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.api.event.events.AsyncTicketModify
+import com.github.hoshikurama.ticketmanager.api.event.events.*
 import com.github.hoshikurama.ticketmanager.api.registry.config.Config
 import com.github.hoshikurama.ticketmanager.api.registry.database.types.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.registry.database.utils.DBResult
@@ -74,8 +74,7 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).CloseWithComment(comment)
 
-        // Runs async internally
-        TMEventBus.call(AsyncTicketModify(sender, ticket.creator, ticket.id, action, silent))
+        TMEventBus.callAsync(TicketCloseWithCommentEvent(sender, ticket.creator, silent, ticket.id, action))
 
         // Run all database calls and event
         TMCoroutine.Supervised.launch {
@@ -108,8 +107,7 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).CloseWithoutComment()
 
-        // Runs async internally
-        TMEventBus.call(AsyncTicketModify(sender, ticket.creator, ticket.id, action, silent))
+        TMEventBus.callAsync(TicketCloseWithoutCommentEvent(sender, ticket.creator, silent, ticket.id, action))
 
         // Run all database calls and event
         TMCoroutine.Supervised.launch {
@@ -142,8 +140,7 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).MassClose()
 
-        // Runs async internally
-        TMEventBus.call(AsyncTicketModify(sender, Creator.DummyCreator, -1, action, silent))
+        TMEventBus.callAsync(TicketMassCloseEvent(sender, silent, lowerBound, upperBound, action))
 
         TMCoroutine.Supervised.launch {
             database.massCloseTicketsAsync(lowerBound, upperBound, sender.asCreator(), sender.getLocAsTicketLoc())
@@ -167,8 +164,7 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Comment(comment)
 
-        // Runs async internally
-        TMEventBus.call(AsyncTicketModify(sender, ticket.creator, ticket.id, action, silent))
+        TMEventBus.callAsync(TicketCommentEvent(sender, ticket.creator, silent, ticket.id, action))
 
         // Database Stuff + Event
         TMCoroutine.Supervised.launch {
@@ -211,8 +207,7 @@ class CommandTasks(
         val id = database.insertNewTicketAsync(initTicket)
         ticketCounter.increment()
 
-        // Runs async internally
-        TMEventBus.call(AsyncTicketModify(sender, initTicket.creator, id, initTicket.actions[0], false))
+        TMEventBus.callAsync(TicketCreateEvent(sender, initTicket.creator, false, id, initTicket.actions[0] as ActionInfo.Open))
 
         return MessageNotification.Create.newActive(
             isSilent = false,
@@ -469,8 +464,7 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Reopen()
 
-        // Runs async internally
-        TMEventBus.call(AsyncTicketModify(sender, ticket.creator, ticket.id, action, silent))
+        TMEventBus.callAsync(TicketReopenEvent(sender, ticket.creator, silent, ticket.id, action))
 
         // Write to database
         TMCoroutine.Supervised.launch {
@@ -624,8 +618,7 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
         val action = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).SetPriority(priority)
 
-        // Runs async internally
-        TMEventBus.call(AsyncTicketModify(sender, ticket.creator, ticket.id, action, silent))
+        TMEventBus.callAsync(TicketSetPriorityEvent(sender, ticket.creator, silent, ticket.id, action))
 
         // Database calls
         TMCoroutine.Supervised.launch {
@@ -794,8 +787,7 @@ class CommandTasks(
     ): MessageNotification<CommandSender.Active> {
         val insertedAction = ActionInfo(sender.asCreator(), sender.getLocAsTicketLoc()).Assign(assignment)
 
-        // Runs async internally
-        TMEventBus.call(AsyncTicketModify(sender, creator, ticketID, insertedAction, silent))
+        TMEventBus.callAsync(TicketAssignEvent(sender, creator, silent, ticketID, insertedAction))
 
         // Writes to database
         TMCoroutine.Supervised.launch {
