@@ -114,12 +114,13 @@ class WaterfallBridge : Plugin(), Listener {
             }
 
             Server2Proxy.ProxyVersionRequest.waterfallString() -> {
-                val serverName = ProxyUpdate.decodeProxyMsg(event.data)
+                val serverName = ByteStreams.newDataInput(event.data).readUTF()
                 val targetServer = proxy.serversCopy[serverName]
-                val latestVer = adapter.updateChecker.get().latestVersionIfNotLatest
 
-                if (targetServer != null && latestVer != null) {
-                    val msg = ProxyUpdate.encodeServerMsg(bridgePluginVersion, latestVer)
+                if (targetServer != null) {
+                    val msg = ByteStreams.newDataOutput()
+                        .apply { writeUTF(bridgePluginVersion) }
+                        .toByteArray()
                     targetServer.sendData(Proxy2Server.ProxyVersionRequest.waterfallString(), msg)
                 }
             }

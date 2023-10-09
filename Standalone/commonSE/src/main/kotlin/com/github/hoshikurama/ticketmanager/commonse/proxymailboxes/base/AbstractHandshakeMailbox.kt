@@ -22,5 +22,3 @@ abstract class AbstractHandshakeMailbox<Input, Output> : HandshakeMailbox<Input,
     protected abstract fun decodeOutput(outputArray: ByteArray): Output
     protected abstract fun relayToProxy(inputArray: ByteArray)
 }
-
-//TODO ABSTRACT BEHIND INTERFACE SYSTEM (inject holder of mailboxes into TMPlugin. Each platform will implement and pass in an object.
