@@ -184,6 +184,7 @@ Info_ReloadInitiated: '%TMHeader% <#F3F3F3><user> <%CC%>hat ein neuladen des Plu
 Info_Reload_TasksDone: '%TMHeader% Alle Aufgaben abgeschlossen! Wird neu geladen...'
 Info_ReloadSuccess: '%TMHeader% <green>Erfolgreich <%CC%>neu geladen!'
 Info_ReloadFailure: '%TMHeader% Neuladen <red>fehlgeschlagen<%CC%>!'
+Info_UnderCooldown: '%TMHeader% <red>Der genutzte Befehl hat noch <duration> Sekunden Abklingzeit.' # Templates: <duration>
 #
 # Ticket Notifications (Accepts Formatting):
 Notify_UnreadUpdate_Single: '%TMHeader% Ticket <gray><num> <%CC%>hat ein Update! Nutze <gray>/ticket view <num> <%CC%>um die Benachrichtigungen zu löschen.'                          # Templates <num>

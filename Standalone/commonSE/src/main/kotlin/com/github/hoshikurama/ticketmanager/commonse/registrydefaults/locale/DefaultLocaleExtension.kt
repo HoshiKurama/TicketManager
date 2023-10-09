@@ -276,6 +276,7 @@ class DefaultLocaleExtension : LocaleExtension {
             informationReloadSuccess = readAndPrime("Info_ReloadSuccess")!!,
             informationReloadTasksDone = readAndPrime("Info_Reload_TasksDone")!!,
             informationReloadFailure = readAndPrime("Info_ReloadFailure")!!,
+            informationUnderCooldown = readAndPrime("Info_UnderCooldown")!!,
             notifyUnreadUpdateSingle = readAndPrime("Notify_UnreadUpdate_Single")!!,
             notifyUnreadUpdateMulti = readAndPrime("Notify_UnreadUpdate_Multi")!!,
             notifyOpenAssigned = readAndPrime("Notify_OpenAssigned")!!,
@@ -316,6 +317,7 @@ class DefaultLocaleExtension : LocaleExtension {
             brigadierInvalidAssignment = readAndPrime("Brigadier_InvalidAssignment")!!,
             brigadierInvalidTimeUnit = readAndPrime("Brigadier_InvalidTimeUnit")!!,
             brigadierInvalidPriority = readAndPrime("Brigadier_InvalidPriority")!!,
+
         )
     }
 
@@ -524,6 +526,7 @@ class DefaultLocaleExtension : LocaleExtension {
             informationReloadSuccess = readAndPrime("Info_ReloadSuccess") ?: internalVersion.informationReloadSuccess,
             informationReloadTasksDone = readAndPrime("Info_Reload_TasksDone") ?: internalVersion.informationReloadTasksDone,
             informationReloadFailure = readAndPrime("Info_ReloadFailure") ?: internalVersion.informationReloadFailure,
+            informationUnderCooldown = readAndPrime("Info_UnderCooldown") ?: internalVersion.informationUnderCooldown,
             notifyUnreadUpdateSingle = readAndPrime("Notify_UnreadUpdate_Single") ?: internalVersion.notifyUnreadUpdateSingle,
             notifyUnreadUpdateMulti = readAndPrime("Notify_UnreadUpdate_Multi") ?: internalVersion.notifyUnreadUpdateMulti,
             notifyOpenAssigned = readAndPrime("Notify_OpenAssigned") ?: internalVersion.notifyOpenAssigned,

@@ -100,6 +100,7 @@ class TMLocale(
     override val informationReloadInitiated: String,
     override val informationReloadSuccess: String,
     override val informationReloadTasksDone: String,
+    override val informationUnderCooldown: String,
     override val listAssignedHeader: String,
     override val listEntry: String,
     override val listFormattingSize: Int,
