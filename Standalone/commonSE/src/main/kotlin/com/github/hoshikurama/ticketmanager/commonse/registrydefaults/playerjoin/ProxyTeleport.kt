@@ -9,7 +9,7 @@ import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
 import com.github.hoshikurama.ticketmanager.api.registry.playerjoin.PlayerJoinExtension
 import com.github.hoshikurama.ticketmanager.api.ticket.ActionLocation
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.ProxyJoinChannel
-import com.github.hoshikurama.tmcore.TMCoroutine
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import kotlinx.coroutines.delay
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap

@@ -7,7 +7,7 @@ import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
 import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
 import com.github.hoshikurama.ticketmanager.commonse.PlayerJoinExtensionHolder
 import com.github.hoshikurama.ticketmanager.paper.impls.PaperPlayer
-import com.github.hoshikurama.tmcore.TMCoroutine
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent

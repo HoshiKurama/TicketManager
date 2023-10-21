@@ -25,7 +25,7 @@ dependencies {
     compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.0")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.1")
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.6.0")
     compileOnly(files( // TODO THIS IS TEMPORARY FOR TESTING
         "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMSE-API/build/libs/TMSE-API-1.0-SNAPSHOT-sources.jar",

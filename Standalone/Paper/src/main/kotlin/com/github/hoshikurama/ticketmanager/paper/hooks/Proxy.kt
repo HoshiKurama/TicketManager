@@ -6,7 +6,7 @@ import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.Notification
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.PBEVersionChannel
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.ProxyJoinChannel
 import com.github.hoshikurama.ticketmanager.commonse.utilities.notEquals
-import com.github.hoshikurama.tmcore.TMCoroutine
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import com.google.common.io.ByteStreams
 import org.bukkit.entity.Player
 import org.bukkit.plugin.messaging.PluginMessageListener

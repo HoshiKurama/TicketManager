@@ -7,7 +7,7 @@ import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
 import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
 import com.github.hoshikurama.ticketmanager.commonse.PlayerJoinExtensionHolder
 import com.github.hoshikurama.ticketmanager.spigot.impls.SpigotPlayer
-import com.github.hoshikurama.tmcore.TMCoroutine
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener

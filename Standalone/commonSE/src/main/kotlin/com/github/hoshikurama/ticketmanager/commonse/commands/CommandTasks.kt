@@ -3,6 +3,7 @@ package com.github.hoshikurama.ticketmanager.commonse.commands
 import com.github.hoshikurama.ticketmanager.api.CommandSender
 import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.api.event.events.*
+import com.github.hoshikurama.ticketmanager.api.impl.TMEventBus
 import com.github.hoshikurama.ticketmanager.api.registry.config.Config
 import com.github.hoshikurama.ticketmanager.api.registry.database.types.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.registry.database.utils.DBResult
@@ -18,9 +19,8 @@ import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.buil
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.onHover
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingChannel
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.ProxyJoinChannel
-import com.github.hoshikurama.tmcore.ChanneledCounter
-import com.github.hoshikurama.tmcore.TMCoroutine
-import com.github.hoshikurama.tmcore.events.TMEventBus
+import com.github.hoshikurama.tmcoroutine.ChanneledCounter
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import net.kyori.adventure.text.Component

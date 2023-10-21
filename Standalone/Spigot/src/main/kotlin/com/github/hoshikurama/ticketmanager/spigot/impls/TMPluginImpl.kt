@@ -18,14 +18,13 @@ import com.github.hoshikurama.ticketmanager.spigot.CommandAPIRunner
 import com.github.hoshikurama.ticketmanager.spigot.SpigotPlugin
 import com.github.hoshikurama.ticketmanager.spigot.hooks.JoinEventListener
 import com.github.hoshikurama.ticketmanager.spigot.hooks.Proxy
-import com.github.hoshikurama.tmcore.ChanneledCounter
+import com.github.hoshikurama.tmcoroutine.ChanneledCounter
 import dev.jorel.commandapi.CommandAPI
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import org.bukkit.Bukkit
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.plugin.Plugin
 import java.util.function.Consumer
-
 
 class TMPluginImpl(
     private val spigotPlugin: SpigotPlugin,
