@@ -20,7 +20,7 @@ import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.templated
 import com.github.hoshikurama.ticketmanager.spigot.impls.SpigotConsole
 import com.github.hoshikurama.ticketmanager.spigot.impls.SpigotPlayer
-import com.github.hoshikurama.tmcore.TMCoroutine
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import dev.jorel.commandapi.CommandAPICommand
 import dev.jorel.commandapi.SuggestionInfo
 import dev.jorel.commandapi.arguments.*

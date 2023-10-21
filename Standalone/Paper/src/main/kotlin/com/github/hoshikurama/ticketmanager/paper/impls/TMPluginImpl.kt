@@ -18,7 +18,7 @@ import com.github.hoshikurama.ticketmanager.paper.CommandAPIRunner
 import com.github.hoshikurama.ticketmanager.paper.PaperPlugin
 import com.github.hoshikurama.ticketmanager.paper.hooks.JoinEventListener
 import com.github.hoshikurama.ticketmanager.paper.hooks.Proxy
-import com.github.hoshikurama.tmcore.ChanneledCounter
+import com.github.hoshikurama.tmcoroutine.ChanneledCounter
 import dev.jorel.commandapi.CommandAPI
 import org.bukkit.Bukkit
 import org.bukkit.event.player.PlayerJoinEvent

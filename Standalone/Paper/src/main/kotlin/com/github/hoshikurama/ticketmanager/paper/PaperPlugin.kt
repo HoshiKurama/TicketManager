@@ -5,8 +5,8 @@ import com.github.hoshikurama.ticketmanager.paper.impls.TMPluginImpl
 import com.github.hoshikurama.ticketmanager.paper.impls.proxy.NotificationSharingChannelImpl
 import com.github.hoshikurama.ticketmanager.paper.impls.proxy.PBEVersionChannelImpl
 import com.github.hoshikurama.ticketmanager.paper.impls.proxy.ProxyJoinChannelImpl
-import com.github.hoshikurama.tmcore.ChanneledCounter
-import com.github.hoshikurama.tmcore.TMCoroutine
+import com.github.hoshikurama.tmcoroutine.ChanneledCounter
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPIBukkitConfig
 import kotlinx.coroutines.runBlocking

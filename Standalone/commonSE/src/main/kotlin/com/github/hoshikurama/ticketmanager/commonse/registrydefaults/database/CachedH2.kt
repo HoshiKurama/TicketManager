@@ -8,7 +8,7 @@ import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.utilities.asParallelStream
 import com.github.hoshikurama.ticketmanager.commonse.utilities.mapNotNull
 import com.github.hoshikurama.ticketmanager.commonse.utilities.notEquals
-import com.github.hoshikurama.tmcore.TMCoroutine
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import kotlinx.coroutines.runBlocking
 import kotliquery.*
 import org.h2.jdbcx.JdbcConnectionPool

@@ -40,7 +40,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.google.guava:guava:32.1.2-jre")
     implementation("com.github.seratch:kotliquery:1.9.0")
-    implementation("com.h2database:h2:2.2.224")
+    implementation("com.h2database:h2:2.2.220")
     implementation("dev.jorel:commandapi-bukkit-core:9.2.0")
     implementation("dev.jorel:commandapi-bukkit-shade:9.2.0")
     implementation("dev.jorel:commandapi-bukkit-kotlin:9.2.0")

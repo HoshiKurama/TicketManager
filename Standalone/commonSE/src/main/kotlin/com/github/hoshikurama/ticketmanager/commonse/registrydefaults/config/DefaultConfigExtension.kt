@@ -2,7 +2,7 @@ package com.github.hoshikurama.ticketmanager.commonse.registrydefaults.config
 
 import com.github.hoshikurama.ticketmanager.api.registry.config.Config
 import com.github.hoshikurama.ticketmanager.api.registry.config.ConfigExtension
-import com.github.hoshikurama.tmcore.TMCoroutine
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.nio.file.Path
