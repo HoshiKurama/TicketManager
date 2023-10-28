@@ -1,9 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
 import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.api.impl.TMEventBus
 import com.github.hoshikurama.ticketmanager.api.impl.TicketManager
-import com.github.hoshikurama.ticketmanager.api.impl.registry.*
 import com.github.hoshikurama.ticketmanager.api.registry.config.Config
 import com.github.hoshikurama.ticketmanager.api.registry.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
@@ -149,7 +147,11 @@ abstract class TMPlugin(
     suspend fun disableTicketManager(trueShutdown: Boolean) {
         unregisterCommands(trueShutdown)
         unregisterPlayerJoinEvent(trueShutdown)
-        (TicketManager.EventBus as TMEventBus).clear()
+        TicketManager.EventBus.internal.run {
+            listOf(ticketCreate, ticketAssign, ticketReopen, ticketComment, ticketMassClose,
+                ticketSetPriority, ticketCloseWithComment, ticketCloseWithoutComment
+            ).forEach { it.clear() }
+        }
 
         repeatingTasks.forEach(Job::cancel)
         repeatingTasks.clear()
