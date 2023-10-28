@@ -27,15 +27,9 @@ dependencies {
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     compileOnly("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.1")
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.6.0")
-    compileOnly(files( // TODO THIS IS TEMPORARY FOR TESTING
-        "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMSE-API/build/libs/TMSE-API-1.0-SNAPSHOT-sources.jar",
-        "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMSE-API/build/libs/TMSE-API-1.0-SNAPSHOT.jar",
-        "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMCore/build/libs/TMCore-1.0-SNAPSHOT.jar",
-        "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMCore/build/libs/TMCore-1.0-SNAPSHOT-sources.jar",
-    ))
+    compileOnly("com.github.HoshiKurama.TicketManager_API:Common:11.0.0-RC2")
+    compileOnly("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.0.0-RC2")
 
-    //implementation("com.github.HoshiKurama.TicketManager_API:Paper:10.0.0")
-    //implementation("com.github.HoshiKurama.TicketManager_API:Common:10.0.0")
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("com.h2database:h2:2.2.220")
     implementation("dev.jorel:commandapi-bukkit-core:9.2.0")
