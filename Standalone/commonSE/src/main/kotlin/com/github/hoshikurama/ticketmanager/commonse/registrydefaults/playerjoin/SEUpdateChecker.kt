@@ -3,7 +3,7 @@ package com.github.hoshikurama.ticketmanager.commonse.registrydefaults.playerjoi
 import com.github.hoshikurama.ticketmanager.api.CommandSender
 import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.api.registry.config.Config
-import com.github.hoshikurama.ticketmanager.api.registry.database.types.AsyncDatabase
+import com.github.hoshikurama.ticketmanager.api.registry.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
 import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
 import com.github.hoshikurama.ticketmanager.api.registry.playerjoin.PlayerJoinExtension

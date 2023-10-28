@@ -3,7 +3,7 @@ package com.github.hoshikurama.ticketmanager.paper
 import com.github.hoshikurama.ticketmanager.api.CommandSender
 import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.api.registry.config.Config
-import com.github.hoshikurama.ticketmanager.api.registry.database.types.AsyncDatabase
+import com.github.hoshikurama.ticketmanager.api.registry.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.registry.database.utils.Option
 import com.github.hoshikurama.ticketmanager.api.registry.database.utils.SearchConstraints
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale

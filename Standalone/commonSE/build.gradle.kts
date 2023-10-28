@@ -11,13 +11,8 @@ repositories {
 dependencies {
 
     compileOnly(project(":common"))
-    compileOnly(files( // TODO THIS IS TEMPORARY FOR TESTING
-        "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMSE-API/build/libs/TMSE-API-1.0-SNAPSHOT-sources.jar",
-        "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMSE-API/build/libs/TMSE-API-1.0-SNAPSHOT.jar",
-        "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMCore/build/libs/TMCore-1.0-SNAPSHOT.jar",
-        "/Users/rankinreynolds/IdeaProjects/TM11_Experimental_API/TMCore/build/libs/TMCore-1.0-SNAPSHOT-sources.jar",
-        )
-    )
+    compileOnly("com.github.HoshiKurama.TicketManager_API:Common:11.0.0-RC1")
+    compileOnly("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.0.0-RC1")
     // Not included but shaded later
     compileOnly("com.github.seratch:kotliquery:1.9.0")
     compileOnly("net.kyori:adventure-text-minimessage:4.14.0")
@@ -37,3 +32,5 @@ dependencies {
     compileOnly("com.google.guava:guava:32.1.2-jre")
     compileOnly( "com.h2database:h2:2.2.220")
 }
+
+// TODO: WHEN JAVA IMPL HITS core, make it runtimeOnly in gradle
