@@ -1,9 +1,11 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
 import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
+import com.github.hoshikurama.ticketmanager.api.impl.TMEventBus
+import com.github.hoshikurama.ticketmanager.api.impl.TicketManager
 import com.github.hoshikurama.ticketmanager.api.impl.registry.*
 import com.github.hoshikurama.ticketmanager.api.registry.config.Config
-import com.github.hoshikurama.ticketmanager.api.registry.database.types.AsyncDatabase
+import com.github.hoshikurama.ticketmanager.api.registry.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
 import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
 import com.github.hoshikurama.ticketmanager.api.registry.playerjoin.PlayerJoinRegistry.RunType
@@ -70,40 +72,40 @@ abstract class TMPlugin(
 
     suspend fun enableTicketManager() {
         // Register any missing core extensions
-        TicketManagerPermissionRegistry.register(LuckPerms::class).run(::println)
-        TicketManagerConfigRegistry.register(DefaultConfigExtension::class)
-        TicketManagerLocaleRegistry.register(DefaultLocaleExtension::class)
-        TicketManagerDatabaseRegistry.register(DefaultDatabaseExtension::class)
+        TicketManager.PermissionRegistry.register(LuckPerms::class).run(::println)
+        TicketManager.ConfigRegistry.register(DefaultConfigExtension::class)
+        TicketManager.LocaleRegistry.register(DefaultLocaleExtension::class)
+        TicketManager.DatabaseRegistry.register(DefaultDatabaseExtension::class)
 
         // Load core extensions via dependency injection
-        val permission = TicketManagerPermissionRegistry.load()
-        val config = TicketManagerConfigRegistry.load(tmDirectory)
-        val locale = TicketManagerLocaleRegistry.load(tmDirectory, config)
-        val database = TicketManagerDatabaseRegistry.loadAndInitialize(tmDirectory, config, locale)
+        val permission = TicketManager.PermissionRegistry.load()
+        val config = TicketManager.ConfigRegistry.load(tmDirectory)
+        val locale = TicketManager.LocaleRegistry.load(tmDirectory, config)
+        val database = TicketManager.DatabaseRegistry.loadAndInitialize(tmDirectory, config, locale)
         val platform = platformFunctionBuilder.build(permission, config)
         val commandTasks = CommandTasks(config, locale, database, platform, permission, ticketCounter, notificationSharingChannel, proxyJoinChannel)
 
         // Register auxiliary extensions
-        if (config.checkForPluginUpdates) TicketManagerPlayerJoinRegistry.register(SEUpdateChecker::class, RunType.ASYNC)
-        if (config.allowUnreadTicketUpdates) TicketManagerPlayerJoinRegistry.register(UnreadUpdates::class, RunType.ASYNC)
-        if (config.proxyOptions != null) TicketManagerPlayerJoinRegistry.register(ProxyTeleport(proxyJoinChannel), RunType.ASYNC)
-        if (config.proxyOptions != null) TicketManagerPlayerJoinRegistry.register(PBEUpdateChecker(pbeVersionChannel), RunType.ASYNC)
-        if (config.cooldownOptions != null) TicketManagerPreCommandRegistry.register(Cooldown(config.cooldownOptions!!.duration))
-        TicketManagerPlayerJoinRegistry.register(StaffCount::class, RunType.ASYNC)
+        if (config.checkForPluginUpdates) TicketManager.PlayerJoinRegistry.register(SEUpdateChecker::class, RunType.ASYNC)
+        if (config.allowUnreadTicketUpdates) TicketManager.PlayerJoinRegistry.register(UnreadUpdates::class, RunType.ASYNC)
+        if (config.proxyOptions != null) TicketManager.PlayerJoinRegistry.register(ProxyTeleport(proxyJoinChannel), RunType.ASYNC)
+        if (config.proxyOptions != null) TicketManager.PlayerJoinRegistry.register(PBEUpdateChecker(pbeVersionChannel), RunType.ASYNC)
+        if (config.cooldownOptions != null) TicketManager.PreCommandRegistry.register(Cooldown(config.cooldownOptions!!.duration))
+        TicketManager.PlayerJoinRegistry.register(StaffCount::class, RunType.ASYNC)
 
-        if (config.allowUnreadTicketUpdates) TicketManagerRepeatingTaskRegistry.register(UnreadNotify::class)
-        TicketManagerRepeatingTaskRegistry.register(RepeatingStaffCount::class)
+        if (config.allowUnreadTicketUpdates) TicketManager.RepeatingTaskRegistry.register(UnreadNotify::class)
+        TicketManager.RepeatingTaskRegistry.register(RepeatingStaffCount::class)
 
 
         // Load auxiliary extensions
         val playerJoinExtensions = PlayerJoinExtensionHolder(
-            syncExtensions = TicketManagerPlayerJoinRegistry.getSyncExtensions(),
-            asyncExtensions = TicketManagerPlayerJoinRegistry.getAsyncExtensions()
+            syncExtensions = TicketManager.PlayerJoinRegistry.getSyncExtensions(),
+            asyncExtensions = TicketManager.PlayerJoinRegistry.getAsyncExtensions()
         )
         val preCommandExtensions = PreCommandExtensionHolder(
-            deciders = TicketManagerPreCommandRegistry.getDeciders(),
-            syncAfters = TicketManagerPreCommandRegistry.getSyncAfters(),
-            asyncAfters = TicketManagerPreCommandRegistry.getAsyncAfters()
+            deciders = TicketManager.PreCommandRegistry.getDeciders(),
+            syncAfters = TicketManager.PreCommandRegistry.getSyncAfters(),
+            asyncAfters = TicketManager.PreCommandRegistry.getAsyncAfters()
         )
 
         // Finish external plugin registration
@@ -131,7 +133,7 @@ abstract class TMPlugin(
         )
 
         // Launch repeating tasks
-        TicketManagerRepeatingTaskRegistry.getExtensions().map {
+        TicketManager.RepeatingTaskRegistry.getExtensions().map {
             TMCoroutine.Supervised.launch {
                 while (true) {
                     delay(it.frequency)
@@ -147,6 +149,7 @@ abstract class TMPlugin(
     suspend fun disableTicketManager(trueShutdown: Boolean) {
         unregisterCommands(trueShutdown)
         unregisterPlayerJoinEvent(trueShutdown)
+        (TicketManager.EventBus as TMEventBus).clear()
 
         repeatingTasks.forEach(Job::cancel)
         repeatingTasks.clear()
