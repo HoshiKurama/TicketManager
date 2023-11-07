@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse
 
 import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.api.impl.TicketManager
+import com.github.hoshikurama.ticketmanager.api.impl.registry.*
 import com.github.hoshikurama.ticketmanager.api.registry.config.Config
 import com.github.hoshikurama.ticketmanager.api.registry.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
@@ -24,6 +24,8 @@ import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import java.nio.file.Path
+
+import com.github.hoshikurama.ticketmanager.api.impl.TicketManager as TicketManagerInternal
 
 abstract class TMPlugin(
     private val tmDirectory: Path,
@@ -161,4 +163,16 @@ abstract class TMPlugin(
         databaseClosing.closeDatabase()
         unregisterProxyChannels(trueShutdown)
     }
+}
+
+// Note: This lets me use "TicketManager" the internal way
+private object TicketManager {
+    val ConfigRegistry = TicketManagerInternal.ConfigRegistry as TMConfigRegistry
+    val DatabaseRegistry = TicketManagerInternal.DatabaseRegistry as TMDatabaseRegistry
+    val LocaleRegistry = TicketManagerInternal.LocaleRegistry as TMLocaleRegistry
+    val PermissionRegistry = TicketManagerInternal.PermissionRegistry as TMPermissionRegistry
+    val PlayerJoinRegistry = TicketManagerInternal.PlayerJoinRegistry as TMPlayerJoinRegistry
+    val PreCommandRegistry = TicketManagerInternal.PreCommandRegistry as TMPreCommandRegistry
+    val RepeatingTaskRegistry = TicketManagerInternal.RepeatingTaskRegistry as TMRepeatingTaskRegistry
+    val EventBus = TicketManagerInternal.EventBus
 }

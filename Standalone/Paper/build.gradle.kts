@@ -29,8 +29,8 @@ dependencies {
     compileOnly("net.kyori:adventure-api:4.14.0")
     compileOnly("net.kyori:adventure-text-minimessage:4.14.0")
     compileOnly("com.mojang:brigadier:1.0.500")
-    compileOnly("com.github.HoshiKurama.TicketManager_API:Common:11.0.0-RC2")
-    compileOnly("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.0.0-RC2")
+    compileOnly("com.github.HoshiKurama.TicketManager_API:Common:11.0.0-RC7")
+    compileOnly("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.0.0-RC7")
 
     implementation("org.yaml:snakeyaml:2.2")
     implementation("com.google.code.gson:gson:2.10.1")
@@ -43,7 +43,6 @@ dependencies {
     implementation("joda-time:joda-time:2.12.5")
     implementation("net.kyori:adventure-extra-kotlin:4.14.0")
     implementation("org.bstats:bstats-bukkit:3.0.2")
-
     implementation(project(":Standalone:commonSE"))
     implementation(project(":common"))
 }
