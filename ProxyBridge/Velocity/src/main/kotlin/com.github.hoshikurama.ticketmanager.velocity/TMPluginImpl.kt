@@ -21,10 +21,10 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 
 @Plugin(
-    id = "ticketmanager",
-    name = "TicketManager_Bridge",
+    id = "ticketmanagerpb",
+    name = "TicketManager_ProxyBridge",
     version = bridgePluginVersion,
-    description = "Bridge for Advanced Ticket Management Solution",
+    description = "Bridge to connect TicketManager:SE plugins on a network",
     authors = ["HoshiKurama"],
 )
 class TMPluginImpl @Inject constructor(
