@@ -16,10 +16,9 @@ dependencies {
     // Not included but shaded later
     compileOnly("com.github.seratch:kotliquery:1.9.0")
     compileOnly("net.kyori:adventure-text-minimessage:4.14.0")
-    compileOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
+    compileOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.20")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")
 
     // Not included and not shaded later
     compileOnly("net.luckperms:api:5.4")

@@ -1,5 +1,5 @@
 plugins {
-    id("com.github.ben-manes.versions") version "0.47.0" // https://github.com/ben-manes/gradle-versions-plugin
+    id("com.github.ben-manes.versions") version "0.49.0" // https://github.com/ben-manes/gradle-versions-plugin
     id("com.github.johnrengelman.shadow") version "8.1.1"
     kotlin("jvm")
     application
@@ -20,8 +20,7 @@ repositories {
 dependencies {
     compileOnly("net.luckperms:api:5.4")
     compileOnly("io.papermc.paper:paper-api:1.20-R0.1-SNAPSHOT")
-    compileOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")
+    compileOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.20")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     compileOnly("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.1")
@@ -34,7 +33,7 @@ dependencies {
 
     implementation("org.yaml:snakeyaml:2.2")
     implementation("com.google.code.gson:gson:2.10.1")
-    implementation("com.google.guava:guava:32.1.2-jre")
+    implementation("com.google.guava:guava:32.1.3-jre")
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("com.h2database:h2:2.2.220")
     implementation("dev.jorel:commandapi-bukkit-core:9.2.0")
