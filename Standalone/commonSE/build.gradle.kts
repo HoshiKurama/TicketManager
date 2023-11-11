@@ -1,5 +1,5 @@
 plugins {
-    id("com.github.ben-manes.versions") version "0.47.0" // https://github.com/ben-manes/gradle-versions-plugin
+    id("com.github.ben-manes.versions") version "0.49.0" // https://github.com/ben-manes/gradle-versions-plugin
     kotlin("jvm")
 }
 
@@ -28,6 +28,6 @@ dependencies {
     compileOnly("org.yaml:snakeyaml:2.2")
     compileOnly("joda-time:joda-time:2.12.5")
     compileOnly("com.google.code.gson:gson:2.10.1")
-    compileOnly("com.google.guava:guava:32.1.2-jre")
-    compileOnly( "com.h2database:h2:2.2.220")
+    compileOnly("com.google.guava:guava:32.1.3-jre")
+    compileOnly("com.h2database:h2:2.2.220")
 }

@@ -72,7 +72,7 @@ abstract class TMPlugin(
 
     suspend fun enableTicketManager() {
         // Register any missing core extensions
-        TicketManager.PermissionRegistry.register(LuckPerms::class).run(::println)
+        TicketManager.PermissionRegistry.register(LuckPerms::class)
         TicketManager.ConfigRegistry.register(DefaultConfigExtension::class)
         TicketManager.LocaleRegistry.register(DefaultLocaleExtension::class)
         TicketManager.DatabaseRegistry.register(DefaultDatabaseExtension::class)
