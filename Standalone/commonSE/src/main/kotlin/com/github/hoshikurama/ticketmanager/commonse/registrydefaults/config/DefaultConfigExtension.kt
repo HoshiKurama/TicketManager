@@ -17,7 +17,7 @@ class DefaultConfigExtension : ConfigExtension {
     override suspend fun load(tmDirectory: Path): Config {
         val configPath = tmDirectory.resolve(CONFIG_NAME)
 
-        if (tmDirectory.notExists()) {
+        if (configPath.notExists()) {
             configPath.parent.toFile().mkdirs()
 
             updateConfig(
