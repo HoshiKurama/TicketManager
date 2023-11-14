@@ -1,5 +1,13 @@
 rootProject.name = "TicketManager"
 
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+        maven("https://maven.fabricmc.net") { name = "Fabric" }
+    }
+}
+
 include("common")
 include("Standalone")
 include("Standalone:Paper")
@@ -15,24 +23,5 @@ include("ProxyBridge:Waterfall")
 findProject(":ProxyBridge:Waterfall")?.name = "Waterfall"
 include("ProxyBridge:commonPDE")
 findProject(":ProxyBridge:commonPDE")?.name = "commonPDE"
-
-/*
-pluginManagement {
-    repositories {
-        mavenCentral()
-        gradlePluginPortal()
-        maven("https://maven.fabricmc.net") { name = "Fabric" }
-    }
-}
-
-pluginManagement {
-	repositories {
-		gradlePluginPortal()
-                // this below is what appears to be missing in your build
-		maven {
-			name = 'Fabric'
-			url = 'https://maven.fabricmc.net/'
-		}
-	}
-}
- */
+include("Standalone:Fabric")
+findProject(":Standalone:Fabric")?.name = "Fabric"

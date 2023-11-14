@@ -1,0 +1,6 @@
+package com.github.hoshikurama.ticketmanager.fabric.server.commands
+
+import com.mojang.brigadier.exceptions.CommandExceptionType
+
+object PlayerNameNotFoundInStorageException : CommandExceptionType
+object InvalidPermissionGroupNameException : CommandExceptionType
