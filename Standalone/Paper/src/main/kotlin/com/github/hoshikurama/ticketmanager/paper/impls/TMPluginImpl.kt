@@ -24,6 +24,7 @@ import org.bukkit.Bukkit
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.plugin.Plugin
 import java.util.function.Consumer
+import kotlin.io.path.absolute
 
 class TMPluginImpl(
     private val paperPlugin: PaperPlugin,
@@ -32,7 +33,7 @@ class TMPluginImpl(
     ticketCounter: ChanneledCounter,
     notificationSharingChannel: NotificationSharingChannel,
 ) : TMPlugin(
-    tmDirectory = paperPlugin.dataFolder.toPath(),
+    tmDirectory = paperPlugin.dataFolder.toPath().absolute(),
     pbeVersionChannel = pbeVersionChannel,
     proxyJoinChannel = proxyJoinChannel,
     ticketCounter = ticketCounter,
