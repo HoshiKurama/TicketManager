@@ -19,21 +19,18 @@ repositories {
 
 dependencies {
     compileOnly("net.luckperms:api:5.4")
+    compileOnly("com.mojang:brigadier:1.0.500")
     compileOnly("io.papermc.paper:paper-api:1.20-R0.1-SNAPSHOT")
     compileOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.20")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     compileOnly("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.1")
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.6.0")
-    compileOnly("net.kyori:adventure-api:4.14.0")
     compileOnly("net.kyori:adventure-text-minimessage:4.14.0")
-    compileOnly("com.mojang:brigadier:1.0.500")
     compileOnly("com.github.HoshiKurama.TicketManager_API:Common:11.0.0-RC7")
     compileOnly("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.0.0-RC7")
 
     implementation("org.yaml:snakeyaml:2.2")
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("com.google.guava:guava:32.1.3-jre")
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("com.h2database:h2:2.2.220")
     implementation("dev.jorel:commandapi-bukkit-core:9.2.0")

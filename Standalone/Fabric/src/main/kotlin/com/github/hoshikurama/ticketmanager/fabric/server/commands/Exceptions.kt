@@ -4,3 +4,7 @@ import com.mojang.brigadier.exceptions.CommandExceptionType
 
 object PlayerNameNotFoundInStorageException : CommandExceptionType
 object InvalidPermissionGroupNameException : CommandExceptionType
+object InvalidPriorityAssignmentException : CommandExceptionType
+object InvalidAssignmentTypeException: CommandExceptionType
+object InvalidTimeUnitException : CommandExceptionType
+object BadTMSyntaxException : CommandExceptionType
