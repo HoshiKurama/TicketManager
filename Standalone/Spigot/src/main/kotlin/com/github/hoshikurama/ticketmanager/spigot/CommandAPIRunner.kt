@@ -780,9 +780,10 @@ class CommandAPIRunner(
             executeTMAction { tmSender, _ -> commandTasks.reload(tmSender) }
         }
 
+        // /ticket history
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordHistory) {
-                withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
+                withRequirement { hasOneDualityPermission(it, "ticketmanager.command.history") }
             }
             executeTMAction { tmSender, _ ->
                 commandTasks.history(
@@ -796,7 +797,7 @@ class CommandAPIRunner(
         // /ticket history Console
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordHistory) {
-                withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
+                withPermission("ticketmanager.command.history.all")
             }
             literalArgument(locale.consoleName)
             executeTMAction { tmSender, _ ->
@@ -827,7 +828,7 @@ class CommandAPIRunner(
         // /ticket history [Page]
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordHistory) {
-                withPermission("ticketmanager.command.history.all")
+                withRequirement { hasOneDualityPermission(it, "ticketmanager.command.history") }
             }
             integerArgument(locale.parameterPage)
             executeTMAction { tmSender, args ->
