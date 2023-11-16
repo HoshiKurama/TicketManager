@@ -27,8 +27,8 @@ dependencies {
     compileOnly("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.1")
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.6.0")
     compileOnly("net.kyori:adventure-text-minimessage:4.14.0")
-    compileOnly("com.github.HoshiKurama.TicketManager_API:Common:11.0.0-RC7")
-    compileOnly("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.0.0-RC7")
+    compileOnly("com.github.HoshiKurama.TicketManager_API:Common:11.0.0")
+    compileOnly("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.0.0")
 
     implementation("org.yaml:snakeyaml:2.2")
     implementation("com.github.seratch:kotliquery:1.9.0")

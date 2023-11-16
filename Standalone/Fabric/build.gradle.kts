@@ -38,8 +38,8 @@ dependencies {
     // Other dependencies required
     compileOnly("net.luckperms:api:5.4")
     shadow("net.kyori:adventure-text-minimessage:4.14.0")
-    shadow("com.github.HoshiKurama.TicketManager_API:Common:11.0.0-RC7")
-    shadow("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.0.0-RC7")
+    shadow("com.github.HoshiKurama.TicketManager_API:Common:11.0.0")
+    shadow("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.0.0")
     shadow("org.yaml:snakeyaml:2.2")
     shadow("com.google.code.gson:gson:2.10.1")
     shadow("com.google.guava:guava:32.1.3-jre")
