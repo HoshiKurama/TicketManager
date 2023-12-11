@@ -1,5 +1,5 @@
 plugins {
-    id("com.github.ben-manes.versions") version "0.49.0" // https://github.com/ben-manes/gradle-versions-plugin
+    id("com.github.ben-manes.versions") version "0.50.0" // https://github.com/ben-manes/gradle-versions-plugin
     kotlin("jvm")
 }
 
@@ -16,7 +16,7 @@ dependencies {
     // Not included but shaded later
     compileOnly("com.github.seratch:kotliquery:1.9.0")
     compileOnly("net.kyori:adventure-text-minimessage:4.14.0")
-    compileOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.20")
+    compileOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.21")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
 

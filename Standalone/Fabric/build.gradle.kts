@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.9.20"
-    kotlin("plugin.serialization") version "1.9.20"
+    kotlin("jvm") version "1.9.21"
+    kotlin("plugin.serialization") version "1.9.21"
     id("fabric-loom") version "1.4-SNAPSHOT"
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
@@ -13,6 +13,7 @@ version = "1.0-SNAPSHOT"
 base {
     archivesName = "TicketManager-Fabric"
 }
+
 
 repositories {
     mavenCentral()
@@ -31,7 +32,7 @@ dependencies {
     mappings("net.fabricmc:yarn:1.20.2+build.4:v2")
     modImplementation("net.fabricmc:fabric-loader:0.14.24")
     modImplementation("net.fabricmc.fabric-api:fabric-api:0.90.7+1.20.2")
-    modImplementation("net.fabricmc:fabric-language-kotlin:1.10.13+kotlin.1.9.20")
+    modImplementation("net.fabricmc:fabric-language-kotlin:1.10.16+kotlin.1.9.21")
 
     modImplementation(include("net.kyori:adventure-platform-fabric:5.10.0")!!)
 
