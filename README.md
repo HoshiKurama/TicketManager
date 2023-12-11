@@ -26,4 +26,4 @@ TicketManager supports full localization on a per-individual basis! However, wit
 | Canadian English | en_CA | HoshiKurama |  |
 
 # Installation / Download
-See [this](https://github.com/HoshiKurama/TicketManager/wiki/TicketManager-8-Intro) page
+See [this](https://github.com/HoshiKurama/TicketManager/wiki) page
