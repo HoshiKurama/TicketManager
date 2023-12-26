@@ -26,8 +26,8 @@ class UnreadNotify : RepeatingTaskExtension {
 
         platformFunctions.getAllOnlinePlayers()
             .filter { permission.has(it, "ticketmanager.notify.unreadUpdates.scheduled") }
-            .forEach {
-                val ids = database.getOpenTicketIDsForUser(Creator.User(it.uuid))
+            .forEach { player ->
+                val ids = database.getTicketIDsWithUpdatesForAsync(Creator.User(player.uuid))
                 val tickets = ids.joinToString(", ")
 
                 if (ids.isEmpty()) return
@@ -36,7 +36,7 @@ class UnreadNotify : RepeatingTaskExtension {
                 else locale.notifyUnreadUpdateSingle
 
                 template.parseMiniMessage("num" templated tickets)
-                    .run(it::sendMessage)
+                    .run(player::sendMessage)
             }
     }
 }
