@@ -7,7 +7,6 @@ import com.github.hoshikurama.ticketmanager.api.registry.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
 import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
 import com.github.hoshikurama.ticketmanager.api.registry.playerjoin.PlayerJoinExtension
-import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.templated
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.PBEVersionChannel
@@ -16,6 +15,7 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.TimeSource
 
 class PBEUpdateChecker(private val pbeVersionChannel: PBEVersionChannel) : PlayerJoinExtension {
+    @Volatile var curVersion: String? = null
     @Volatile var latestVersion = grabLatestVersion()
     @Volatile var lastCheck = TimeSource.Monotonic.markNow()
     @Volatile var doesUpdateExist: Boolean? = null
@@ -33,15 +33,18 @@ class PBEUpdateChecker(private val pbeVersionChannel: PBEVersionChannel) : Playe
 
         // Rewrites information after more than one hour and someone logs on.
         val curTime = TimeSource.Monotonic.markNow()
-        if (curTime - lastCheck > 1.hours) {
+        val serverName = config.proxyOptions?.serverName ?: "NULL"
+
+        if (curTime - lastCheck > 1.hours || curVersion == null) {
             latestVersion = grabLatestVersion()
-            doesUpdateExist = doesNewUpdateExist(config.proxyOptions?.serverName ?: "NULL")
+            curVersion = grabCurVersion(serverName)
+            doesUpdateExist = doesNewUpdateExist()
             lastCheck = curTime
         }
 
-        if (doesUpdateExist != null && !doesUpdateExist!!) return
+        if (doesUpdateExist == false) return
         locale.notifyProxyUpdate.parseMiniMessage(
-            "current" templated mainPluginVersion,
+            "current" templated curVersion!!,
             "latest" templated latestVersion,
         ).run(player::sendMessage)
     }
@@ -60,15 +63,16 @@ class PBEUpdateChecker(private val pbeVersionChannel: PBEVersionChannel) : Playe
             .replace("\"","")
     }
 
-    private suspend fun doesNewUpdateExist(serverName: String): Boolean {
-        val currentVersion = pbeVersionChannel.request(serverName)
-        if (latestVersion == currentVersion)
+    private suspend fun grabCurVersion(serverName: String): String = pbeVersionChannel.request(serverName)
+
+    private fun doesNewUpdateExist(): Boolean {
+        if (latestVersion == curVersion)
             return false
 
-        val curVersSplit = currentVersion.split(".").map(String::toInt)
+        val curVersSplit = curVersion!!.split(".").map(String::toInt)
         val latestVersSplit = latestVersion.split(".").map(String::toInt)
 
-        for (i in 0 until 2) return when {
+        for (i in 0..<2) return when {
             curVersSplit[i] > latestVersSplit[i] -> false
             curVersSplit[i] < latestVersSplit[i] -> true
             else -> continue
