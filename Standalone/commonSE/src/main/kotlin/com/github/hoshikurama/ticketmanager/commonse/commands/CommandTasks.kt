@@ -29,7 +29,6 @@ import net.kyori.adventure.text.event.HoverEvent
 import net.kyori.adventure.text.event.HoverEvent.showText
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
-import java.util.concurrent.CompletableFuture
 
 /**
  * CommandTasks includes the command logic. This does NOT check for permissions or validity of commands. Thus, commands
@@ -85,7 +84,6 @@ class CommandTasks(
                 val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && config.allowUnreadTicketUpdates
                 if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
                     database.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
-                else CompletableFuture.completedFuture(null)
             }
         }
 
@@ -118,7 +116,6 @@ class CommandTasks(
                 val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && config.allowUnreadTicketUpdates
                 if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
                     database.setCreatorStatusUpdateAsync(ticket.id, newCreatorStatusUpdate)
-                else CompletableFuture.completedFuture(null)
             }
         }
 
@@ -634,14 +631,20 @@ class CommandTasks(
     fun teleport(sender: CommandSender.Active, ticket: Ticket) {
         val location = ticket.actions[0].location
 
-        if (sender is CommandSender.OnlinePlayer && location is ActionLocation.FromPlayer) {
-            // Was made on a different server...
-            if (config.proxyOptions != null && location.server != null) {
+        // Unable to teleport. Do nothing
+        if (sender !is CommandSender.OnlinePlayer || location !is ActionLocation.FromPlayer) return
+
+        if (config.proxyOptions == null && location.server == null)
+            platform.teleportToTicketLocSameServer(sender, location)
+
+        if (config.proxyOptions != null && config.proxyOptions!!.serverName != null) {
+            if (config.proxyOptions!!.serverName == location.server) {
+                platform.teleportToTicketLocSameServer(sender, location)
+            } else {
                 proxyJoinChannel.forward(sender.uuid to location)
                 platform.teleportToTicketLocDiffServer(sender, location)
-            } else platform.teleportToTicketLocSameServer(sender, location)
+            }
         }
-        // Else don't teleport
     }
 
     // /ticket unassign <ID>
@@ -693,15 +696,18 @@ class CommandTasks(
     }
 
     // /ticket view <ID>
-    fun view(
+    suspend fun view(
         sender: CommandSender.Active,
         ticket: Ticket,
     ) {
         val baseComponent = buildTicketInfoComponent(ticket)
 
         val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && config.allowUnreadTicketUpdates
-        if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
+        if (newCreatorStatusUpdate != ticket.creatorStatusUpdate) {
             TMCoroutine.Supervised.launch { database.setCreatorStatusUpdateAsync(ticket.id, false) }
+            val readEvent = TicketReadReceiptEvent(sender, ticket.id)
+            tmEventBus.internal.callAsync(readEvent)
+        }
 
         val entries = ticket.actions.asSequence()
             .filter { it is ActionInfo.Comment || it is ActionInfo.Open || it is ActionInfo.CloseWithComment }
@@ -722,15 +728,18 @@ class CommandTasks(
     }
 
     // /ticket viewdeep <ID>
-    fun viewDeep(
+    suspend fun viewDeep(
         sender: CommandSender.Active,
         ticket: Ticket,
     ) {
         val baseComponent = buildTicketInfoComponent(ticket)
 
         val newCreatorStatusUpdate = (ticket.creator != sender.asCreator()) && config.allowUnreadTicketUpdates
-        if (newCreatorStatusUpdate != ticket.creatorStatusUpdate)
+        if (newCreatorStatusUpdate != ticket.creatorStatusUpdate) {
             TMCoroutine.Supervised.launch { database.setCreatorStatusUpdateAsync(ticket.id, false) }
+            val readEvent = TicketReadReceiptEvent(sender, ticket.id)
+            tmEventBus.internal.callAsync(readEvent)
+        }
 
         fun formatDeepAction(action: Action): List<Component> {
             val templatedUser = "user" templated action.user.attemptName()
