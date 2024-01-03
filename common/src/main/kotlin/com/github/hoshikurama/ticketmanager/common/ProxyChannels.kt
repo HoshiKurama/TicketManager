@@ -16,34 +16,34 @@ sealed interface P2SChannel : ProxyChannel
 ================= */
 
 object Server2Proxy {
-    object NotificationSharing : S2PChannel { // NOTE: Forwarding
+    data object NotificationSharing : S2PChannel { // NOTE: Forwarding
         override val namespace = STD_NAMESPACE
         override val name = "s2p_notification_sharing"
     }
 
-    object Teleport : S2PChannel { // Note: Forwarding
+    data object Teleport : S2PChannel { // Note: Forwarding
         override val namespace = STD_NAMESPACE
         override val name = "s2p_teleport"
     }
 
-    object ProxyVersionRequest : S2PChannel { // Note: Requesting
+    data object ProxyVersionRequest : S2PChannel { // Note: Requesting
         override val namespace = STD_NAMESPACE
         override val name = "s2p_proxy_version_request"
     }
 }
 
 object Proxy2Server {
-    object NotificationSharing : P2SChannel { // NOTE: Forwarding
+    data object NotificationSharing : P2SChannel { // NOTE: Forwarding
         override val namespace = STD_NAMESPACE
         override val name = "p2s_notification_sharing"
     }
 
-    object Teleport : P2SChannel {
+    data object Teleport : P2SChannel {
         override val namespace = STD_NAMESPACE
         override val name = "p2s_teleport"
     }
 
-    object ProxyVersionRequest : P2SChannel { // Note: Requesting
+    data object ProxyVersionRequest : P2SChannel { // Note: Requesting
         override val namespace = STD_NAMESPACE
         override val name = "p2s_proxy_version_request"
     }
