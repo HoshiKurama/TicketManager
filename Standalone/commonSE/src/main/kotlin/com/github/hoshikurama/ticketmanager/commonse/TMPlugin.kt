@@ -36,8 +36,7 @@ abstract class TMPlugin(
     private val proxyJoinChannel: ProxyJoinChannel,
 ) {
     companion object {
-        @Volatile
-        lateinit var activeInstance: TMPlugin
+        @Volatile lateinit var activeInstance: TMPlugin
     }
 
     private val repeatingTasks = mutableListOf<Job>()
@@ -139,6 +138,13 @@ abstract class TMPlugin(
                     delay(it.frequency)
                     it.onRepeat(config, locale, database, permission, platform)
                 }
+            }
+        }
+
+        // Launch Notification Sharing
+        TMCoroutine.Supervised.launch {
+            for (message in notificationSharingChannel.channelListener) {
+                platform.massNotify(message.massNotifyPerm, message.generateMassNotify(locale))
             }
         }
 
