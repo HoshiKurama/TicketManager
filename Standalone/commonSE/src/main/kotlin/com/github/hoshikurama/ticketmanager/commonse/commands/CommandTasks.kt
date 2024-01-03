@@ -637,7 +637,7 @@ class CommandTasks(
         if (config.proxyOptions == null && location.server == null)
             platform.teleportToTicketLocSameServer(sender, location)
 
-        if (config.proxyOptions != null && config.proxyOptions!!.serverName != null) {
+        else if (config.proxyOptions != null && config.proxyOptions!!.serverName != null && location.server != null) {
             if (config.proxyOptions!!.serverName == location.server) {
                 platform.teleportToTicketLocSameServer(sender, location)
             } else {
