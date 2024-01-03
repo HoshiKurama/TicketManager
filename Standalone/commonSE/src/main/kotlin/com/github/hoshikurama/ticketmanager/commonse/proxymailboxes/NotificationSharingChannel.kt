@@ -13,6 +13,7 @@ abstract class NotificationSharingChannel : AbstractForwardingMailbox<MessageNot
 
     final override fun decode(outputArray: ByteArray): MessageNotification<CommandSender.Info> {
         val input = ByteStreams.newDataInput(outputArray)
+            .apply { readUTF() } // Gets rid of server uuid
 
         return when (input.readUTF().run(MessageNotification.MessageType::valueOf)) {
             MessageNotification.MessageType.ASSIGN -> MessageNotification.Assign.decode(input)
