@@ -858,7 +858,7 @@ class CommandTasks(
             .let(this::append)
 
         val locationString = ticket.actions[0].location.let {
-            if (config.proxyOptions != null)
+            if (config.proxyOptions == null)
                 it.stringFormat()
                     .split(" ")
                     .drop(1)
