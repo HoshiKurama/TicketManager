@@ -88,7 +88,7 @@ abstract class TMPlugin(
         if (config.checkForPluginUpdates) TicketManager.PlayerJoinRegistry.register(SEUpdateChecker::class, RunType.ASYNC)
         if (config.allowUnreadTicketUpdates) TicketManager.PlayerJoinRegistry.register(UnreadUpdates::class, RunType.ASYNC)
         if (config.proxyOptions != null) TicketManager.PlayerJoinRegistry.register(ProxyTeleport(proxyJoinChannel), RunType.ASYNC)
-        if (config.proxyOptions != null) TicketManager.PlayerJoinRegistry.register(PBEUpdateChecker(pbeVersionChannel), RunType.ASYNC)
+        if (config.proxyOptions != null && config.proxyOptions!!.pbeAllowUpdateCheck) TicketManager.PlayerJoinRegistry.register(PBEUpdateChecker(pbeVersionChannel), RunType.ASYNC)
         if (config.cooldownOptions != null) TicketManager.PreCommandRegistry.register(Cooldown(config.cooldownOptions!!.duration))
         TicketManager.PlayerJoinRegistry.register(StaffCount::class, RunType.ASYNC)
 
