@@ -98,7 +98,7 @@ class CommandTasks(
     }
 
 
-    // /ticket close <ID> [Comment...]
+    // /ticket close <ID>
     suspend fun closeWithoutComment(
         sender: CommandSender.Active,
         ticket: Ticket,
