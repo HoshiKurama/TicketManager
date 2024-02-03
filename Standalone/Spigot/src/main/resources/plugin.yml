@@ -3,7 +3,8 @@ version: 11.0.2
 main: com.github.hoshikurama.ticketmanager.spigot.SpigotPlugin
 api-version: 1.18
 authors: [HoshiKurama]
-depend: [LuckPerms]
+depend: [TicketManagerCore]
+softdepend: [LuckPerms]
 permissions:
   ticketmanager.command.assign:
     description: Assign a ticket
