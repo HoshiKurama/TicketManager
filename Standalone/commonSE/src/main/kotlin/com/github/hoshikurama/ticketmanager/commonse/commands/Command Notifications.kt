@@ -397,7 +397,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
             private const val creatorAlertPerm = "ticketmanager.notify.change.comment"
             private const val massNotifyPerm = "ticketmanager.notify.massNotify.comment"
 
-            suspend fun newActive(
+            fun newActive(
                 isSilent: Boolean,
                 commandSender: CommandSender.Active,
                 ticketCreator: Creator,
@@ -459,7 +459,7 @@ sealed interface MessageNotification<out T: InfoSender>: NotifyParams<T> {
             private const val creatorAlertPerm = "ticketmanager.NO NODE"
             private const val massNotifyPerm = "ticketmanager.notify.massNotify.create"
 
-            suspend fun newActive(
+            fun newActive(
                 isSilent: Boolean,
                 commandSender: CommandSender.Active,
                 ticketCreator: Creator,
