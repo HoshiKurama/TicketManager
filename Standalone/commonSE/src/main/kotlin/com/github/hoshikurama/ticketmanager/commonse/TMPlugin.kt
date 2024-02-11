@@ -24,6 +24,7 @@ import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import java.nio.file.Path
+import java.util.UUID
 
 import com.github.hoshikurama.ticketmanager.api.impl.TicketManager as TicketManagerInternal
 
@@ -143,8 +144,14 @@ abstract class TMPlugin(
 
         // Launch Notification Sharing
         TMCoroutine.Supervised.launch {
+            val encounteredUUIDs = hashSetOf<UUID>()
+            // Note: Each UUID takes 16 bytes. 500k ~10MB
+            // Prevents issue where some users see spam in proxy mode
+
             for (message in notificationSharingChannel.channelListener) {
+                if (message.messageUUID in encounteredUUIDs) continue
                 platform.massNotify(message.massNotifyPerm, message.generateMassNotify(locale))
+                encounteredUUIDs.add(message.messageUUID)
             }
         }
 

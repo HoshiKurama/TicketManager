@@ -12,11 +12,13 @@ import com.google.common.io.ByteArrayDataInput
 import com.google.common.io.ByteArrayDataOutput
 import com.google.common.io.ByteStreams
 import net.kyori.adventure.text.Component
+import java.util.UUID
 
 typealias InfoSender = CommandSender.Info
 
 // NOTE: sendSenderMSG does not check if the ticket creator has the valid permission. Make sure pipeline understands this
 sealed interface NotifyParams<out T: InfoSender> {
+    val messageUUID: UUID
     val sendCreatorMSG: Boolean
     val sendSenderMSG: Boolean
     val sendMassNotify: Boolean
@@ -31,6 +33,7 @@ class StandardParams<out T: InfoSender>(
     override val sendMassNotify: Boolean,
     override val commandSender: T,
     override val ticketCreator: Creator,
+    override val messageUUID: UUID,
 ) : NotifyParams<T> {
 
     companion object {
@@ -55,6 +58,7 @@ class StandardParams<out T: InfoSender>(
                         && !isSilent,
                 commandSender = commandSender,
                 ticketCreator = ticketCreator,
+                messageUUID = UUID.randomUUID(),
             )
         }
 
@@ -64,6 +68,7 @@ class StandardParams<out T: InfoSender>(
             sendCreatorMSG = activeRef.readBoolean(),
             sendSenderMSG = activeRef.readBoolean(),
             sendMassNotify = activeRef.readBoolean(),
+            messageUUID = activeRef.readUTF().run(UUID::fromString)
         )
     }
 
@@ -76,6 +81,7 @@ class StandardParams<out T: InfoSender>(
             writeBoolean(sendCreatorMSG)
             writeBoolean(sendSenderMSG)
             writeBoolean(sendMassNotify)
+            writeUTF(messageUUID.toString())
         }
     }
 }
