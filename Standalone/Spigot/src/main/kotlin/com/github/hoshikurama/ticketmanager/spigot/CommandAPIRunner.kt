@@ -780,6 +780,14 @@ class CommandAPIRunner(
             executeTMAction { tmSender, _ -> commandTasks.reload(tmSender) }
         }
 
+        // /ticket
+        commandAPICommand(locale.commandBase) {
+            withPermission("ticketmanager.command.help")
+            executeTMAction { tmSender, _ ->
+                commandTasks.help(tmSender)
+            }
+        }
+
         // /ticket history
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordHistory) {

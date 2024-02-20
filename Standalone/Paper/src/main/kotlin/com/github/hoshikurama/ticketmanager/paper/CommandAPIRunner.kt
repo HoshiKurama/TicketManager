@@ -584,6 +584,14 @@ class CommandAPIRunner(
             }
         }
 
+        // /ticket
+        commandAPICommand(locale.commandBase) {
+            withPermission("ticketmanager.command.help")
+            executeTMAction { tmSender, _ ->
+                commandTasks.help(tmSender)
+            }
+        }
+
         // /ticket help
         commandAPICommand(locale.commandBase) {
             literalArgument(locale.commandWordHelp) {
