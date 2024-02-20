@@ -46,7 +46,7 @@ dependencies {
 tasks {
     shadowJar {
         configurations = listOf(project.configurations.runtimeClasspath.get())
-        archiveBaseName.set("TicketManager-Paper")
+        archiveBaseName.set("TMSE-Paper")
 
         dependencies {
             exclude { it.moduleGroup == "net.kyori" && it.moduleName != "adventure-extra-kotlin"}

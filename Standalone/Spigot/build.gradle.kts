@@ -46,7 +46,7 @@ dependencies {
 tasks {
     shadowJar {
         configurations = listOf(project.configurations.runtimeClasspath.get())
-        archiveBaseName.set("TicketManager-Spigot")
+        archiveBaseName.set("TMSE-Spigot")
 
         dependencies {
             exclude { it.moduleGroup == "org.jetbrains.kotlin" }
