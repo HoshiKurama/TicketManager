@@ -1,6 +1,6 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("com.github.ben-manes.versions") version "0.50.0" // https://github.com/ben-manes/gradle-versions-plugin
+    id("com.github.ben-manes.versions") version "0.51.0" // https://github.com/ben-manes/gradle-versions-plugin
     kotlin("jvm")
     java
     application
@@ -19,7 +19,7 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":ProxyBridge:commonPDE"))
     compileOnly("io.github.waterfallmc:waterfall-api:1.20-R0.1-SNAPSHOT")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.23")
     implementation("org.bstats:bstats-bungeecord:3.0.2")
     implementation("org.yaml:snakeyaml:2.2")
 }

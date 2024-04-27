@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.9.21"
-    kotlin("plugin.serialization") version "1.9.21"
+    kotlin("jvm")
+    kotlin("plugin.serialization") version "1.9.23"
     id("fabric-loom") version "1.4-SNAPSHOT"
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
@@ -39,15 +39,15 @@ dependencies {
     // Other dependencies required
     compileOnly("net.luckperms:api:5.4")
     shadow("net.kyori:adventure-text-minimessage:4.14.0")
-    shadow("com.github.HoshiKurama.TicketManager_API:Common:11.0.0")
-    shadow("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.0.0")
+    shadow("com.github.HoshiKurama.TicketManager_API:Common:11.1.0")
+    shadow("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.1.0")
     shadow("org.yaml:snakeyaml:2.2")
     shadow("com.google.code.gson:gson:2.10.1")
     shadow("com.google.guava:guava:32.1.3-jre")
     shadow("com.github.seratch:kotliquery:1.9.0")
-    shadow("com.h2database:h2:2.2.220")
+    shadow("com.h2database:h2:2.2.224")
     shadow("joda-time:joda-time:2.12.5")
-    shadow("net.kyori:adventure-extra-kotlin:4.14.0")
+    shadow("net.kyori:adventure-extra-kotlin:4.16.0")
     shadow(project(":Standalone:commonSE"))
     shadow(project(":common"))
 }
