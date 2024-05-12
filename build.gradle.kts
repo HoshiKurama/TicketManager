@@ -26,7 +26,7 @@ subprojects {
     }
 
     tasks.withType<JavaCompile>() {
-        sourceCompatibility = "17"
+        sourceCompatibility = "21"
         targetCompatibility = "17"
     }
 }
