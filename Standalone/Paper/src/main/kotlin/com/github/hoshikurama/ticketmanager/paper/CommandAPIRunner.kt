@@ -118,7 +118,7 @@ class CommandAPIRunner(
         }.asCompletableFuture()
     }
 
-    private fun dualityOpenIDsAsync(basePerm: String) = ArgumentSuggestions.stringsAsync { info ->
+    private fun dualityOpenIDsAsync(basePerm: String) = ArgumentSuggestions.stringsAsync { info: SuggestionInfo<BukkitCommandSender> ->
         TMCoroutine.Supervised.async {
             val tmSender = info.sender.toTMSender()
 
