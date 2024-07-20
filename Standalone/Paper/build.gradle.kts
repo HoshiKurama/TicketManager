@@ -33,7 +33,7 @@ dependencies {
     implementation("org.yaml:snakeyaml:2.2")
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("com.h2database:h2:2.2.224")
-    implementation("dev.jorel:commandapi-bukkit-core:9.4.2")
+    implementation("dev.jorel:commandapi-bukkit-core:9.5.1")
     implementation("dev.jorel:commandapi-bukkit-shade-mojang-mapped:9.5.1")
     implementation("dev.jorel:commandapi-bukkit-kotlin:9.5.1")
     implementation("joda-time:joda-time:2.12.7")
