@@ -1,8 +1,7 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "8.3.5"
     id("com.github.ben-manes.versions") version "0.51.0" // https://github.com/ben-manes/gradle-versions-plugin
     kotlin("jvm")
-    java
     application
 }
 
@@ -12,16 +11,21 @@ application {
 
 repositories {
     mavenCentral()
-    maven(url = uri("https://papermc.io/repo/repository/maven-public/"))
+    maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
 }
 
 dependencies {
+    compileOnly("net.md-5:bungeecord-api:1.20-R0.1")
+
     implementation(project(":common"))
     implementation(project(":ProxyBridge:commonPDE"))
-    compileOnly("io.github.waterfallmc:waterfall-api:1.20-R0.1-SNAPSHOT")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.23")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.0.21")
     implementation("org.bstats:bstats-bungeecord:3.0.2")
-    implementation("org.yaml:snakeyaml:2.2")
+    implementation("org.yaml:snakeyaml:2.3")
+}
+
+kotlin {
+    jvmToolchain(21)
 }
 
 tasks {

@@ -1,8 +1,7 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "8.1.1"
     id("com.github.ben-manes.versions") version "0.51.0" // https://github.com/ben-manes/gradle-versions-plugin
+    id("com.gradleup.shadow") version "8.3.5"
     kotlin("jvm")
-    java
     application
 }
 
@@ -13,21 +12,24 @@ application {
 repositories {
     mavenCentral()
     maven {
-        name = "velocity"
-        url = uri("https://nexus.velocitypowered.com/repository/maven-public/")
+        name = "papermc"
+        url = uri("https://repo.papermc.io/repository/maven-public/")
     }
 }
 
-// Link to repo: https://nexus.velocitypowered.com/#browse/search=keyword%3Dvelocitypowered
 dependencies {
-    compileOnly("com.velocitypowered:velocity-api:3.3.0-SNAPSHOT")
-    annotationProcessor("com.velocitypowered:velocity-api:3.3.0-SNAPSHOT")
+    compileOnly("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
+    annotationProcessor("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
 
     implementation(project(":common"))
     implementation(project(":ProxyBridge:commonPDE"))
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.23")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.0.21")
     implementation("org.bstats:bstats-velocity:3.0.2")
-    implementation("org.yaml:snakeyaml:2.2")
+    implementation("org.yaml:snakeyaml:2.3")
+}
+
+kotlin {
+    jvmToolchain(21)
 }
 
 tasks {
