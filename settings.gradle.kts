@@ -19,8 +19,8 @@ findProject(":Standalone:Spigot")?.name = "Spigot"
 include("ProxyBridge")
 include("ProxyBridge:Velocity")
 findProject(":ProxyBridge:Velocity")?.name = "Velocity"
-include("ProxyBridge:Waterfall")
-findProject(":ProxyBridge:Waterfall")?.name = "Waterfall"
+include("ProxyBridge:Bungeecord")
+findProject(":ProxyBridge:Bungeecord")?.name = "Bungeecord"
 include("ProxyBridge:commonPDE")
 findProject(":ProxyBridge:commonPDE")?.name = "commonPDE"
 include("Standalone:Fabric")
