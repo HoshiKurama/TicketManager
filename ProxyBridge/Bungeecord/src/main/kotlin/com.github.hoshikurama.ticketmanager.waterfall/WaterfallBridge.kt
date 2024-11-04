@@ -94,7 +94,7 @@ class WaterfallBridge : Plugin(), Listener {
         when (event.tag) {
 
             Server2Proxy.NotificationSharing.waterfallString() ->
-                proxy.serversCopy
+                proxy.servers
                     .map { it.value }
                     .filter { it.players.isNotEmpty() }
                     .forEach { it.sendData(Proxy2Server.NotificationSharing.waterfallString() , event.data) }
@@ -105,7 +105,7 @@ class WaterfallBridge : Plugin(), Listener {
 
                 val serverName = input.readUTF()
                 val uuid = UUID.fromString(input.readUTF())
-                val targetServer = proxy.serversCopy[serverName]
+                val targetServer = proxy.servers[serverName]
 
                 if (targetServer != null) {
                     targetServer.sendData(Proxy2Server.Teleport.waterfallString(), event.data)      // Sends data to server
@@ -115,7 +115,7 @@ class WaterfallBridge : Plugin(), Listener {
 
             Server2Proxy.ProxyVersionRequest.waterfallString() -> {
                 val serverName = ByteStreams.newDataInput(event.data).readUTF()
-                val targetServer = proxy.serversCopy[serverName]
+                val targetServer = proxy.servers[serverName]
 
                 if (targetServer != null) {
                     val msg = ByteStreams.newDataOutput()
