@@ -1,6 +1,6 @@
 plugins {
     id("com.github.ben-manes.versions") version "0.51.0" // https://github.com/ben-manes/gradle-versions-plugin
-    id("io.github.goooler.shadow") version "8.1.7"
+    id("com.gradleup.shadow") version "8.3.5"
     kotlin("jvm")
     application
 }
@@ -20,27 +20,31 @@ repositories {
 dependencies {
     compileOnly("net.luckperms:api:5.4")
     compileOnly("com.mojang:brigadier:1.0.500")
-    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
-    compileOnly("org.jetbrains.kotlin:kotlin-reflect:2.0.0")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.0")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.6.0")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.6.3")
+    compileOnly("io.papermc.paper:paper-api:1.21.3-R0.1-SNAPSHOT")
+    compileOnly("org.jetbrains.kotlin:kotlin-reflect:2.0.21")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.6.1")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.7.3")
     compileOnly("net.kyori:adventure-text-minimessage:4.17.0")
-    compileOnly("com.github.HoshiKurama.TicketManager_API:Common:11.1.0")
-    compileOnly("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.1.0")
+    compileOnly("com.github.HoshiKurama.TicketManager_API:Common:11.1.1")
+    compileOnly("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.1.1")
 
-    implementation("org.yaml:snakeyaml:2.2")
+    implementation("org.yaml:snakeyaml:2.3")
     implementation("com.github.seratch:kotliquery:1.9.0")
-    implementation("com.h2database:h2:2.2.224")
-    implementation("dev.jorel:commandapi-bukkit-core:9.5.3")
-    implementation("dev.jorel:commandapi-bukkit-shade-mojang-mapped:9.5.3")
-    implementation("dev.jorel:commandapi-bukkit-kotlin:9.5.3")
-    implementation("joda-time:joda-time:2.12.7")
+    implementation("com.h2database:h2:2.3.232")
+    implementation("dev.jorel:commandapi-bukkit-core:9.6.1")
+    implementation("dev.jorel:commandapi-bukkit-shade-mojang-mapped:9.6.1")
+    implementation("dev.jorel:commandapi-bukkit-kotlin:9.6.1")
+    implementation("joda-time:joda-time:2.13.0")
     implementation("net.kyori:adventure-extra-kotlin:4.17.0")
     implementation("org.bstats:bstats-bukkit:3.0.2")
     implementation(project(":Standalone:commonSE"))
     implementation(project(":common"))
+}
+
+kotlin {
+    jvmToolchain(21)
 }
 
 tasks {

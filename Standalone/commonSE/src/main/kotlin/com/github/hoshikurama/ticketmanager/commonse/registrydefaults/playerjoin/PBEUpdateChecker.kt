@@ -10,7 +10,7 @@ import com.github.hoshikurama.ticketmanager.api.registry.playerjoin.PlayerJoinEx
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.templated
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.PBEVersionChannel
-import java.net.URL
+import java.net.URI
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.TimeSource
 
@@ -53,7 +53,8 @@ class PBEUpdateChecker(private val pbeVersionChannel: PBEVersionChannel) : Playe
     private fun grabLatestVersion(): String {
         val regex = "\"name\":\"[^,]*".toRegex()
 
-        return URL("https://api.github.com/repos/HoshiKurama/TicketManager-Bridge-Releases/tags")
+        return URI("https://api.github.com/repos/HoshiKurama/TicketManager-Bridge-Releases/tags")
+            .toURL()
             .openStream()
             .bufferedReader()
             .readText()

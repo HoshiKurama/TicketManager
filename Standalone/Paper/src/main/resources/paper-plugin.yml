@@ -1,7 +1,7 @@
 name: TicketManager
-version: '11.1.4'
+version: '11.1.5'
 main: com.github.hoshikurama.ticketmanager.paper.PaperPlugin
-api-version: '1.19'
+api-version: '1.21'
 authors: [HoshiKurama]
 folia-supported: true
 dependencies:

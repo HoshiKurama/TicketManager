@@ -8,5 +8,5 @@ repositories {
 }
 
 dependencies {
-    compileOnly("com.google.guava:guava:33.1.0-jre")
+    compileOnly("com.google.guava:guava:33.3.1-jre")
 }

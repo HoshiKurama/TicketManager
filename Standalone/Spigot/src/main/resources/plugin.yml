@@ -1,7 +1,7 @@
 name: TicketManager
-version: 11.1.4
+version: 11.1.5
 main: com.github.hoshikurama.ticketmanager.spigot.SpigotPlugin
-api-version: 1.18
+api-version: 1.21
 authors: [HoshiKurama]
 depend: [TicketManagerCore]
 softdepend: [LuckPerms]

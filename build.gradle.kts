@@ -1,8 +1,5 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
-    kotlin("jvm") version "2.0.0"
-    java
+    kotlin("jvm") version "2.0.21"
 }
 
 repositories {
@@ -10,23 +7,10 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.21")
 }
 
 subprojects {
     group = "com.github.hoshikurama"
-    version = "11.1.4"
-
-    tasks.withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "21"
-    }
-
-    tasks.withType<KotlinCompile>().configureEach {
-        kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
-    }
-
-    tasks.withType<JavaCompile>() {
-        sourceCompatibility = "21"
-        targetCompatibility = "21"
-    }
+    version = "11.1.5"
 }
