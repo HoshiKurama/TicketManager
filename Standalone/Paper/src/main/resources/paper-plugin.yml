@@ -1,5 +1,5 @@
 name: TicketManager
-version: '11.1.5'
+version: '11.1.6'
 main: com.github.hoshikurama.ticketmanager.paper.PaperPlugin
 api-version: '1.21'
 authors: [HoshiKurama]
