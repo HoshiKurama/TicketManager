@@ -9,9 +9,9 @@ import com.github.hoshikurama.ticketmanager.commonse.PlayerJoinExtensionHolder
 import com.github.hoshikurama.ticketmanager.commonse.PreCommandExtensionHolder
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingChannel
+import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingMailbox
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.PBEVersionChannel
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.ProxyJoinChannel
+import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.TeleportJoinMailbox
 import com.github.hoshikurama.ticketmanager.fabric.server.FabricServerMod
 import com.github.hoshikurama.ticketmanager.fabric.server.PlayerNameUUIDStorage
 import com.github.hoshikurama.ticketmanager.fabric.server.commands.Brigadier
@@ -37,12 +37,12 @@ class TMPluginImpl(
             throw Exception("Unsupported operation attempted! TicketManager Fabric does not currently support proxies")
         }
     },
-    proxyJoinChannel = object : ProxyJoinChannel() {
+    proxyJoinChannel = object : TeleportJoinMailbox() {
         override fun relayToProxy(inputArray: ByteArray) {
             throw Exception("Unsupported operation attempted! TicketManager Fabric does not currently support proxies")
         }
     },
-    notificationSharingChannel = object : NotificationSharingChannel() {
+    notificationSharingChannel = object : NotificationSharingMailbox() {
         override fun relayToProxy(inputArray: ByteArray) {
             throw Exception("Unsupported operation attempted! TicketManager Fabric does not currently support proxies")
         }
@@ -70,9 +70,9 @@ class TMPluginImpl(
     override fun unregisterProxyChannels(trueShutdown: Boolean) {}
 
     override fun registerProxyChannels(
-        proxyJoinChannel: ProxyJoinChannel,
+        proxyJoinChannel: TeleportJoinMailbox,
         pbeVersionChannel: PBEVersionChannel,
-        notificationSharingChannel: NotificationSharingChannel
+        notificationSharingChannel: NotificationSharingMailbox
     ) {}
 
     override fun unregisterPlayerJoinEvent(trueShutdown: Boolean) {}

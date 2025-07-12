@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common
 
+//TODO RENAME PROXY -> HUB
 private const val STD_NAMESPACE = "ticketmanager"
 interface ProxyChannel {
     val namespace: String

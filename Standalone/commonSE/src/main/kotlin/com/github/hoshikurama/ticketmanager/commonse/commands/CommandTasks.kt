@@ -17,8 +17,8 @@ import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.misc.*
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.buildComponent
 import com.github.hoshikurama.ticketmanager.commonse.misc.kyoriComponentDSL.onHover
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingChannel
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.ProxyJoinChannel
+import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingMailbox
+import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.TeleportJoinMailbox
 import com.github.hoshikurama.tmcoroutine.ChanneledCounter
 import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import kotlinx.coroutines.Job
@@ -41,8 +41,8 @@ class CommandTasks(
     private val platform: PlatformFunctions,
     private val permission: Permission,
     private val ticketCounter: ChanneledCounter,
-    private val notificationSharingChannel: NotificationSharingChannel,
-    private val proxyJoinChannel: ProxyJoinChannel,
+    private val notificationSharingMailbox: NotificationSharingMailbox,
+    private val teleportJoinMailbox: TeleportJoinMailbox,
 ) {
     private val tmEventBus = TicketManager.EventBus
 
@@ -641,7 +641,7 @@ class CommandTasks(
             if (config.proxyOptions!!.serverName == location.server) {
                 platform.teleportToTicketLocSameServer(sender, location)
             } else {
-                proxyJoinChannel.forward(sender.uuid to location)
+                teleportJoinMailbox.forward2Hub(sender.uuid to location)
                 platform.teleportToTicketLocDiffServer(sender, location)
             }
         }
@@ -822,7 +822,7 @@ class CommandTasks(
         message.run {
             //  Send to other servers if needed
             if (config.proxyOptions != null)
-                notificationSharingChannel.forward(message)
+                notificationSharingMailbox.forward2Hub(message)
 
             if (sendSenderMSG) generateSenderMSG(locale).run(commandSender::sendMessage)
 

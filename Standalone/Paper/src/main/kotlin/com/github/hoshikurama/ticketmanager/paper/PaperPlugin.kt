@@ -2,9 +2,6 @@ package com.github.hoshikurama.ticketmanager.paper
 
 import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
 import com.github.hoshikurama.ticketmanager.paper.impls.TMPluginImpl
-import com.github.hoshikurama.ticketmanager.paper.impls.proxy.NotificationSharingChannelImpl
-import com.github.hoshikurama.ticketmanager.paper.impls.proxy.PBEVersionChannelImpl
-import com.github.hoshikurama.ticketmanager.paper.impls.proxy.ProxyJoinChannelImpl
 import com.github.hoshikurama.tmcoroutine.ChanneledCounter
 import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import dev.jorel.commandapi.CommandAPI
@@ -20,9 +17,6 @@ class PaperPlugin : JavaPlugin() {
     private val tmPlugin = TMPluginImpl(
         paperPlugin = this,
         ticketCounter = ticketCounter,
-        proxyJoinChannel = ProxyJoinChannelImpl(this),
-        pbeVersionChannel = PBEVersionChannelImpl(this),
-        notificationSharingChannel = NotificationSharingChannelImpl(this),
     )
     private lateinit var metrics: Metrics
 

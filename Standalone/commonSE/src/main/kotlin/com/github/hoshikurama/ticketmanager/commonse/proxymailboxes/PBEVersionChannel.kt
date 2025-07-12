@@ -1,17 +1,29 @@
 package com.github.hoshikurama.ticketmanager.commonse.proxymailboxes
 
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.base.AbstractHandshakeMailbox
+import com.github.hoshikurama.ticketmanager.common.Server2Proxy
+import com.github.hoshikurama.ticketmanager.commonse.messagesharingTEST.MessageSharing
+import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.base.HandshakeMailbox
 import com.google.common.io.ByteStreams
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 
-abstract class PBEVersionChannel : AbstractHandshakeMailbox<String, String>() {
+class PBEVersionChannel(
+    override val messageSharing: MessageSharing
+) : HandshakeMailbox<String, String>() {
+    override val outgoingChannelName = Server2Proxy.ProxyVersionRequest.waterfallString()
+    override val apiChannelRef: ReceiveChannel<ByteArray> = Intermediary
 
-    final override fun encodeInput(input: String): ByteArray {
+    companion object {
+        val Intermediary = Channel<ByteArray>()
+    }
+
+    override fun encodeInput(input: String): ByteArray {
         return ByteStreams.newDataOutput()
             .apply { writeUTF(input) }
             .toByteArray()
     }
 
-    final override fun decodeOutput(outputArray: ByteArray): String {
+    override fun decodeOutput(outputArray: ByteArray): String {
         return ByteStreams.newDataInput(outputArray).readUTF()
     }
 }

@@ -2,9 +2,9 @@ package com.github.hoshikurama.ticketmanager.spigot.hooks
 
 import com.github.hoshikurama.ticketmanager.common.Proxy2Server
 import com.github.hoshikurama.ticketmanager.common.randServerIdentifier
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingChannel
+import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingMailbox
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.PBEVersionChannel
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.ProxyJoinChannel
+import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.TeleportJoinMailbox
 import com.github.hoshikurama.ticketmanager.commonse.utilities.notEquals
 import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import com.google.common.io.ByteStreams
@@ -13,9 +13,9 @@ import org.bukkit.plugin.messaging.PluginMessageListener
 import java.util.*
 
 class Proxy(
-    private val notificationSharingChannel: NotificationSharingChannel,
+    private val notificationSharingChannel: NotificationSharingMailbox,
     private val pbeVersionChannel: PBEVersionChannel,
-    private val proxyJoinChannel: ProxyJoinChannel,
+    private val proxyJoinChannel: TeleportJoinMailbox,
 ): PluginMessageListener {
 
     override fun onPluginMessageReceived(channel: String, player: Player, message: ByteArray) {

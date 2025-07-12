@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm")
     kotlin("plugin.serialization") version "1.9.23"
-    id("fabric-loom") version "1.4-SNAPSHOT"
+    //id("fabric-loom") version "1.4-SNAPSHOT"
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
@@ -25,6 +25,9 @@ repositories {
     // for more information about repositories.
     maven("https://jitpack.io")
 }
+
+/*
+This has been edited out because it seems to be breaking Gradle
 
 dependencies {
     // Required for Fabric
@@ -101,6 +104,8 @@ tasks.shadowJar {
 
     }
 }
+
+ */
 
 /*
 Help from the places below:

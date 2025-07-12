@@ -11,9 +11,9 @@ import com.github.hoshikurama.ticketmanager.commonse.PlayerJoinExtensionHolder
 import com.github.hoshikurama.ticketmanager.commonse.PreCommandExtensionHolder
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingChannel
+import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingMailbox
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.PBEVersionChannel
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.ProxyJoinChannel
+import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.TeleportJoinMailbox
 import com.github.hoshikurama.ticketmanager.spigot.CommandAPIRunner
 import com.github.hoshikurama.ticketmanager.spigot.SpigotPlugin
 import com.github.hoshikurama.ticketmanager.spigot.hooks.JoinEventListener
@@ -31,9 +31,9 @@ class TMPluginImpl(
     private val spigotPlugin: SpigotPlugin,
     private val adventure: BukkitAudiences,
     pbeVersionChannel: PBEVersionChannel,
-    proxyJoinChannel: ProxyJoinChannel,
+    proxyJoinChannel: TeleportJoinMailbox,
     ticketCounter: ChanneledCounter,
-    notificationSharingChannel: NotificationSharingChannel,
+    notificationSharingChannel: NotificationSharingMailbox,
 ) : TMPlugin(
     tmDirectory = spigotPlugin.dataFolder.toPath().absolute(),
     pbeVersionChannel = pbeVersionChannel,
@@ -86,9 +86,9 @@ class TMPluginImpl(
     }
 
     override fun registerProxyChannels(
-        proxyJoinChannel: ProxyJoinChannel,
+        proxyJoinChannel: TeleportJoinMailbox,
         pbeVersionChannel: PBEVersionChannel,
-        notificationSharingChannel: NotificationSharingChannel
+        notificationSharingChannel: NotificationSharingMailbox
     ) {
         spigotPlugin.runTask {
             val proxy = Proxy(notificationSharingChannel, pbeVersionChannel, proxyJoinChannel)
