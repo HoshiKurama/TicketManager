@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.base
 
-import com.github.hoshikurama.ticketmanager.commonse.messagesharingTEST.MessageSharing
+import com.github.hoshikurama.ticketmanager.api.registry.messagesharing.MessageSharing
 import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel

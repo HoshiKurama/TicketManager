@@ -1,6 +1,6 @@
 package com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.base
 
-import com.github.hoshikurama.ticketmanager.commonse.messagesharingTEST.MessageSharing
+import com.github.hoshikurama.ticketmanager.api.registry.messagesharing.MessageSharing
 import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -15,10 +15,9 @@ abstract class HandshakeMailbox<Input, Output> {
     protected abstract val apiChannelRef: ReceiveChannel<ByteArray>
 
     private val channel = Channel<Output>(capacity = Channel.RENDEZVOUS)
-    val incomingMessages: ReceiveChannel<Output> = channel
 
     init {
-        TMCoroutine.Supervised.launch {
+        TMCoroutine.Supervised.launch { // Note: Supervised good since new object made on each reload
             for (incomingMSG in apiChannelRef) {
                 channel.send(decodeOutput(incomingMSG))
             }

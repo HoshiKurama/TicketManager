@@ -1,10 +1,10 @@
 package com.github.hoshikurama.ticketmanager.paper.impls
 
+import com.github.hoshikurama.ticketmanager.api.registry.messagesharing.MessageSharing
+import com.github.hoshikurama.ticketmanager.api.registry.messagesharing.MessageSharingExtension
 import com.github.hoshikurama.ticketmanager.common.Proxy2Server
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.common.randServerIdentifier
-import com.github.hoshikurama.ticketmanager.commonse.messagesharingTEST.MessageSharing
-import com.github.hoshikurama.ticketmanager.commonse.messagesharingTEST.MessageSharingExtension
 import com.github.hoshikurama.ticketmanager.commonse.utilities.notEquals
 import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import com.google.common.io.ByteStreams
@@ -33,12 +33,11 @@ class ProxyMessageSharingExtension(private val plugin: Plugin) : MessageSharingE
         else plugin.runTask(unregister)
     }
 
-    override fun load(
-        teleportJoinChannel: SendChannel<ByteArray>,
-        notificationSharingChannel: SendChannel<ByteArray>,
-        pbeVersionChannel: SendChannel<ByteArray>
+    override suspend fun load(
+        teleportJoinIntermediary: SendChannel<ByteArray>,
+        notificationSharingIntermediary: SendChannel<ByteArray>,
+        pbeVersionIntermediary: SendChannel<ByteArray>
     ): MessageSharing {
-
         // Generate listener for forwarding to intermediaries
         val listener = PluginMessageListener { channel, player, message ->
             when (channel.split(":", limit = 2)[1]) {
@@ -49,16 +48,16 @@ class ProxyMessageSharingExtension(private val plugin: Plugin) : MessageSharingE
                         .notEquals(randServerIdentifier)
 
                     if (shouldSendMessage) TMCoroutine.Global.launch {
-                        notificationSharingChannel.send(message)
+                        notificationSharingIntermediary.send(message)
                     }
                 }
 
                 Proxy2Server.Teleport.name -> TMCoroutine.Global.launch {
-                    teleportJoinChannel.send(message)
+                    teleportJoinIntermediary.send(message)
                 }
 
                 Proxy2Server.ProxyVersionRequest.name -> TMCoroutine.Global.launch {
-                    pbeVersionChannel.send(message)
+                    pbeVersionIntermediary.send(message)
                 }
             }
         }

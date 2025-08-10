@@ -1,7 +1,7 @@
 package com.github.hoshikurama.ticketmanager.commonse.proxymailboxes
 
+import com.github.hoshikurama.ticketmanager.api.registry.messagesharing.MessageSharing
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
-import com.github.hoshikurama.ticketmanager.commonse.messagesharingTEST.MessageSharing
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.base.HandshakeMailbox
 import com.google.common.io.ByteStreams
 import kotlinx.coroutines.channels.Channel

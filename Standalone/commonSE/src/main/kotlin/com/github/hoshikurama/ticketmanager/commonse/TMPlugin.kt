@@ -5,12 +5,10 @@ import com.github.hoshikurama.ticketmanager.api.impl.registry.*
 import com.github.hoshikurama.ticketmanager.api.registry.config.Config
 import com.github.hoshikurama.ticketmanager.api.registry.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
+import com.github.hoshikurama.ticketmanager.api.registry.messagesharing.MessageSharing
 import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
 import com.github.hoshikurama.ticketmanager.api.registry.playerjoin.PlayerJoinRegistry.RunType
 import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
-import com.github.hoshikurama.ticketmanager.commonse.messagesharingTEST.MessageSharing
-import com.github.hoshikurama.ticketmanager.commonse.messagesharingTEST.MessageSharingRegistry
-import com.github.hoshikurama.ticketmanager.commonse.messagesharingTEST.TMMessageSharingRegistry
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingMailbox
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.PBEVersionChannel
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.TeleportJoinMailbox
@@ -81,7 +79,7 @@ abstract class TMPlugin(
         val platform = platformFunctionBuilder.build(permission, config)
 
         // Load Message Sharing Data via dependency injection
-        messageSharing = TicketManager.MessageSharingRegistry.load(config.proxyOptions == null)
+        messageSharing = TicketManager.MessageSharingRegistry.loadAndInitialize(config.proxyOptions == null)
         val teleportJoinMailbox = TeleportJoinMailbox(messageSharing)
         val notificationSharingMailbox = NotificationSharingMailbox(messageSharing)
         val pbeVersionChannel = PBEVersionChannel(messageSharing)
@@ -176,15 +174,16 @@ abstract class TMPlugin(
     }
 }
 
-private fun TMMessageSharingRegistry.load(isHubOptionsNull: Boolean): MessageSharing {
+private suspend fun TMMessageSharingRegistry.loadAndInitialize(isHubOptionsNull: Boolean): MessageSharing {
     return if (isHubOptionsNull)
         object : MessageSharing {   // Dummy object with no behaviour
             override fun relay2Hub(data: ByteArray, channelName: String) {}
             override suspend fun unload(trueShutdown: Boolean) {}
         }
-    else load(
+    else loadAndInitialize(
         teleportJoinIntermediary = TeleportJoinMailbox.Intermediary,
-        notificationSharingIntermediary = NotificationSharingMailbox.Intermediary
+        notificationSharingIntermediary = NotificationSharingMailbox.Intermediary,
+        pbeVersionIntermediary = PBEVersionChannel.Intermediary
     )
 }
 
@@ -198,5 +197,5 @@ private object TicketManager {
     val PreCommandRegistry = TicketManagerInternal.PreCommandRegistry as TMPreCommandRegistry
     val RepeatingTaskRegistry = TicketManagerInternal.RepeatingTaskRegistry as TMRepeatingTaskRegistry
     val EventBus = TicketManagerInternal.EventBus
-    val MessageSharingRegistry: TMMessageSharingRegistry = TODO("For debugging only")
+    val MessageSharingRegistry: TMMessageSharingRegistry = TicketManagerInternal.MessageSharingRegistry as TMMessageSharingRegistry
 }
