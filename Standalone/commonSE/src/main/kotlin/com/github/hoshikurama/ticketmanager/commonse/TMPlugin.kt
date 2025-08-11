@@ -7,7 +7,6 @@ import com.github.hoshikurama.ticketmanager.api.registry.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
 import com.github.hoshikurama.ticketmanager.api.registry.messagesharing.MessageSharing
 import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
-import com.github.hoshikurama.ticketmanager.api.registry.playerjoin.PlayerJoinRegistry.RunType
 import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingMailbox
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.PBEVersionChannel
@@ -22,7 +21,6 @@ import com.github.hoshikurama.ticketmanager.commonse.registrydefaults.repeatingt
 import com.github.hoshikurama.ticketmanager.commonse.registrydefaults.repeatingtasks.UnreadNotify
 import com.github.hoshikurama.tmcoroutine.ChanneledCounter
 import com.github.hoshikurama.tmcoroutine.TMCoroutine
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import java.nio.file.Path
 import java.util.UUID
@@ -38,7 +36,6 @@ abstract class TMPlugin(
         @Volatile lateinit var activeInstance: TMPlugin
     }
 
-    private val repeatingTasks = mutableListOf<Job>()
     @Volatile protected lateinit var baseTicketCommand: String
     @Volatile private lateinit var databaseClosing: AsyncDatabase
     @Volatile private lateinit var messageSharing: MessageSharing
@@ -87,28 +84,45 @@ abstract class TMPlugin(
         // Load remaining core extensions via dependency injection
         val commandTasks = CommandTasks(config, locale, database, platform, permission, ticketCounter, notificationSharingMailbox, teleportJoinMailbox)
 
-        // Register auxiliary extensions
-        if (config.checkForPluginUpdates) TicketManager.PlayerJoinRegistry.register(SEUpdateChecker::class, RunType.ASYNC)
-        if (config.allowUnreadTicketUpdates) TicketManager.PlayerJoinRegistry.register(UnreadUpdates::class, RunType.ASYNC)
-        if (config.proxyOptions != null) TicketManager.PlayerJoinRegistry.register(ProxyTeleport(teleportJoinMailbox), RunType.ASYNC)
-        if (config.proxyOptions != null && config.proxyOptions!!.pbeAllowUpdateCheck) TicketManager.PlayerJoinRegistry.register(PBEUpdateChecker(pbeVersionChannel), RunType.ASYNC)
-        if (config.cooldownOptions != null) TicketManager.PreCommandRegistry.register(Cooldown(config.cooldownOptions!!.duration))
-        TicketManager.PlayerJoinRegistry.register(StaffCount::class, RunType.ASYNC)
+        // Load auxiliary extensions and add internal behaviours (fixes extra registrations on reload for internal ones)
+        val playerJoinExtensions: PlayerJoinExtensionHolder = run {
+            val proxyTeleport = { ProxyTeleport(teleportJoinMailbox) }
+            val pbeUpdateCheck = { PBEUpdateChecker(pbeVersionChannel) }
 
-        if (config.allowUnreadTicketUpdates) TicketManager.RepeatingTaskRegistry.register(UnreadNotify::class)
-        TicketManager.RepeatingTaskRegistry.register(RepeatingStaffCount::class)
+            val extraAsyncPlayerJoinExtensions = listOf(
+                ::SEUpdateChecker.takeIf { config.checkForPluginUpdates },
+                ::UnreadUpdates.takeIf { config.allowUnreadTicketUpdates },
+                proxyTeleport.takeIf { config.proxyOptions != null },
+                pbeUpdateCheck.takeIf { config.proxyOptions?.pbeAllowUpdateCheck != null },
+                ::StaffCount,
+            ).mapNotNull { it?.invoke() }
 
+            PlayerJoinExtensionHolder(
+                syncExtensions = TicketManager.PlayerJoinRegistry.getSyncExtensions(),
+                asyncExtensions = extraAsyncPlayerJoinExtensions + TicketManager.PlayerJoinRegistry.getAsyncExtensions()
+            )
+        }
 
-        // Load auxiliary extensions
-        val playerJoinExtensions = PlayerJoinExtensionHolder(
-            syncExtensions = TicketManager.PlayerJoinRegistry.getSyncExtensions(),
-            asyncExtensions = TicketManager.PlayerJoinRegistry.getAsyncExtensions()
-        )
-        val preCommandExtensions = PreCommandExtensionHolder(
-            deciders = TicketManager.PreCommandRegistry.getDeciders(),
-            syncAfters = TicketManager.PreCommandRegistry.getSyncAfters(),
-            asyncAfters = TicketManager.PreCommandRegistry.getAsyncAfters()
-        )
+        val extraPreCommandExtensions = run {
+            val extraPreCommandDeciders = listOf(
+                { Cooldown(config.cooldownOptions!!.duration) }.takeIf { config.cooldownOptions != null }
+            ).mapNotNull { it?.invoke() }
+
+            PreCommandExtensionHolder(
+                deciders = TicketManager.PreCommandRegistry.getDeciders() + extraPreCommandDeciders,
+                syncAfters = TicketManager.PreCommandRegistry.getSyncAfters(),
+                asyncAfters = TicketManager.PreCommandRegistry.getAsyncAfters()
+            )
+        }
+
+        val repeatingTaskExtensions = run {
+            val extraRepeatingTaskExtensions = listOf(
+                ::UnreadNotify.takeIf { config.allowUnreadTicketUpdates },
+                ::RepeatingStaffCount,
+            ).mapNotNull { it?.invoke() }
+
+            TicketManager.RepeatingTaskRegistry.getExtensions() + extraRepeatingTaskExtensions
+        }
 
         registerPlayerJoinEvent(
             config = config,
@@ -125,11 +139,11 @@ abstract class TMPlugin(
             permission = permission,
             commandTasks = commandTasks,
             platformFunctions = platform,
-            preCommand = preCommandExtensions,
+            preCommand = extraPreCommandExtensions,
         )
 
         // Launch repeating tasks
-        TicketManager.RepeatingTaskRegistry.getExtensions().map {
+        repeatingTaskExtensions.map {
             TMCoroutine.Supervised.launch {
                 while (true) {
                     delay(it.frequency)
@@ -163,9 +177,6 @@ abstract class TMPlugin(
                 ticketSetPriority, ticketCloseWithComment, ticketCloseWithoutComment
             ).forEach { it.clear() }
         }
-
-        repeatingTasks.forEach(Job::cancel)
-        repeatingTasks.clear()
 
         TMCoroutine.Supervised.cancelTasks("Plugin is reloading or shutting down!")
 

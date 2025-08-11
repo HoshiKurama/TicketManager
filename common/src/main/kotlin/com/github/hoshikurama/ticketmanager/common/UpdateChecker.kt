@@ -1,5 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common
 
+import java.net.URI
 import java.net.URL
 
 class UpdateChecker(val canCheck: Boolean, private val location: Location) {
@@ -32,7 +33,8 @@ class UpdateChecker(val canCheck: Boolean, private val location: Location) {
         return try {
             val regex = "\"name\":\"[^,]*".toRegex()
 
-            URL(location.link)
+            URI(location.link)
+                .toURL()
                 .openStream()
                 .bufferedReader()
                 .readText()
