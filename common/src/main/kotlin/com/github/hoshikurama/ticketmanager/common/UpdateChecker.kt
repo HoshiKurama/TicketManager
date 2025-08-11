@@ -1,7 +1,6 @@
 package com.github.hoshikurama.ticketmanager.common
 
 import java.net.URI
-import java.net.URL
 
 class UpdateChecker(val canCheck: Boolean, private val location: Location) {
     val latestVersionIfNotLatest = kotlin.run {
