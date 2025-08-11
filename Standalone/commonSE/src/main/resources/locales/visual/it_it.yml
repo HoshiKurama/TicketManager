@@ -1,0 +1,230 @@
+# ========================================
+#      TicketManager Visual Formats
+# ========================================
+# This file contains formatting for virtually all visual
+# outputs in TicketManager. Before continuing, please note:
+#
+#   1: This file uses the Kyori MiniMessage format.
+#      Proper usage is in the Adventure API documentation.
+#
+#   2:  Take note of each sectional header. They will tell
+#       you where formatting is allowed/prohibited.
+#
+#   3: Templates refer to where TM replacements occur. They
+#      may be removed, but they may not be altered or added.
+#      Templates are stated next to or below each entry.
+#
+#   4:  Placeholders refer to values that get directly inlined
+#       before any message parsing occurs. These can be found
+#       between %% symbols. There are three placeholders that
+#       may be used anywhere in this file (where formatting is
+#       allowed). These are:
+#           - %TMHeader% -> TM Uniform Header
+#           - %nl%       -> New line
+#           - %CC%       -> Themed colour code from config
+#       These will be processed in said order. Thus, it
+#       is acceptable to use %nl% and %CC% inside the uniform
+#       header.
+#
+# All internal locale files would not be possible without the
+# users who donated their time to provide translations.
+# All users have my full gratitude and are listed on the front TM GitHub page
+#
+Uniform_Header: '<%CC%>[TicketManager]'
+#
+# ========================================
+#    Ticket Descriptions / Page Buttons
+# ========================================
+#
+# Priority (No Formatting):
+Priority_Lowest: 'MOLTO BASSA'
+Priority_Low: 'BASSA'
+Priority_Normal: 'NORMALE'
+Priority_High: 'ALTA'
+Priority_Highest: 'MOLTO ALTA'
+# Colours (Use Kyori MiniMessage, hex code including #, or legacy)
+PriorityColour_Lowest: '<dark_blue>'
+PriorityColour_Low: '<blue>'
+PriorityColour_Normal: '<yellow>'
+PriorityColour_High: '<red>'
+PriorityColour_Highest: '<dark_red>'
+#
+# Status (No Formatting):
+Status_Open: 'APERTO'
+Status_Closed: 'CHIUSO'
+# Colours (Use Kyori MiniMessage, hex code including #, or legacy)
+StatusColour_Open: '<green>'
+StatusColour_Closed: '<red>'
+#
+# Time words (the space is intentional) (No Formatting):
+Time_Seconds: ' secondi'
+Time_Minutes: ' minuti'
+Time_Hours: ' ore'
+Time_Days: ' giorni'
+Time_Weeks: ' settimane'
+Time_Years: ' anni'
+#
+# Clickable Text (No Formatting):
+Click_ViewTicket: 'Premi per vedere questo ticket'
+Click_Teleport: 'Premi per teletrasportarti'
+Click_NextPage: 'Premi per andare avanti'
+Click_BackPage: 'Premi per andare indietro'
+Click_GitHub_Wiki: 'Premi per leggere la wiki!'
+#
+# Page words (Accepts Formatting):
+Page_ActiveNext: '<white>[Avanti]'
+Page_InactiveNext: '<dark_gray>[Avanti]'
+Page_ActiveBack: '<white>[Indietro]'
+Page_InactiveBack: '<dark_gray>[Indietro]'
+Page_Format: '<back_button><dark_gray>...............<dark_aqua>(<cur_page> di <max_pages>)<dark_gray>...............<next_button>'  # Templates: <back_button> <cur_Page> <max_pages> <next_button>
+#
+#
+# ========================================
+#                 Messages
+# ========================================
+# Warnings (Accepts Formatting):
+Warning_Header: '<red>[TicketManager]'
+Warning_Locked: '%Header% I comandi sono bloccati! Prova più tardi'
+Warning_NoConfig: '%Header% Nuovo documento settings generato.'
+Warning_UnexpectedError: '%Header% Si è verificato un errore inaspettato!'
+Warning_LongTaskDuringReload: '%Header% Compito di lunga durata rilevato durante il tentativo di ricaricamento. Terminazione forzata di tutti gli altri compiti!'
+Warning_InvalidConfig: '%Header% <count> valori di configurazione impostati ai predefiniti! Per maggiori informazioni, controlla la console.'                   # Templates: <count>
+Warning_InternalError: '%Header% Si è verificato un errore interno'
+#
+#
+# ========================================
+#       Informational Output Formats
+# ========================================
+#
+# View and Deep View Format (Accepts Formatting):
+ViewFormat_Header: '%nl%<bold>%TMHeader% <#F3F3F3>Visualizzando il ticket <id>:</bold>'                # Templates: <id>
+ViewFormat_Sep1: '%nl%<dark_gray>================<%CC%>Info<dark_gray>================='
+ViewFormat_InfoCreator: '%nl%<bold><%CC%>Creatore:</bold> <#F3F3F3><creator>   '               # Templates: <creator>
+ViewFormat_InfoAssignedTo: '<bold><%CC%>Assegnato a:</bold> <#F3F3F3><assignment>'            # Templates: <assignment>
+ViewFormat_InfoPriority: '%nl%<bold><%CC%>Priorità:</bold> <%PCC%><priority>   '              # Templates: <priority>     Placeholders: %PCC%
+ViewFormat_InfoStatus: '<bold><%CC%>Stato:</bold> <%SCC%><status>'                           # Templates: <status>       Placeholders: %SCC%
+ViewFormat_InfoLocation: '%nl%<bold><%CC%>Coordinate:</bold> <#F3F3F3><location>'               # Templates: <location>
+ViewFormat_Sep2: '%nl%<dark_gray>===============<%CC%>Azioni<dark_gray>==============='
+ViewFormat_Comment: '%nl%<bold><%CC%>[<user>]</bold> <#F3F3F3><comment>'                                   # Templates: <user> <comment>
+ViewFormat_DeepComment: '%nl%<bold><%CC%>[<user>]</bold> <#F3F3F3><comment>  <dark_gray>~<time> fa'       # Templates: <user> <comment> <time>
+ViewFormat_DeepReopen: '%nl%<gray><bold>[<user>]</bold> Riaperto  <dark_gray>~<time> fa'                  # Templates: <user> <time>
+ViewFormat_DeepClose: '%nl%<gray><bold>[<user>]</bold> Chiuso  <dark_gray>~<time> fa'                     # Templates: <user> <time>
+ViewFormat_DeepMassClose: '%nl%<gray><bold>[<user>]</bold> Mass-Chiuso  <dark_gray>~<time> fa'            # Templates: <user> <time>
+ViewFormat_DeepAssigned: '%nl%<gray><bold>[<user>]</bold> Assegnamento <dark_gray>-> <%CC%><assignment>  <dark_gray>~<time> fa'      # Templates: <user> <assignment> <time>
+ViewFormat_DeepSetPriority: '%nl%<gray><bold>[<user>]</bold> Priorità <dark_gray>-> <%PCC%><priority>  <dark_gray>~<time> fa'      # Templates: <user> <priority> <time>   Placeholders: %PCC%
+#
+# List Format (Accepts Formatting):
+ListFormat_Header: '%nl%%TMHeader% <#F3F3F3>Lista dei ticket aperti:'
+ListFormat_AssignedHeader: '%nl%%TMHeader% <#F3F3F3>Lista dei ticket assegnati a te:'
+ListFormat_UnassignedHeader: '%nl%%TMHeader% <#F3F3F3>Lista dei ticket non assegnati:'
+ListFormat_Entry: '%nl%<%PCC%>[<id>] <dark_gray>[<%CC%><creator> <dark_gray>-> <%CC%><assignment><dark_gray>]<#F3F3F3> <comment>'   # Templates: <id> <creator> <assignment> <comment>  Placeholders: %PCC%
+ListFormat_FormattingSize: '10' # INTEGER ONLY
+ListFormat_MaxLineSize: '52'    # INTEGER ONLY
+#
+# SearchFormat (Accepts Formatting):
+SearchFormat_Querying: '%nl%%TMHeader% <#F3F3F3>Caricamento... attendi!'
+SearchFormat_Header: '%TMHeader% <#F3F3F3>La ricerca ha ottenuto <%CC%><size><#F3F3F3> risultati:'       # Templates: <size>
+SearchFormat_Entry: '%nl%<%PCC%>[<id>] <%SCC%>[<status>] <dark_gray>[<%CC%><creator> <dark_gray>-> <%CC%><assignment><dark_gray>] [<%CC%>Mondo: <world><dark_gray>]%nl%    <%CC%>~<time> fa: <#F3F3F3><comment>'
+# Templates: <id> <status> <creator> <assignment> <world> <time> <comment>    Placeholders: %PCC% %SCC%
+SearchFormat_FormattingSize: '12' # INTEGER ONLY
+SearchFormat_MaxLineSize: '52'    # INTEGER ONLY
+#
+# History Format (Accepts Formatting):
+History_Header: '%nl%%TMHeader% <Name><#F3F3F3> ha <%CC%><count> <#F3F3F3>ticket:'          # Templates: <Name> <count>
+History_Entry: '%nl%<%CC%>[<id>] <%SCC%>[<status>] <#F3F3F3><comment>'                        # Templates: <id> <status> <comment>  Placeholders: %SCC%
+History_FormattingSize: '6' # INTEGER ONLY
+History_MaxLineSize: '52'   # INTEGER ONLY
+#
+# Help Format (Accepts Formatting):
+Help_Header: '%nl%<#F3F3F3>===<gray>====<dark_gray>===<%CC%>Lista comandi<dark_gray>===<gray>====<#F3F3F3>==='
+Help_Line1: '%nl%<%CC%>Tipi di argomenti<#F3F3F3>:<%CC%>   <#F3F3F3>\<Obbligatorio> <gray>[Facoltativo]'
+Help_Line2: '%nl%<%CC%>Formato Silenzioso<#F3F3F3>:<%CC%>     /ticket s<#F3F3F3>.<%CC%><command>'
+Help_Line3: '%nl%<%CC%>Silenziabile: <#F3F3F3>[<red>✕<#F3F3F3>|<green>✓<#F3F3F3>]'
+Help_Sep: '%nl%<gray>========================================='
+Help_HasSilence: '<green>[✓]'
+Help_LackSilence: '<red>[✕]'
+Help_RequiredParam: '<#F3F3F3>‹%Param%›'
+Help_OptionalParam: '<gray>[%Param%]'
+Help_Entry: '%nl%<silenceable> <%CC%>/<command> <params>'  # Template: <silenceable> <command> <params> NOTE: Explanation is appended at end
+Help_Explanation_Assign: ''
+Help_Explanation_Claim: ''
+Help_Explanation_Close: ''
+Help_Explanation_CloseAll: ''
+Help_Explanation_Comment: ''
+Help_Explanation_Create: ''
+Help_Explanation_Help: ''
+Help_Explanation_History: ''
+Help_Explanation_List: ''
+Help_Explanation_ListAssigned: ''
+Help_Explanation_ListUnassigned: ''
+Help_Explanation_Reload: ''
+Help_Explanation_Reopen: ''
+Help_Explanation_Search: ''
+Help_Explanation_SetPriority: ''
+Help_Explanation_Teleport: ''
+Help_Explanation_Unassign: ''
+Help_Explanation_View: ''
+Help_Explanation_DeepView: ''
+#
+# Modified Stacktrace (Accepts Formatting):
+Stacktrace_Line1: '%nl%<dark_red>[Tickets] ATTENZIONE! C''è stato un errore!'
+Stacktrace_Line2: '%nl%<red>     Errore:    <gray><exception>'                  # Templates: <exception>
+Stacktrace_Line3: '%nl%<red>     Informazioni:  <gray><message>'                    # Templates: <message>
+Stacktrace_Line4: '%nl%<dark_red>=-=-=-=-=-=-=Stacktrace cambiata:=-=-=-=-=-=-='
+Stacktrace_Entry: '%nl%<red>          <method> (<file>:<line>)'                    # Templates: <method> <file> <line>
+#
+#
+# ========================================
+#             Notifications
+# ========================================
+#
+# Information (Accepts Formatting):
+Info_ReloadInitiated: '%TMHeader% <#F3F3F3><user> <%CC%>ha avviato un riavvio del plugin! Plugin bloccato in attesa del completamento delle attività in corso...'      # Templates: <user>
+Info_Reload_TasksDone: '%TMHeader% Tutte le altre attività completate! Ricaricamento in corso...'
+Info_ReloadSuccess: '%TMHeader% <%CC%>Reload <green>completato<%CC%>!'
+Info_ReloadFailure: '%TMHeader% <%CC%>Reload <red>fallito<%CC%>!'
+Info_UnderCooldown: '%TMHeader% <red>Devi aspettare ancora <duration> secondi.' # Templates: <duration>
+#
+# Ticket Notifications (Accepts Formatting):
+Notify_UnreadUpdate_Single: '%TMHeader% Il ticket <gray><num> <%CC%>è stato aggiornato! Usa <gray>/ticket vedi <num> <%CC%>per vederlo.'                          # Templates <num>
+Notify_UnreadUpdate_Multi: '%TMHeader% I ticket <gray><num> <%CC%>sono stati aggiornati! Usa <gray>/ticket vedi <id> <%CC%>per vederli.'   # Templates <num>
+Notify_OpenAssigned: '%TMHeader% <gray><open> <%CC%>ticket aperti (<gray><assigned> <%CC%>assegnato a te)'                                 # Templates <open> <assigned>
+Notify_MassCloseSuccess: '%TMHeader% Mass-chiusura da <gray><lower> <%CC%>a <gray><upper> <%CC%>inviata!'                                     # Templates: <lower> <upper>
+Notify_TicketAssignSuccess: '%TMHeader% Ticket <gray>#<id> <%CC%>assegnato a: <gray><assigned><%CC%>!'                                     # Templates: <id> <assigned>
+Notify_TicketCloseSuccess: '%TMHeader% Ticket <gray>#<id> <%CC%>chiuso!'                                                                   # Templates: <id>
+Notify_TicketCloseWithCommentSuccess: '%TMHeader% Ticket <gray>#<id> <%CC%>chiuso con un commento!'                                         # Templates: <id>
+Notify_TicketCreationSuccessful: '%TMHeader% Ticket <gray>#<id> <%CC%>aperto!'                                                            # Templates: <id>
+Notify_TicketCommentSuccessful: '%TMHeader% Ticket <gray>#<id> <%CC%>commentato!'                                                        # Templates: <id>
+Notify_TicketReopenSuccess: '%TMHeader% Ticket <gray>#<id> <%CC%>riaperto!'                                                               # Templates: <id>
+Notify_TicketSetPrioritySuccess: '%TMHeader% Ticket <gray>#<id> <%CC%>cambiato di priorità!'                                                   # Templates: <id>
+Notify_Event_TicketAssign: '%TMHeader% <gray><user> <%CC%>ha assegnato il ticket <gray>#<id> <%CC%>a <gray><assigned><%CC%>.'                    # Templates: <user> <id> <assigned>
+Notify_Event_TicketClose: '%TMHeader% <gray><user> <%CC%>ha chiuso il ticket <gray>#<id><%CC%>.'                                                 # Templates: <user> <id>
+Notify_Event_TicketCloseWithComment: '%TMHeader% <gray><user> <%CC%>ha chiuso il ticket <gray>#<id> con un commento<%CC%>:%nl%<gray><message>'    # Templates: <user> <id> <message>
+Notify_Event_MassClose: '%TMHeader% <gray><user> <%CC%>ha chiuso tutti i ticket <gray>#<lower> <%CC%>a <gray>#<upper><%CC%>.'         # Templates: <user> <lower> <upper>
+Notify_Event_TicketComment: '%TMHeader% <gray><user> <%CC%>ha commentato nel ticket <gray>#<id><%CC%>:%nl%<gray><message>'                      # Templates: <user> <id> <message>
+Notify_Event_TicketCreation: '%TMHeader% <gray><user> <%CC%>ha aperto il ticket <gray>#<id><%CC%>:%nl%<gray><message>'                          # Templates: <user> <id> <message>
+Notify_Event_TicketReopen: '%TMHeader% <gray><user> <%CC%>ha riaperto il ticket <gray>#<id><%CC%>.'                                              # Templates: <user> <id>
+Notify_Event_SetPriority: '%TMHeader% <gray><user> <%CC%>ha impostato il ticket <gray>#<id> <%CC%>a priorità <%PCC%><priority><%CC%>.'                # Templates: <user> <id> <priority>    Placeholders: %PCC%
+Notify_Event_TicketModification: '%TMHeader% Ticket <gray>#<id> <%CC%>è stato aggiornato! Usa <gray>/ticket vedi <id> <%CC%>per vederlo.'                    # Templates: <id>
+Notify_Event_PluginUpdate: '%TMHeader% TicketManager ha un aggiornamento!%nl%  <%CC%>Versione installata: <gray><current>%nl%  <%CC%>Ultima versione: <gray><latest>'          # Templates: <current> <latest>
+Notify_Event_ProxyUpdate: '%TMHeader% TicketManager Proxy ha un aggiornamento!%nl%  <%CC%>Versione installata: <gray><current>%nl%  <%CC%>Ultima versione: <gray><latest>'     # Templates: <current> <latest>
+#
+# Brigadier/CommandAPI Warnings  (Accepts Formatting):
+Brigadier_NotYourTicket: '<red>Non hai i permessi.'
+Brigadier_InvalidID: '<red>Il ticket #<id> non esiste.'                                                                     # Templates: <id>
+Brigadier_TicketAlreadyClosed: '<red>Questo ticket è già chiuso e non può ricevere cambiamento fino alla riapertura.'
+Brigadier_TicketAlreadyOpen: '<red>Questo ticket è già aperto.'
+Brigadier_ConsoleLocationTeleport: '<red>Non puoi teletrasportarti a un ticket o a un''azione creata dalla Console.'
+Brigadier_NoTeleport_SameServer: '<red>Non hai il permesso di teletrasportarti a ticket creati sullo stesso server.'
+Brigadier_NoTeleport_DifferentServer: '<red>Non hai il permesso di teletrasportarti a ticket creati su un server diverso.'
+Brigadier_NoTeleport_ProxyDisabled: "<red>You may not teleport to tickets made on other servers when proxy mode is disabled."
+Brigadier_OtherHistory: "<red>Non hai i permessi per vedere la history dei ticket di un'altro player."
+Brigadier_Search_BadSymbol_1: "<red>Il simbolo <dark_red><symbol><red> non è un simbolo valido per la parola chiave <dark_red><keyword><red>. Usa <dark_red>=<red> o <dark_red>!=<red>."   # Templates: <symbol> <keyword>
+Brigadier_Search_BadStatus: "<dark_red><status><red> non è uno stato valido. Usa <dark_red><open><red> or <dark_red><closed><red>." # templates: <status> <open> <closed>
+Brigadier_Search_BadSymbol_2: "<red>Il simbolo <dark_red><symbol><red> non è valido per la parola chiave <dark_red><keyword><red>. Usa <dark_red>=<red>, <dark_red>!=<red>, <dark_red><<red>, o <dark_red>><red>." # Templates: <symbol> <keyword>
+Brigadier_Search_BadSymbol_3: "<red>Il simbolo <dark_red><symbol><red> non è valido per la parola chiave <dark_red><keyword><red>. Usa <dark_red><<red> o <dark_red>><red>."   # Templates: <symbol> <keyword>
+Brigadier_BadPageNumber: "<red> Numero della pagina non valido."
+Brigadier_BadSearchConstraint: "<red>Filtro di ricerca non valido: <dark_red><keyword><red>."  # Templates <keyword>
+Brigadier_InvalidAssignment: "<red>Tipo di assegnazione non valido: <dark_red><assignment><red>."   # Templates <assignment>
+Brigadier_InvalidTimeUnit: "<red>Unità di tempo non valida: <dark_red><timeunit><red>."             # Templates <timeunit>
+Brigadier_InvalidPriority: "<red>Priorità non valida: <dark_red><priority><red>."              # Templates <priority>
