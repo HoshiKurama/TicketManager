@@ -1,0 +1,79 @@
+package com.github.hoshikurama.ticketmanager.spigot.impls
+
+import com.github.hoshikurama.ticketmanager.api.registry.messagesharing.MessageSharing
+import com.github.hoshikurama.ticketmanager.api.registry.messagesharing.MessageSharingExtension
+import com.github.hoshikurama.ticketmanager.common.Proxy2Server
+import com.github.hoshikurama.ticketmanager.common.Server2Proxy
+import com.github.hoshikurama.ticketmanager.common.randServerIdentifier
+import com.github.hoshikurama.ticketmanager.commonse.utilities.notEquals
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
+import com.google.common.io.ByteStreams
+import kotlinx.coroutines.channels.SendChannel
+import org.bukkit.Bukkit
+import org.bukkit.plugin.Plugin
+import org.bukkit.plugin.messaging.PluginMessageListener
+import java.util.UUID
+import java.util.function.Consumer
+
+class ProxyMessageSharingExtension(private val plugin: Plugin) : MessageSharingExtension, MessageSharing {
+
+    override fun relay2Hub(data: ByteArray, channelName: String) {
+        Bukkit.getScheduler().runTask(plugin, Consumer {
+            plugin.server.sendPluginMessage(plugin, channelName, data)
+        })
+    }
+
+    override suspend fun unload(trueShutdown: Boolean) {
+        val unregister = {
+            plugin.server.messenger.unregisterIncomingPluginChannel(plugin)
+            plugin.server.messenger.unregisterOutgoingPluginChannel(plugin)
+        }
+
+        if (trueShutdown) unregister()
+        else plugin.runTask(unregister)
+    }
+
+    override suspend fun load(
+        teleportJoinIntermediary: SendChannel<ByteArray>,
+        notificationSharingIntermediary: SendChannel<ByteArray>,
+        pbeVersionIntermediary: SendChannel<ByteArray>
+    ): MessageSharing {
+        // Generate listener for forwarding to intermediaries
+        val listener = PluginMessageListener { channel, player, message ->
+            when (channel.split(":", limit = 2)[1]) {
+                Proxy2Server.NotificationSharing.name -> {
+                    val shouldSendMessage = ByteStreams.newDataInput(message)
+                        .readUTF()
+                        .run(UUID::fromString)
+                        .notEquals(randServerIdentifier)
+
+                    if (shouldSendMessage) TMCoroutine.Global.launch {
+                        notificationSharingIntermediary.send(message)
+                    }
+                }
+
+                Proxy2Server.Teleport.name -> TMCoroutine.Global.launch {
+                    teleportJoinIntermediary.send(message)
+                }
+
+                Proxy2Server.ProxyVersionRequest.name -> TMCoroutine.Global.launch {
+                    pbeVersionIntermediary.send(message)
+                }
+            }
+        }
+
+        // Register plugin channels
+        plugin.runTask {
+            plugin.server.messenger.run {
+                registerOutgoingPluginChannel(plugin, Server2Proxy.NotificationSharing.waterfallString())
+                registerIncomingPluginChannel(plugin, Proxy2Server.NotificationSharing.waterfallString(), listener)
+                registerOutgoingPluginChannel(plugin, Server2Proxy.Teleport.waterfallString())
+                registerIncomingPluginChannel(plugin, Proxy2Server.Teleport.waterfallString(), listener)
+                registerOutgoingPluginChannel(plugin, Server2Proxy.ProxyVersionRequest.waterfallString())
+                registerIncomingPluginChannel(plugin, Proxy2Server.ProxyVersionRequest.waterfallString(), listener)
+            }
+        }
+
+        return this
+    }
+}
