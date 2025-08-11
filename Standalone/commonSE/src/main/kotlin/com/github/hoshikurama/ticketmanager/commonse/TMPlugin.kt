@@ -93,7 +93,7 @@ abstract class TMPlugin(
                 ::SEUpdateChecker.takeIf { config.checkForPluginUpdates },
                 ::UnreadUpdates.takeIf { config.allowUnreadTicketUpdates },
                 proxyTeleport.takeIf { config.proxyOptions != null },
-                pbeUpdateCheck.takeIf { config.proxyOptions?.pbeAllowUpdateCheck != null },
+                pbeUpdateCheck.takeIf { config.proxyOptions?.pbeAllowUpdateCheck?.equals(true) ?: false },
                 ::StaffCount,
             ).mapNotNull { it?.invoke() }
 
