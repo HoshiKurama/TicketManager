@@ -19,7 +19,7 @@ class ProxyMessageSharingExtension(private val plugin: Plugin) : MessageSharingE
 
     override fun relay2Hub(data: ByteArray, channelName: String) {
         Bukkit.getScheduler().runTask(plugin, Consumer {
-            plugin.server.sendPluginMessage(plugin, Server2Proxy.NotificationSharing.waterfallString(), data)
+            plugin.server.sendPluginMessage(plugin, channelName, data)
         })
     }
 
