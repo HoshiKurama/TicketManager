@@ -43,7 +43,7 @@ class PaperPlugin : JavaPlugin() {
         )
 
         // Internally TM:SE will handle using this or the Dummy object based on config
-        TicketManager.MessageSharingRegistry.register(ProxyMessageSharingExtension::class)
+        TicketManager.MessageSharingRegistry.register(ProxyMessageSharingExtension(this))
 
         TMCoroutine.Global.launch {
             tmPlugin.enableTicketManager()
