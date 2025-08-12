@@ -5,15 +5,10 @@ import com.github.hoshikurama.ticketmanager.api.registry.config.Config
 import com.github.hoshikurama.ticketmanager.api.registry.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
 import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
-import com.github.hoshikurama.ticketmanager.common.Proxy2Server
-import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.commonse.PlayerJoinExtensionHolder
 import com.github.hoshikurama.ticketmanager.commonse.PreCommandExtensionHolder
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingMailbox
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.PBEVersionChannel
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.TeleportJoinMailbox
 import com.github.hoshikurama.ticketmanager.spigot.CommandAPIRunner
 import com.github.hoshikurama.ticketmanager.spigot.SpigotPlugin
 import com.github.hoshikurama.ticketmanager.spigot.hooks.JoinEventListener

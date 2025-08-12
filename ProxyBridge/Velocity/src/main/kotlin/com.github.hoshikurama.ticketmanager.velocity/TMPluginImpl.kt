@@ -16,6 +16,7 @@ import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier
 import com.velocitypowered.api.scheduler.ScheduledTask
 import org.bstats.velocity.Metrics
 import org.slf4j.Logger
+import java.net.URI
 import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -84,15 +85,32 @@ class TMPluginImpl @Inject constructor(
             serverToProxyUpdate -> {
                 val serverName = ByteStreams.newDataInput(event.data).readUTF()
                 val targetServer = server.allServers.firstOrNull { it.serverInfo.name == serverName }
+                val latestVersion = getLatestVersionOrNullOnFail() ?: bridgePluginVersion
 
                 if (targetServer != null) {
                     val msg = ByteStreams.newDataOutput()
                         .apply { writeUTF(bridgePluginVersion) }
+                        .apply { writeUTF(latestVersion) }
                         .toByteArray()
                     targetServer.sendPluginMessage(proxyToServerUpdate, msg)
                 }
             }
         }
+    }
+
+    private fun getLatestVersionOrNullOnFail(): String? {
+        return try {
+            val regex = "\"name\":\"[^,]*".toRegex()
+            URI("https://api.github.com/repos/HoshiKurama/TicketManager-Bridge-Releases/tags")
+                .toURL()
+                .openStream()
+                .bufferedReader()
+                .readText()
+                .let(regex::find)!!
+                .value
+                .substring(8) // "x.y.z...."
+                .replace("\"","")
+        } catch (ignored: Exception) { null }
     }
 
     override fun registerChannels(): Unit = server.channelRegistrar.register(incomingMessage, outgoingMessage, serverToProxyTeleport, proxyToServerTeleport, proxyToServerUpdate, serverToProxyUpdate)

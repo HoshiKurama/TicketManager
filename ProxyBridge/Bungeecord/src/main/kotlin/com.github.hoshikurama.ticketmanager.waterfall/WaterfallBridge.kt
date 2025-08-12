@@ -9,6 +9,7 @@ import net.md_5.bungee.api.plugin.Plugin
 import net.md_5.bungee.api.scheduler.ScheduledTask
 import net.md_5.bungee.event.EventHandler
 import org.bstats.bungeecord.Metrics
+import java.net.URI
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeUnit
@@ -100,7 +101,6 @@ class WaterfallBridge : Plugin(), Listener {
                     .forEach { it.sendData(Proxy2Server.NotificationSharing.waterfallString() , event.data) }
 
             Server2Proxy.Teleport.waterfallString() -> {
-                @Suppress("UnstableApiUsage")
                 val input =  ByteStreams.newDataInput(event.data)
 
                 val serverName = input.readUTF()
@@ -116,14 +116,31 @@ class WaterfallBridge : Plugin(), Listener {
             Server2Proxy.ProxyVersionRequest.waterfallString() -> {
                 val serverName = ByteStreams.newDataInput(event.data).readUTF()
                 val targetServer = proxy.servers[serverName]
+                val latestVersion = getLatestVersionOrNullOnFail() ?: bridgePluginVersion
 
                 if (targetServer != null) {
                     val msg = ByteStreams.newDataOutput()
                         .apply { writeUTF(bridgePluginVersion) }
+                        .apply { writeUTF(latestVersion) }
                         .toByteArray()
                     targetServer.sendData(Proxy2Server.ProxyVersionRequest.waterfallString(), msg)
                 }
             }
         }
+    }
+
+    private fun getLatestVersionOrNullOnFail(): String? {
+        return try {
+            val regex = "\"name\":\"[^,]*".toRegex()
+            URI("https://api.github.com/repos/HoshiKurama/TicketManager-Bridge-Releases/tags")
+                .toURL()
+                .openStream()
+                .bufferedReader()
+                .readText()
+                .let(regex::find)!!
+                .value
+                .substring(8) // "x.y.z...."
+                .replace("\"","")
+        } catch (ignored: Exception) { null }
     }
 }

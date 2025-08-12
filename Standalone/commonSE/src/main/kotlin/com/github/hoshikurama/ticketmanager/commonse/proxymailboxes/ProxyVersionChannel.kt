@@ -7,9 +7,9 @@ import com.google.common.io.ByteStreams
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 
-class PBEVersionChannel(
+class ProxyVersionChannel(
     override val messageSharing: MessageSharing
-) : HandshakeMailbox<String, String>() {
+) : HandshakeMailbox<String, Pair<String, String>>() {
     override val outgoingChannelName = Server2Proxy.ProxyVersionRequest.waterfallString()
     override val apiChannelRef: ReceiveChannel<ByteArray> = Intermediary
 
@@ -23,7 +23,8 @@ class PBEVersionChannel(
             .toByteArray()
     }
 
-    override fun decodeOutput(outputArray: ByteArray): String {
-        return ByteStreams.newDataInput(outputArray).readUTF()
+    override fun decodeOutput(outputArray: ByteArray): Pair<String, String> {
+        val output = ByteStreams.newDataInput(outputArray)
+        return output.readUTF() to output.readUTF()
     }
 }

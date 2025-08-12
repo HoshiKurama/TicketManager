@@ -9,7 +9,7 @@ import com.github.hoshikurama.ticketmanager.api.registry.messagesharing.MessageS
 import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
 import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.NotificationSharingMailbox
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.PBEVersionChannel
+import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.ProxyVersionChannel
 import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.TeleportJoinMailbox
 import com.github.hoshikurama.ticketmanager.commonse.registrydefaults.config.DefaultConfigExtension
 import com.github.hoshikurama.ticketmanager.commonse.registrydefaults.database.DefaultDatabaseExtension
@@ -78,7 +78,7 @@ abstract class TMPlugin(
         messageSharing = TicketManager.MessageSharingRegistry.loadAndInitialize(config.proxyOptions == null)
         val teleportJoinMailbox = TeleportJoinMailbox(messageSharing)
         val notificationSharingMailbox = NotificationSharingMailbox(messageSharing)
-        val pbeVersionChannel = PBEVersionChannel(messageSharing)
+        val proxyVersionChannel = ProxyVersionChannel(messageSharing)
 
         // Load remaining core extensions via dependency injection
         val commandTasks = CommandTasks(config, locale, database, platform, permission, ticketCounter, notificationSharingMailbox, teleportJoinMailbox)
@@ -86,13 +86,13 @@ abstract class TMPlugin(
         // Load auxiliary extensions and add internal behaviours (fixes extra registrations on reload for internal ones)
         val playerJoinExtensions: PlayerJoinExtensionHolder = run {
             val proxyTeleport = { ProxyTeleport(teleportJoinMailbox) }
-            val pbeUpdateCheck = { PBEUpdateChecker(pbeVersionChannel) }
+            val proxyUpdateCheck = { ProxyUpdateChecker(proxyVersionChannel) }
 
             val extraAsyncPlayerJoinExtensions = listOf(
                 ::SEUpdateChecker.takeIf { config.checkForPluginUpdates },
                 ::UnreadUpdates.takeIf { config.allowUnreadTicketUpdates },
                 proxyTeleport.takeIf { config.proxyOptions != null },
-                pbeUpdateCheck.takeIf { config.proxyOptions?.pbeAllowUpdateCheck?.equals(true) ?: false },
+                proxyUpdateCheck.takeIf { config.proxyOptions?.pbeAllowUpdateCheck?.equals(true) ?: false },
                 ::StaffCount,
             ).mapNotNull { it?.invoke() }
 
@@ -194,7 +194,7 @@ private suspend fun TMMessageSharingRegistry.loadAndInitialize(isHubOptionsNull:
     else loadAndInitialize(
         teleportJoinIntermediary = TeleportJoinMailbox.Intermediary,
         notificationSharingIntermediary = NotificationSharingMailbox.Intermediary,
-        pbeVersionIntermediary = PBEVersionChannel.Intermediary
+        pbeVersionIntermediary = ProxyVersionChannel.Intermediary
     )
 }
 
