@@ -23,8 +23,7 @@ import com.github.hoshikurama.tmcoroutine.ChanneledCounter
 import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import kotlinx.coroutines.delay
 import java.nio.file.Path
-import java.util.UUID
-
+import java.util.*
 import com.github.hoshikurama.ticketmanager.api.impl.TicketManager as TicketManagerInternal
 
 abstract class TMPlugin(
@@ -178,10 +177,11 @@ abstract class TMPlugin(
             ).forEach { it.clear() }
         }
 
-        TMCoroutine.Supervised.cancelTasks("Plugin is reloading or shutting down!")
-
         databaseClosing.closeDatabase()
         messageSharing.unload(trueShutdown)
+
+        // This should go last since above might rely on these for proper shutdown
+        TMCoroutine.Supervised.cancelTasks("Plugin is reloading or shutting down!")
     }
 }
 
