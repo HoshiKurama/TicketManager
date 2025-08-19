@@ -641,8 +641,8 @@ class CommandTasks(
             if (config.proxyOptions!!.serverName == location.server) {
                 platform.teleportToTicketLocSameServer(sender, location)
             } else {
+                // teleportToTicketLocDiffServer() is useless now since proxy stuff handles this.
                 teleportJoinMailbox.forward2Hub(sender.uuid to location)
-                platform.teleportToTicketLocDiffServer(sender, location)
             }
         }
     }
