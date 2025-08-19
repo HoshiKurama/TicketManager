@@ -61,15 +61,15 @@ class PlatformFunctionsImpl(
     }
 
     override fun pushInfoToConsole(message: String) {
-        Bukkit.getLogger().log(Level.INFO, message)
+        plugin.slF4JLogger.atInfo().setMessage(message).log()
     }
 
     override fun pushWarningToConsole(message: String) {
-        Bukkit.getLogger().log(Level.WARNING, message)
+        plugin.slF4JLogger.atWarn().setMessage(message).log()
     }
 
     override fun pushErrorToConsole(message: String) {
-        Bukkit.getLogger().log(Level.SEVERE, message)
+        plugin.slF4JLogger.atError().setMessage(message).log()
     }
 
     override fun getOnlineSeenPlayerNames(sender: CommandSender.Active): List<String> {
