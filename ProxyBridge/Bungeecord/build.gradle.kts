@@ -12,10 +12,11 @@ application {
 repositories {
     mavenCentral()
     maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
+    maven(url = "https://libraries.minecraft.net/")
 }
 
 dependencies {
-    compileOnly("net.md-5:bungeecord-api:1.21-R0.3")
+    compileOnly("net.md-5:bungeecord-api:1.21-R0.4-SNAPSHOT")
 
     implementation(project(":common"))
     implementation(project(":ProxyBridge:commonPDE"))
