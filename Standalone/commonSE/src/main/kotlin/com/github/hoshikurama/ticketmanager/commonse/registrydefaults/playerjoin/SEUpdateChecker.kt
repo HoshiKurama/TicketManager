@@ -10,7 +10,7 @@ import com.github.hoshikurama.ticketmanager.api.registry.playerjoin.PlayerJoinEx
 import com.github.hoshikurama.ticketmanager.common.mainPluginVersion
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.templated
-import java.net.URL
+import java.net.URI
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.TimeSource
 
@@ -49,7 +49,8 @@ class SEUpdateChecker: PlayerJoinExtension {
     private fun grabLatestVersion(): String {
         val regex = "\"name\":\"[^,]*".toRegex()
 
-        return URL("https://api.github.com/repos/HoshiKurama/TicketManager/tags")
+        return URI("https://api.github.com/repos/HoshiKurama/TicketManager/tags")
+            .toURL()
             .openStream()
             .bufferedReader()
             .readText()
