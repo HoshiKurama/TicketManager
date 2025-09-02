@@ -18,8 +18,10 @@ abstract class HandshakeMailbox<Input, Output> {
 
     init {
         TMCoroutine.Supervised.launch { // Note: Supervised good since new object made on each reload
-            for (incomingMSG in apiChannelRef) {
-                channel.send(decodeOutput(incomingMSG))
+            apiChannelRef?.let { channelRef ->
+                for (incomingMSG in channelRef) {
+                    channel.send(decodeOutput(incomingMSG))
+                }
             }
         }
     }

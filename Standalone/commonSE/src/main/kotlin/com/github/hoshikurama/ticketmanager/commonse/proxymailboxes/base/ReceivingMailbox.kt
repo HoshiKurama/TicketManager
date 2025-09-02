@@ -19,8 +19,10 @@ abstract class ReceivingMailbox<T> {
 
     init {
         TMCoroutine.Supervised.launch {
-            for (incomingMSG in apiChannelRef) {
-                channel.send(decode(incomingMSG))
+            apiChannelRef?.let { channelRef ->
+                for (incomingMSG in channelRef) {
+                    channel.send(decode(incomingMSG))
+                }
             }
         }
     }
