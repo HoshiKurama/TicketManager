@@ -62,7 +62,5 @@ tasks {
 
         relocate("dev.jorel.commandapi", "com.github.hoshikurama.ticketmanager.shaded.commandapi")
         relocate("org.bstats", "com.github.hoshikurama.ticketmanager.shaded.bStats")
-        relocate("kotlin", "com.github.hoshikurama.ticketmanager.shaded.kotlin")
-        relocate("kotlinx", "com.github.hoshikurama.ticketmanager.shaded.kotlinx")
     }
 }
