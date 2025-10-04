@@ -6,6 +6,7 @@ import com.github.hoshikurama.ticketmanager.api.registry.config.Config
 import com.github.hoshikurama.ticketmanager.api.registry.database.utils.Option
 import com.github.hoshikurama.ticketmanager.api.registry.database.utils.SearchConstraints
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
+import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
 import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
 import com.github.hoshikurama.ticketmanager.api.ticket.Creator
 import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
@@ -45,6 +46,8 @@ class SearchConstraintsGrabberArgument : CustomArgumentType<SearchConstraintsRes
         get() = CommandReferences.config
     private val platform: PlatformFunctions
         get() = CommandReferences.platform
+    private val permissions: Permission
+        get() = CommandReferences.permissions
 
     companion object {
         fun get(ctx: CommandContext<CommandSourceStack>, name: String): SearchConstraintsResult {
@@ -266,12 +269,17 @@ class SearchConstraintsGrabberArgument : CustomArgumentType<SearchConstraintsRes
                             platform.getOnlineSeenPlayerNames(sender.toTMSender()) + listOf(locale.consoleName)
                         else listOf("&&")
 
-                    locale.searchAssigned ->
-                        if (curArgsSet.size == 3)
-                            listOf(locale.consoleName, locale.miscNobody, locale.parameterLiteralPlayer, locale.parameterLiteralGroup, locale.parameterLiteralPhrase)
-                        else if (curArgsSet.size > 3 && curArgsSet[2] == locale.parameterLiteralPhrase)// TODO: I wanna add groups and players into this
-                            listOf("${locale.parameterLiteralPhrase}...", "&&")
-                        else listOf("&&")
+                    locale.searchAssigned -> when (curArgsSet.size) {
+                        3 -> listOf(locale.consoleName, locale.miscNobody, locale.parameterLiteralPlayer, locale.parameterLiteralGroup, locale.parameterLiteralPhrase)
+                        4 -> when (curArgsSet[2]) {
+                            locale.parameterLiteralPhrase -> listOf("${locale.parameterLiteralPhrase}...")
+                            locale.parameterLiteralGroup -> permissions.allGroupNames()
+                            locale.parameterLiteralPlayer -> platform.getOnlineSeenPlayerNames(sender.toTMSender())
+                            else -> listOf("&&")
+                        }
+                        else -> if (curArgsSet[2] == locale.parameterLiteralPhrase) listOf("${locale.parameterLiteralPhrase}...", "&&")
+                                else listOf("&&")
+                    }
 
                     locale.searchPriority ->
                         if (curArgsSet.size == 3) {
