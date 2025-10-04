@@ -2,6 +2,7 @@ package com.github.hoshikurama.ticketmanager.paper.commands
 
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
 import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import com.mojang.brigadier.arguments.ArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
@@ -9,15 +10,17 @@ import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.argument.CustomArgumentType
+import kotlinx.coroutines.future.asCompletableFuture
 import org.bukkit.Bukkit
 import org.bukkit.OfflinePlayer
 import java.util.concurrent.CompletableFuture
 import org.bukkit.entity.Player as BukkitPlayer
 
-class UserArgument(
-    private val locale: Locale,
+class UserAssignmentArgument(
     private val useOnlinePlayersOnly: Boolean
 ) : CustomArgumentType.Converted<Assignment, String> {
+    private val locale: Locale
+        get() = CommandReferences.locale
 
     override fun convert(nativeType: String): Assignment {
         if (nativeType == locale.consoleName)
@@ -43,25 +46,27 @@ class UserArgument(
             else -> { _: BukkitPlayer -> true }
         }
 
-        if (useOnlinePlayersOnly) {
-            Bukkit.getOnlinePlayers()
-                .asSequence()
-                .filter { it.name.startsWith(builder.remaining) }
-                .filter(isVisible)
-                .map(BukkitPlayer::getName)
-                .forEach(builder::suggest)
+        return TMCoroutine.Supervised.async {
+            if (useOnlinePlayersOnly) {
+                Bukkit.getOnlinePlayers()
+                    .asSequence()
+                    .filter { it.name.startsWith(builder.remaining) }
+                    .filter(isVisible)
+                    .map(BukkitPlayer::getName)
+                    .forEach(builder::suggest)
 
-        } else {
-            Bukkit.getOfflinePlayers()
-                .asSequence()
-                .mapNotNull(OfflinePlayer::getName)
-                .filter { it.startsWith(builder.remaining) }
-                .forEach(builder::suggest)
-        }
+            } else {
+                Bukkit.getOfflinePlayers()
+                    .asSequence()
+                    .mapNotNull(OfflinePlayer::getName)
+                    .filter { it.startsWith(builder.remaining) }
+                    .forEach(builder::suggest)
+            }
 
-        if (locale.consoleName.startsWith(builder.remaining))
-            builder.suggest(locale.consoleName)
+            if (locale.consoleName.startsWith(builder.remaining))
+                builder.suggest(locale.consoleName)
 
-        return builder.buildFuture()
+            builder.build()
+        }.asCompletableFuture()
     }
 }
