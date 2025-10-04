@@ -36,21 +36,3 @@ class NotificationSharingMailbox(
         }
     }
 }
-
-/*
-//TODO
-    Issue: encode and decode data relies on TM:SE specific implementations that CANNOT be on the API.
-    Solution: Intermediate Mailboxes
-    - Extension does not directly read and write to typed mailbox.
-    - Encoding Side:
-        - TM:SE encodes the type properly to ByteArray
-        - This gets relayed to hub
-    - Decoding Side:
-        - Extension forwards ByteArray to channel
-        - TM:SE codes reads from this mailbox, decodes it, and forwards it to the typed mailbox
-        - TM:SE reads this like normal
-
-    - Create an interface for the API that instructs how to forward data around
-    - TM:SE will create the listener for this mailbox and do its own stuff.
-    - TM:Core will contain these intermediate mailboxes. Benefit too is they can stay on for entire plugin lifespan
- */
