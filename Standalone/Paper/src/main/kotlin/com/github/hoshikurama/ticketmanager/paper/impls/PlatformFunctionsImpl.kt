@@ -5,15 +5,12 @@ import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.api.registry.config.Config
 import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
 import com.github.hoshikurama.ticketmanager.api.ticket.ActionLocation
-import com.github.hoshikurama.ticketmanager.common.Server2Proxy
-import com.github.hoshikurama.ticketmanager.commonse.misc.encodeRequestTP
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.plugin.Plugin
 import java.util.*
-import java.util.logging.Level
 
 class PlatformFunctionsImpl(
     private val plugin: Plugin,
@@ -50,10 +47,6 @@ class PlatformFunctionsImpl(
     override fun teleportToTicketLocSameServer(player: CommandSender.OnlinePlayer, loc: ActionLocation.FromPlayer) {
         val location = Location(Bukkit.getWorld(loc.world), loc.x.toDouble(), loc.y.toDouble(), loc.z.toDouble())
         Bukkit.getScheduler().runTask(plugin, Runnable { (player as PaperPlayer).pPlayer.teleport(location) })
-    }
-
-    override fun teleportToTicketLocDiffServer(player: CommandSender.OnlinePlayer, loc: ActionLocation.FromPlayer) {
-        plugin.server.sendPluginMessage(plugin, Server2Proxy.Teleport.waterfallString(), encodeRequestTP(player, loc))
     }
 
     override fun getConsoleAudience(): Audience {

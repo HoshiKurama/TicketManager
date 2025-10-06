@@ -228,3 +228,4 @@ Brigadier_BadSearchConstraint: "<red>Invalid search constraint: <dark_red><keywo
 Brigadier_InvalidAssignment: "<red>Invalid assignment type: <dark_red><assignment><red>."   # Templates <assignment>
 Brigadier_InvalidTimeUnit: "<red>Invalid time unit: <dark_red><timeunit><red>."             # Templates <timeunit>
 Brigadier_InvalidPriority: "<red>Invalid priority: <dark_red><priority><red>."              # Templates <priority>
+Brigadier_InvalidPlayerName: "<red><i>Invalid player name!</i>"

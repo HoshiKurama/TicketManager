@@ -93,14 +93,25 @@ class PaperCommandRunner(private val scheduleSync: (() -> Unit) -> Unit) {
             val generateUserBranch = { isSilent: Boolean ->
                 literal(locale.parameterLiteralPlayer)
                     .then(Commands.argument(locale.parameterLiteralPlayer, UserAssignmentGrabberArgument(playerNamesCacher))
-                        .executesTMMessageWithTicket { tmSender, ctx, ticket ->
-                            commandTasks.assign(tmSender,
-                                assignment = UserAssignmentGrabberArgument.get(ctx, locale.parameterLiteralPlayer)
-                                    .retrieveOrNull()
-                                    ?: Assignment.Nobody, //TODO: DON'T EXECUTE IF DOESN'T EXIST. ADD INVALID PLAYER MESSAGE
-                                ticket = ticket,
-                                silent = isSilent,
+                        .executesTMActionWithTicket { tmSender, ctx, ticket ->
+                            val userAssignment = UserAssignmentGrabberArgument
+                                .get(ctx, locale.parameterLiteralPlayer)
+                                .retrieveOrNull()
+
+                            if (userAssignment == null) {
+                                tmSender.sendMessage(locale.brigadierInvalidPlayerName.parseMiniMessage())
+                                return@executesTMActionWithTicket
+                            }
+
+                            commandTasks.executeNotifications(
+                                commandSender = tmSender,
+                                message = commandTasks.assign(tmSender,
+                                    assignment = userAssignment,
+                                    ticket = ticket,
+                                    silent = isSilent,
+                                )
                             )
+
                         }
                     )
             }
@@ -521,7 +532,7 @@ class PaperCommandRunner(private val scheduleSync: (() -> Unit) -> Unit) {
                     val offlinePlayer = when (val result = ctx.getArgument(locale.parameterUser, OfflinePlayerGrabber::class.java).retrieve()) {
                         is OfflinePlayerGrabber.ValidPlayer -> result.player
                         is OfflinePlayerGrabber.ErrorInvalidName -> {
-                            tmSender.sendMessage("<red><i>Invalid player name!</i>".parseMiniMessage()) //TODO EVENTUALLY LOCALIZE THIS
+                            tmSender.sendMessage(locale.brigadierInvalidPlayerName.parseMiniMessage())
                             return@executesTMAction
                         }
                     }
@@ -541,7 +552,7 @@ class PaperCommandRunner(private val scheduleSync: (() -> Unit) -> Unit) {
                     val offlinePlayer = when (val result = ctx.getArgument(locale.parameterUser, OfflinePlayerGrabber::class.java).retrieve()) {
                         is OfflinePlayerGrabber.ValidPlayer -> result.player
                         is OfflinePlayerGrabber.ErrorInvalidName -> {
-                            tmSender.sendMessage("<red><i>Invalid player name!</i>".parseMiniMessage()) //TODO EVENTUALLY LOCALIZE THIS
+                            tmSender.sendMessage(locale.brigadierInvalidPlayerName.parseMiniMessage())
                             return@executesTMAction
                         }
                     }

@@ -229,3 +229,4 @@ Brigadier_BadSearchConstraint: "<red>Ungültige Suchbeschränkung: <dark_red><ke
 Brigadier_InvalidAssignment: "<red>Ungültiger Zuweisungtyp: <dark_red><assignment><red>."   # Templates <assignment>
 Brigadier_InvalidTimeUnit: "<red>Ungültige Zeiteinheit: <dark_red><timeunit><red>."             # Templates <timeunit>
 Brigadier_InvalidPriority: "<red>Ungültige Priorität: <dark_red><priority><red>."
+Brigadier_InvalidPlayerName: "<red><i>Ungültiger Spielername!</i>"

@@ -11,8 +11,8 @@ repositories {
 dependencies {
 
     compileOnly(project(":common"))
-    compileOnly("com.github.HoshiKurama.TicketManager_API:Common:11.2.0")
-    compileOnly("com.github.HoshiKurama.TicketManager_API:TMCoroutine:11.2.0")
+    compileOnly("com.github.HoshiKurama.TicketManager_API:Common:12.1.0")
+    compileOnly("com.github.HoshiKurama.TicketManager_API:TMCoroutine:12.1.0")
     // Not included but shaded later
     compileOnly("com.github.seratch:kotliquery:1.9.1")
     compileOnly("net.kyori:adventure-text-minimessage:4.21.0")

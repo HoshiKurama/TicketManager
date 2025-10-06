@@ -215,5 +215,6 @@ class TMLocale(
     override val warningsLongTaskDuringReload: String,
     override val warningsNoConfig: String,
     override val warningsUnexpectedError: String,
-    override val wikiLink: String
+    override val wikiLink: String,
+    override val brigadierInvalidPlayerName: String,
 ) : Locale

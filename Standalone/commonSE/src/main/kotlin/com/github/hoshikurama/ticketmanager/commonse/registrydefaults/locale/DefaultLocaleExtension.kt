@@ -317,6 +317,7 @@ class DefaultLocaleExtension : LocaleExtension {
             brigadierInvalidAssignment = readAndPrime("Brigadier_InvalidAssignment")!!,
             brigadierInvalidTimeUnit = readAndPrime("Brigadier_InvalidTimeUnit")!!,
             brigadierInvalidPriority = readAndPrime("Brigadier_InvalidPriority")!!,
+            brigadierInvalidPlayerName = readAndPrime("Brigadier_InvalidPlayerName")!!,
 
         )
     }
@@ -327,7 +328,7 @@ class DefaultLocaleExtension : LocaleExtension {
                 .absolute()
                 .inputStream()
                 .let { Yaml().load(it) }
-        } catch (e: Exception) { mapOf() }
+        } catch (_: Exception) { mapOf() }
 
         // Prepares Headers for inlining (Still has placeholders)
         val uniformHeader = visuals["Uniform_Header"] ?: "<%CC%>[TicketManager] "
@@ -567,6 +568,7 @@ class DefaultLocaleExtension : LocaleExtension {
             brigadierInvalidAssignment = readAndPrime("Brigadier_InvalidAssignment") ?: internalVersion.brigadierInvalidAssignment,
             brigadierInvalidTimeUnit = readAndPrime("Brigadier_InvalidTimeUnit") ?: internalVersion.brigadierInvalidTimeUnit,
             brigadierInvalidPriority = readAndPrime("Brigadier_InvalidPriority") ?: internalVersion.brigadierInvalidPriority,
+            brigadierInvalidPlayerName = readAndPrime("Brigadier_InvalidPlayerName") ?: internalVersion.brigadierInvalidPlayerName
         )
     }
 }
