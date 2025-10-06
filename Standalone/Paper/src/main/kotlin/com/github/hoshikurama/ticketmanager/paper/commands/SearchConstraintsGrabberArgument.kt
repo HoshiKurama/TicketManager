@@ -1,8 +1,6 @@
 package com.github.hoshikurama.ticketmanager.paper.commands
 
-import com.github.hoshikurama.ticketmanager.api.CommandSender
 import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
-import com.github.hoshikurama.ticketmanager.api.registry.config.Config
 import com.github.hoshikurama.ticketmanager.api.registry.database.utils.Option
 import com.github.hoshikurama.ticketmanager.api.registry.database.utils.SearchConstraints
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
@@ -12,8 +10,6 @@ import com.github.hoshikurama.ticketmanager.api.ticket.Creator
 import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
 import com.github.hoshikurama.ticketmanager.commonse.misc.templated
-import com.github.hoshikurama.ticketmanager.paper.impls.PaperConsole
-import com.github.hoshikurama.ticketmanager.paper.impls.PaperPlayer
 import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.arguments.ArgumentType
@@ -27,7 +23,6 @@ import kotlinx.coroutines.future.asCompletableFuture
 import net.kyori.adventure.text.Component
 import java.util.concurrent.CompletableFuture
 import com.github.hoshikurama.ticketmanager.api.registry.database.utils.SearchConstraints.Symbol as SCSymbol
-import org.bukkit.command.ConsoleCommandSender as BukkitConsole
 
 typealias BukkitPlayer = org.bukkit.entity.Player
 typealias BukkitCommandSender = org.bukkit.command.CommandSender
@@ -39,11 +34,12 @@ sealed interface SearchConstraintsResult {
 }
 
 
-class SearchConstraintsGrabberArgument : CustomArgumentType<SearchConstraintsResult, String> {
+class SearchConstraintsGrabberArgument(
+    private val playerNamesCacher: OfflinePlayerNamesCacher
+) : CustomArgumentType<SearchConstraintsResult, String> {
+
     private val locale: Locale
         get() = CommandReferences.locale
-    private val config: Config
-        get() = CommandReferences.config
     private val platform: PlatformFunctions
         get() = CommandReferences.platform
     private val permissions: Permission
@@ -246,10 +242,9 @@ class SearchConstraintsGrabberArgument : CustomArgumentType<SearchConstraintsRes
             val sender = (context as? CommandContext<CommandSourceStack>)
                 ?.source?.sender ?: throw Exception("Invalid context!")
             val curArgsSet = builder.remaining.split(" && ").last().split(" ")
-
-
             val newBuilder = builder.createOffset(builder.start + builder.remaining.lastIndexOf(" ") + 1)
-            val keywordList = listOf(
+
+            val keywordList = hashSetOf(
                 locale.searchAssigned,
                 locale.searchCreator,
                 locale.searchKeywords,
@@ -260,27 +255,61 @@ class SearchConstraintsGrabberArgument : CustomArgumentType<SearchConstraintsRes
                 locale.searchLastClosedBy,
                 locale.searchTime,
             )
+            val keywordsWithPreFilters = hashSetOf(
+                locale.searchCreator,
+                locale.searchClosedBy,
+                locale.searchLastClosedBy,
+                locale.searchAssigned,
+            )
+            val remainingKeywords = hashSetOf(
+                locale.searchKeywords,
+                locale.searchPriority,
+                locale.searchStatus,
+                locale.searchWorld,
+                locale.searchTime,
+            )
 
-            if (curArgsSet.size > 2 && curArgsSet[0] in keywordList) {
-                when (curArgsSet[0]) {
 
-                    locale.searchCreator, locale.searchClosedBy, locale.searchLastClosedBy ->
-                        if (curArgsSet.size == 3)
-                            platform.getOnlineSeenPlayerNames(sender.toTMSender()) + listOf(locale.consoleName)
-                        else listOf("&&")
+            // For keywords containing some pre-filtered items
+            if (curArgsSet.size > 2 && curArgsSet[0] in keywordsWithPreFilters) when (curArgsSet[0]) {
+                locale.searchCreator,
+                locale.searchClosedBy,
+                locale.searchLastClosedBy -> {
+                    if (curArgsSet.size == 3) {
+                        playerNamesCacher.getSuggestions(sender, newBuilder.remaining)
+                            .forEach(newBuilder::suggest)
+                        if (locale.consoleName.startsWith(newBuilder.remaining))
+                            newBuilder.suggest(locale.consoleName)
+                    } else listOf("&&")
+                }
 
-                    locale.searchAssigned -> when (curArgsSet.size) {
-                        3 -> listOf(locale.consoleName, locale.miscNobody, locale.parameterLiteralPlayer, locale.parameterLiteralGroup, locale.parameterLiteralPhrase)
-                        4 -> when (curArgsSet[2]) {
-                            locale.parameterLiteralPhrase -> listOf("${locale.parameterLiteralPhrase}...")
-                            locale.parameterLiteralGroup -> permissions.allGroupNames()
-                            locale.parameterLiteralPlayer -> platform.getOnlineSeenPlayerNames(sender.toTMSender())
-                            else -> listOf("&&")
-                        }
-                        else -> if (curArgsSet[2] == locale.parameterLiteralPhrase) listOf("${locale.parameterLiteralPhrase}...", "&&")
+                locale.searchAssigned -> {
+                    if (curArgsSet.size == 4 && curArgsSet[2] == locale.parameterLiteralPlayer) // Single out the pre-filtered item
+                        playerNamesCacher.getSuggestions(sender, newBuilder.remaining).forEach(newBuilder::suggest)
+                    else {
+                        when (curArgsSet.size) {
+                            3 -> listOf(locale.consoleName, locale.miscNobody, locale.parameterLiteralPlayer, locale.parameterLiteralGroup, locale.parameterLiteralPhrase)
+                            4 -> when (curArgsSet[2]) {
+                                locale.parameterLiteralPhrase -> listOf("${locale.parameterLiteralPhrase}...")
+                                locale.parameterLiteralGroup -> permissions.allGroupNames()
+                                else -> listOf("&&")
+                            }
+                            else -> {
+                                if (curArgsSet[2] == locale.parameterLiteralPhrase) listOf("${locale.parameterLiteralPhrase}...", "&&")
                                 else listOf("&&")
+                            }
+                        }
+                            .filter { it.startsWith(newBuilder.remaining) }
+                            .forEach(newBuilder::suggest)
                     }
+                }
 
+                else -> throw Exception("Impossible")
+            }
+
+            // For keywords containing no pre-filtered items
+            else if (curArgsSet.size > 2 && curArgsSet[0] in remainingKeywords) {
+                when (curArgsSet[0]) {
                     locale.searchPriority ->
                         if (curArgsSet.size == 3) {
                             listOf("1", "2", "3", "4", "5", locale.priorityLowest, locale.priorityLow,
@@ -316,6 +345,7 @@ class SearchConstraintsGrabberArgument : CustomArgumentType<SearchConstraintsRes
                     .filter { it.startsWith(curArgsSet.last()) }
                     .forEach(newBuilder::suggest)
             }
+
 
             // "somethingHere "
             else if (curArgsSet.size == 2 && curArgsSet[0] in keywordList) {
@@ -357,14 +387,5 @@ class SearchConstraintsGrabberArgument : CustomArgumentType<SearchConstraintsRes
         else platform.offlinePlayerNameToUUIDOrNull(this)
             ?.run(Creator::User)
             ?: Creator.UUIDNoMatch
-    }
-
-    private fun BukkitCommandSender.toTMSender(): CommandSender.Active = when (this) {
-        is BukkitConsole -> PaperConsole(config.proxyOptions?.serverName)
-        is BukkitPlayer -> PaperPlayer(this, config.proxyOptions?.serverName)
-        else -> when ((this::class).toString()) {
-            "class io.papermc.paper.brigadier.NullCommandSender" -> PaperConsole(config.proxyOptions?.serverName) // I guess this is something Paper does...
-            else -> throw Exception("Unsupported Entity Type!:\n Class Type: \"${this::class}\"")
-        }
     }
 }

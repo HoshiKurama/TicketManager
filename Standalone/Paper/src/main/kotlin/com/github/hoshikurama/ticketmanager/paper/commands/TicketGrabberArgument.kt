@@ -13,13 +13,11 @@ import net.kyori.adventure.text.Component
 
 // locale.parameterID is always the argument name
 class TicketGrabberArgument(
-    private val database: AsyncDatabase,
-    private val locale: Locale,
     vararg val otherChecks: (Ticket, CommandSender.Active) -> TicketGrabber.Error?
 ): CustomArgumentType.Converted<TicketGrabber, Long> {
 
     override fun convert(nativeType: Long): TicketGrabber {
-        return TicketGrabber(database, locale, nativeType, otherChecks)
+        return TicketGrabber(nativeType, otherChecks)
     }
 
     override fun getNativeType(): ArgumentType<Long> {
@@ -28,11 +26,14 @@ class TicketGrabberArgument(
 }
 
 class TicketGrabber(
-    private val database: AsyncDatabase,
-    private val locale: Locale,
     private val ticketID: Long,
     private val otherChecks: Array<out (Ticket, CommandSender.Active) -> Error?>
 ) {
+    private val database: AsyncDatabase
+        get() = CommandReferences.database
+    private val locale: Locale
+        get() = CommandReferences.locale
+
     sealed interface Result
     class Error(val errorComponent: Component): Result
     class Success(val ticket: Ticket): Result

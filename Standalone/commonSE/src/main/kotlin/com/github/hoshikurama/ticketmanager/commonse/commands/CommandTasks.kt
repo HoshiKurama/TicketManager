@@ -771,7 +771,7 @@ class CommandTasks(
     }
 
     // Global coroutine prevents this very job from ending
-    suspend fun reload(sender: CommandSender.Active): Job = TMCoroutine.Global.launch {
+    fun reload(sender: CommandSender.Active): Job = TMCoroutine.Global.launch {
 
         // Announce Intentions
         platform.massNotify(

@@ -11,24 +11,22 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.argument.CustomArgumentType
 import kotlinx.coroutines.future.asCompletableFuture
-import org.bukkit.Bukkit
-import org.bukkit.OfflinePlayer
 import java.util.concurrent.CompletableFuture
-import org.bukkit.entity.Player as BukkitPlayer
 
-class UserAssignmentArgument(
-    private val useOnlinePlayersOnly: Boolean
-) : CustomArgumentType.Converted<Assignment, String> {
+class UserAssignmentGrabberArgument(
+    private val playerNamesCacher: OfflinePlayerNamesCacher
+) : CustomArgumentType.Converted<UserAssignmentGrabber, String> {
     private val locale: Locale
         get() = CommandReferences.locale
 
-    override fun convert(nativeType: String): Assignment {
-        if (nativeType == locale.consoleName)
-            return Assignment.Console
+    companion object {
+        fun get(ctx: CommandContext<CommandSourceStack>, name: String): UserAssignmentGrabber {
+            return ctx.getArgument(name, UserAssignmentGrabber::class.java)
+        }
+    }
 
-        return Bukkit.getOfflinePlayer(nativeType).name
-            ?.run(Assignment::Player)
-            ?: Assignment.Nobody
+    override fun convert(nativeType: String): UserAssignmentGrabber {
+        return UserAssignmentGrabber(nativeType, playerNamesCacher)
     }
 
     override fun getNativeType(): ArgumentType<String> {
@@ -39,34 +37,30 @@ class UserAssignmentArgument(
         context: CommandContext<S>,
         builder: SuggestionsBuilder
     ): CompletableFuture<Suggestions> {
-        val ctx = context.source as CommandSourceStack
-
-        val isVisible = when (val sender = ctx.sender) {
-            is BukkitPlayer -> { player: BukkitPlayer -> sender.canSee(player) }
-            else -> { _: BukkitPlayer -> true }
-        }
+        val source = context.source as CommandSourceStack
 
         return TMCoroutine.Supervised.async {
-            if (useOnlinePlayersOnly) {
-                Bukkit.getOnlinePlayers()
-                    .asSequence()
-                    .filter { it.name.startsWith(builder.remaining) }
-                    .filter(isVisible)
-                    .map(BukkitPlayer::getName)
-                    .forEach(builder::suggest)
-
-            } else {
-                Bukkit.getOfflinePlayers()
-                    .asSequence()
-                    .mapNotNull(OfflinePlayer::getName)
-                    .filter { it.startsWith(builder.remaining) }
-                    .forEach(builder::suggest)
-            }
+            playerNamesCacher.getSuggestions(source.sender, builder.remaining)
+                .forEach(builder::suggest)
 
             if (locale.consoleName.startsWith(builder.remaining))
                 builder.suggest(locale.consoleName)
 
             builder.build()
         }.asCompletableFuture()
+    }
+}
+
+// This gets around issue that generic must be of type Any
+class UserAssignmentGrabber(
+    private val username: String,
+    private val playerNamesCacher: OfflinePlayerNamesCacher,
+) {
+    suspend fun retrieveOrNull(): Assignment? {
+        return when {
+            username == CommandReferences.locale.consoleName -> Assignment.Console
+            playerNamesCacher.contains(username) -> Assignment.Player(username)
+            else -> null
+        }
     }
 }

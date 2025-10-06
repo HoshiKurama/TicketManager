@@ -1,7 +1,6 @@
 package com.github.hoshikurama.ticketmanager.paper.commands
 
 import com.github.hoshikurama.ticketmanager.api.CommandSender
-import com.github.hoshikurama.ticketmanager.api.PlatformFunctions
 import com.github.hoshikurama.ticketmanager.api.registry.config.Config
 import com.github.hoshikurama.ticketmanager.api.registry.database.AsyncDatabase
 import com.github.hoshikurama.ticketmanager.api.registry.locale.Locale
@@ -9,13 +8,12 @@ import com.github.hoshikurama.ticketmanager.api.registry.permission.Permission
 import com.github.hoshikurama.ticketmanager.api.registry.precommand.PreCommandExtension.SyncDecider.Decision
 import com.github.hoshikurama.ticketmanager.api.ticket.ActionLocation
 import com.github.hoshikurama.ticketmanager.api.ticket.Assignment
+import com.github.hoshikurama.ticketmanager.api.ticket.Creator
 import com.github.hoshikurama.ticketmanager.api.ticket.Ticket
 import com.github.hoshikurama.ticketmanager.commonse.PreCommandExtensionHolder
 import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
 import com.github.hoshikurama.ticketmanager.commonse.commands.MessageNotification
 import com.github.hoshikurama.ticketmanager.commonse.misc.parseMiniMessage
-import com.github.hoshikurama.ticketmanager.paper.BukkitCommandSender
-import com.github.hoshikurama.ticketmanager.paper.BukkitPlayer
 import com.github.hoshikurama.ticketmanager.paper.impls.PaperConsole
 import com.github.hoshikurama.ticketmanager.paper.impls.PaperPlayer
 import com.github.hoshikurama.tmcoroutine.TMCoroutine
@@ -27,28 +25,41 @@ import com.mojang.brigadier.builder.ArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
+import com.mojang.brigadier.tree.LiteralCommandNode
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.future.asCompletableFuture
 import kotlinx.coroutines.launch
+import org.bukkit.Bukkit
 import java.util.concurrent.CompletableFuture
+import kotlin.time.Duration.Companion.seconds
 import org.bukkit.command.ConsoleCommandSender as BukkitConsole
 
-class ExperimentalPaperCommandRunner(
-    private val config: Config,
-    private val locale: Locale,
-    private val database: AsyncDatabase,
-    private val permissions: Permission,
-    private val commandTasks: CommandTasks,
-    private val platform: PlatformFunctions,
-    private val preCommandExtensionHolder: PreCommandExtensionHolder,
-) {
-    fun generateCommands() {
+class PaperCommandRunner(private val scheduleSync: (() -> Unit) -> Unit) {
+    // Regarding these, see note attached to CommandReferences
+    private val config: Config
+        get() = CommandReferences.config
+    private val locale: Locale
+        get() = CommandReferences.locale
+    private val database: AsyncDatabase
+        get() = CommandReferences.database
+    private val permissions: Permission
+        get() = CommandReferences.permissions
+    private val commandTasks: CommandTasks
+        get() = CommandReferences.commandTasks
+    private val preCommandExtensionHolder: PreCommandExtensionHolder
+        get() = CommandReferences.preCommandExtensionHolder
+
+    private val playerNamesCacher = OfflinePlayerNamesCacher()
+
+
+    fun generateCommands(): LiteralCommandNode<CommandSourceStack> {
         val root = literal(locale.commandBase)
 
         // /ticket create <Comment...>
@@ -81,10 +92,12 @@ class ExperimentalPaperCommandRunner(
             // Generators
             val generateUserBranch = { isSilent: Boolean ->
                 literal(locale.parameterLiteralPlayer)
-                    .then(Commands.argument(locale.parameterLiteralPlayer, UserArgument(locale, false)) // TODO: EVENTUALLY REPLACE useOnlinePlayersOnly with a config setting
+                    .then(Commands.argument(locale.parameterLiteralPlayer, UserAssignmentGrabberArgument(playerNamesCacher))
                         .executesTMMessageWithTicket { tmSender, ctx, ticket ->
                             commandTasks.assign(tmSender,
-                                assignment = ctx.getArgument(locale.parameterLiteralPlayer, Assignment::class.java),
+                                assignment = UserAssignmentGrabberArgument.get(ctx, locale.parameterLiteralPlayer)
+                                    .retrieveOrNull()
+                                    ?: Assignment.Nobody, //TODO: DON'T EXECUTE IF DOESN'T EXIST. ADD INVALID PLAYER MESSAGE
                                 ticket = ticket,
                                 silent = isSilent,
                             )
@@ -102,7 +115,8 @@ class ExperimentalPaperCommandRunner(
                         }
                         .executesTMMessageWithTicket { tmSender, ctx, ticket ->
                             val group = StringArgumentType.getString(ctx, locale.parameterLiteralGroup)
-                            commandTasks.assign(tmSender,
+                            commandTasks.assign(
+                                tmSender,
                                 assignment = Assignment.PermissionGroup(group),
                                 ticket = ticket,
                                 silent = isSilent,
@@ -115,7 +129,8 @@ class ExperimentalPaperCommandRunner(
                     .then(Commands.argument(locale.parameterLiteralPhrase, StringArgumentType.greedyString())
                         .executesTMMessageWithTicket { tmSender, ctx, ticket ->
                             val phrase = StringArgumentType.getString(ctx, locale.parameterLiteralPhrase)
-                            commandTasks.assign(tmSender,
+                            commandTasks.assign(
+                                tmSender,
                                 assignment = Assignment.Phrase(phrase),
                                 ticket = ticket,
                                 silent = isSilent,
@@ -129,9 +144,9 @@ class ExperimentalPaperCommandRunner(
             ticketIDArg.then(generatePhraseBranch(false))    // /ticket assign <ID> phrase <phrase...>
             root.then(assign.then(ticketIDArg))
 
-            silentTicketIDArg.then(generateUserBranch(false))      // /ticket s.assign <ID> user <Player>
-            silentTicketIDArg.then(generateGroupBranch(false))     // /ticket s.assign <ID> group <Group>
-            silentTicketIDArg.then(generatePhraseBranch(false))    // /ticket s.assign <ID> phrase <phrase...>
+            silentTicketIDArg.then(generateUserBranch(true))      // /ticket s.assign <ID> user <Player>
+            silentTicketIDArg.then(generateGroupBranch(true))     // /ticket s.assign <ID> group <Group>
+            silentTicketIDArg.then(generatePhraseBranch(true))    // /ticket s.assign <ID> phrase <phrase...>
             root.then(silentAssign.then(silentTicketIDArg))
         }
 
@@ -467,29 +482,130 @@ class ExperimentalPaperCommandRunner(
         run {
             val reload = literal(locale.commandWordReload)
                 .permission("ticketmanager.command.reload")
-                .executesTMAction { tmSender, _ -> commandTasks.reload(tmSender) }
+                .executesTMAction { tmSender, _ ->
+                    val job = commandTasks.reload(tmSender)
+
+                    TMCoroutine.Global.launch {
+                        while (!job.isCompleted)
+                            delay(1.seconds)
+
+                        scheduleSync {
+                            Bukkit.dispatchCommand(Bukkit.getServer().consoleSender,"minecraft:reload")
+                        }
+                    }
+                }
 
             root.then(reload)
         }
-/*
 
-*/
+        // /ticket history ({...})
+        run {
+            suspend fun lookupHistory(tmSender: CommandSender.Active, creator: Creator, requestedPage: Int) {
+                commandTasks.history(tmSender, creator, requestedPage)
+            }
+            fun senderCannotViewTicket(tmSender: CommandSender.Active, userStr: String): Boolean {
+                return !tmSender.has("ticketmanager.command.history.all")
+                        && tmSender.has("ticketmanager.command.history.own")
+                        && userStr != tmSender.serverName
+            }
 
+            // /ticket history
+            val history = literal(locale.commandWordHistory)
+                .requires { hasOneDualityPermission(it.sender, "ticketmanager.command.history") }
+                .executesTMAction { tmSender, _ -> lookupHistory(tmSender, tmSender.asCreator(), 1) }
 
-/*
-/ticket reload
+            // /ticket history <User>
+            val userArg = Commands.argument(locale.parameterUser, OfflinePlayerGrabberArgument(playerNamesCacher))
+                .executesTMAction { tmSender, ctx ->
 
-/ticket history
-/ticket history Console
-/ticket history Console [Page]
-/ticket history [Page]
-/ticket history [User]
-/ticket history [User] [Page]
+                    val offlinePlayer = when (val result = ctx.getArgument(locale.parameterUser, OfflinePlayerGrabber::class.java).retrieve()) {
+                        is OfflinePlayerGrabber.ValidPlayer -> result.player
+                        is OfflinePlayerGrabber.ErrorInvalidName -> {
+                            tmSender.sendMessage("<red><i>Invalid player name!</i>".parseMiniMessage()) //TODO EVENTUALLY LOCALIZE THIS
+                            return@executesTMAction
+                        }
+                    }
 
-/ticket search where <Params...>
-         */
+                    if (senderCannotViewTicket(tmSender, offlinePlayer.name!!)) {
+                        tmSender.sendMessage(locale.brigadierOtherHistory.parseMiniMessage())
+                        return@executesTMAction
+                    }
 
-        // TODO: /ticket itself needs to be registered under a different root because it places permissions on /ticket itself
+                    lookupHistory(tmSender, Creator.User(offlinePlayer.uniqueId), 1)
+                }
+
+            // /ticket history <User> <Page>
+            val pageArgUser = intArgument(locale.parameterPage)
+                .executesTMAction { tmSender, ctx ->
+
+                    val offlinePlayer = when (val result = ctx.getArgument(locale.parameterUser, OfflinePlayerGrabber::class.java).retrieve()) {
+                        is OfflinePlayerGrabber.ValidPlayer -> result.player
+                        is OfflinePlayerGrabber.ErrorInvalidName -> {
+                            tmSender.sendMessage("<red><i>Invalid player name!</i>".parseMiniMessage()) //TODO EVENTUALLY LOCALIZE THIS
+                            return@executesTMAction
+                        }
+                    }
+
+                    if (senderCannotViewTicket(tmSender, offlinePlayer.name!!)) {
+                        tmSender.sendMessage(locale.brigadierOtherHistory.parseMiniMessage())
+                        return@executesTMAction
+                    }
+
+                    val page = IntegerArgumentType.getInteger(ctx, locale.parameterPage)
+                    lookupHistory(tmSender, Creator.User(offlinePlayer.uniqueId), page)
+                }
+
+            // /ticket history Console
+            val console = literal(locale.consoleName)
+                .permission("ticketmanager.command.history.all")
+                .executesTMAction { tmSender, _ ->
+                    commandTasks.history(tmSender,
+                        checkedCreator = Creator.Console,
+                        requestedPage = 1
+                    )
+                }
+
+            // /ticket history Console <Page>
+            val pageArgPage = intArgument(locale.parameterPage)
+                .executesTMAction { tmSender, ctx ->
+                    commandTasks.history(tmSender,
+                        checkedCreator = Creator.Console,
+                        requestedPage = IntegerArgumentType.getInteger(ctx, locale.parameterPage)
+                    )
+                }
+
+            userArg.then(pageArgUser)
+            history.then(userArg)
+
+            console.then(pageArgPage)
+            history.then(console)
+
+            root.then(history)
+        }
+
+            // /ticket search <Params...>
+            run {
+                val search = literal(locale.commandWordSearch)
+                    .permission("ticketmanager.command.search")
+                val searchArgs = Commands.argument(locale.parameterConstraints, SearchConstraintsGrabberArgument(playerNamesCacher))
+                    .executesTMAction { tmSender, ctx ->
+                        when (val result = SearchConstraintsGrabberArgument.get(ctx, locale.parameterConstraints)) {
+                            is SearchConstraintsResult.Success -> commandTasks.search(tmSender,
+                                searchParameters = result.searchConstraints,
+                                useNewFormat = true,
+                                newRawArgumentString = "/${ctx.input}",
+                            )
+                            is SearchConstraintsResult.Fail -> {
+                                tmSender.sendMessage(result.message)
+                            }
+                        }
+                    }
+
+            search.then(searchArgs)
+            root.then(search)
+        }
+
+        return root.build()
     }
 
     // Errors
@@ -529,6 +645,7 @@ class ExperimentalPaperCommandRunner(
     }
 
     // Argument Suggestions
+    @Suppress("UNUSED")
     private fun openTicketIDsAsync(ctx: CommandContext<CommandSourceStack>, builder: SuggestionsBuilder): CompletableFuture<Suggestions> {
         return TMCoroutine.Supervised.async {
             database.getOpenTicketIDsAsync()
@@ -570,12 +687,15 @@ class ExperimentalPaperCommandRunner(
     }
 
     fun ticketIDArgument(vararg otherChecks: (Ticket, CommandSender.Active) -> TicketGrabber.Error?
-    ) = Commands.argument(locale.parameterID, TicketGrabberArgument(database, locale, *otherChecks))
+    ) = Commands.argument(locale.parameterID, TicketGrabberArgument( *otherChecks))
 
     private fun BukkitCommandSender.toTMSender(): CommandSender.Active = when (this) {
         is BukkitConsole -> PaperConsole(config.proxyOptions?.serverName)
         is BukkitPlayer -> PaperPlayer(this, config.proxyOptions?.serverName)
-        else -> throw Exception("Unsupported Entity Type!")
+        else -> when ((this::class).toString()) {
+            "class io.papermc.paper.brigadier.NullCommandSender" -> PaperConsole(config.proxyOptions?.serverName) // I guess this is something Paper does...
+            else -> throw Exception("Unsupported Entity Type!:\n Class Type: \"${this::class}\"")
+        }
     }
 
     private inline fun <U : ArgumentBuilder<CommandSourceStack, U>> ArgumentBuilder<CommandSourceStack, U>.executesTMMessage(

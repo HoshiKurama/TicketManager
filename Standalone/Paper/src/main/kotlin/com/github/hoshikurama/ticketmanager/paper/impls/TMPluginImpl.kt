@@ -9,11 +9,12 @@ import com.github.hoshikurama.ticketmanager.commonse.PlayerJoinExtensionHolder
 import com.github.hoshikurama.ticketmanager.commonse.PreCommandExtensionHolder
 import com.github.hoshikurama.ticketmanager.commonse.TMPlugin
 import com.github.hoshikurama.ticketmanager.commonse.commands.CommandTasks
-import com.github.hoshikurama.ticketmanager.paper.CommandAPIRunner
 import com.github.hoshikurama.ticketmanager.paper.PaperPlugin
+import com.github.hoshikurama.ticketmanager.paper.commands.CommandReferences
+import com.github.hoshikurama.ticketmanager.paper.commands.PaperCommandRunner
 import com.github.hoshikurama.ticketmanager.paper.hooks.JoinEventListener
 import com.github.hoshikurama.tmcoroutine.ChanneledCounter
-import dev.jorel.commandapi.CommandAPI
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents
 import org.bukkit.Bukkit
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.plugin.Plugin
@@ -36,10 +37,7 @@ class TMPluginImpl(
     }
 
     override fun unregisterCommands(trueShutdown: Boolean) {
-        val unregister = { CommandAPI.unregister(baseTicketCommand, true) }
-
-        if (trueShutdown) unregister()
-        else paperPlugin.runTask(unregister)
+        // Paper doesn't need this anymore
     }
 
     override fun registerCommands(
@@ -51,17 +49,26 @@ class TMPluginImpl(
         preCommand: PreCommandExtensionHolder,
         commandTasks: CommandTasks
     ) {
-        paperPlugin.runTask {
-            CommandAPIRunner(
-                config = config,
-                locale = locale,
-                database = database,
-                commandTasks = commandTasks,
-                permissions = permission,
-                platform = platformFunctions,
-                preCommandExtensionHolder = preCommand
-            ).generateCommands()
+        // Update references
+        CommandReferences.config = config
+        CommandReferences.locale = locale
+        CommandReferences.database = database
+        CommandReferences.permissions = permission
+        CommandReferences.commandTasks = commandTasks
+        CommandReferences.platform = platformFunctions
+        CommandReferences.preCommandExtensionHolder = preCommand
+
+        val scheduleSync = { block: () -> Unit -> paperPlugin.runTask(block)}
+
+        // See comment on CommandReferences. TLDR Registration can only happen once, sync, and during Lifecycle expectations
+        if (CommandReferences.shouldRegisterCommands) {
+            paperPlugin.lifecycleManager.registerEventHandler(LifecycleEvents.COMMANDS) {
+                val command = PaperCommandRunner(scheduleSync).generateCommands()
+                it.registrar().register(command)
+            }
         }
+
+        CommandReferences.shouldRegisterCommands = false
     }
 
     override fun registerPlayerJoinEvent(

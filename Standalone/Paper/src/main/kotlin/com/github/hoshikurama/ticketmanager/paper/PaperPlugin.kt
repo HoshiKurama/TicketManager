@@ -5,9 +5,6 @@ import com.github.hoshikurama.ticketmanager.common.bukkitMetricsKey
 import com.github.hoshikurama.ticketmanager.paper.impls.ProxyMessageSharingExtension
 import com.github.hoshikurama.ticketmanager.paper.impls.TMPluginImpl
 import com.github.hoshikurama.tmcoroutine.ChanneledCounter
-import com.github.hoshikurama.tmcoroutine.TMCoroutine
-import dev.jorel.commandapi.CommandAPI
-import dev.jorel.commandapi.CommandAPIBukkitConfig
 import kotlinx.coroutines.runBlocking
 import org.bstats.bukkit.Metrics
 import org.bstats.charts.SimplePie
@@ -23,11 +20,11 @@ class PaperPlugin : JavaPlugin() {
     private lateinit var metrics: Metrics
 
     override fun onLoad() {
-        CommandAPI.onLoad(CommandAPIBukkitConfig(this))
+        //CommandAPI.onLoad(CommandAPIBukkitConfig(this))
     }
 
     override fun onEnable() {
-        CommandAPI.onEnable()
+        //CommandAPI.onEnable()
 
         // Launch Metrics
         metrics = Metrics(this, bukkitMetricsKey)
@@ -45,7 +42,7 @@ class PaperPlugin : JavaPlugin() {
         // Internally TM:SE will handle using this or the Dummy object based on config
         TicketManager.MessageSharingRegistry.register(ProxyMessageSharingExtension(this))
 
-        TMCoroutine.Global.launch {
+        runBlocking {
             tmPlugin.enableTicketManager()
         }
     }
