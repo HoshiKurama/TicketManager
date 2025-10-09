@@ -8,6 +8,7 @@ import com.github.hoshikurama.tmcoroutine.ChanneledCounter
 import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPIBukkitConfig
+import dev.jorel.commandapi.CommandAPISpigotConfig
 import kotlinx.coroutines.runBlocking
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import org.bstats.bukkit.Metrics
@@ -22,7 +23,7 @@ class SpigotPlugin : JavaPlugin() {
     private val ticketCounter = ChanneledCounter(0UL)
 
     override fun onLoad() {
-        CommandAPI.onLoad(CommandAPIBukkitConfig(this))
+        CommandAPI.onLoad(CommandAPISpigotConfig(this))
     }
 
     override fun onEnable() {

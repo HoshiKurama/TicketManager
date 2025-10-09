@@ -59,10 +59,6 @@ class PlatformFunctionsImpl(
         }
     }
 
-    override fun teleportToTicketLocDiffServer(player: CommandSender.OnlinePlayer, loc: ActionLocation.FromPlayer) {
-        plugin.server.sendPluginMessage(plugin, Server2Proxy.Teleport.waterfallString(), encodeRequestTP(player, loc))
-    }
-
     override fun getConsoleAudience(): Audience {
         return adventure.console()
     }

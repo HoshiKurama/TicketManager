@@ -38,6 +38,8 @@ import kotlinx.coroutines.future.asCompletableFuture
 import kotlinx.coroutines.launch
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.serializer.bungeecord.BungeeComponentSerializer
+import net.md_5.bungee.api.chat.BaseComponent
 import org.bukkit.OfflinePlayer
 import org.bukkit.command.ConsoleCommandSender
 import java.util.concurrent.CompletableFuture
@@ -172,7 +174,7 @@ class CommandAPIRunner(
                 replaceSuggestions(openTicketIDsAsync)
             }
             literalArgument(locale.parameterLiteralPlayer)
-            offlinePlayerArgument(locale.parameterLiteralPlayer)
+            PlayerProfileArgument(locale.parameterLiteralPlayer)
             executeTMMessageWithTicket(0) { tmSender, args, ticket ->
                 commandTasks.assign(
                     tmSender,
@@ -244,7 +246,7 @@ class CommandAPIRunner(
                 replaceSuggestions(openTicketIDsAsync)
             }
             literalArgument(locale.parameterLiteralPlayer)
-            offlinePlayerArgument(locale.parameterLiteralPlayer)
+            PlayerProfileArgument(locale.parameterLiteralPlayer)
             executeTMMessageWithTicket(0) { tmSender, args, ticket ->
                 commandTasks.assign(
                     tmSender,
@@ -853,11 +855,11 @@ class CommandAPIRunner(
             literalArgument(locale.commandWordHistory) {
                 withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
             }
-            argument(CustomArgument(OfflinePlayerArgument(locale.parameterUser)) {
+            argument(CustomArgument(PlayerProfileArgument(locale.parameterUser)) {
                 if (!it.sender.hasPermission("ticketmanager.command.history.all")
                     && it.sender.hasPermission("ticketmanager.command.history.own")
                     && it.input != it.sender.name
-                ) throw CustomArgument.CustomArgumentException.fromAdventureComponent(locale.brigadierOtherHistory.parseMiniMessage())
+                ) throw CustomArgumentExceptionfromAdventureComponent(locale.brigadierOtherHistory.parseMiniMessage())
                 it.currentInput
             })
             executeTMAction { tmSender, args ->
@@ -876,11 +878,11 @@ class CommandAPIRunner(
             literalArgument(locale.commandWordHistory) {
                 withRequirement { it.hasPermission("ticketmanager.command.history.all") || it.hasPermission("ticketmanager.command.history.own") }
             }
-            argument(CustomArgument(OfflinePlayerArgument(locale.parameterUser)) {
+            argument(CustomArgument(PlayerProfileArgument(locale.parameterUser)) {
                 if (!it.sender.hasPermission("ticketmanager.command.history.all")
                     && it.sender.hasPermission("ticketmanager.command.history.own")
                     && it.input != it.sender.name
-                ) throw CustomArgument.CustomArgumentException.fromAdventureComponent(locale.brigadierOtherHistory.parseMiniMessage())
+                ) throw CustomArgumentExceptionfromAdventureComponent(locale.brigadierOtherHistory.parseMiniMessage())
                 it.currentInput
             })
             integerArgument(locale.parameterPage)
@@ -928,7 +930,7 @@ class CommandAPIRunner(
                             locale.searchCreator -> creator = when (symbol) {
                                 "=" -> Option(SearchConstraints.Symbol.EQUALS, value.attemptNameToTicketCreator())
                                 "!=" -> Option(SearchConstraints.Symbol.NOT_EQUALS, value.attemptNameToTicketCreator())
-                                else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+                                else -> throw CustomArgumentExceptionfromAdventureComponent(
                                     locale.brigadierSearchBadSymbol1.parseMiniMessage(
                                         "symbol" templated symbol,
                                         "keyword" templated keyword,
@@ -939,7 +941,7 @@ class CommandAPIRunner(
                             locale.searchAssigned -> assigned = when (symbol) {
                                 "=" -> Option(SearchConstraints.Symbol.EQUALS, value.searchToAssignment())
                                 "!=" -> Option(SearchConstraints.Symbol.NOT_EQUALS, value.searchToAssignment())
-                                else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+                                else -> throw CustomArgumentExceptionfromAdventureComponent(
                                     locale.brigadierSearchBadSymbol1.parseMiniMessage(
                                         "symbol" templated symbol,
                                         "keyword" templated keyword,
@@ -950,7 +952,7 @@ class CommandAPIRunner(
                             locale.searchLastClosedBy -> lastClosedBy = when (symbol) {
                                 "=" -> Option(SearchConstraints.Symbol.EQUALS, value.attemptNameToTicketCreator())
                                 "!=" -> Option(SearchConstraints.Symbol.NOT_EQUALS, value.attemptNameToTicketCreator())
-                                else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+                                else -> throw CustomArgumentExceptionfromAdventureComponent(
                                     locale.brigadierSearchBadSymbol1.parseMiniMessage(
                                         "symbol" templated symbol,
                                         "keyword" templated keyword,
@@ -961,7 +963,7 @@ class CommandAPIRunner(
                             locale.searchClosedBy -> closedBy = when (symbol) {
                                 "=" -> Option(SearchConstraints.Symbol.EQUALS, value.attemptNameToTicketCreator())
                                 "!=" -> Option(SearchConstraints.Symbol.NOT_EQUALS, value.attemptNameToTicketCreator())
-                                else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+                                else -> throw CustomArgumentExceptionfromAdventureComponent(
                                     locale.brigadierSearchBadSymbol1.parseMiniMessage(
                                         "symbol" templated symbol,
                                         "keyword" templated keyword,
@@ -972,7 +974,7 @@ class CommandAPIRunner(
                             locale.searchWorld -> world = when (symbol) {
                                 "=" -> Option(SearchConstraints.Symbol.EQUALS, value)
                                 "!=" -> Option(SearchConstraints.Symbol.NOT_EQUALS, value)
-                                else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+                                else -> throw CustomArgumentExceptionfromAdventureComponent(
                                     locale.brigadierSearchBadSymbol1.parseMiniMessage(
                                         "symbol" templated symbol,
                                         "keyword" templated keyword,
@@ -984,7 +986,7 @@ class CommandAPIRunner(
                                 val ticketStatus = when (value) {
                                     locale.statusOpen -> Ticket.Status.OPEN
                                     locale.statusClosed -> Ticket.Status.CLOSED
-                                    else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+                                    else -> throw CustomArgumentExceptionfromAdventureComponent(
                                         locale.brigadierSearchBadStatus.parseMiniMessage(
                                             "status" templated value,
                                             "open" templated Ticket.Status.OPEN.name,
@@ -995,7 +997,7 @@ class CommandAPIRunner(
                                 status = when (symbol) {
                                     "=" -> Option(SearchConstraints.Symbol.EQUALS, ticketStatus)
                                     "!=" -> Option(SearchConstraints.Symbol.NOT_EQUALS, ticketStatus)
-                                    else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+                                    else -> throw CustomArgumentExceptionfromAdventureComponent(
                                         locale.brigadierSearchBadSymbol1.parseMiniMessage(
                                             "symbol" templated symbol,
                                             "keyword" templated keyword,
@@ -1009,7 +1011,7 @@ class CommandAPIRunner(
                                 "!=" -> Option(SearchConstraints.Symbol.NOT_EQUALS, numberOrWordToPriority(value))
                                 "<" -> Option(SearchConstraints.Symbol.LESS_THAN, numberOrWordToPriority(value))
                                 ">" -> Option(SearchConstraints.Symbol.GREATER_THAN, numberOrWordToPriority(value))
-                                else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+                                else -> throw CustomArgumentExceptionfromAdventureComponent(
                                     locale.brigadierSearchBadSymbol2.parseMiniMessage(
                                         "symbol" templated symbol,
                                         "keyword" templated keyword,
@@ -1022,7 +1024,7 @@ class CommandAPIRunner(
                                 keywords = when (symbol) {
                                     "=" -> Option(SearchConstraints.Symbol.EQUALS, foundSearches)
                                     "!=" -> Option(SearchConstraints.Symbol.NOT_EQUALS, foundSearches)
-                                    else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+                                    else -> throw CustomArgumentExceptionfromAdventureComponent(
                                         locale.brigadierSearchBadSymbol1.parseMiniMessage(
                                             "symbol" templated symbol,
                                             "keyword" templated keyword,
@@ -1044,7 +1046,7 @@ class CommandAPIRunner(
                                 creationTime = when (symbol) {
                                     "<" -> Option(SearchConstraints.Symbol.LESS_THAN, epochTime)
                                     ">" -> Option(SearchConstraints.Symbol.GREATER_THAN, epochTime)
-                                    else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+                                    else -> throw CustomArgumentExceptionfromAdventureComponent(
                                         locale.brigadierSearchBadSymbol3.parseMiniMessage(
                                             "symbol" templated symbol,
                                             "keyword" templated keyword,
@@ -1054,9 +1056,9 @@ class CommandAPIRunner(
                             }
 
                             locale.searchPage -> page = value.toIntOrNull()
-                                ?: throw CustomArgument.CustomArgumentException.fromAdventureComponent(locale.brigadierBadPageNumber.parseMiniMessage())
+                                ?: throw CustomArgumentExceptionfromAdventureComponent(locale.brigadierBadPageNumber.parseMiniMessage())
 
-                            else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+                            else -> throw CustomArgumentExceptionfromAdventureComponent(
                                 locale.brigadierBadSearchConstraint.parseMiniMessage(
                                     "keyword" templated keyword
                                 )
@@ -1336,7 +1338,7 @@ class CommandAPIRunner(
             locale.parameterLiteralPlayer -> Assignment.Player(value!!)
             locale.parameterLiteralGroup -> Assignment.PermissionGroup(value!!)
             locale.parameterLiteralPhrase -> Assignment.Phrase(value!!)
-            else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+            else -> throw CustomArgumentExceptionfromAdventureComponent(
                 locale.brigadierInvalidAssignment.parseMiniMessage(
                     "assignment" templated (value ?: "???")
                 )
@@ -1351,11 +1353,11 @@ class CommandAPIRunner(
         locale.timeDays.trimStart() -> 86400L
         locale.timeWeeks.trimStart() -> 604800L
         locale.timeYears.trimStart() -> 31556952L
-        else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+        else -> throw CustomArgumentExceptionfromAdventureComponent(
             locale.brigadierInvalidTimeUnit.parseMiniMessage(
                 "timeunit" templated timeUnit
             )
-        )
+        ) as Throwable
     }
 
     private fun numberOrWordToPriority(input: String): Ticket.Priority = when (input) {
@@ -1364,15 +1366,22 @@ class CommandAPIRunner(
         "3", locale.priorityNormal -> Ticket.Priority.NORMAL
         "4", locale.priorityHigh -> Ticket.Priority.HIGH
         "5", locale.priorityHighest -> Ticket.Priority.HIGHEST
-        else -> throw CustomArgument.CustomArgumentException.fromAdventureComponent(
+        else -> throw CustomArgumentExceptionfromAdventureComponent(
             locale.brigadierInvalidPriority.parseMiniMessage(
                 "priority" templated input
             )
         )
     }
 
+    private fun CustomArgumentExceptionfromAdventureComponent(component: Component): CustomArgument.CustomArgumentException {
+        return CustomArgument.CustomArgumentException.fromBaseComponents(
+            BungeeComponentSerializer.get().serialize(component)
+        )
+    }
+
     private suspend fun awaitCommandResult(thing: Any) = (thing as Deferred<*>).await() as CommandResult
 }
+
 
 private sealed interface CommandResult
 private class Error(val errorComponent: Component): CommandResult
