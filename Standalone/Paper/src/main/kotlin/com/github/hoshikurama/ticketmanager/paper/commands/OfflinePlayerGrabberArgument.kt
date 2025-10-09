@@ -11,6 +11,8 @@ import io.papermc.paper.command.brigadier.argument.CustomArgumentType
 import kotlinx.coroutines.future.asCompletableFuture
 import org.bukkit.Bukkit
 import org.bukkit.OfflinePlayer
+import java.util.Arrays
+import java.util.Optional
 import java.util.concurrent.CompletableFuture
 
 class OfflinePlayerGrabberArgument(
@@ -48,8 +50,19 @@ class OfflinePlayerGrabber(
     data object ErrorInvalidName : Result
 
     suspend fun retrieve(): Result {
-        return if (playerNamesCacher.contains(requestedName))
+        if (playerNamesCacher.contains(requestedName))
             ValidPlayer(Bukkit.getOfflinePlayer(requestedName))
-        else ErrorInvalidName
+
+        val playerHasLoggedOnBefore = Arrays.stream(Bukkit.getOfflinePlayers())
+            .parallel()
+            .filter { it.name == requestedName }
+            .findAny()
+            .asNullable()
+
+        return playerHasLoggedOnBefore?.run(::ValidPlayer) ?: ErrorInvalidName
     }
+}
+
+private fun <T> Optional<T>.asNullable(): T? {
+    return if (isPresent) get() else null
 }
