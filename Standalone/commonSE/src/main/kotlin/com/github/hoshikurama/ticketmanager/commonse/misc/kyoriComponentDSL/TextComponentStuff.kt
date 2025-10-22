@@ -11,21 +11,6 @@ fun <T> TextComponent.Builder.onHover(init: HoverEventBuilder.() -> HoverEvent<T
     return hoverEvent(event)
 }
 
-@Suppress("Unused")
-fun TextComponent.Builder.onClick(init: ClickEventBuilder.() -> Unit): TextComponent.Builder {
-    val builder = ClickEventBuilder()
-    builder.init()
-    return clickEvent(builder.build())
-}
-
-@Suppress("Unused")
-class ClickEventBuilder internal constructor() {
-    lateinit var action: ClickEvent.Action
-    lateinit var value: String
-
-    internal fun build() =  ClickEvent.clickEvent(action, value)
-}
-
 class HoverEventBuilder internal constructor() {
     @Suppress("Unused") fun showText(text: Component) = HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, text)
     @Suppress("Unused") fun showItem(item: HoverEvent.ShowItem) = HoverEvent.hoverEvent(HoverEvent.Action.SHOW_ITEM, item)
