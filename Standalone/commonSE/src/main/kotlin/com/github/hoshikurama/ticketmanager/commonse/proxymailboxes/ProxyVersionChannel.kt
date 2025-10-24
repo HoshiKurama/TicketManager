@@ -2,29 +2,42 @@ package com.github.hoshikurama.ticketmanager.commonse.proxymailboxes
 
 import com.github.hoshikurama.ticketmanager.api.registry.messagesharing.MessageSharing
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.base.HandshakeMailbox
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import com.google.common.io.ByteStreams
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
 
-class ProxyVersionChannel(
-    override val messageSharing: MessageSharing
-) : HandshakeMailbox<String, Pair<String, String>>() {
-    override val outgoingChannelName = Server2Proxy.ProxyVersionRequest.waterfallString()
-    override val apiChannelRef: ReceiveChannel<ByteArray> = Intermediary
+class ProxyVersionChannel(private val messageSharing: MessageSharing) {
+    private typealias Input = String
+    private typealias Output = Pair<String, String>
+
+    private val outgoingChannelName = Server2Proxy.ProxyVersionRequest.waterfallString()
+    private val channel = Channel<Output>(capacity = Channel.RENDEZVOUS)
 
     companion object {
         val Intermediary = Channel<ByteArray>()
     }
 
-    override fun encodeInput(input: String): ByteArray {
+    init {
+        TMCoroutine.Supervised.launch { // Note: Supervised good since new object made on each reload
+            for (incomingMSG in Intermediary) {
+                channel.send(decodeOutput(incomingMSG))
+            }
+        }
+    }
+
+    private fun encodeInput(input: Input): ByteArray {
         return ByteStreams.newDataOutput()
             .apply { writeUTF(input) }
             .toByteArray()
     }
 
-    override fun decodeOutput(outputArray: ByteArray): Pair<String, String> {
+    private fun decodeOutput(outputArray: ByteArray): Output {
         val output = ByteStreams.newDataInput(outputArray)
         return output.readUTF() to output.readUTF()
+    }
+
+    suspend fun request(input: Input): Output {
+        messageSharing.relay2Hub(encodeInput(input), outgoingChannelName)
+        return channel.receive()
     }
 }

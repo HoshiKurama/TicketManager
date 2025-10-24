@@ -4,23 +4,33 @@ import com.github.hoshikurama.ticketmanager.api.CommandSender
 import com.github.hoshikurama.ticketmanager.api.registry.messagesharing.MessageSharing
 import com.github.hoshikurama.ticketmanager.common.Server2Proxy
 import com.github.hoshikurama.ticketmanager.commonse.commands.MessageNotification
-import com.github.hoshikurama.ticketmanager.commonse.proxymailboxes.base.ReceivingMailbox
+import com.github.hoshikurama.tmcoroutine.TMCoroutine
 import com.google.common.io.ByteStreams
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 
-class NotificationSharingMailbox(
-    override val messageSharing: MessageSharing,
-) : ReceivingMailbox<MessageNotification<CommandSender.Info>>() {
-    override val outgoingChannelName = Server2Proxy.NotificationSharing.waterfallString()
-    override val apiChannelRef = Intermediary
+class NotificationSharingMailbox(val messageSharing: MessageSharing) {
+    private typealias T = MessageNotification<CommandSender.Info>
+    private val outgoingChannelName = Server2Proxy.NotificationSharing.waterfallString()
+
+    private val channel = Channel<T>(capacity = Channel.RENDEZVOUS)
+    val incomingMessages: ReceiveChannel<T> = channel // To enforce read-only (for listening to THIS mailbox)
 
     companion object {
         val Intermediary = Channel<ByteArray>()
     }
 
-    override fun encode(t: MessageNotification<CommandSender.Info>): ByteArray = t.encodeForProxy()
+    init {
+        TMCoroutine.Supervised.launch {
+            for (incomingMSG in Intermediary) {
+                channel.send(decode(incomingMSG))
+            }
+        }
+    }
 
-    override fun decode(outputArray: ByteArray): MessageNotification<CommandSender.Info> {
+    private fun encode(t: T): ByteArray = t.encodeForProxy()
+
+    private fun decode(outputArray: ByteArray): T {
         val input = ByteStreams.newDataInput(outputArray)
             .apply { readUTF() } // Gets rid of server uuid
 
@@ -34,5 +44,9 @@ class NotificationSharingMailbox(
             MessageNotification.MessageType.REOPEN -> MessageNotification.Reopen.decode(input)
             MessageNotification.MessageType.SETPRIORITY -> MessageNotification.SetPriority.decode(input)
         }
+    }
+
+    fun forward2Hub(t: T) {
+        messageSharing.relay2Hub(encode(t), outgoingChannelName)
     }
 }
