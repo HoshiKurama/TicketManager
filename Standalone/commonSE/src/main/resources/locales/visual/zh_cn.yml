@@ -1,0 +1,230 @@
+# ========================================
+#      TicketManager 视觉格式
+# ========================================
+# 此文件包含 TicketManager 中几乎所有视觉输出的格式。
+# 在继续之前，请注意：
+#
+#   1: 此文件使用 Kyori MiniMessage 格式。
+#      正确的使用方法在 Adventure API 文档中。
+#
+#   2: 注意每个部分的标题。它们会告诉您
+#      哪些地方允许/禁止格式设置。
+#
+#   3: 模板指的是 TM 进行替换的位置。它们
+#      可以被移除，但不能被更改或添加。
+#      模板在每个条目旁边或下方说明。
+#
+#   4: 占位符指的是在消息解析之前直接内联的
+#      值。这些可以在 %% 符号之间找到。
+#      有三个占位符可以在此文件的任何地方使用
+#      （在允许格式设置的地方）。它们是：
+#           - %TMHeader% -> TM 统一标题
+#           - %nl%       -> 新行
+#           - %CC%       -> 配置中的主题颜色代码
+#      这些将按上述顺序处理。因此，
+#      在统一标题中使用 %nl% 和 %CC% 是可以接受的。
+#
+# 所有内部本地化文件都离不开那些贡献时间提供
+# 翻译的用户。所有用户都得到了我的衷心感谢，
+# 并列出在 TM GitHub 页面的前端。
+#
+Uniform_Header: '<%CC%>[TicketManager]'
+#
+# ========================================
+#    工单描述 / 页面按钮
+# ========================================
+#
+# 优先级（无格式）：
+Priority_Lowest: '最低'
+Priority_Low: '低'
+Priority_Normal: '普通'
+Priority_High: '高'
+Priority_Highest: '最高'
+# 颜色（使用 Kyori MiniMessage，包括 # 的十六进制代码，或传统代码）
+PriorityColour_Lowest: '<dark_blue>'
+PriorityColour_Low: '<blue>'
+PriorityColour_Normal: '<yellow>'
+PriorityColour_High: '<red>'
+PriorityColour_Highest: '<dark_red>'
+#
+# 状态（无格式）：
+Status_Open: '开启'
+Status_Closed: '关闭'
+# 颜色（使用 Kyori MiniMessage，包括 # 的十六进制代码，或传统代码）
+StatusColour_Open: '<green>'
+StatusColour_Closed: '<red>'
+#
+# 时间单位（空格是故意的）（无格式）：
+Time_Seconds: ' 秒'
+Time_Minutes: ' 分钟'
+Time_Hours: ' 小时'
+Time_Days: ' 天'
+Time_Weeks: ' 周'
+Time_Years: ' 年'
+#
+# 可点击文本（无格式）：
+Click_ViewTicket: '点击查看此工单'
+Click_Teleport: '点击传送到此位置'
+Click_NextPage: '点击前进一页'
+Click_BackPage: '点击后退一页'
+Click_GitHub_Wiki: '点击前往 Wiki！'
+#
+# 页面文字（接受格式）：
+Page_ActiveNext: '<white>[下一页]'
+Page_InactiveNext: '<dark_gray>[下一页]'
+Page_ActiveBack: '<white>[上一页]'
+Page_InactiveBack: '<dark_gray>[上一页]'
+Page_Format: '<back_button><dark_gray>...............<dark_aqua>(<cur_page> / <max_pages>)<dark_gray>...............<next_button>'  # 模板：<back_button> <cur_page> <max_pages> <next_button>
+#
+#
+# ========================================
+#                 消息
+# ========================================
+#
+# 警告（接受格式）：
+Warning_Header: '<red>[TicketManager]'
+Warning_Locked: '%Header% 命令当前被锁定！请稍后再试'
+Warning_NoConfig: '%Header% 未找到配置文件！已生成新文件。'
+Warning_UnexpectedError: '%Header% 发生意外错误！'
+Warning_LongTaskDuringReload: '%Header% 在尝试重载时检测到长时间运行的任务！正在强制结束所有其他任务！'
+Warning_InvalidConfig: '%Header% 有 <count> 个配置值被重置为默认！请查看控制台以获取更多信息'                   # 模板：<count>
+Warning_InternalError: '%Header% 发生内部错误！请查看控制台以获取详细信息'
+#
+#
+# ========================================
+#       信息性输出格式
+# ========================================
+#
+# 查看和深度查看格式（接受格式）：
+ViewFormat_Header: '%nl%<bold>%TMHeader% <#F3F3F3>查看工单 <id>：</bold>'                # 模板：<id>
+ViewFormat_Sep1: '%nl%<dark_gray>================<%CC%>信息<dark_gray>================='
+ViewFormat_InfoCreator: '%nl%<bold><%CC%>创建者：</bold> <#F3F3F3><creator>   '               # 模板：<creator>
+ViewFormat_InfoAssignedTo: '<bold><%CC%>分配给：</bold> <#F3F3F3><assignment>'            # 模板：<assignment>
+ViewFormat_InfoPriority: '%nl%<bold><%CC%>优先级：</bold> <%PCC%><priority>   '              # 模板：<priority>     占位符：%PCC%
+ViewFormat_InfoStatus: '<bold><%CC%>状态：</bold> <%SCC%><status>'                           # 模板：<status>       占位符：%SCC%
+ViewFormat_InfoLocation: '%nl%<bold><%CC%>位置：</bold> <#F3F3F3><location>'               # 模板：<location>
+ViewFormat_Sep2: '%nl%<dark_gray>===============<%CC%>操作<dark_gray>==============='
+ViewFormat_Comment: '%nl%<bold><%CC%>[<user>]</bold> <#F3F3F3><comment>'                                   # 模板：<user> <comment>
+ViewFormat_DeepComment: '%nl%<bold><%CC%>[<user>]</bold> <#F3F3F3><comment>  <dark_gray>~<time> 前'       # 模板：<user> <comment> <time>
+ViewFormat_DeepReopen: '%nl%<gray><bold>[<user>]</bold> 重新开启  <dark_gray>~<time> 前'                  # 模板：<user> <time>
+ViewFormat_DeepClose: '%nl%<gray><bold>[<user>]</bold> 关闭  <dark_gray>~<time> 前'                     # 模板：<user> <time>
+ViewFormat_DeepMassClose: '%nl%<gray><bold>[<user>]</bold> 批量关闭  <dark_gray>~<time> 前'            # 模板：<user> <time>
+ViewFormat_DeepAssigned: '%nl%<gray><bold>[<user>]</bold> 分配 <dark_gray>-> <%CC%><assignment>  <dark_gray>~<time> 前'      # 模板：<user> <assignment> <time>
+ViewFormat_DeepSetPriority: '%nl%<gray><bold>[<user>]</bold> 优先级 <dark_gray>-> <%PCC%><priority>  <dark_gray>~<time> 前'      # 模板：<user> <priority> <time>   占位符：%PCC%
+#
+# 列表格式（接受格式）：
+ListFormat_Header: '%nl%%TMHeader% <#F3F3F3>查看所有开启的工单：'
+ListFormat_AssignedHeader: '%nl%%TMHeader% <#F3F3F3>查看分配给您的开启工单：'
+ListFormat_UnassignedHeader: '%nl%%TMHeader% <#F3F3F3>查看未分配的开启工单：'
+ListFormat_Entry: '%nl%<%PCC%>[<id>] <dark_gray>[<%CC%><creator> <dark_gray>-> <%CC%><assignment><dark_gray>]<#F3F3F3> <comment>'   # 模板：<id> <creator> <assignment> <comment>  占位符：%PCC%
+ListFormat_FormattingSize: '10' # 仅整数
+ListFormat_MaxLineSize: '52'    # 仅整数
+#
+# 搜索格式（接受格式）：
+SearchFormat_Querying: '%nl%%TMHeader% <#F3F3F3>正在查询数据...请耐心等待！'
+SearchFormat_Header: '%TMHeader% <#F3F3F3>搜索查询返回了 <%CC%><size><#F3F3F3> 条结果：'       # 模板：<size>
+SearchFormat_Entry: '%nl%<%PCC%>[<id>] <%SCC%>[<status>] <dark_gray>[<%CC%><creator> <dark_gray>-> <%CC%><assignment><dark_gray>] [<%CC%>世界：<world><dark_gray>]%nl%    <%CC%>~<time> 前：<#F3F3F3><comment>'
+# 模板：<id> <status> <creator> <assignment> <world> <time> <comment>    占位符：%PCC% %SCC%
+SearchFormat_FormattingSize: '12' # 仅整数
+SearchFormat_MaxLineSize: '52'    # 仅整数
+#
+# 历史记录格式（接受格式）：
+History_Header: '%nl%%TMHeader% <Name><#F3F3F3> 有 <%CC%><count> <#F3F3F3>个工单：'          # 模板：<Name> <count>
+History_Entry: '%nl%<%CC%>[<id>] <%SCC%>[<status>] <#F3F3F3><comment>'                        # 模板：<id> <status> <comment>  占位符：%SCC%
+History_FormattingSize: '6' # 仅整数
+History_MaxLineSize: '52'   # 仅整数
+#
+# 帮助格式（接受格式）：
+Help_Header: '%nl%<#F3F3F3>===<gray>====<dark_gray>===<%CC%>TicketManager 命令<dark_gray>===<gray>====<#F3F3F3>==='
+Help_Line1: '%nl%<%CC%>参数类型<#F3F3F3>：<%CC%>   <#F3F3F3>\<必填> <gray>[可选]'
+Help_Line2: '%nl%<%CC%>静默格式<#F3F3F3>：<%CC%>     /ticket s<#F3F3F3>.<%CC%><command>'
+Help_Line3: '%nl%<%CC%>可静默：<#F3F3F3>[<red>✕<#F3F3F3>|<green>✓<#F3F3F3>]'
+Help_Sep: '%nl%<gray>========================================='
+Help_HasSilence: '<green>[✓]'
+Help_LackSilence: '<red>[✕]'
+Help_RequiredParam: '<#F3F3F3>‹%Param%›'
+Help_OptionalParam: '<gray>[%Param%]'
+Help_Entry: '%nl%<silenceable> <%CC%>/<command> <params>'  # 模板：<silenceable> <command> <params> 注意：解释会附加在末尾
+Help_Explanation_Assign: ''
+Help_Explanation_Claim: ''
+Help_Explanation_Close: ''
+Help_Explanation_CloseAll: ''
+Help_Explanation_Comment: ''
+Help_Explanation_Create: ''
+Help_Explanation_Help: ''
+Help_Explanation_History: ''
+Help_Explanation_List: ''
+Help_Explanation_ListAssigned: ''
+Help_Explanation_ListUnassigned: ''
+Help_Explanation_Reload: ''
+Help_Explanation_Reopen: ''
+Help_Explanation_Search: ''
+Help_Explanation_SetPriority: ''
+Help_Explanation_Teleport: ''
+Help_Explanation_Unassign: ''
+Help_Explanation_View: ''
+Help_Explanation_DeepView: ''
+#
+# 修改后的堆栈跟踪（接受格式）：
+Stacktrace_Line1: '%nl%<dark_red>[TicketManager] 警告！发生意外错误！'
+Stacktrace_Line2: '%nl%<red>     异常：    <gray><exception>'                  # 模板：<exception>
+Stacktrace_Line3: '%nl%<red>     信息：  <gray><message>'                    # 模板：<message>
+Stacktrace_Line4: '%nl%<dark_red>=-=-=-=-=-=-=修改后的堆栈跟踪：=-=-=-=-=-=-='
+Stacktrace_Entry: '%nl%<red>          <method> (<file>:<line>)'                    # 模板：<method> <file> <line>
+#
+#
+# ========================================
+#             通知
+# ========================================
+#
+# 信息（接受格式）：
+Info_ReloadInitiated: '%TMHeader% <#F3F3F3><user> <%CC%>已发起插件重启！插件已锁定，等待正在进行的任务完成...'      # 模板：<user>
+Info_Reload_TasksDone: '%TMHeader% 所有其他任务完成！现在重新加载...'
+Info_ReloadSuccess: '%TMHeader% <%CC%>重载 <green>成功<%CC%>！'
+Info_ReloadFailure: '%TMHeader% <%CC%>重载 <red>失败<%CC%>！'
+Info_UnderCooldown: '%TMHeader% <red>您仍在冷却中，还需 <duration> 秒。' # 模板：<duration>
+#
+# 工单通知（接受格式）：
+Notify_UnreadUpdate_Single: '%TMHeader% 工单 <gray><num> <%CC%>有更新！输入 <gray>/ticket view <num> <%CC%>来清除通知。'                          # 模板 <num>
+Notify_UnreadUpdate_Multi: '%TMHeader% 工单 <gray><num> <%CC%>有更新！输入 <gray>/ticket view <id> <%CC%>为所有更新的工单清除通知。'   # 模板 <num>
+Notify_OpenAssigned: '%TMHeader% <gray><open> <%CC%>个工单开启（<gray><assigned> <%CC%>个分配给您）'                                 # 模板 <open> <assigned>
+Notify_MassCloseSuccess: '%TMHeader% 从 <gray><lower> <%CC%>到 <gray><upper> <%CC%>的批量关闭已发送！'                                     # 模板：<lower> <upper>
+Notify_TicketAssignSuccess: '%TMHeader% 工单 <gray>#<id> <%CC%>已分配给：<gray><assigned><%CC%>！'                                     # 模板：<id> <assigned>
+Notify_TicketCloseSuccess: '%TMHeader% 工单 <gray>#<id> <%CC%>已关闭！'                                                                   # 模板：<id>
+Notify_TicketCloseWithCommentSuccess: '%TMHeader% 工单 <gray>#<id> <%CC%>已关闭并附带评论！'                                         # 模板：<id>
+Notify_TicketCreationSuccessful: '%TMHeader% 工单 <gray>#<id> <%CC%>已创建！'                                                            # 模板：<id>
+Notify_TicketCommentSuccessful: '%TMHeader% 工单 <gray>#<id> <%CC%>已评论！'                                                        # 模板：<id>
+Notify_TicketReopenSuccess: '%TMHeader% 工单 <gray>#<id> <%CC%>已重新开启！'                                                               # 模板：<id>
+Notify_TicketSetPrioritySuccess: '%TMHeader% 工单 <gray>#<id> <%CC%>优先级已更改！'                                                   # 模板：<id>
+Notify_Event_TicketAssign: '%TMHeader% <gray><user> <%CC%>将工单 <gray>#<id> <%CC%>分配给 <gray><assigned><%CC%>。'                    # 模板：<user> <id> <assigned>
+Notify_Event_TicketClose: '%TMHeader% <gray><user> <%CC%>关闭了工单 <gray>#<id><%CC%>。'                                                 # 模板：<user> <id>
+Notify_Event_TicketCloseWithComment: '%TMHeader% <gray><user> <%CC%>关闭了工单 <gray>#<id> <%CC%>并附带评论：%nl%<gray><message>'    # 模板：<user> <id> <message>
+Notify_Event_MassClose: '%TMHeader% <gray><user> <%CC%>正在批量关闭工单，从 <gray>#<lower> <%CC%>到 <gray>#<upper><%CC%>。'         # 模板：<user> <lower> <upper>
+Notify_Event_TicketComment: '%TMHeader% <gray><user> <%CC%>评论了工单 <gray>#<id><%CC%>：%nl%<gray><message>'                      # 模板：<user> <id> <message>
+Notify_Event_TicketCreation: '%TMHeader% <gray><user> <%CC%>创建了工单 <gray>#<id><%CC%>：%nl%<gray><message>'                          # 模板：<user> <id> <message>
+Notify_Event_TicketReopen: '%TMHeader% <gray><user> <%CC%>重新开启了工单 <gray>#<id><%CC%>。'                                              # 模板：<user> <id>
+Notify_Event_SetPriority: '%TMHeader% <gray><user> <%CC%>将工单 <gray>#<id> <%CC%>的优先级设置为 <%PCC%><priority><%CC%>。'                # 模板：<user> <id> <priority>    占位符：%PCC%
+Notify_Event_TicketModification: '%TMHeader% 工单 <gray>#<id> <%CC%>已更新！输入 <gray>/ticket view <id> <%CC%>查看此工单。'                    # 模板：<id>
+Notify_Event_PluginUpdate: '%TMHeader% TicketManager 有更新！%nl%  <%CC%>当前版本：<gray><current>%nl%  <%CC%>最新版本：<gray><latest>'          # 模板：<current> <latest>
+Notify_Event_ProxyUpdate: '%TMHeader% TicketManager Proxy 有更新！%nl%  <%CC%>当前版本：<gray><current>%nl%  <%CC%>最新版本：<gray><latest>'     # 模板：<current> <latest>
+#
+# Brigadier/CommandAPI 警告（接受格式）：
+Brigadier_NotYourTicket: '<red>您没有权限修改此工单。'
+Brigadier_InvalidID: '<red>工单 #<id> 不存在。'                                                                     # 模板：<id>
+Brigadier_TicketAlreadyClosed: '<red>此工单已关闭，除非重新开启，否则可能无法修改。'
+Brigadier_TicketAlreadyOpen: '<red>此工单已开启。'
+Brigadier_ConsoleLocationTeleport: '<red>您不能传送到由控制台创建的工单或操作。'
+Brigadier_NoTeleport_SameServer: '<red>您没有权限传送到同一服务器上创建的工单。'
+Brigadier_NoTeleport_DifferentServer: '<red>您没有权限传送到不同服务器上创建的工单。'
+Brigadier_NoTeleport_ProxyDisabled: "<red>当代理模式禁用时，您不能传送到其他服务器上创建的工单。"
+Brigadier_OtherHistory: "<red>您没有权限查看他人的工单历史记录。"
+Brigadier_Search_BadSymbol_1: "<red>符号 <dark_red><symbol><red> 不是关键字 <dark_red><keyword><red> 的有效符号。请使用 <dark_red>=<red> 或 <dark_red>!=<red>。"   # 模板：<symbol> <keyword>
+Brigadier_Search_BadStatus: "<dark_red><status><red> 不是有效的状态。请使用 <dark_red><open><red> 或 <dark_red><closed><red>。" # 模板：<status> <open> <closed>
+Brigadier_Search_BadSymbol_2: "<red>符号 <dark_red><symbol><red> 不是关键字 <dark_red><keyword><red> 的有效符号。请使用 <dark_red>=<red>、<dark_red>!=<red>、<dark_red><<red> 或 <dark_red>><red>。" # 模板：<symbol> <keyword>
+Brigadier_Search_BadSymbol_3: "<red>符号 <dark_red><symbol><red> 不是关键字 <dark_red><keyword><red> 的有效符号。请使用 <dark_red><<red> 或 <dark_red>><red>。"   # 模板：<symbol> <keyword>
+Brigadier_BadPageNumber: "<red> 无效的页码。"
+Brigadier_BadSearchConstraint: "<red>无效的搜索约束：<dark_red><keyword><red>。"  # 模板 <keyword>
+Brigadier_InvalidAssignment: "<red>无效的分配类型：<dark_red><assignment><red>。"   # 模板 <assignment>
+Brigadier_InvalidTimeUnit: "<red>无效的时间单位：<dark_red><timeunit><red>。"             # 模板 <timeunit>
+Brigadier_InvalidPriority: "<red>无效的优先级：<dark_red><priority><red>。"              # 模板 <priority>
+Brigadier_InvalidPlayerName: "<red>无效的玩家名称<red>"
